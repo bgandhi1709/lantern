@@ -103,3 +103,41 @@ test set for trying cheaper models later.
 A notification is only a hint: the app then fetches the state it points to. A status endpoint is
 the fallback. For the pilot SignalR runs inside the app, behind an `INotifier` interface. Push
 notifications through FCM for when the app is closed come later.
+
+## 2026-09-24: second ideation session
+
+### D15. NCERT backbone and cross-grade routing
+NCERT textbooks for CBSE Classes 1–10 are loaded once and become the shared base layer for every
+family. Private-publisher books are mapped onto NCERT concepts later. The goal is a baseline, not
+full coverage: questions the base layer can't answer are logged and handled by hand.
+
+The backbone is a **concept graph**: concept nodes, where each concept is taught (class, book,
+chapter), and prerequisite links between concepts. Every question is routed in this order:
+
+0. **Answer cache.** A stored answer for a close-enough earlier question, with the same stage and
+   language, is returned with no model call.
+1. **Local check.** Concepts in the child's current chapter.
+2. **Global graph.** Concept embeddings across all ten classes. Matches below threshold τ mean the
+   question is **deferred** and logged (a reject option). Among matches within δ of the best score,
+   the one **nearest the child's class** wins, their own class first.
+3. **Grade scaling.** The anchor is only the source of facts. The answer is always written for the
+   **child's class**, taken from the profile. An anchor above that class is simplified along the
+   shortest prerequisite path from what the child already knows. An anchor below it gets an older
+   tone, but no facts beyond the anchor.
+4. **Tag and store.** The question is tagged with its concept, anchor class, child class, stage
+   and language. The answer is stored by concept + stage (NCF-2023 stages: 1–2, 3–5, 6–8, 9–10) +
+   language, so a Class 10 child is never served a Class 3–5 answer.
+
+Matching is exact nearest-neighbour search in memory, which is fast at a few thousand concepts, so
+no vector database is needed. τ, τ_cache and δ start as defaults and are tuned from the pilot's
+rated log (D12). Opus does the analysis once, at build time. At question time, Opus runs at low
+effort, and only on a cache miss.
+
+### D16. Strategy: build the pristine layer first
+The next build is the NCERT layer and plain **text Q&A**, ahead of the rest of the foundation:
+- NCERT content comes from the PDFs' own text layer. There is **no OCR, page-image analysis or
+  book-cover photo step** for now.
+- The mother types a question and gets an answer. She can ask as many questions as she likes.
+- Every answer gets **👍 / 👎**. The ratings measure quality and tune the routing thresholds.
+
+Voice, photos, book discovery and the other pieces from D2 come later, on top of this layer.
