@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import argparse
+import json
 import logging
 import os
 import sys
 
-from . import catalog, draft, pipeline, upload
+from . import catalog, draft, pipeline, refine_check, upload
 from .config import CORE_SUBJECTS, Settings
 from .ollama import Ollama
 
@@ -37,6 +38,28 @@ def _selected(args: argparse.Namespace, layout: pipeline.Layout) -> list[catalog
     return books
 
 
+def _check(layout: pipeline.Layout, chapter_ids: list[str]) -> int:
+    """Prints one line per chapter; exits 1 if any chapter breaks the refine-v1 contract."""
+    books = {b.book_id: b for b in catalog.load(layout.catalog)}
+    failed = 0
+    for chapter_id in chapter_ids:
+        book = books.get(chapter_id[:-2])
+        if book is None:
+            print(f"{chapter_id}: unknown book")
+            failed += 1
+            continue
+        errors = pipeline.check_refined(layout, book, chapter_id)
+        if errors:
+            failed += 1
+            print(f"{chapter_id}: {len(errors)} problem(s)")
+            for error in errors:
+                print(f"  - {error}")
+        else:
+            refined = json.loads(layout.refined(book.book_id, chapter_id).read_text(encoding="utf-8"))
+            print(f"{chapter_id}: ok, {refine_check.summary(refined)}")
+    return 1 if failed else 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="ncert-build", description=__doc__)
     stages = parser.add_subparsers(dest="stage", required=True)
@@ -55,6 +78,8 @@ def main(argv: list[str] | None = None) -> int:
         ("segment", "clean text and split chapters into sections"),
         ("draft", "draft concepts and kid questions with the local model"),
         ("run", "download, extract, segment and draft in one go"),
+        ("bundle", "write the compact per-chapter input for Claude refinement"),
+        ("check", "validate refined chapters (pass chapter ids, or use the filters)"),
         ("status", "count what each stage has produced"),
     ]:
         stage = stages.add_parser(name, help=text)
@@ -66,6 +91,8 @@ def main(argv: list[str] | None = None) -> int:
         stage.add_argument("--force", action="store_true", help="redo chapters that already have output")
         stage.add_argument("--model", help="Ollama model for drafts (default: LANTERN_DRAFT_MODEL or qwen3:8b)")
         stage.add_argument("-v", "--verbose", action="store_true")
+        if name == "check":
+            stage.add_argument("chapters", nargs="*", help="chapter ids, e.g. aejm104")
 
     args = parser.parse_args(argv)
     logging.getLogger("pypdf").setLevel(logging.ERROR)  # font-encoding warnings are noise here
@@ -85,8 +112,19 @@ def main(argv: list[str] | None = None) -> int:
         upload.run(settings.data_dir, args.account)
         return 0
 
+    if args.stage == "check" and args.chapters:
+        return _check(layout, args.chapters)
+
     books = _selected(args, layout)
     verbose = args.verbose
+
+    if args.stage == "check":
+        return _check(layout, [c for b in books for c in b.chapter_ids() if layout.refined(b.book_id, c).exists()])
+
+    if args.stage == "bundle":
+        report = pipeline.bundle_chapters(layout, books, args.force, verbose)
+        print(report.line())
+        return 1 if report.failed else 0
 
     if args.stage == "list":
         for book in books:
@@ -96,11 +134,11 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.stage == "status":
         rows = pipeline.status(layout, books)
-        print(f"{'book':60} chapters  pdf  text  sections  drafts")
-        for name, total, pdfs, texts, chapters, drafts in rows:
-            print(f"{name[:60]:60} {total:8} {pdfs:4} {texts:5} {chapters:9} {drafts:7}")
+        print(f"{'book':60} chapters  pdf  text  sections  drafts  refined")
+        for name, total, pdfs, texts, chapters, drafts, refined in rows:
+            print(f"{name[:60]:60} {total:8} {pdfs:4} {texts:5} {chapters:9} {drafts:7} {refined:8}")
         totals = [sum(column) for column in list(zip(*rows))[1:]]
-        print(f"{'TOTAL':60} {totals[0]:8} {totals[1]:4} {totals[2]:5} {totals[3]:9} {totals[4]:7}")
+        print(f"{'TOTAL':60} {totals[0]:8} {totals[1]:4} {totals[2]:5} {totals[3]:9} {totals[4]:7} {totals[5]:8}")
         ready, drafted = totals[3], totals[4]
         print(f"\nDrafted {drafted} of {ready} available chapters ({100 * drafted // max(ready, 1)}%), {ready - drafted} to go.")
         return 0

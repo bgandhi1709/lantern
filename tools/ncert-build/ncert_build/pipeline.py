@@ -7,6 +7,8 @@ Layout under the data directory (outside the repository):
     text/<book_id>/<chapter_id>.json     page text and quality flags
     chapters/<book_id>/<chapter_id>.json cleaned sections
     drafts/<book_id>/<chapter_id>.json   local-model concepts and kid questions
+    bundles/<book_id>/<chapter_id>.md    compact input for Claude refinement
+    refined/<book_id>/<chapter_id>.json  concept cards and Q&A written by Claude (ncert-refine)
 
 A stage skips a chapter whose output already exists unless forced, so an interrupted run resumes
 where it stopped. A chapter that fails is reported and the run carries on.
@@ -21,7 +23,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Callable
 
-from . import catalog, draft, extract, http, segment
+from . import bundle, catalog, draft, extract, http, refine_check, segment
 from .catalog import Book
 from .config import NCERT_BASE, Settings
 
@@ -45,6 +47,12 @@ class Layout:
 
     def draft(self, book_id: str, chapter_id: str) -> Path:
         return self.root / "drafts" / book_id / f"{chapter_id}.json"
+
+    def bundle(self, book_id: str, chapter_id: str) -> Path:
+        return self.root / "bundles" / book_id / f"{chapter_id}.md"
+
+    def refined(self, book_id: str, chapter_id: str) -> Path:
+        return self.root / "refined" / book_id / f"{chapter_id}.json"
 
 
 @dataclass
@@ -167,7 +175,36 @@ def draft_chapters(
     return _for_each_chapter("draft", books, work, verbose)
 
 
-def status(layout: Layout, books: list[Book]) -> list[tuple[str, int, int, int, int, int]]:
+def bundle_chapters(layout: Layout, books: list[Book], force: bool, verbose: bool) -> Report:
+    def work(book: Book, chapter_id: str) -> bool:
+        source, target = layout.chapter(book.book_id, chapter_id), layout.bundle(book.book_id, chapter_id)
+        if not source.exists():
+            raise FileNotFoundError("not segmented")
+        if target.exists() and not force:
+            return False
+        draft_path = layout.draft(book.book_id, chapter_id)
+        drafted = json.loads(draft_path.read_text(encoding="utf-8")) if draft_path.exists() else None
+        chapter = json.loads(source.read_text(encoding="utf-8"))
+        bundle.write(bundle.render(chapter, drafted, str(layout.refined(book.book_id, chapter_id))), target)
+        return True
+
+    return _for_each_chapter("bundle", books, work, verbose)
+
+
+def check_refined(layout: Layout, book: Book, chapter_id: str) -> list[str]:
+    target = layout.refined(book.book_id, chapter_id)
+    if not target.exists():
+        return [f"no refined file at {target}"]
+    try:
+        refined = json.loads(target.read_text(encoding="utf-8"))
+    except ValueError as error:
+        return [f"not valid JSON: {error}"]
+    chapter = json.loads(layout.chapter(book.book_id, chapter_id).read_text(encoding="utf-8"))
+    page_count = max((n for s in chapter["sections"] for n in s["pages"]), default=0)
+    return refine_check.check(refined, chapter_id, page_count)
+
+
+def status(layout: Layout, books: list[Book]) -> list[tuple[str, int, int, int, int, int, int]]:
     rows = []
     for book in books:
         ids = book.chapter_ids()
@@ -179,6 +216,7 @@ def status(layout: Layout, books: list[Book]) -> list[tuple[str, int, int, int, 
                 sum(layout.text(book.book_id, c).exists() for c in ids),
                 sum(layout.chapter(book.book_id, c).exists() for c in ids),
                 sum(layout.draft(book.book_id, c).exists() for c in ids),
+                sum(layout.refined(book.book_id, c).exists() for c in ids),
             )
         )
     return rows
