@@ -1,0 +1,25 @@
+[project]
+name = "ncert-build"
+version = "0.1.0"
+description = "Build-time tooling for Lantern's NCERT layer: catalogue, download, text extraction, segmentation and local-model drafts."
+requires-python = ">=3.12"
+dependencies = [
+    "pypdf>=5.0",
+    "fonttools>=4.50",  # lets pypdf decode the CFF fonts NCERT books use
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[project.scripts]
+ncert-build = "ncert_build.cli:main"
+
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["ncert_build"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

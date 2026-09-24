@@ -1,0 +1,10 @@
+# Python tooling
+.venv/
+__pycache__/
+*.egg-info/
+.pytest_cache/
+
+# NCERT content is copyrighted and this repository is public: PDFs and anything derived from them
+# live in private storage (LANTERN_DATA_DIR), never here.
+*.pdf
+lantern-data/
