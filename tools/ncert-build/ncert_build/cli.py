@@ -95,9 +95,14 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.stage == "status":
+        rows = pipeline.status(layout, books)
         print(f"{'book':60} chapters  pdf  text  sections  drafts")
-        for name, total, pdfs, texts, chapters, drafts in pipeline.status(layout, books):
+        for name, total, pdfs, texts, chapters, drafts in rows:
             print(f"{name[:60]:60} {total:8} {pdfs:4} {texts:5} {chapters:9} {drafts:7}")
+        totals = [sum(column) for column in list(zip(*rows))[1:]]
+        print(f"{'TOTAL':60} {totals[0]:8} {totals[1]:4} {totals[2]:5} {totals[3]:9} {totals[4]:7}")
+        ready, drafted = totals[3], totals[4]
+        print(f"\nDrafted {drafted} of {ready} available chapters ({100 * drafted // max(ready, 1)}%), {ready - drafted} to go.")
         return 0
 
     client = None

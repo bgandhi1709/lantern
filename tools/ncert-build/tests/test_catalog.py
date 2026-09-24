@@ -16,6 +16,8 @@ PAGE = """
 	else if((document.test.tclass.value==8) && (document.test.tsubject.options[sind].text=="Social Science"))
 		document.test.tbook.options[1].text="Our-Pasts-III  ";
 		document.test.tbook.options[1].value="textbook.php?hess2=1-8"
+		document.test.tbook.options[2].text="Resource And Development(Geography)";
+		document.test.tbook.options[2].value="textbook.php?hess4=0-5"
 	else if((document.test.tclass.value==1) && (document.test.tsubject.options[sind].text=="Hindi"))
 		document.test.tbook.options[1].text="Sarangi";
 		document.test.tbook.options[1].value="textbook.php?ahsr1=0-19"
@@ -28,7 +30,7 @@ def by_id(books):
 
 def test_reads_every_live_book_and_skips_commented_ones():
     books = by_id(parse_textbook_page(PAGE))
-    assert set(books) == {"aemr1", "aejm1", "agjm1", "hess2", "ahsr1"}
+    assert set(books) == {"aemr1", "aejm1", "agjm1", "hess2", "hess4", "ahsr1"}
 
 
 def test_value_gives_chapter_range_and_front_matter():
@@ -58,3 +60,8 @@ def test_select_filters_combine():
     books = parse_textbook_page(PAGE)
     chosen = select(books, grades={1}, subjects={"Mathematics"}, mediums={"English"})
     assert [b.book_id for b in chosen] == ["aejm1"]
+
+
+def test_brackets_that_are_not_a_language_do_not_change_the_medium():
+    geography = by_id(parse_textbook_page(PAGE))["hess4"]
+    assert geography.medium == "English"

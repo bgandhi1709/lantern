@@ -23,6 +23,13 @@ _TITLE_LANGUAGE = re.compile(r"\(([A-Za-z]+)\)\s*$")
 # The second letter of a four-letter code is the medium; longer codes are regional editions whose
 # language is named in the title, e.g. "Joyful-Mathematics (Gujarati)".
 _MEDIUM_BY_CODE_LETTER = {"e": "English", "h": "Hindi", "u": "Urdu"}
+# Brackets also hold other things, e.g. "Looking Around(EVS)", "Resource And Development(Geography)",
+# so only a known language name counts as the medium.
+_LANGUAGES = {
+    "English", "Hindi", "Urdu", "Gujarati", "Marathi", "Sindhi", "Punjabi", "Malayalam", "Konkani",
+    "Assamese", "Maithili", "Bodo", "Sanskrit", "Oriya", "Odia", "Bengali", "Santhali", "Manipuri",
+    "Nepali", "Telugu", "Kannada", "Tamil", "Dogri", "Kashmiri",
+}
 
 
 @dataclass(frozen=True)
@@ -46,7 +53,7 @@ class Book:
 
 def _medium(code: str, title: str) -> str | None:
     named = _TITLE_LANGUAGE.search(title)
-    if named:
+    if named and named.group(1) in _LANGUAGES:
         return named.group(1)
     if len(code) == 4:
         return _MEDIUM_BY_CODE_LETTER.get(code[1])
