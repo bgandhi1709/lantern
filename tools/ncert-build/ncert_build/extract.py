@@ -14,13 +14,17 @@ import unicodedata
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
-from pypdf import PdfReader
+from pypdf import PdfReader, apply_configuration
 
 from . import symbol_font
 
 LOW_TEXT_CHARS = 200
 MATHS_DENSE_RATIO = 0.18
 GARBLED_RATIO = 0.05
+# pypdf stops at 75 MB of decompressed data per stream to guard against hostile files. A few
+# NCERT chapters (Class 10 Science, chapter 8) embed images larger than that. These PDFs come from
+# NCERT only, so the limit is raised for them rather than losing the chapter.
+MAX_DECOMPRESSED_BYTES = 400_000_000
 _MATHS_CHARS = set("0123456789+-−×÷=<>≤≥%/()[]^√π")
 
 
@@ -48,11 +52,12 @@ def quality_flags(text: str) -> list[str]:
 
 
 def extract_pdf(pdf_path: Path) -> list[Page]:
-    reader = PdfReader(pdf_path)
     pages = []
-    for index, pdf_page in enumerate(reader.pages, start=1):
-        text = unicodedata.normalize("NFC", symbol_font.decode(pdf_page.extract_text() or ""))
-        pages.append(Page(number=index, text=text, flags=quality_flags(text)))
+    with apply_configuration(zlib_maximum_output_length=MAX_DECOMPRESSED_BYTES):
+        reader = PdfReader(pdf_path)
+        for index, pdf_page in enumerate(reader.pages, start=1):
+            text = unicodedata.normalize("NFC", symbol_font.decode(pdf_page.extract_text() or ""))
+            pages.append(Page(number=index, text=text, flags=quality_flags(text)))
     return pages
 
 

@@ -52,11 +52,17 @@ class Report:
     stage: str
     done: int = 0
     skipped: int = 0
+    missing: list[str] = field(default_factory=list)
     failed: list[str] = field(default_factory=list)
 
     def line(self) -> str:
-        text = f"{self.stage}: {self.done} done, {self.skipped} skipped, {len(self.failed)} failed"
-        return text + (f" ({', '.join(self.failed[:10])}{'…' if len(self.failed) > 10 else ''})" if self.failed else "")
+        def listed(ids: list[str]) -> str:
+            return f" ({', '.join(ids[:10])}{'…' if len(ids) > 10 else ''})" if ids else ""
+
+        return (
+            f"{self.stage}: {self.done} done, {self.skipped} skipped, "
+            f"{len(self.missing)} missing{listed(self.missing)}, {len(self.failed)} failed{listed(self.failed)}"
+        )
 
 
 def _for_each_chapter(stage: str, books: list[Book], work: Callable[[Book, str], bool], verbose: bool) -> Report:
@@ -70,6 +76,10 @@ def _for_each_chapter(stage: str, books: list[Book], work: Callable[[Book, str],
                         print(f"  {stage} {chapter_id}")
                 else:
                     report.skipped += 1
+            except (http.NotFound, FileNotFoundError):
+                # NCERT no longer serves the file (retired books still listed in the catalogue),
+                # or an earlier stage has nothing for this chapter. Not an error in this stage.
+                report.missing.append(chapter_id)
             except Exception as error:  # one bad chapter must not stop a long run
                 report.failed.append(chapter_id)
                 print(f"  ! {stage} {chapter_id}: {error}")

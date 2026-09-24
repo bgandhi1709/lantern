@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Build-time tooling for Lantern's NCERT layer: catalogue, download, text extraction, segmentation and local-model drafts."
 requires-python = ">=3.12"
 dependencies = [
-    "pypdf>=5.0",
+    "pypdf>=6.19.0",  # apply_configuration (per-call limits) is recent
     "fonttools>=4.50",  # lets pypdf decode the CFF fonts NCERT books use
 ]
 
