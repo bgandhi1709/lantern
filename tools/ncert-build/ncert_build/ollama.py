@@ -80,13 +80,19 @@ class Ollama:
             )
 
     def chat_json(self, model: str, system: str, user: str, schema: dict, num_ctx: int) -> dict:
-        """One chat turn whose reply is constrained to ``schema``."""
+        """One chat turn whose reply is constrained to ``schema``.
+
+        Thinking is off: reasoning models such as qwen3 otherwise write hidden reasoning before
+        every reply (about 20 times the tokens of the answer in a test), and drafting is
+        extraction, not reasoning. Claude does the careful pass later.
+        """
         reply = self._post(
             "/api/chat",
             {
                 "model": model,
                 "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}],
                 "format": schema,
+                "think": False,
                 "stream": False,
                 "options": {"temperature": 0.2, "num_ctx": num_ctx},
             },

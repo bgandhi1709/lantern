@@ -141,6 +141,14 @@ def segment_chapters(layout: Layout, books: list[Book], force: bool, verbose: bo
     return _for_each_chapter("segment", books, work, verbose)
 
 
+def _stale_draft(path: Path) -> bool:
+    """A draft made with an older prompt is redone, so a prompt change reaches every chapter."""
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))["meta"]["prompt_version"] != draft.PROMPT_VERSION
+    except (ValueError, KeyError):
+        return True
+
+
 def draft_chapters(
     layout: Layout, books: list[Book], chat: draft.ChatFn, model: str, force: bool, verbose: bool
 ) -> Report:
@@ -148,7 +156,7 @@ def draft_chapters(
         source, target = layout.chapter(book.book_id, chapter_id), layout.draft(book.book_id, chapter_id)
         if not source.exists():
             raise FileNotFoundError("not segmented")
-        if target.exists() and not force:
+        if target.exists() and not force and not _stale_draft(target):
             return False
         started = time.monotonic()
         result = draft.draft_chapter(json.loads(source.read_text(encoding="utf-8")), chat, model)

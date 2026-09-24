@@ -196,6 +196,7 @@ def draft_chapter(chapter: dict, chat: ChatFn, model: str) -> dict:
         "meta": {
             "model": model,
             "prompt_version": PROMPT_VERSION,
+            "thinking": False,
             "chunks": len(replies),
             "concepts_before_consolidation": drafted,
             "source_sha256": chapter.get("source_sha256"),

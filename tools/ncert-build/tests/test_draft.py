@@ -124,3 +124,12 @@ def test_short_lists_are_not_consolidated():
         raise AssertionError("should not be called")
 
     assert consolidate(DRAFTED[:3], fail, grade=1) == DRAFTED[:3]
+
+
+def test_drafts_from_an_older_prompt_are_redone(tmp_path):
+    from ncert_build.pipeline import _stale_draft
+    old, current, broken = tmp_path / "old.json", tmp_path / "current.json", tmp_path / "broken.json"
+    old.write_text('{"meta": {"prompt_version": "draft-v1"}}')
+    current.write_text('{"meta": {"prompt_version": "draft-v2"}}')
+    broken.write_text("{")
+    assert _stale_draft(old) and _stale_draft(broken) and not _stale_draft(current)
