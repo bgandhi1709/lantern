@@ -13,7 +13,8 @@ catalog ─► download ─► extract ─► segment ─► draft (local model)
 | `download` | Fetches chapter PDFs and each book's front matter (contents page) | `pdf/<book>/<chapter>.pdf` |
 | `extract` | The PDF's own text layer, page by page. No OCR. Symbol-font maths (θ, Δ, ∠, −) is decoded | `text/<book>/<chapter>.json` |
 | `segment` | Strips print slugs and running headers, splits into sections, exercises and summary | `chapters/<book>/<chapter>.json` |
-| `draft` | A local model lists concepts and kid-style questions per chapter | `drafts/<book>/<chapter>.json` |
+| `draft` | A local model lists concepts and kid-style questions, then merges near-duplicates | `drafts/<book>/<chapter>.json` |
+| `upload` | Copies all of the above to the private `ncert` blob container | Azure Storage |
 
 Each stage skips chapters it has already done (`--force` redoes them), so an interrupted run resumes.
 A failing chapter is reported and the run carries on.
@@ -22,6 +23,14 @@ A failing chapter is reported and the run carries on.
 
 NCERT text is copyrighted and this repository is public. Output goes to `LANTERN_DATA_DIR`, by
 default `../lantern-data` next to the repository. The tool refuses to write inside the repository.
+
+## Cloud copy
+
+The data directory is the working copy; the `ncert` container in the Lantern storage account is
+where the output is kept (the account is in `infra/`, deployed by #19). Sign in with `az login`,
+then run `ncert-build upload --account <storage account>`. Your account needs Storage Blob Data
+Contributor, which the deployment grants to `DATA_UPLOADER_OBJECT_ID`
+(`az ad signed-in-user show --query id -o tsv` prints yours).
 
 ## Setup
 

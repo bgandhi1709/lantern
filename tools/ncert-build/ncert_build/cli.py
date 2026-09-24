@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import argparse
 import logging
+import os
 import sys
 
-from . import catalog, draft, pipeline
+from . import catalog, draft, pipeline, upload
 from .config import CORE_SUBJECTS, Settings
 from .ollama import Ollama
 
@@ -41,6 +42,12 @@ def main(argv: list[str] | None = None) -> int:
     stages = parser.add_subparsers(dest="stage", required=True)
 
     stages.add_parser("catalog", help="fetch NCERT's book list into catalog.json")
+    uploading = stages.add_parser("upload", help="copy the build output to the private `ncert` blob container")
+    uploading.add_argument(
+        "--account",
+        default=os.environ.get("LANTERN_STORAGE_ACCOUNT"),
+        help="storage account name (default: LANTERN_STORAGE_ACCOUNT)",
+    )
     for name, text in [
         ("list", "show the books the filters select"),
         ("download", "download chapter PDFs (and each book's front matter)"),
@@ -70,6 +77,12 @@ def main(argv: list[str] | None = None) -> int:
     if args.stage == "catalog":
         books = pipeline.refresh_catalog(layout)
         print(f"{len(books)} books written to {layout.catalog}")
+        return 0
+
+    if args.stage == "upload":
+        if not args.account:
+            raise SystemExit("Pass --account or set LANTERN_STORAGE_ACCOUNT (the deployment prints it).")
+        upload.run(settings.data_dir, args.account)
         return 0
 
     books = _selected(args, layout)
@@ -104,8 +117,8 @@ def main(argv: list[str] | None = None) -> int:
     if client is not None:
         print(f"Drafting with {model} at {client.host}")
 
-        def chat(system: str, user: str) -> dict:
-            return client.chat_json(model, system, user, draft.SCHEMA, draft.NUM_CTX)
+        def chat(system: str, user: str, schema: dict) -> dict:
+            return client.chat_json(model, system, user, schema, draft.NUM_CTX)
 
         reports.append(pipeline.draft_chapters(layout, books, chat, model, args.force, verbose))
 
