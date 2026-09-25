@@ -24,14 +24,12 @@ param firebaseProjectId string
 
 param tableEndpoint string
 
-@description('Key Vault secret URI for Security:Key. Empty until the secret exists.')
-param securityKeySecretUri string = ''
+@description('Key Vault secret URI for Security:Key. The secret must exist: bootstrap.sh creates it.')
+param securityKeySecretUri string
 
 resource workspace 'Microsoft.OperationalInsights/workspaces@2023-09-01' existing = {
   name: workspaceName
 }
-
-var wireSecurityKey = !empty(securityKeySecretUri)
 
 // Names follow the API's configuration sections (Firebase, Storage, Security), with no prefix.
 // A wrong name fails the options validation and the app refuses to start. The table name is not
@@ -53,16 +51,11 @@ var baseEnv = [
     name: 'Storage__TableEndpoint'
     value: tableEndpoint
   }
+  {
+    name: 'Security__Key'
+    secretRef: 'security-key'
+  }
 ]
-
-var securityKeyEnv = wireSecurityKey
-  ? [
-      {
-        name: 'Security__Key'
-        secretRef: 'security-key'
-      }
-    ]
-  : []
 
 var probes = enableProbes
   ? [
@@ -125,15 +118,13 @@ resource app 'Microsoft.App/containerApps@2025-01-01' = {
         transport: 'auto'
         allowInsecure: false
       }
-      secrets: wireSecurityKey
-        ? [
-            {
-              name: 'security-key'
-              keyVaultUrl: securityKeySecretUri
-              identity: identityId
-            }
-          ]
-        : []
+      secrets: [
+        {
+          name: 'security-key'
+          keyVaultUrl: securityKeySecretUri
+          identity: identityId
+        }
+      ]
     }
     template: {
       containers: [
@@ -145,7 +136,7 @@ resource app 'Microsoft.App/containerApps@2025-01-01' = {
             cpu: json('0.25')
             memory: '0.5Gi'
           }
-          env: concat(baseEnv, securityKeyEnv)
+          env: baseEnv
           probes: probes
         }
       ]

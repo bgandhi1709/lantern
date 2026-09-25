@@ -5,6 +5,12 @@ param environmentName string
 
 param location string = resourceGroup().location
 
+@description('Name of the user-assigned identity the app runs as. Created once by bootstrap.sh, not by this template.')
+param identityName string
+
+@description('Name of the Key Vault that holds the security-key secret. Created once by bootstrap.sh, in this resource group.')
+param keyVaultName string
+
 @description('Storage account name. Global, 3 to 24 lowercase letters and digits. Set in the .bicepparam file.')
 @minLength(3)
 @maxLength(24)
@@ -26,9 +32,6 @@ param containerImage string = 'mcr.microsoft.com/k8se/quickstart:latest'
 @description('Port the image listens on: 80 for the placeholder, 8080 for the .NET SDK container image.')
 param containerPort int = 80
 
-@description('Wire Security:Key from Key Vault into the app. Set true only after the secret exists in the vault (see infra/README.md).')
-param wireSecurityKey bool = false
-
 param tags object = {
   workload: 'lantern'
   env: environmentName
@@ -36,18 +39,16 @@ param tags object = {
 
 var placeholderImage = 'mcr.microsoft.com/k8se/quickstart:latest'
 
-// The Key Vault name is global, so it carries a suffix derived from the resource group. It is
-// stable: redeploying to the same group gives the same name.
-var suffix = take(uniqueString(resourceGroup().id), 5)
 var namePrefix = 'lantern-${environmentName}'
 
-module identity 'modules/identity.bicep' = {
-  name: 'identity'
-  params: {
-    name: 'id-${namePrefix}'
-    location: location
-    tags: tags
-  }
+// Created once by bootstrap.sh, together with its role assignments. The template only reads it,
+// so the deploying account needs no role-assignment rights.
+resource identity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' existing = {
+  name: identityName
+}
+
+resource vault 'Microsoft.KeyVault/vaults@2023-07-01' existing = {
+  name: keyVaultName
 }
 
 module monitoring 'modules/monitoring.bicep' = {
@@ -65,20 +66,9 @@ module storage 'modules/storage.bicep' = {
     name: storageAccountName
     location: location
     tags: tags
-    appPrincipalId: identity.outputs.principalId
     tables: tables
     containers: containers
     queues: queues
-  }
-}
-
-module keyVault 'modules/keyvault.bicep' = {
-  name: 'keyvault'
-  params: {
-    name: 'kv-${namePrefix}-${suffix}'
-    location: location
-    tags: tags
-    appPrincipalId: identity.outputs.principalId
   }
 }
 
@@ -90,19 +80,19 @@ module containerApp 'modules/containerapp.bicep' = {
     location: location
     tags: tags
     workspaceName: monitoring.outputs.workspaceName
-    identityId: identity.outputs.id
-    identityClientId: identity.outputs.clientId
+    identityId: identity.id
+    identityClientId: identity.properties.clientId
     image: containerImage
     targetPort: containerPort
     enableProbes: containerImage != placeholderImage
     firebaseProjectId: firebaseProjectId
     tableEndpoint: storage.outputs.tableEndpoint
-    securityKeySecretUri: wireSecurityKey ? keyVault.outputs.securityKeySecretUri : ''
+    // Versionless, so a new secret version is picked up on the next revision.
+    securityKeySecretUri: '${vault.properties.vaultUri}secrets/security-key'
   }
 }
 
-output identityClientId string = identity.outputs.clientId
+output identityClientId string = identity.properties.clientId
 output storageAccountName string = storage.outputs.name
-output keyVaultName string = keyVault.outputs.name
 output containerAppName string = containerApp.outputs.appName
 output containerAppFqdn string = containerApp.outputs.fqdn

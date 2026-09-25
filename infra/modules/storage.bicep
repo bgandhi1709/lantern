@@ -2,20 +2,9 @@ param name string
 param location string
 param tags object
 
-@description('Principal id of the app identity. It gets data-plane roles on Table, Blob and Queue.')
-param appPrincipalId string
-
 param tables array
 param containers array
 param queues array
-
-// Built-in roles: Storage Table Data Contributor, Storage Blob Data Contributor,
-// Storage Queue Data Contributor.
-var roleIds = [
-  '0a9a7e1f-b9d0-4cc4-a60d-0319b160aaa3'
-  'ba92f5b4-2d11-453d-a403-e96b0029c9fe'
-  '974c5e8b-45b9-4653-ba55-5f855dd0fb88'
-]
 
 resource account 'Microsoft.Storage/storageAccounts@2023-05-01' = {
   name: name
@@ -83,18 +72,6 @@ resource queueResources 'Microsoft.Storage/storageAccounts/queueServices/queues@
   for queue in queues: {
     parent: queueService
     name: queue
-  }
-]
-
-resource roleAssignments 'Microsoft.Authorization/roleAssignments@2022-04-01' = [
-  for roleId in roleIds: {
-    scope: account
-    name: guid(account.id, appPrincipalId, roleId)
-    properties: {
-      principalId: appPrincipalId
-      principalType: 'ServicePrincipal'
-      roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', roleId)
-    }
   }
 ]
 
