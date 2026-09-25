@@ -27,16 +27,14 @@ if ! az keyvault show -n "$VAULT" -g "$RG" -o none 2>/dev/null; then
 fi
 VAULT_ID=$(az keyvault show -n "$VAULT" -g "$RG" --query id -o tsv)
 
-# One identity, one set of roles. Table, Blob and Queue roles are on the resource group so they
+# One identity, two roles. The Table role is on the resource group so they
 # cover the storage account the template creates later. Key Vault Secrets User is on the vault.
 assign() { # role scope assignee-object-id assignee-type
   az role assignment create --role "$1" --scope "$2" --assignee-object-id "$3" \
     --assignee-principal-type "$4" -o none
 }
 echo "Roles for ${IDENTITY}"
-for role in "Storage Table Data Contributor" "Storage Blob Data Contributor" "Storage Queue Data Contributor"; do
-  assign "$role" "$RG_ID" "$PRINCIPAL_ID" ServicePrincipal
-done
+assign "Storage Table Data Contributor" "$RG_ID" "$PRINCIPAL_ID" ServicePrincipal
 assign "Key Vault Secrets User" "$VAULT_ID" "$PRINCIPAL_ID" ServicePrincipal
 
 # The person running this creates the secret, so they need to write to the vault.
