@@ -3,11 +3,17 @@
 It holds the local draft's concepts as hints, then the cleaned chapter text with page markers.
 Nothing else: no JSON punctuation, no PDF, no metadata Claude doesn't need. That keeps each
 refinement to one small read (Class 1 chapters are roughly 1–2k tokens).
+
+Figures come as the local vision model's reading of each (see render): kind, printed labels, one
+line on what it shows, and checked counts, placed at the end of their page. Counts the GPU could
+not settle are marked unsure, so Claude knows which numbers not to state as fact.
 """
 
 from __future__ import annotations
 
 from pathlib import Path
+
+from .render import lines as render_figure
 
 MAX_HINT_QUESTIONS = 3
 
@@ -23,8 +29,14 @@ def stage(grade: int) -> str:
     return "secondary"
 
 
-def render(chapter: dict, draft: dict | None, output_path: str) -> str:
-    pages = sorted({n for s in chapter["sections"] for n in s["pages"]})
+def _picture(figure: dict) -> str:
+    return render_figure(figure)
+
+
+def render(chapter: dict, draft: dict | None, output_path: str, pictures: list[dict] | None = None) -> str:
+    """pictures: the pictures stage's figures, each with its page."""
+    waiting = sorted(pictures or [], key=lambda p: (p["page"], p.get("figure", 0)))
+    pages = sorted({n for s in chapter["sections"] for n in s["pages"]} | {p["page"] for p in waiting})
     lines = [
         f"# {chapter['chapter_id']} · Class {chapter['grade']} {chapter['subject']} · {chapter['book_title']}",
         f"stage: {stage(chapter['grade'])} · pages: {pages[0]}–{pages[-1]}" if pages else "",
@@ -46,10 +58,16 @@ def render(chapter: dict, draft: dict | None, output_path: str) -> str:
 
     lines += ["", "## Chapter text"]
     for section in chapter["sections"]:
+        # A picture page with no text of its own goes before the first section that comes after it.
+        while waiting and section["pages"] and waiting[0]["page"] < section["pages"][0]:
+            lines.append(_picture(waiting.pop(0)))
         marker = f"[p{section['pages'][0]}]" if section["pages"] else ""
         heading = f" {section['heading']}" if section.get("heading") else ""
         lines.append(f"{marker}{heading}")
         lines.append(section["text"].strip())
+        while waiting and waiting[0]["page"] in section["pages"]:
+            lines.append(_picture(waiting.pop(0)))
+    lines += [_picture(p) for p in waiting]
     return "\n".join(lines).strip() + "\n"
 
 

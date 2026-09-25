@@ -7,6 +7,7 @@ default gateway, which is the Windows host. Ollama must then listen beyond loopb
 
 from __future__ import annotations
 
+import base64
 import json
 import socket
 import struct
@@ -46,13 +47,17 @@ class Ollama:
     @staticmethod
     def connect(configured: str | None) -> "Ollama":
         tried = candidate_hosts(configured)
+        empty = None
         for host in tried:
             client = Ollama(host)
             try:
-                client.models()
-                return client
+                if client.models():
+                    return client
+                empty = empty or client  # e.g. a second Ollama inside WSL with nothing pulled
             except (urllib.error.URLError, ConnectionError, TimeoutError, OSError):
                 continue
+        if empty is not None:
+            return empty
         raise SystemExit(
             "Can't reach Ollama at " + ", ".join(tried) + ". Start Ollama on Windows with "
             "OLLAMA_HOST=0.0.0.0, or set OLLAMA_HOST here to where it listens."
@@ -98,3 +103,26 @@ class Ollama:
             },
         )
         return json.loads(reply["message"]["content"])
+
+    def read_image(self, model: str, prompt: str, image: bytes, schema: dict, temperature: float, num_ctx: int) -> dict:
+        """One vision turn whose reply is constrained to ``schema``. Use an instruct build
+        (qwen3-vl:8b-instruct): the default qwen3-vl build reasons at length before answering even
+        with thinking off, which made each figure take a minute. An empty or broken reply is
+        asked once more, a little warmer."""
+        for attempt in range(2):
+            reply = self._post(
+                "/api/chat",
+                {
+                    "model": model,
+                    "messages": [{"role": "user", "content": prompt, "images": [base64.b64encode(image).decode()]}],
+                    "format": schema,
+                    "think": False,
+                    "stream": False,
+                    "options": {"temperature": temperature + 0.2 * attempt, "num_ctx": num_ctx},
+                },
+            )
+            try:
+                return json.loads(reply["message"]["content"])
+            except (ValueError, KeyError):
+                continue
+        raise ValueError("the vision model gave no readable answer twice")

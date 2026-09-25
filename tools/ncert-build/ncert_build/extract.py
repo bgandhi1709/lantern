@@ -1,6 +1,7 @@
 """Stage 3: the PDF's own text layer, page by page, with quality flags (no OCR, D16).
 
 Symbol-font glyphs (θ, Δ, ∠, −) are decoded back to Unicode on the way in; see symbol_font.
+Stacked fractions are rebuilt from the page geometry ("3\n4" becomes "3/4"); see fractions.
 
 Flags mark the pages where plain text is not good enough, so a later, optional vision pass can be
 limited to them instead of reading every page.
@@ -14,10 +15,13 @@ import unicodedata
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
+import pypdfium2 as pdfium
 from pypdf import PdfReader, apply_configuration
 
-from . import symbol_font
+from . import fractions, symbol_font
 
+# Bumped when the text itself changes, so older extractions are redone (text-v2: fractions).
+EXTRACT_VERSION = "text-v2"
 LOW_TEXT_CHARS = 200
 MATHS_DENSE_RATIO = 0.18
 GARBLED_RATIO = 0.05
@@ -53,17 +57,26 @@ def quality_flags(text: str) -> list[str]:
 
 def extract_pdf(pdf_path: Path) -> list[Page]:
     pages = []
-    with apply_configuration(zlib_maximum_output_length=MAX_DECOMPRESSED_BYTES):
-        reader = PdfReader(pdf_path)
-        for index, pdf_page in enumerate(reader.pages, start=1):
-            text = unicodedata.normalize("NFC", symbol_font.decode(pdf_page.extract_text() or ""))
-            pages.append(Page(number=index, text=text, flags=quality_flags(text)))
+    geometry = pdfium.PdfDocument(pdf_path)
+    try:
+        with apply_configuration(zlib_maximum_output_length=MAX_DECOMPRESSED_BYTES):
+            reader = PdfReader(pdf_path)
+            for index, pdf_page in enumerate(reader.pages, start=1):
+                text = pdf_page.extract_text() or ""
+                if index <= len(geometry):
+                    drawn = geometry[index - 1]
+                    text, _ = fractions.patch(text, fractions.pair(drawn.get_textpage(), fractions.page_bars(drawn)))
+                text = fractions.ascii_digits(unicodedata.normalize("NFC", symbol_font.decode(text)))
+                pages.append(Page(number=index, text=text, flags=quality_flags(text)))
+    finally:
+        geometry.close()
     return pages
 
 
 def write(pdf_path: Path, pages: list[Page], target: Path) -> None:
     target.parent.mkdir(parents=True, exist_ok=True)
     document = {
+        "version": EXTRACT_VERSION,
         "source": pdf_path.name,
         "source_sha256": hashlib.sha256(pdf_path.read_bytes()).hexdigest(),
         "pages": [asdict(p) for p in pages],

@@ -10,7 +10,9 @@ One chapter in, one JSON file out. Everything needed is in the bundle and this p
 ## Steps
 
 1. Read `../lantern-data/bundles/<book>/<id>.md`, where book = id without its last two digits
-   (`aejm101` → `aejm1`). Read nothing else.
+   (`aejm101` → `aejm1`). Read nothing else, with one exception: a `[pN picture …]` block is a
+   local model's description of a page drawn rather than written. Open the image it names only
+   if the description is unclear or garbled on something you need.
 2. Write the JSON below with one Write, to the `write to:` path on the bundle's third line.
 3. Run `tools/ncert-build/.venv/bin/ncert-build check <id>`. If it lists problems, fix only those
    with Edit, then run it once more.
@@ -43,11 +45,12 @@ One chapter in, one JSON file out. Everything needed is in the bundle and this p
 
 ## Content
 
-- **Source:** facts come only from the chapter text. The draft is a hint list and can be wrong;
-  where they disagree, the text wins.
+- **Source:** facts come only from the chapter text and its picture descriptions. The draft is a
+  hint list and can be wrong; where they disagree, the text wins. Use the numbers and objects a
+  picture description gives, not invented examples.
 - **Concepts:** 2–8, one per idea. Merge draft items that are the same idea taught through
   different activities. Ids run `<id>-c1`, `-c2`, … in order.
-- **pages:** chapter page numbers from the `[pN]` markers.
+- **pages:** chapter page numbers from the `[pN]` markers, picture blocks included.
 - **how_taught:** the book's own method, so the mother teaches it the same way. At most 40 words.
 - **prerequisites:** what the child learned before this chapter, as plain names. Use an empty list
   for Class 1 or when the chapter shows nothing.

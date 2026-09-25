@@ -8,7 +8,7 @@ import logging
 import os
 import sys
 
-from . import catalog, draft, pipeline, refine_check, upload
+from . import catalog, draft, gpu, pipeline, refine_check, render, review, upload
 from .config import CORE_SUBJECTS, Settings
 from .ollama import Ollama
 
@@ -60,7 +60,28 @@ def _check(layout: pipeline.Layout, chapter_ids: list[str]) -> int:
     return 1 if failed else 0
 
 
+def shutdown_windows(minutes: int = 5) -> None:
+    """Asks Windows (from WSL) to shut down; `shutdown /a` in a Windows terminal cancels it."""
+    import subprocess
+
+    command = ["/mnt/c/Windows/System32/shutdown.exe", "/s", "/t", str(minutes * 60), "/c", "Lantern build finished"]
+    try:
+        subprocess.run(command, check=False, timeout=30)
+        print(f"Windows shuts down in {minutes} minutes (cancel: shutdown /a)", flush=True)
+    except OSError as error:
+        print(f"Couldn't ask Windows to shut down: {error}", flush=True)
+
+
 def main(argv: list[str] | None = None) -> int:
+    args = _parser().parse_args(argv)
+    try:
+        return _run(args)
+    finally:
+        if getattr(args, "shutdown", False):
+            shutdown_windows()
+
+
+def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="ncert-build", description=__doc__)
     stages = parser.add_subparsers(dest="stage", required=True)
 
@@ -77,9 +98,11 @@ def main(argv: list[str] | None = None) -> int:
         ("extract", "extract page text and quality flags"),
         ("segment", "clean text and split chapters into sections"),
         ("draft", "draft concepts and kid questions with the local model"),
-        ("run", "download, extract, segment and draft in one go"),
+        ("pictures", "describe picture pages (low text) with the local vision model"),
+        ("run", "download, extract, segment, draft and describe pictures in one go"),
         ("bundle", "write the compact per-chapter input for Claude refinement"),
         ("check", "validate refined chapters (pass chapter ids, or use the filters)"),
+        ("review", "write the picture review sheet and the agreement report (no model)"),
         ("status", "count what each stage has produced"),
     ]:
         stage = stages.add_parser(name, help=text)
@@ -90,11 +113,21 @@ def main(argv: list[str] | None = None) -> int:
         stage.add_argument("--books", nargs="+", help="book ids, e.g. aejm1 jemh1")
         stage.add_argument("--force", action="store_true", help="redo chapters that already have output")
         stage.add_argument("--model", help="Ollama model for drafts (default: LANTERN_DRAFT_MODEL or qwen3:8b)")
+        stage.add_argument(
+            "--vision-model", help="Ollama model for picture pages (default: LANTERN_VISION_MODEL or qwen3-vl:8b-instruct)"
+        )
+        stage.add_argument("--chapters", nargs="+", help="only these chapter ids, e.g. aejm113 gegp108")
+        stage.add_argument(
+            "--shutdown", action="store_true", help="shut Windows down 5 minutes after this finishes, even on failure"
+        )
         stage.add_argument("-v", "--verbose", action="store_true")
         if name == "check":
             stage.add_argument("chapters", nargs="*", help="chapter ids, e.g. aejm104")
 
-    args = parser.parse_args(argv)
+    return parser
+
+
+def _run(args: argparse.Namespace) -> int:
     logging.getLogger("pypdf").setLevel(logging.ERROR)  # font-encoding warnings are noise here
 
     settings = Settings.from_env()
@@ -117,6 +150,13 @@ def main(argv: list[str] | None = None) -> int:
 
     books = _selected(args, layout)
     verbose = args.verbose
+    if args.chapters:
+        pipeline.only_chapters = set(args.chapters)
+
+    if args.stage == "review":
+        label = "class-" + args.grades.replace(",", "_") if args.grades != "1-10" else "all"
+        print(review.write(layout, books, label))
+        return 0
 
     if args.stage == "check":
         return _check(layout, [c for b in books for c in b.chapter_ids() if layout.refined(b.book_id, c).exists()])
@@ -144,11 +184,15 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     client = None
-    if args.stage in ("draft", "run"):
+    model = args.model or settings.draft_model
+    vision_model = args.vision_model or settings.vision_model
+    if args.stage in ("draft", "pictures", "run"):
         # Checked first so a run fails fast instead of after an hour of downloads.
-        model = args.model or settings.draft_model
         client = Ollama.connect(settings.ollama_host)
-        client.require(model)
+        if args.stage in ("draft", "run"):
+            client.require(model)
+        if args.stage in ("pictures", "run"):
+            client.require(vision_model)
 
     reports = []
     if args.stage in ("download", "run"):
@@ -157,13 +201,25 @@ def main(argv: list[str] | None = None) -> int:
         reports.append(pipeline.extract_text(layout, books, args.force, verbose))
     if args.stage in ("segment", "run"):
         reports.append(pipeline.segment_chapters(layout, books, args.force, verbose))
-    if client is not None:
+    guard = gpu.Guard(lambda text: print(text, flush=True))
+    if args.stage in ("draft", "run"):
         print(f"Drafting with {model} at {client.host}")
 
         def chat(system: str, user: str, schema: dict) -> dict:
+            guard.before_call()
             return client.chat_json(model, system, user, schema, draft.NUM_CTX)
 
         reports.append(pipeline.draft_chapters(layout, books, chat, model, args.force, verbose))
+    if args.stage in ("pictures", "run"):
+        print(f"Reading figures with {vision_model} at {client.host}", flush=True)
+
+        def ask(prompt: str, image: bytes, schema: dict, temperature: float) -> dict:
+            guard.before_call()
+            return client.read_image(vision_model, prompt, image, schema, temperature, render.NUM_CTX)
+
+        reports.append(pipeline.picture_chapters(layout, books, ask, vision_model, args.force, verbose))
+    if client is not None:
+        print(guard.summary())
 
     for report in reports:
         print(report.line())

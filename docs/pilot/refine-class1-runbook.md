@@ -12,7 +12,7 @@ the Claude plan one chapter costs before the other classes are scheduled.
 
 | Lever | How |
 |---|---|
-| One small input | Each chapter is one bundle file of about 1.5k tokens: draft hints and the cleaned text. No PDFs. |
+| One small input | Each chapter is one bundle file of about 1.5k tokens: draft hints and the cleaned text. No PDFs. Pages whose content is only in pictures come as a local vision model's description (about 150 tokens each; 43 across Class 1), with the page image kept for the rare unclear one. |
 | Fresh context per chapter | `/clear` between chapters, so earlier chapters never ride along. |
 | No narration | The skill writes one file and replies with one line. |
 | No self-review by reading | `ncert-build check` validates locally and for free. Claude only fixes what it reports. |
@@ -22,7 +22,8 @@ the Claude plan one chapter costs before the other classes are scheduled.
 
 ```bash
 cd "/mnt/e/Personal Work/lantern/tools/ncert-build"
-.venv/bin/ncert-build bundle --books aejm1 aemr1      # already done for Class 1
+.venv/bin/ncert-build pictures --books aejm1 aemr1    # local vision model, picture pages
+.venv/bin/ncert-build bundle --books aejm1 aemr1 --force
 ```
 
 ## Session A: measure three chapters

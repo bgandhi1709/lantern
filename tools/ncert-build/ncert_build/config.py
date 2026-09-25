@@ -34,6 +34,7 @@ class Settings:
     data_dir: Path
     ollama_host: str | None
     draft_model: str
+    vision_model: str
     request_delay_seconds: float
 
     @staticmethod
@@ -42,6 +43,7 @@ class Settings:
             data_dir=Path(os.environ.get("LANTERN_DATA_DIR") or _default_data_dir()),
             ollama_host=os.environ.get("OLLAMA_HOST") or None,
             draft_model=os.environ.get("LANTERN_DRAFT_MODEL", "qwen3:8b"),
+            vision_model=os.environ.get("LANTERN_VISION_MODEL", "qwen3-vl:8b-instruct"),
             request_delay_seconds=float(os.environ.get("LANTERN_REQUEST_DELAY", "1.0")),
         )
 

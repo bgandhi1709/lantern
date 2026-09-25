@@ -87,3 +87,32 @@ def test_wrong_chapter_and_duplicate_names_fail():
     errors = check(broken, "aejm105", page_count=2)
     assert any("chapter_id must be 'aejm105'" in e for e in errors)
     assert "concept names must be unique" in errors
+
+
+def picture(number):
+    return {
+        "page": number, "figure": 1, "image": f"/data/pictures/aejm1/aejm104/p{number}-1.png", "kind": "beads",
+        "labels": ["1", "2", "_"], "summary": f"Beads to make 10 (p{number})",
+        "counts": [{"object": "red bead", "count": 4, "sure": True}, {"object": "blue bead", "count": 6, "sure": False}],
+    }
+
+
+def test_figures_sit_after_their_page_text_with_unsure_counts_marked():
+    text = render(CHAPTER, DRAFT, "out.json", [picture(2)])
+    assert (
+        "[p2]\nMake 10 with beads.\n"
+        "[fig p2.1 beads] Beads to make 10 (p2)\n"
+        "labels: 1 · 2 · _\n"
+        "counts: red bead 4; blue bead 6 (unsure)" in text
+    )
+
+
+def test_a_picture_page_without_text_keeps_its_place_in_the_order():
+    chapter = {**CHAPTER, "sections": [CHAPTER["sections"][0], {**CHAPTER["sections"][1], "pages": [3]}]}
+    text = render(chapter, None, "out.json", [picture(2), picture(5)])
+    assert text.index("(p2)") < text.index("[p3]") < text.index("(p5)")
+    assert "pages: 1–5" in text
+
+
+def test_no_figure_lines_when_there_are_no_figures():
+    assert "[fig " not in render(CHAPTER, DRAFT, "out.json")

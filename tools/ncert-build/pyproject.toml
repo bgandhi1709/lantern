@@ -6,6 +6,8 @@ requires-python = ">=3.12"
 dependencies = [
     "pypdf>=6.19.0",  # apply_configuration (per-call limits) is recent
     "fonttools>=4.50",  # lets pypdf decode the CFF fonts NCERT books use
+    "pypdfium2>=4.30",  # renders picture pages for the bundle (Apache-2.0/BSD, unlike PyMuPDF's AGPL)
+    "pillow>=10",  # saves those renders as PNG
 ]
 
 [project.optional-dependencies]
