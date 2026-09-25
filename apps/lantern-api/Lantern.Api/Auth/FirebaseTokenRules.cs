@@ -44,7 +44,8 @@ public static partial class FirebaseTokenRules
         try
         {
             using var document = JsonDocument.Parse(firebase.Value);
-            if (!document.RootElement.TryGetProperty(SignInProviderProperty, out var providerElement)
+            if (document.RootElement.ValueKind != JsonValueKind.Object
+                || !document.RootElement.TryGetProperty(SignInProviderProperty, out var providerElement)
                 || providerElement.ValueKind != JsonValueKind.String)
             {
                 return "malformed-firebase-claim";

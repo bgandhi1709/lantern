@@ -15,6 +15,8 @@ public sealed class FirebaseTokenRulesTests
     [InlineData("abc123", "not-json", "malformed-firebase-claim")]
     [InlineData("abc123", "{\"other\":1}", "malformed-firebase-claim")]
     [InlineData("abc123", "{\"sign_in_provider\":123}", "malformed-firebase-claim")]
+    [InlineData("abc123", "42", "malformed-firebase-claim")]
+    [InlineData("abc123", "[\"google.com\"]", "malformed-firebase-claim")]
     public void FindViolation_InvalidClaims_ReturnsReasonCode(string? sub, string? firebase, string expectedReason)
     {
         var principal = CreatePrincipal(sub, firebase);
