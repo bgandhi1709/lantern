@@ -1,4 +1,4 @@
-name: infra
+name: Infra - Build and Deploy
 
 # Runs only when infrastructure files change, so an API release never triggers it.
 on:
@@ -27,7 +27,8 @@ env:
   PARAMS: infra/params/lantern.uat.bicepparam
 
 jobs:
-  check:
+  build:
+    name: Build - lint and what-if
     # Pull requests from forks get no Azure token.
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
@@ -44,7 +45,8 @@ jobs:
       - run: az deployment group what-if -g "$RESOURCE_GROUP" -f infra/main.bicep -p "$PARAMS"
 
   deploy:
-    needs: check
+    name: Deploy - uat
+    needs: build
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     # Required reviewers on this environment gate the deployment.
