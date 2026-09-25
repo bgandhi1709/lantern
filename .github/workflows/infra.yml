@@ -47,7 +47,6 @@ jobs:
   deploy:
     name: Deploy - uat
     needs: build
-    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     # Required reviewers on this environment gate the deployment.
     environment: uat

@@ -37,8 +37,9 @@ first (`keep-running-image.sh`), so they never put the placeholder back.
 ## 3. GitHub Actions
 
 `.github/workflows/infra.yml` runs only when `infra/**` changes, so an API release never triggers it.
-A pull request runs build, lint and `what-if`. A merge to `main` runs the same, then deploys to `uat`
-after the reviewer on the `uat` environment approves.
+Every run builds, lints and runs `what-if`, then the deploy job waits for the reviewer on the `uat`
+environment. Nothing is deployed until you approve, whether the run comes from a pull request, a merge
+to `main` or a manual run. Reject the request to skip a release.
 
 ```bash
 infra/github-setup.sh rg-lantern-dev uat   # once: Entra app with OIDC, Contributor on the group, variables

@@ -56,8 +56,6 @@ gh variable set AZURE_SUBSCRIPTION_ID --body "$SUB_ID"
 ME=$(gh api user --jq .id)
 gh api -X PUT "repos/${REPO}/environments/${ENV_NAME}" \
   --input - >/dev/null <<JSON
-{"reviewers":[{"type":"User","id":${ME}}],"deployment_branch_policy":{"protected_branches":false,"custom_branch_policies":true}}
+{"reviewers":[{"type":"User","id":${ME}}]}
 JSON
-gh api -X POST "repos/${REPO}/environments/${ENV_NAME}/deployment-branch-policies" \
-  -f name=main -f type=branch >/dev/null 2>&1 || true
 echo "Done."
