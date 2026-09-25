@@ -75,6 +75,8 @@ public static partial class FirebaseTokenRules
             ?? throw new InvalidOperationException("The principal has no subject claim.");
     }
 
-    [GeneratedRegex("^[A-Za-z0-9_-]{1,128}$")]
+    // \A...\z (not ^...$) so a trailing newline can't sneak a uid past the length/charset check:
+    // $ without RegexOptions.Multiline still matches immediately before a final "\n".
+    [GeneratedRegex(@"\A[A-Za-z0-9_-]{1,128}\z")]
     private static partial Regex UidPattern();
 }

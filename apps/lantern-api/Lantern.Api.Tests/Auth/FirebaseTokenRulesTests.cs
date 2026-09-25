@@ -8,6 +8,13 @@ public sealed class FirebaseTokenRulesTests
 {
     private const string GoogleFirebaseClaim = "{\"sign_in_provider\":\"google.com\"}";
 
+    // 128 'a' characters: the longest uid the pattern allows.
+    private const string Uid128Chars =
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+
+    // 129 'a' characters: one past the longest uid the pattern allows.
+    private const string Uid129Chars = Uid128Chars + "a";
+
     [Theory]
     [InlineData(null, GoogleFirebaseClaim, "missing-subject")]
     [InlineData("not a valid uid!", GoogleFirebaseClaim, "malformed-subject")]
@@ -17,6 +24,10 @@ public sealed class FirebaseTokenRulesTests
     [InlineData("abc123", "{\"sign_in_provider\":123}", "malformed-firebase-claim")]
     [InlineData("abc123", "42", "malformed-firebase-claim")]
     [InlineData("abc123", "[\"google.com\"]", "malformed-firebase-claim")]
+    [InlineData("abc123\n", GoogleFirebaseClaim, "malformed-subject")]
+    [InlineData("abc123\r\n", GoogleFirebaseClaim, "malformed-subject")]
+    [InlineData("\nabc123", GoogleFirebaseClaim, "malformed-subject")]
+    [InlineData(Uid129Chars, GoogleFirebaseClaim, "malformed-subject")]
     public void FindViolation_InvalidClaims_ReturnsReasonCode(string? sub, string? firebase, string expectedReason)
     {
         var principal = CreatePrincipal(sub, firebase);
@@ -30,6 +41,16 @@ public sealed class FirebaseTokenRulesTests
     public void FindViolation_GoogleProvider_ReturnsNull()
     {
         var principal = CreatePrincipal("abc123", GoogleFirebaseClaim);
+
+        var reason = FirebaseTokenRules.FindViolation(principal);
+
+        Assert.Null(reason);
+    }
+
+    [Fact]
+    public void FindViolation_128CharSubject_ReturnsNull()
+    {
+        var principal = CreatePrincipal(Uid128Chars, GoogleFirebaseClaim);
 
         var reason = FirebaseTokenRules.FindViolation(principal);
 
