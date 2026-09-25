@@ -6,10 +6,7 @@ param environmentName string
 @description('Table names. The API reads `parents` by default, so it must be listed. Add only; a renamed table is a new, empty one.')
 param tables array
 
-@description('Firebase project id. Public: the API pins token issuer and audience to it.')
-param firebaseProjectId string
-
-@description('Placeholder until the first API image exists.')
+@description('Empty placeholder app until the API image exists. The API release sets the image; see keep-running-image.sh.')
 param containerImage string = 'mcr.microsoft.com/k8se/quickstart:latest'
 
 @description('Port the image listens on: 80 for the placeholder, 8080 for the .NET SDK container image.')
@@ -18,13 +15,9 @@ param containerPort int = 80
 var location = resourceGroup().location
 var name = 'lantern-${environmentName}'
 
-// Created once by bootstrap.sh with the roles the app needs. The template only reads them.
+// Created once by bootstrap.sh with its roles. The template only reads it.
 resource identity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' existing = {
   name: 'id-${name}'
-}
-
-resource vault 'Microsoft.KeyVault/vaults@2023-07-01' existing = {
-  name: 'kv-${name}'
 }
 
 resource logs 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
@@ -47,7 +40,7 @@ resource storage 'Microsoft.Storage/storageAccounts@2023-05-01' = {
   properties: {
     minimumTlsVersion: 'TLS1_2'
     allowBlobPublicAccess: false
-    // The API signs in with its managed identity, so no key or connection string exists.
+    // Callers sign in with a managed identity, so no key or connection string exists.
     allowSharedKeyAccess: false
   }
 
@@ -90,13 +83,6 @@ resource app 'Microsoft.App/containerApps@2025-01-01' = {
         external: true
         targetPort: containerPort
       }
-      secrets: [
-        {
-          name: 'security-key'
-          keyVaultUrl: '${vault.properties.vaultUri}secrets/security-key'
-          identity: identity.id
-        }
-      ]
     }
     template: {
       containers: [
@@ -107,13 +93,6 @@ resource app 'Microsoft.App/containerApps@2025-01-01' = {
             cpu: json('0.25')
             memory: '0.5Gi'
           }
-          // Names follow the API's configuration sections, with no prefix.
-          env: [
-            { name: 'AZURE_CLIENT_ID', value: identity.properties.clientId }
-            { name: 'Firebase__ProjectId', value: firebaseProjectId }
-            { name: 'Storage__TableEndpoint', value: storage.properties.primaryEndpoints.table }
-            { name: 'Security__Key', secretRef: 'security-key' }
-          ]
         }
       ]
       // Zero when idle, so an unused pilot costs nothing. One replica at most.
