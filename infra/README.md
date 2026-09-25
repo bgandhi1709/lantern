@@ -9,7 +9,7 @@ It deploys into the existing `rg-lantern-dev` (Central India). The resource grou
 |---|---|---|
 | User-assigned managed identity | `id-lantern-uat` | The API signs in to Azure with it (`DefaultAzureCredential`) |
 | Log Analytics workspace | `log-lantern-uat` | Console logs from the Container App |
-| Storage account | `stlanternuat55fkc` | Shared keys off, TLS 1.2, no public blob access |
+| Storage account | `lanternuat` | Shared keys off, TLS 1.2, no public blob access |
 | Table `parents` | | The API's only table (registration data) |
 | Blob containers `raw`, `ncert` | | Private. Not used by the API yet; reserved for the NCERT build output |
 | Queues `lantern-events`, `-poison`, `-parked` | | Not used by the API yet |

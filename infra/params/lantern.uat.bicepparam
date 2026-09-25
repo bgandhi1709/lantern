@@ -5,7 +5,7 @@ param firebaseProjectId = readEnvironmentVariable('FIREBASE_PROJECT_ID', 'lanter
 
 // Names are not secrets, so they live here in git. The storage account name is global: 3 to 24
 // lowercase letters and digits. Once created, never change it: a new name is a new, empty account.
-param storageAccountName = 'stlanternuat55fkc'
+param storageAccountName = 'lanternuat'
 
 // The API reads the table `parents` by default (Storage:ParentsTable in appsettings.json), so it
 // must be in this list. Add tables; never rename or remove one.
