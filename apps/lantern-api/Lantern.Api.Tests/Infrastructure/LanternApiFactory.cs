@@ -1,20 +1,43 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.IdentityModel.Protocols;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 
 namespace Lantern.Api.Tests.Infrastructure;
 
-/// <summary>
-/// Boots the API in-process for integration tests, pointed at a real Azurite table endpoint.
-/// </summary>
-/// <remarks>
-/// Nothing reads <c>Storage:ConnectionString</c> yet; a later task wires storage into the app and
-/// starts consuming it. It is set here now so every test class shares the same factory shape.
-/// </remarks>
+// Only the signing-key source is replaced; issuer, audience, lifetime and signature checks are the production settings.
 public sealed class LanternApiFactory(string connectionString) : WebApplicationFactory<Program>
 {
+    public const string SecurityKey = "dGVzdC1rZXktb25seS1mb3ItdGhlLXRlc3Qtc3VpdGUtMDE=";
+
+    public CapturingLoggerProvider Logs { get; } = new();
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
+        builder.UseSetting("Firebase:ProjectId", TestTokens.ProjectId);
         builder.UseSetting("Storage:ConnectionString", connectionString);
+        builder.UseSetting("Security:Key", SecurityKey);
+
+        builder.ConfigureLogging(logging => logging.AddProvider(this.Logs));
+
+        builder.ConfigureTestServices(services =>
+            services.PostConfigure<JwtBearerOptions>(
+                JwtBearerDefaults.AuthenticationScheme,
+                options =>
+                    options.ConfigurationManager =
+                        new StaticConfigurationManager<OpenIdConnectConfiguration>(
+                            new OpenIdConnectConfiguration
+                            {
+                                Issuer = $"https://securetoken.google.com/{TestTokens.ProjectId}",
+                                SigningKeys = { TestTokens.Key },
+                            }
+                        )
+            )
+        );
     }
 }

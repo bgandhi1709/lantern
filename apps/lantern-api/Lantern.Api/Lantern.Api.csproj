@@ -6,9 +6,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Pulled in now (ahead of Task 4's JwtBearer wiring) for the JsonClaimValueTypes constant,
-         which FirebaseTokenRules and its tests use to describe how the firebase claim arrives. -->
+    <PackageReference Include="Asp.Versioning.Mvc" />
+    <PackageReference Include="Azure.Data.Tables" />
+    <PackageReference Include="Azure.Identity" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Lantern.Api.Tests" />
   </ItemGroup>
 
 </Project>

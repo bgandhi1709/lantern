@@ -11,3 +11,8 @@ indent_size = 4
 
 [*.{json,yml,yaml}]
 indent_size = 2
+
+[*.cs]
+# Same choice as the approval API: a call with no x-api-version header gets v1, so curl and the
+# first app builds work without it. Revisit when v2 exists.
+dotnet_diagnostic.AV0016.severity = none

@@ -7,22 +7,8 @@ using Azure.Data.Tables;
 
 namespace Lantern.Api.Tests.Infrastructure;
 
-/// <summary>
-/// Starts a real Azurite table endpoint for the API's integration tests instead of an in-memory
-/// fake.
-/// </summary>
-/// <remarks>
-/// The bugs this layer actually produces are emulator-visible and fake-invisible: PartitionKey and
-/// RowKey comparison is case-sensitive, ETag concurrency is enforced by the service rather than the
-/// client library, and a conditional insert's 409 behaviour on a duplicate key is a service
-/// contract, not a client one. A dictionary-backed fake passes all three and tells you nothing.
-/// </remarks>
 public sealed class AzuriteFixture : IAsyncLifetime, IDisposable
 {
-    /// <summary>
-    /// Azurite's well-known development account. Not a secret: the emulator accepts only this
-    /// account, and the same key ships in the Azure SDK's own samples.
-    /// </summary>
     private const string EmulatorAccountKey =
         "Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==";
 
@@ -62,8 +48,6 @@ public sealed class AzuriteFixture : IAsyncLifetime, IDisposable
         {
             this.process = new Process { StartInfo = startInfo };
 
-            // Both pipes are drained asynchronously: a full pipe buffer would block the emulator,
-            // and the captured text is what a start-up failure gets reported with.
             this.process.OutputDataReceived += (_, args) => this.output.AppendLine(args.Data);
             this.process.ErrorDataReceived += (_, args) => this.output.AppendLine(args.Data);
 
@@ -107,7 +91,6 @@ public sealed class AzuriteFixture : IAsyncLifetime, IDisposable
 
     public TableServiceClient CreateClient() => new(this.ConnectionString);
 
-    /// <summary>Polls a throwaway table until the emulator answers, or gives up after 20 seconds.</summary>
     private async Task WaitUntilReadyAsync()
     {
         var deadline = DateTimeOffset.UtcNow.AddSeconds(20);
