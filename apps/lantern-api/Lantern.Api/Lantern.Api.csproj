@@ -5,4 +5,10 @@
     <UserSecretsId>lantern-api</UserSecretsId>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- Pulled in now (ahead of Task 4's JwtBearer wiring) for the JsonClaimValueTypes constant,
+         which FirebaseTokenRules and its tests use to describe how the firebase claim arrives. -->
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
+  </ItemGroup>
+
 </Project>
