@@ -5,6 +5,18 @@ param environmentName string
 
 param location string = resourceGroup().location
 
+@description('Storage account name. Global, 3 to 24 lowercase letters and digits. Set in the .bicepparam file.')
+@minLength(3)
+@maxLength(24)
+param storageAccountName string
+
+@description('Table names. The API reads `parents` by default, so it must be listed. Add only; a renamed table is a new, empty one.')
+param tables array
+
+param containers array
+
+param queues array
+
 @description('Firebase project id. Public, not a secret: the API validates Firebase tokens against it.')
 param firebaseProjectId string
 
@@ -24,26 +36,10 @@ param tags object = {
 
 var placeholderImage = 'mcr.microsoft.com/k8se/quickstart:latest'
 
-// Storage and Key Vault names are global, so they carry a suffix derived from the resource
-// group. It is stable: redeploying to the same group gives the same names.
+// The Key Vault name is global, so it carries a suffix derived from the resource group. It is
+// stable: redeploying to the same group gives the same name.
 var suffix = take(uniqueString(resourceGroup().id), 5)
 var namePrefix = 'lantern-${environmentName}'
-
-// Add to these lists; never rename or remove. A renamed table, container or queue is a new,
-// empty one.
-var parentsTable = 'parents'
-var tables = [
-  parentsTable
-]
-var containers = [
-  'raw'
-  'ncert'
-]
-var queues = [
-  'lantern-events'
-  'lantern-events-poison'
-  'lantern-events-parked'
-]
 
 module identity 'modules/identity.bicep' = {
   name: 'identity'
@@ -66,7 +62,7 @@ module monitoring 'modules/monitoring.bicep' = {
 module storage 'modules/storage.bicep' = {
   name: 'storage'
   params: {
-    name: 'stlantern${environmentName}${suffix}'
+    name: storageAccountName
     location: location
     tags: tags
     appPrincipalId: identity.outputs.principalId
@@ -101,7 +97,6 @@ module containerApp 'modules/containerapp.bicep' = {
     enableProbes: containerImage != placeholderImage
     firebaseProjectId: firebaseProjectId
     tableEndpoint: storage.outputs.tableEndpoint
-    parentsTable: parentsTable
     securityKeySecretUri: wireSecurityKey ? keyVault.outputs.securityKeySecretUri : ''
   }
 }

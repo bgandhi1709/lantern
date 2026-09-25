@@ -1,21 +1,21 @@
 # Lantern infrastructure
 
-Bicep for the Lantern API. One resource group per environment; only `dev` exists
-(`rg-lantern-dev`, Central India). The resource group is created outside this template.
+Bicep for the Lantern API. Parameters for the `uat` environment are in `params/lantern.uat.bicepparam`.
+It deploys into the existing `rg-lantern-dev` (Central India). The resource group is created outside this template.
 
 ## What it creates
 
-| Resource | Name (dev) | Why |
+| Resource | Name (uat) | Why |
 |---|---|---|
-| User-assigned managed identity | `id-lantern-dev` | The API signs in to Azure with it (`DefaultAzureCredential`) |
-| Log Analytics workspace | `log-lantern-dev` | Console logs from the Container App |
-| Storage account | `stlanterndev<suffix>` | Shared keys off, TLS 1.2, no public blob access |
+| User-assigned managed identity | `id-lantern-uat` | The API signs in to Azure with it (`DefaultAzureCredential`) |
+| Log Analytics workspace | `log-lantern-uat` | Console logs from the Container App |
+| Storage account | `stlanternuat55fkc` | Shared keys off, TLS 1.2, no public blob access |
 | Table `parents` | | The API's only table (registration data) |
 | Blob containers `raw`, `ncert` | | Private. Not used by the API yet; reserved for the NCERT build output |
 | Queues `lantern-events`, `-poison`, `-parked` | | Not used by the API yet |
-| Key Vault | `kv-lantern-dev-<suffix>` | Holds `Security:Key`. RBAC, soft delete, purge protection |
-| Container Apps environment | `cae-lantern-dev` | Consumption only, no fixed charge |
-| Container App | `ca-lantern-dev` | The API. 0.25 vCPU, 0.5 GiB, 0 to 1 replica |
+| Key Vault | `kv-lantern-uat-<suffix>` | Holds `Security:Key`. RBAC, soft delete, purge protection |
+| Container Apps environment | `cae-lantern-uat` | Consumption only, no fixed charge |
+| Container App | `ca-lantern-uat` | The API. 0.25 vCPU, 0.5 GiB, 0 to 1 replica |
 
 The identity gets Storage Table, Blob and Queue Data Contributor on the account and
 Key Vault Secrets User on the vault. `<suffix>` comes from the resource group id and is stable.
@@ -31,20 +31,21 @@ wrong or missing stop the app at start-up.
 |---|---|
 | `Firebase__ProjectId` | `firebaseProjectId` parameter |
 | `Storage__TableEndpoint` | Storage account output |
-| `Storage__ParentsTable` | `parents` |
 | `Security__Key` | Key Vault secret `security-key` (see below) |
 | `AZURE_CLIENT_ID` | Identity client id |
 
+Table, container, queue and storage account names are plain values in `params/lantern.uat.bicepparam`,
+not secrets and not app settings. The API's default table name, `parents`, must stay in the `tables` list.
 `Storage__ConnectionString` is never set in Azure. It is for Azurite only.
 
 ## Deploy
 
 ```bash
-az deployment group what-if -g rg-lantern-dev -f infra/main.bicep -p infra/params/dev.bicepparam
-az deployment group create  -g rg-lantern-dev -f infra/main.bicep -p infra/params/dev.bicepparam
+az deployment group what-if -g rg-lantern-dev -f infra/main.bicep -p infra/params/lantern.uat.bicepparam
+az deployment group create  -g rg-lantern-dev -f infra/main.bicep -p infra/params/lantern.uat.bicepparam
 ```
 
-Environment variables read by `params/dev.bicepparam`:
+Environment variables read by `params/lantern.uat.bicepparam`:
 
 | Variable | Default | Meaning |
 |---|---|---|

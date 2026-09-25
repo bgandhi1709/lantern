@@ -23,7 +23,6 @@ param enableProbes bool
 param firebaseProjectId string
 
 param tableEndpoint string
-param parentsTable string
 
 @description('Key Vault secret URI for Security:Key. Empty until the secret exists.')
 param securityKeySecretUri string = ''
@@ -35,7 +34,8 @@ resource workspace 'Microsoft.OperationalInsights/workspaces@2023-09-01' existin
 var wireSecurityKey = !empty(securityKeySecretUri)
 
 // Names follow the API's configuration sections (Firebase, Storage, Security), with no prefix.
-// A wrong name fails the options validation and the app refuses to start.
+// A wrong name fails the options validation and the app refuses to start. The table name is not
+// set: the API's default, `parents`, is created in the storage module from the .bicepparam list.
 var baseEnv = [
   {
     name: 'AZURE_CLIENT_ID'
@@ -52,10 +52,6 @@ var baseEnv = [
   {
     name: 'Storage__TableEndpoint'
     value: tableEndpoint
-  }
-  {
-    name: 'Storage__ParentsTable'
-    value: parentsTable
   }
 ]
 
