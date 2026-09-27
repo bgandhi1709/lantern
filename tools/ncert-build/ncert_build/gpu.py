@@ -1,7 +1,8 @@
 """Keeps a days-long GPU run at a safe temperature, and inside its hours.
 
-The run only uses the GPU inside LANTERN_RUN_WINDOW (default 20:00-08:00 India time): outside it,
-the next call waits until the window opens again, so the PC is free during the day.
+The run only uses the GPU inside LANTERN_RUN_WINDOW, empty by default so it runs any hour. Set it
+(e.g. "20:00-08:00") to free the PC for part of the day again: outside the window, the next call
+waits until it opens.
 
 Before each model call the GPU's temperature is read with nvidia-smi (WSL sees the Windows
 driver). Above PAUSE_AT the run waits until the card has cooled to RESUME_AT. The RTX 3060 starts
@@ -22,7 +23,7 @@ PAUSE_AT = int(os.environ.get("LANTERN_GPU_PAUSE_AT", "84"))
 RESUME_AT = int(os.environ.get("LANTERN_GPU_RESUME_AT", "76"))
 REST_SECONDS = float(os.environ.get("LANTERN_GPU_REST", "1.0"))
 CHECK_EVERY = 20.0
-RUN_WINDOW = os.environ.get("LANTERN_RUN_WINDOW", "20:00-08:00")  # "" runs at any hour
+RUN_WINDOW = os.environ.get("LANTERN_RUN_WINDOW", "")  # e.g. "20:00-08:00" to free the PC part of the day
 ZONE = ZoneInfo(os.environ.get("LANTERN_RUN_ZONE", "Asia/Kolkata"))
 # A one-off pass to use the GPU outside the window until then, e.g. "2026-09-25T20:00" (India time)
 # on a day nobody needs the PC.

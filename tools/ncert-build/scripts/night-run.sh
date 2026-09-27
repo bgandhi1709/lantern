@@ -6,8 +6,8 @@
 #   setsid nohup scripts/night-run.sh [--shutdown] > "$LANTERN_DATA_DIR/logs/night-$(date +%Y%m%d-%H%M).log" 2>&1 &
 #
 # --shutdown: Windows shuts down 5 minutes after the last class (cancel with `shutdown /a`).
-# The GPU pauses above 84 °C until it's back at 76 °C (LANTERN_GPU_PAUSE_AT / _RESUME_AT), and
-# only works 20:00-08:00 India time (LANTERN_RUN_WINDOW, "" for any hour); outside it the job waits.
+# The GPU pauses above 84 °C until it's back at 76 °C (LANTERN_GPU_PAUSE_AT / _RESUME_AT), and runs
+# any hour by default; set LANTERN_RUN_WINDOW (e.g. "20:00-08:00") to free the PC part of the day.
 set -u
 cd "$(dirname "$0")/.."
 export PYTHONUNBUFFERED=1

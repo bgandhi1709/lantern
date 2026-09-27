@@ -91,7 +91,9 @@ language) for regional editions.
   sheet, marked by hand. Use the instruct build: plain `qwen3-vl:8b` reasons before every answer
   even with thinking off, about 8 times slower.
 - **Long GPU runs pause when the card is hot**: above 84 °C until 76 °C (`LANTERN_GPU_PAUSE_AT`,
-  `LANTERN_GPU_RESUME_AT`). `scripts/night-run.sh --shutdown` runs everything class by class and
-  shuts Windows down at the end; `--shutdown` also works on any single stage.
+  `LANTERN_GPU_RESUME_AT`). They run any hour by default; set `LANTERN_RUN_WINDOW` (e.g.
+  `20:00-08:00`) to free the PC for part of the day instead. `scripts/night-run.sh --shutdown` runs
+  everything class by class and shuts Windows down at the end; `--shutdown` also works on any
+  single stage.
 - **`title_guess` is a hint.** The draft model and the front matter give the real titles.
 - **Younger classes have no numbered headings**, so their chapters are split one section per page.
