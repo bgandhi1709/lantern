@@ -82,8 +82,10 @@ jobs:
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
       # Only ever swaps the image and port; infra.yml owns every other setting and keeps this
-      # image and port on its own next deploy (keep-running-image.sh).
+      # image and port on its own next deploy (keep-running-image.sh). Target port is ingress
+      # config, not a container-update argument, so it's a separate command.
       - run: |
           az containerapp update -g rg-lantern-dev -n ca-lantern-uat \
-            --image "ghcr.io/${{ github.repository_owner }}/lantern-api:${{ needs.image.outputs.tag }}" \
+            --image "ghcr.io/${{ github.repository_owner }}/lantern-api:${{ needs.image.outputs.tag }}"
+          az containerapp ingress update -g rg-lantern-dev -n ca-lantern-uat \
             --target-port 8080
