@@ -6,7 +6,8 @@ using Lantern.Api.Models;
 namespace Lantern.Api.Repository;
 
 // One partition per mother, so the profile and every child commit in one atomic batch.
-internal sealed class TableParentRepository(TableClient table) : IParentRepository
+// createTable is for Azurite only: in Azure the Bicep owns the table, and the API identity may touch entities but not create tables.
+internal sealed class TableParentRepository(TableClient table, bool createTable) : IParentRepository
 {
     internal const string ProfileRowKey = "profile";
     internal const string ChildRowPrefix = "child_";
@@ -82,7 +83,7 @@ internal sealed class TableParentRepository(TableClient table) : IParentReposito
 
     private async Task EnsureTableAsync(CancellationToken cancellationToken)
     {
-        if (this.tableEnsured)
+        if (!createTable || this.tableEnsured)
         {
             return;
         }

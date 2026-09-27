@@ -13,5 +13,5 @@ FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 COPY --from=build /out .
 USER $APP_UID
-EXPOSE 8443
+EXPOSE 8080 8443
 ENTRYPOINT ["dotnet", "Lantern.Api.dll"]

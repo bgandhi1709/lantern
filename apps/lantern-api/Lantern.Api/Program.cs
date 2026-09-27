@@ -45,7 +45,14 @@ builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<KeyMaterial>();
 builder.Services.AddSingleton<IUidHasher>(serviceProvider => serviceProvider.GetRequiredService<KeyMaterial>());
 builder.Services.AddSingleton<IFieldCipher, FieldCipher>();
-builder.Services.AddSingleton<IParentRepository, TableParentRepository>();
+builder.Services.AddSingleton<IParentRepository>(serviceProvider =>
+    new TableParentRepository(
+        serviceProvider.GetRequiredService<TableClient>(),
+        createTable: !string.IsNullOrWhiteSpace(
+            serviceProvider.GetRequiredService<IOptions<StorageOptions>>().Value.ConnectionString
+        )
+    )
+);
 builder.Services.AddScoped<IRegistrationService, RegistrationService>();
 
 builder.Services.AddFirebaseAuthentication();

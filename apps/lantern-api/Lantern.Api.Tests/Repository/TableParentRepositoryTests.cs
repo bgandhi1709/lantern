@@ -10,7 +10,8 @@ namespace Lantern.Api.Tests.Repository;
 public sealed class TableParentRepositoryTests(AzuriteFixture azurite)
 {
     private readonly TableParentRepository repository = new(
-        new TableServiceClient(azurite.ConnectionString).GetTableClient($"parents{Guid.NewGuid():N}")
+        new TableServiceClient(azurite.ConnectionString).GetTableClient($"parents{Guid.NewGuid():N}"),
+        createTable: true
     );
 
     [Fact]
@@ -84,6 +85,38 @@ public sealed class TableParentRepositoryTests(AzuriteFixture azurite)
 
         Assert.Equal(profile.ConsentAt, stored!.Profile.ConsentAt);
         Assert.Equal(TimeSpan.Zero, stored.Profile.ConsentAt.Offset);
+    }
+
+    [Fact]
+    public async Task WithoutCreateTable_MissingTable_FailsAndIsNotCreated()
+    {
+        var name = $"parents{Guid.NewGuid():N}";
+        var service = new TableServiceClient(azurite.ConnectionString);
+        var azureStyle = new TableParentRepository(service.GetTableClient(name), createTable: false);
+
+        var register = await Assert.ThrowsAsync<Azure.RequestFailedException>(() =>
+            azureStyle.TryRegisterAsync(NewProfile(NewKey()), [NewChild(0)], CancellationToken.None)
+        );
+        var read = await Assert.ThrowsAsync<Azure.RequestFailedException>(() =>
+            azureStyle.GetAsync(NewKey(), CancellationToken.None)
+        );
+
+        Assert.Equal(404, register.Status);
+        Assert.Equal(404, read.Status);
+        Assert.DoesNotContain(service.Query(table => table.Name == name), _ => true);
+    }
+
+    [Fact]
+    public async Task WithoutCreateTable_ExistingTable_Works()
+    {
+        var name = $"parents{Guid.NewGuid():N}";
+        var service = new TableServiceClient(azurite.ConnectionString);
+        await service.CreateTableAsync(name);
+        var azureStyle = new TableParentRepository(service.GetTableClient(name), createTable: false);
+        var pk = NewKey();
+
+        Assert.True(await azureStyle.TryRegisterAsync(NewProfile(pk), [NewChild(0)], CancellationToken.None));
+        Assert.Single((await azureStyle.GetAsync(pk, CancellationToken.None))!.Children);
     }
 
     private static string NewKey() => Guid.NewGuid().ToString("N");
