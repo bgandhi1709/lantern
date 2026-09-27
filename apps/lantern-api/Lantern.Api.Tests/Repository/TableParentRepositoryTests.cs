@@ -94,7 +94,9 @@ public sealed class TableParentRepositoryTests(AzuriteFixture azurite)
         var service = new TableServiceClient(azurite.ConnectionString);
         var azureStyle = new TableParentRepository(service.GetTableClient(name), createTable: false);
 
-        var register = await Assert.ThrowsAsync<Azure.RequestFailedException>(() =>
+        // A batch submission against a missing table fails as a TableTransactionFailedException,
+        // not the plain RequestFailedException a single-entity call would throw.
+        var register = await Assert.ThrowsAsync<Azure.Data.Tables.TableTransactionFailedException>(() =>
             azureStyle.TryRegisterAsync(NewProfile(NewKey()), [NewChild(0)], CancellationToken.None)
         );
         var read = await Assert.ThrowsAsync<Azure.RequestFailedException>(() =>

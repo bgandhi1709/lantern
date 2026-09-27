@@ -8,7 +8,9 @@ namespace Lantern.Api.Middleware;
 
 internal sealed class ExceptionMiddleware(RequestDelegate next, ILogger<ExceptionMiddleware> logger)
 {
-    // Responses carry fixed text only: exception messages can hold account names and request ids.
+    // Every response carries fixed text except InvalidRegistrationException's, whose message is
+    // always static, developer-authored validation text meant for the caller. Anything else
+    // (storage, tokens) can hold account names or request ids and must never reach the response.
     public async Task InvokeAsync(HttpContext context)
     {
         try
