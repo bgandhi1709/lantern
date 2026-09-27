@@ -1,0 +1,91 @@
+name: API - Build, Test and Release
+
+# Runs only when the API changes, so an infra-only change never triggers it.
+on:
+  pull_request:
+    paths:
+      - apps/lantern-api/**
+      - .github/workflows/api.yml
+  push:
+    branches: [main]
+    paths:
+      - apps/lantern-api/**
+      - .github/workflows/api.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One release at a time; never cancel one that is running.
+concurrency:
+  group: api-uat
+  cancel-in-progress: false
+
+jobs:
+  build-test:
+    name: Build and test
+    # Pull requests from forks get no Azure token and should not push images.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+      - run: npm install -g azurite@3
+      - run: dotnet build Lantern.slnx -c Release
+      - run: dotnet test --solution Lantern.slnx -c Release --no-build
+
+  image:
+    name: Build image
+    needs: build-test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      tag: ${{ steps.tag.outputs.value }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - id: tag
+        run: echo "value=sha-${GITHUB_SHA::12}" >> "$GITHUB_OUTPUT"
+      - run: docker build -f apps/lantern-api/Dockerfile -t "ghcr.io/${{ github.repository_owner }}/lantern-api:${{ steps.tag.outputs.value }}" .
+      # A push to main publishes automatically; workflow_dispatch lets a branch be deployed to
+      # uat manually for testing before its PR merges. GHCR inherits the repository's (public)
+      # visibility on first push, so the Container App needs no pull credential.
+      - if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        run: docker push "ghcr.io/${{ github.repository_owner }}/lantern-api:${{ steps.tag.outputs.value }}"
+
+  deploy:
+    name: Deploy - uat
+    needs: image
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    # Required reviewers on this environment gate the deployment.
+    environment: uat
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: azure/login@7184910d9eb2b1c5e48f7073824a90609bb9b6d6 # v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      # Only ever swaps the image and port; infra.yml owns every other setting and keeps this
+      # image and port on its own next deploy (keep-running-image.sh). Target port is ingress
+      # config, not a container-update argument, so it's a separate command.
+      - run: |
+          az containerapp update -g rg-lantern-dev -n ca-lantern-uat \
+            --image "ghcr.io/${{ github.repository_owner }}/lantern-api:${{ needs.image.outputs.tag }}"
+          az containerapp ingress update -g rg-lantern-dev -n ca-lantern-uat \
+            --target-port 8080

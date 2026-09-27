@@ -12,12 +12,20 @@ param containerImage string = 'mcr.microsoft.com/k8se/quickstart:latest'
 @description('Port the image listens on: 80 for the placeholder, 8080 for the .NET SDK container image.')
 param containerPort int = 80
 
+@description('Firebase project the API accepts ID tokens from. Not a secret: it is in every token and every mobile app.')
+param firebaseProjectId string
+
 var location = resourceGroup().location
 var name = 'lantern-${environmentName}'
 
 // Created once by bootstrap.sh with its roles. The template only reads it.
 resource identity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' existing = {
   name: 'id-${name}'
+}
+
+// Created once by bootstrap.sh, which also writes the security-key secret. The template only reads it.
+resource vault 'Microsoft.KeyVault/vaults@2023-07-01' existing = {
+  name: 'kv-${name}'
 }
 
 resource logs 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
@@ -83,12 +91,26 @@ resource app 'Microsoft.App/containerApps@2025-01-01' = {
         external: true
         targetPort: containerPort
       }
+      secrets: [
+        {
+          name: 'security-key'
+          keyVaultUrl: '${vault.properties.vaultUri}secrets/security-key'
+          identity: identity.id
+        }
+      ]
     }
     template: {
       containers: [
         {
           name: 'lantern-api'
           image: containerImage
+          env: [
+            // The user-assigned identity is ambiguous to DefaultAzureCredential without this.
+            { name: 'AZURE_CLIENT_ID', value: identity.properties.clientId }
+            { name: 'Firebase__ProjectId', value: firebaseProjectId }
+            { name: 'Storage__TableEndpoint', value: storage.properties.primaryEndpoints.table }
+            { name: 'Security__Key', secretRef: 'security-key' }
+          ]
           resources: {
             cpu: json('0.25')
             memory: '0.5Gi'

@@ -1,0 +1,8 @@
+.git
+.superpowers
+dist
+**/bin
+**/obj
+deploy/local/certs
+tools
+docs

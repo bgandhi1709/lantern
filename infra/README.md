@@ -2,7 +2,9 @@
 
 Base infrastructure for Lantern, environment `uat`, deployed into the existing `rg-lantern-dev`
 (Central India). One file, `main.bicep`; the environment is in `params/lantern.uat.bicepparam`.
-It creates an empty Container App on a placeholder image. The API is deployed separately, later.
+It creates the Container App fully wired (Firebase project id, storage table endpoint, the
+`security-key` secret from Key Vault) but on a placeholder image; the API release swaps in the
+real image and port (`.github/workflows/api.yml`), nothing else.
 
 ## 1. Bootstrap, once
 
@@ -27,11 +29,14 @@ az deployment group create  -g rg-lantern-dev -f infra/main.bicep -p infra/param
 
 The deploying account needs Contributor only. It creates the storage account `lanternuat` with the table
 `parents`, a Log Analytics workspace, and the Container Apps environment and app (0 to 1 replica, the
-identity attached). All names come from `environmentName`. The template reads the identity by name.
-Add tables, never rename one.
+identity attached). All names come from `environmentName`. The template reads the identity and the
+Key Vault by name and wires the app's settings: `Firebase__ProjectId` (a param, not a secret),
+`Storage__TableEndpoint` (read from the storage account), `Security__Key` (a Key Vault secret
+reference), and `AZURE_CLIENT_ID` (the identity's client id, needed since `DefaultAzureCredential`
+can't otherwise tell which user-assigned identity to use). Add tables, never rename one.
 
-The API release, not this template, sets the real image and its settings. Until then the params file
-uses a placeholder image on port 80. Later deployments of this template read the running image and port
+The API release, not this template, sets the real image and port. Until then the params file uses a
+placeholder image on port 80. Later deployments of this template read the running image and port
 first (`keep-running-image.sh`), so they never put the placeholder back.
 
 ## 3. GitHub Actions
@@ -49,5 +54,4 @@ No secret is stored. The variables are `AZURE_CLIENT_ID`, `AZURE_TENANT_ID` and 
 
 ## Not here yet
 
-The API itself (image build, settings, `Security__Key` from Key Vault, Firebase), blob containers and
-queues (add when the API uses them), Foundry, a prod environment.
+Blob containers and queues (add when the API uses them), Foundry, a prod environment.
