@@ -141,3 +141,33 @@ The next build is the NCERT layer and plain **text Q&A**, ahead of the rest of t
 - Every answer gets **👍 / 👎**. The ratings measure quality and tune the routing thresholds.
 
 Voice, photos, book discovery and the other pieces from D2 come later, on top of this layer.
+
+## 2026-09-28: super context (issue #41)
+
+### D17. Earlier-concepts scope: same book only, never cross book boundaries
+The super-context earlier-concepts index only looks at prior chapters of the *same* book. A
+chapter never pulls context from a different book, even one in the same class (e.g. an EVS
+chapter never informs a Math chapter). This keeps the prerequisite chain matching how a single
+subject actually teaches, and avoids false-concept bleed between unrelated subjects. Cross-subject
+linking is a concept-graph problem (D15), not a bundle-context problem.
+
+### D18. A/B test book: bejm1 (NCERT Class 2, Joyful Mathematics, English)
+Class 1 (`aejm1`) is excluded as the super-context A/B subject: the ncert-refine skill always
+leaves `prerequisites` empty for Class 1, so it can't exercise the earlier-concepts index at all.
+`bejm1` is the first Class 2+ book alphabetically, same subject line as the already-piloted
+`aejm1`, and already fully bundled (11 chapters) — so the A/B test only needs a few prior chapters
+refined before the target chapter, not a fresh pipeline run.
+
+### D19. Known gap: quote-vs-pick validation stays inside the closed-8B rule
+Python checks that a picked earlier-concept quote appears verbatim (whitespace-normalised) in that
+concept's source chapter text. It cannot check that the *pick itself* — which earlier concepts are
+relevant to the current chapter — is correct; that judgment stays with the 8B model, bounded only
+by "quote or don't get credit," not by a second independent check. This is accepted as a known
+limitation rather than solved now: revisit only if the A/B test (D18, issue #41 step 5) shows it
+producing bad context, not preemptively.
+
+### D20. Skill invocation: super-context bundle path as an explicit argument
+`ncert-refine` takes the `bundles-v2/` path as an explicit argument when super context is in play,
+rather than SKILL.md being changed to auto-discover a sibling bundle-v2 file by convention. This
+keeps the skill's existing contract (and its Class 1 behavior, D-prerequisite handling) unchanged
+for every caller that doesn't pass the new argument.
