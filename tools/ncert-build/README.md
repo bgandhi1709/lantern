@@ -76,6 +76,29 @@ The World Around Us, Science, Social Science). That is 44 books and 465 chapters
 Add `--all-subjects` for arts, PE and vocational books, and `--medium Gujarati` (or another
 language) for regional editions.
 
+## Super context (#41, D17–D20)
+
+`bundle` (v1) gives Claude no view of a book's earlier chapters, so `prerequisites` in refine-v1
+output is almost always empty. `super_context.py` and `bundle_v2.py` add a second, additive stage
+that builds a graded, code-checked "Super context" section — earlier concepts from the *same book
+only* (D17), each with a quote from the *current* chapter's own text, verified by Python
+(`quote_found`, exact match, whitespace-normalised only) before Claude ever sees it. The pick
+itself — whether the quote genuinely supports linking that earlier concept — is *not* verified by
+code (D19, a known, accepted gap); this is why "the text wins" still applies to super context the
+same way it applies to the draft hints.
+
+- `super_context.py`: `earlier_concepts`, `first_appearance_index`, `cap_to_budget` (size-capped
+  to 25% of the current chapter's own tokens), `quote_found`, and `ask_which_earlier_concepts` —
+  the closed 8B question ("which earlier concepts does this chapter's text use, quote the line").
+- `bundle_v2.py`: splices a "Super context" section into `bundle.render()`'s v1 markdown, between
+  "Draft concepts" and "Chapter text". Everything from "Chapter text" onward is byte-identical to
+  v1 — bundle v2 is purely additive, per the hard constraint that `bundle.py` and `bundles/` stay
+  untouched. Output path: `bundles-v2/<book>/<chapter>.md` (not yet wired into the CLI — call
+  `bundle_v2.render()`/`.write()` directly, or see the worked example in issue #41).
+- Status: library-level, tested (fixtures + one real end-to-end run against `bejm1` using the real
+  local `qwen3:8b`). Not yet a CLI stage — no `ncert-build bundle-v2` command exists yet, and the
+  A/B test plan (issue #41 step 5) hasn't been run at scale.
+
 ## Known limits
 
 - **Maths layout is flattened.** Superscripts, fractions and roots lose their position:
