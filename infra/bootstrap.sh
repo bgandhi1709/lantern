@@ -41,6 +41,10 @@ assign "Key Vault Secrets User" "$VAULT_ID" "$PRINCIPAL_ID" ServicePrincipal
 ME=$(az ad signed-in-user show --query id -o tsv)
 assign "Key Vault Secrets Officer" "$VAULT_ID" "$ME" User
 
+# So `ncert-build upload` can write to the ncert blob container once it exists. On the resource
+# group like the Table role above, since the storage account isn't created yet either.
+assign "Storage Blob Data Contributor" "$RG_ID" "$ME" User
+
 # Create the secret only if it is missing. Overwriting or rotating it makes every existing
 # registration unreadable.
 if az keyvault secret show --vault-name "$VAULT" -n "$SECRET" -o none 2>/dev/null; then

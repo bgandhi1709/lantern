@@ -59,6 +59,19 @@ resource storage 'Microsoft.Storage/storageAccounts@2023-05-01' = {
       name: table
     }]
   }
+
+  // Private container for the refined NCERT corpus (ncert-build's output). Read by nothing yet —
+  // the API's read path is a later PR; this one only receives the upload.
+  resource blobService 'blobServices' = {
+    name: 'default'
+
+    resource ncertContainer 'containers' = {
+      name: 'ncert'
+      properties: {
+        publicAccess: 'None'
+      }
+    }
+  }
 }
 
 resource environment 'Microsoft.App/managedEnvironments@2025-01-01' = {
