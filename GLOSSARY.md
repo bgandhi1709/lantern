@@ -19,7 +19,7 @@ A person in a Family who attends school and whose learning the Parent supports. 
 _Avoid_: Kid, student, learner
 
 **Class**:
-A Child's school year, from 1 to 10 for now (for example "Class 6"), as in CBSE and NCERT. Classes 11 and 12 may come later.
+A Child's school year, from 1 to 10 for now (for example "Class 6"), as in CBSE and NCERT. Classes 11 and 12 may come later. Only the Parent changes it; Lantern never moves a Child up on its own.
 _Avoid_: Grade, standard, level
 
 **Region**:
@@ -72,6 +72,18 @@ _Avoid_: FAQ, flashcard
 What a Parent asks Lantern about their Child's learning, in their own words.
 _Avoid_: Query, prompt
 
+**Scrubbed Question**:
+A Question with all personal information removed, such as names, School, Region and contact details. It is the only form of a Question that is stored; the raw Question never is.
+_Avoid_: Anonymised question, sanitised question
+
+**History**:
+The lasting record of a Child's Scrubbed Questions, Tests and Class changes, kept across Class changes for as long as the Child is in Lantern. Each entry carries the Class the Child was in at the time.
+_Avoid_: Log, activity, profile
+
+**Class space**:
+One Class's share of a Child's History and files, created when the Child starts that Class, at registration or when the Parent moves the Child to a new Class. Every Parent and agent in the Family sees the same Class spaces.
+_Avoid_: Year folder, term, session
+
 **Answer**:
 Lantern's reply to a Question, addressed to the Parent and written for the Child's Class.
 _Avoid_: Response, result
@@ -79,3 +91,9 @@ _Avoid_: Response, result
 **Stage**:
 A band of Classes from NCF-2023: 1–2, 3–5, 6–8 or 9–10. Internal term, never shown to Parents; it decides which stored Answers a Child can be given.
 _Avoid_: Level, band, grade band
+
+### Preparing for school tests
+
+**Test**:
+A small school test a Child is preparing for. The Parent names the Chapters of a Subject the test covers, and Lantern helps prepare the Child from them. It replaces photographing book pages and asking a general chatbot.
+_Avoid_: Exam, quiz, assessment
