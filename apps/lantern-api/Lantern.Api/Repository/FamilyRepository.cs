@@ -1,7 +1,9 @@
 using System.Globalization;
 using Azure;
 using Azure.Data.Tables;
+using Lantern.Api.Exceptions;
 using Lantern.Api.Models;
+using Mapster;
 
 namespace Lantern.Api.Repository;
 
@@ -11,13 +13,13 @@ internal sealed class FamilyRepository(TableClient parents, TableClient families
     : IFamilyRepository
 {
     internal const string ProfileRowKey = "profile";
-    internal const string FamilyRowKey = "family";
+    private const string FamilyRowKey = "family";
     private const string ChildRowPrefix = "child_";
     private const string ParentRowPrefix = "parent_";
 
     private volatile bool _tablesEnsured;
 
-    public async Task<bool> TryRegisterAsync(
+    public async Task RegisterAsync(
         ParentProfile parent,
         FamilyRecord family,
         IReadOnlyList<ChildRecord> children,
@@ -35,27 +37,32 @@ internal sealed class FamilyRepository(TableClient parents, TableClient families
         );
         if (existing.HasValue)
         {
-            return false;
+            throw new AlreadyRegisteredException();
         }
 
         var familyPartition = FamilyPartition(family.FamilyId);
-        var actions = new List<TableTransactionAction>(children.Count + 2)
+        var membership = new TableEntity(familyPartition, ParentRowPrefix + parent.PartitionKey)
         {
-            new(TableTransactionActionType.Add, ToEntity(familyPartition, family)),
-            new(TableTransactionActionType.Add, ToMembership(familyPartition, parent)),
+            ["ParentId"] = parent.ParentId,
+            ["CreatedAt"] = parent.CreatedAt,
         };
-        actions.AddRange(
-            children.Select(child =>
-                new TableTransactionAction(TableTransactionActionType.Add, ToEntity(familyPartition, child))
-            )
-        );
+        List<TableTransactionAction> actions =
+        [
+            new(TableTransactionActionType.Add, ToEntity(family, familyPartition, FamilyRowKey)),
+            new(TableTransactionActionType.Add, membership),
+            .. children.Select(child =>
+                new TableTransactionAction(
+                    TableTransactionActionType.Add,
+                    ToEntity(child, familyPartition, ChildRowKey(child.ChildId))
+                )
+            ),
+        ];
 
         await families.SubmitTransactionAsync(actions, cancellationToken);
 
         try
         {
-            await parents.AddEntityAsync(ToEntity(parent), cancellationToken);
-            return true;
+            await parents.AddEntityAsync(ToEntity(parent, parent.PartitionKey, ProfileRowKey), cancellationToken);
         }
         catch (RequestFailedException ex) when (ex.Status == 409)
         {
@@ -68,7 +75,7 @@ internal sealed class FamilyRepository(TableClient parents, TableClient families
                 cancellationToken
             );
 
-            return false;
+            throw new AlreadyRegisteredException();
         }
     }
 
@@ -89,7 +96,7 @@ internal sealed class FamilyRepository(TableClient parents, TableClient families
             return null;
         }
 
-        var parent = ToParent(profile);
+        var parent = profile.Adapt<ParentProfile>();
         var familyPartition = FamilyPartition(parent.FamilyId);
         FamilyRecord? family = null;
         var children = new List<ChildRecord>();
@@ -103,11 +110,11 @@ internal sealed class FamilyRepository(TableClient parents, TableClient families
         {
             if (entity.RowKey == FamilyRowKey)
             {
-                family = ToFamily(entity);
+                family = entity.Adapt<FamilyRecord>();
             }
             else if (entity.RowKey.StartsWith(ChildRowPrefix, StringComparison.Ordinal))
             {
-                children.Add(ToChild(entity));
+                children.Add(entity.Adapt<ChildRecord>());
             }
         }
 
@@ -133,84 +140,18 @@ internal sealed class FamilyRepository(TableClient parents, TableClient families
         _tablesEnsured = true;
     }
 
-    private static TableEntity ToEntity(ParentProfile parent) =>
-        new(parent.PartitionKey, ProfileRowKey)
-        {
-            ["ParentId"] = parent.ParentId.ToString("D"),
-            ["FamilyId"] = parent.FamilyId.ToString("D"),
-            ["NameCipher"] = parent.NameCipher,
-            ["EmailCipher"] = parent.EmailCipher,
-            ["Language"] = parent.Language,
-            ["ConsentVersion"] = parent.ConsentVersion,
-            ["ConsentAt"] = parent.ConsentAt,
-            ["CreatedAt"] = parent.CreatedAt,
-        };
-
-    private static TableEntity ToEntity(string familyPartition, FamilyRecord family) =>
-        new(familyPartition, FamilyRowKey)
-        {
-            ["Region"] = family.Region,
-            ["WrappedFieldKey"] = family.WrappedFieldKey,
-            ["KeyScheme"] = family.KeyScheme,
-            ["CreatedAt"] = family.CreatedAt,
-        };
-
-    private static TableEntity ToMembership(string familyPartition, ParentProfile parent) =>
-        new(familyPartition, ParentRowPrefix + parent.PartitionKey)
-        {
-            ["ParentId"] = parent.ParentId.ToString("D"),
-            ["CreatedAt"] = parent.CreatedAt,
-        };
-
-    private static TableEntity ToEntity(string familyPartition, ChildRecord child)
+    private static TableEntity ToEntity<T>(T model, string partitionKey, string rowKey)
+        where T : notnull
     {
-        var entity = new TableEntity(familyPartition, ChildRowKey(child.ChildId))
+        var entity = new TableEntity(partitionKey, rowKey);
+        foreach (var (name, value) in model.Adapt<Dictionary<string, object?>>())
         {
-            ["NameCipher"] = child.NameCipher,
-            ["ClassLevel"] = child.ClassLevel,
-            ["BirthYear"] = child.BirthYear,
-            ["Position"] = child.Position,
-            ["CreatedAt"] = child.CreatedAt,
-        };
-
-        if (child.SchoolCipher is not null)
-        {
-            entity["SchoolCipher"] = child.SchoolCipher;
+            if (value is not null)
+            {
+                entity[name] = value is Enum ? value.ToString() : value;
+            }
         }
 
         return entity;
     }
-
-    private static ParentProfile ToParent(TableEntity entity) =>
-        new(
-            entity.PartitionKey,
-            Guid.Parse(entity.GetString("ParentId")),
-            Guid.Parse(entity.GetString("FamilyId")),
-            entity.GetString("NameCipher"),
-            entity.GetString("EmailCipher"),
-            entity.GetString("Language"),
-            entity.GetString("ConsentVersion"),
-            entity.GetDateTimeOffset("ConsentAt")!.Value,
-            entity.GetDateTimeOffset("CreatedAt")!.Value
-        );
-
-    private static FamilyRecord ToFamily(TableEntity entity) =>
-        new(
-            Guid.Parse(entity.PartitionKey),
-            entity.GetString("Region"),
-            entity.GetString("WrappedFieldKey"),
-            entity.GetString("KeyScheme"),
-            entity.GetDateTimeOffset("CreatedAt")!.Value
-        );
-
-    private static ChildRecord ToChild(TableEntity entity) =>
-        new(
-            Guid.ParseExact(entity.RowKey[ChildRowPrefix.Length..], "N"),
-            entity.GetString("NameCipher"),
-            entity.GetString("SchoolCipher"),
-            entity.GetInt32("ClassLevel")!.Value,
-            entity.GetInt32("BirthYear")!.Value,
-            entity.GetInt32("Position")!.Value,
-            entity.GetDateTimeOffset("CreatedAt")!.Value
-        );
 }

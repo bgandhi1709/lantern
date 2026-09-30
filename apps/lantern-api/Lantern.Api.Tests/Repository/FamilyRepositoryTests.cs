@@ -1,4 +1,5 @@
 using Azure.Data.Tables;
+using Lantern.Api.Exceptions;
 using Lantern.Api.Models;
 using Lantern.Api.Repository;
 using Lantern.Api.Tests.Infrastructure;
@@ -20,14 +21,14 @@ public sealed class FamilyRepositoryTests(AzuriteFixture azurite)
     private FamilyRepository Repository => new(parents, families, createTables: true);
 
     [Fact]
-    public async Task TryRegisterAsync_ThenGet_ReturnsParentFamilyAndChildrenInOrder()
+    public async Task RegisterAsync_ThenGet_ReturnsParentFamilyAndChildrenInOrder()
     {
         var pk = NewKey();
         var family = NewFamily();
         var first = NewChild(0);
         var second = NewChild(1);
 
-        Assert.True(await Repository.TryRegisterAsync(NewParent(pk, family), family, [second, first], CancellationToken.None));
+        await Repository.RegisterAsync(NewParent(pk, family), family, [second, first], CancellationToken.None);
 
         var stored = await Repository.GetAsync(pk, CancellationToken.None);
 
@@ -40,21 +41,27 @@ public sealed class FamilyRepositoryTests(AzuriteFixture azurite)
     }
 
     [Fact]
-    public async Task TryRegisterAsync_TenAtOnce_ExactlyOneWinsAndLosersLeaveNoFamilyBehind()
+    public async Task RegisterAsync_TenAtOnce_ExactlyOneWinsAndLosersLeaveNoFamilyBehind()
     {
         var pk = NewKey();
 
-        var results = await Task.WhenAll(
-            Enumerable
-                .Range(0, 10)
-                .Select(_ =>
+        var attempts = Enumerable
+            .Range(0, 10)
+            .Select(async _ =>
+            {
+                var family = NewFamily();
+                try
                 {
-                    var family = NewFamily();
-                    return Repository.TryRegisterAsync(NewParent(pk, family), family, [NewChild(0)], CancellationToken.None);
-                })
-        );
+                    await Repository.RegisterAsync(NewParent(pk, family), family, [NewChild(0)], CancellationToken.None);
+                    return true;
+                }
+                catch (AlreadyRegisteredException)
+                {
+                    return false;
+                }
+            });
 
-        Assert.Equal(1, results.Count(won => won));
+        Assert.Equal(1, (await Task.WhenAll(attempts)).Count(won => won));
         var familyIds = new HashSet<string>();
         await foreach (var entity in families.QueryAsync<TableEntity>())
         {
@@ -66,11 +73,11 @@ public sealed class FamilyRepositoryTests(AzuriteFixture azurite)
     }
 
     [Fact]
-    public async Task TryRegisterAsync_KeepsEachChildInTheFamilyPartitionOnly()
+    public async Task RegisterAsync_KeepsEachChildInTheFamilyPartitionOnly()
     {
         var pk = NewKey();
         var family = NewFamily();
-        await Repository.TryRegisterAsync(NewParent(pk, family), family, [NewChild(0), NewChild(1)], CancellationToken.None);
+        await Repository.RegisterAsync(NewParent(pk, family), family, [NewChild(0), NewChild(1)], CancellationToken.None);
 
         var parentRows = new List<string>();
         await foreach (var entity in parents.QueryAsync<TableEntity>(row => row.PartitionKey == pk))
@@ -89,17 +96,17 @@ public sealed class FamilyRepositoryTests(AzuriteFixture azurite)
     }
 
     [Fact]
-    public async Task TryRegisterAsync_WhenAlreadyRegistered_ReturnsFalseAndWritesNothing()
+    public async Task RegisterAsync_WhenAlreadyRegistered_ThrowsAndWritesNothing()
     {
         var pk = NewKey();
         var family = NewFamily();
         var original = NewChild(0);
-        await Repository.TryRegisterAsync(NewParent(pk, family), family, [original], CancellationToken.None);
+        await Repository.RegisterAsync(NewParent(pk, family), family, [original], CancellationToken.None);
         var again = NewFamily();
 
-        var registeredAgain = await Repository.TryRegisterAsync(NewParent(pk, again), again, [NewChild(0)], CancellationToken.None);
-
-        Assert.False(registeredAgain);
+        await Assert.ThrowsAsync<AlreadyRegisteredException>(() =>
+            Repository.RegisterAsync(NewParent(pk, again), again, [NewChild(0)], CancellationToken.None)
+        );
         var stored = await Repository.GetAsync(pk, CancellationToken.None);
         Assert.Equal(family.FamilyId, stored!.Family.FamilyId);
         Assert.Equal([original.ChildId], stored.Children.Select(child => child.ChildId));
@@ -113,8 +120,8 @@ public sealed class FamilyRepositoryTests(AzuriteFixture azurite)
         var theirs = NewKey();
         var myFamily = NewFamily();
         var theirFamily = NewFamily();
-        await Repository.TryRegisterAsync(NewParent(mine, myFamily), myFamily, [NewChild(0)], CancellationToken.None);
-        await Repository.TryRegisterAsync(NewParent(theirs, theirFamily), theirFamily, [NewChild(0), NewChild(0)], CancellationToken.None);
+        await Repository.RegisterAsync(NewParent(mine, myFamily), myFamily, [NewChild(0)], CancellationToken.None);
+        await Repository.RegisterAsync(NewParent(theirs, theirFamily), theirFamily, [NewChild(0), NewChild(0)], CancellationToken.None);
 
         Assert.Single((await Repository.GetAsync(mine, CancellationToken.None))!.Children);
     }
@@ -124,12 +131,12 @@ public sealed class FamilyRepositoryTests(AzuriteFixture azurite)
         Assert.Null(await Repository.GetAsync(NewKey(), CancellationToken.None));
 
     [Fact]
-    public async Task TryRegisterAsync_StoresTimesAsUtc()
+    public async Task RegisterAsync_StoresTimesAsUtc()
     {
         var pk = NewKey();
         var family = NewFamily();
         var parent = NewParent(pk, family) with { ConsentAt = new DateTimeOffset(2026, 9, 25, 12, 0, 0, TimeSpan.FromHours(5.5)) };
-        await Repository.TryRegisterAsync(parent, family, [NewChild(0)], CancellationToken.None);
+        await Repository.RegisterAsync(parent, family, [NewChild(0)], CancellationToken.None);
 
         var stored = await Repository.GetAsync(pk, CancellationToken.None);
 
@@ -153,7 +160,7 @@ public sealed class FamilyRepositoryTests(AzuriteFixture azurite)
         // A batch submission against a missing table fails as a TableTransactionFailedException,
         // not the plain RequestFailedException a single-entity call would throw.
         var register = await Assert.ThrowsAsync<TableTransactionFailedException>(() =>
-            azureStyle.TryRegisterAsync(NewParent(NewKey(), family), family, [NewChild(0)], CancellationToken.None)
+            azureStyle.RegisterAsync(NewParent(NewKey(), family), family, [NewChild(0)], CancellationToken.None)
         );
         var read = await Assert.ThrowsAsync<Azure.RequestFailedException>(() =>
             azureStyle.GetAsync(NewKey(), CancellationToken.None)
@@ -180,14 +187,14 @@ public sealed class FamilyRepositoryTests(AzuriteFixture azurite)
         var pk = NewKey();
         var family = NewFamily();
 
-        Assert.True(await azureStyle.TryRegisterAsync(NewParent(pk, family), family, [NewChild(0)], CancellationToken.None));
+        await azureStyle.RegisterAsync(NewParent(pk, family), family, [NewChild(0)], CancellationToken.None);
         Assert.Single((await azureStyle.GetAsync(pk, CancellationToken.None))!.Children);
     }
 
     private static string NewKey() => Guid.NewGuid().ToString("N");
 
     private static FamilyRecord NewFamily() =>
-        new(Guid.NewGuid(), "Gujarat", "wrapped-key", "keyvault", DateTimeOffset.UtcNow);
+        new(Guid.NewGuid(), "Gujarat", "wrapped-key", KeyScheme.KeyVault, DateTimeOffset.UtcNow);
 
     private static ParentProfile NewParent(string pk, FamilyRecord family) =>
         new(pk, Guid.NewGuid(), family.FamilyId, "cipher-name", "cipher-email", "gu", "2026-09", DateTimeOffset.UtcNow, DateTimeOffset.UtcNow);

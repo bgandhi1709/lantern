@@ -75,10 +75,7 @@ internal sealed class RegistrationService(
             views.Add(new ChildView(childId, name, school, child.ClassLevel, child.BirthYear));
         }
 
-        if (!await families.TryRegisterAsync(parent, family, records, cancellationToken))
-        {
-            throw new AlreadyRegisteredException();
-        }
+        await families.RegisterAsync(parent, family, records, cancellationToken);
 
         Log.FamilyRegistered(logger, familyId, views.Count);
 

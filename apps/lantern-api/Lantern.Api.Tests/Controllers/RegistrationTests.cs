@@ -173,7 +173,7 @@ public sealed class RegistrationTests(AzuriteFixture azurite) : IDisposable
         var names = new List<string>();
         await foreach (var entity in parents.QueryAsync<TableEntity>(row => row.RowKey == "profile"))
         {
-            if (new[] { firstFamily.FamilyId, secondFamily.FamilyId }.Any(id => id.ToString("D") == entity.GetString("FamilyId")))
+            if (new[] { firstFamily.FamilyId, secondFamily.FamilyId }.Any(id => id == entity.GetGuid("FamilyId")))
             {
                 names.Add(entity.GetString("NameCipher"));
             }
@@ -189,7 +189,7 @@ public sealed class RegistrationTests(AzuriteFixture azurite) : IDisposable
     {
         var repository = new Mock<IFamilyRepository>();
         repository
-            .Setup(r => r.TryRegisterAsync(It.IsAny<Models.ParentProfile>(), It.IsAny<Models.FamilyRecord>(), It.IsAny<IReadOnlyList<Models.ChildRecord>>(), It.IsAny<CancellationToken>()))
+            .Setup(r => r.RegisterAsync(It.IsAny<Models.ParentProfile>(), It.IsAny<Models.FamilyRecord>(), It.IsAny<IReadOnlyList<Models.ChildRecord>>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new RequestFailedException(500, "secret-detail-account-name"));
         using var failing = factory.WithWebHostBuilder(builder =>
             builder.ConfigureTestServices(services => services.AddSingleton(repository.Object))

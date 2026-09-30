@@ -74,7 +74,7 @@ public sealed class RegisteredFamilyFixture : IAsyncLifetime
         // FamilyId is the only plaintext lookup key on the profile row - everything else is
         // per-family encrypted, so it's the only thing cleanup can filter by.
         await foreach (
-            var profile in parents.QueryAsync<TableEntity>(filter: $"FamilyId eq '{Family.FamilyId:D}'")
+            var profile in parents.QueryAsync<TableEntity>(TableClient.CreateQueryFilter($"FamilyId eq {Family.FamilyId}"))
         )
         {
             await parents.DeleteEntityAsync(profile.PartitionKey, profile.RowKey);

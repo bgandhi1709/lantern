@@ -4,7 +4,8 @@ namespace Lantern.Api.Repository;
 
 public interface IFamilyRepository
 {
-    Task<bool> TryRegisterAsync(
+    /// <exception cref="Exceptions.AlreadyRegisteredException">The caller already has a profile.</exception>
+    Task RegisterAsync(
         ParentProfile parent,
         FamilyRecord family,
         IReadOnlyList<ChildRecord> children,

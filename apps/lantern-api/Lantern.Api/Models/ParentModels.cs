@@ -20,7 +20,7 @@ public sealed record FamilyRecord(
     string Region,
     // Unwrap to decrypt the parents' and children's ciphers; clearing it makes them unreadable forever.
     string WrappedFieldKey,
-    string KeyScheme,
+    KeyScheme KeyScheme,
     DateTimeOffset CreatedAt
 );
 
@@ -65,7 +65,7 @@ public sealed record ChildView(
     int BirthYear
 );
 
-public static class KeyScheme
+public enum KeyScheme
 {
-    public const string KeyVault = "keyvault";
+    KeyVault,
 }
