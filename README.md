@@ -86,6 +86,14 @@ ncert.nic.in PDFs                                         Mother's phone (Flutte
   week, and a $10 monthly budget alert. Thumbs up / down tunes the router and retires bad answers.
 - **Privacy.** No keys anywhere: managed identity and RBAC. Personal details are kept under a key
   per family in Key Vault; deleting that key erases the family's data (DPDP Act 2023).
+- **Families, Parents and Children.** A **Family** groups its **Parents** and **Children**, like a
+  resource group. Each Parent has their own settings (Language, Consent); a Child is stored once,
+  however many Parents the Family has. In Table Storage the `parents` table holds each Parent's
+  settings and their `FamilyId`, and the `families` table holds the Family, its Parents'
+  membership and its Children. The terms are defined in [`GLOSSARY.md`](GLOSSARY.md) and the
+  layout is [ADR-0001](docs/adr/0001-family-and-parent-in-separate-tables.md). Next, each Child gets
+  a Blob folder per Class under `family/{familyId}/{childId}/{class}/` (#49), kept for the Child's
+  History.
 
 | Area | Choice |
 | --- | --- |
@@ -101,8 +109,16 @@ ncert.nic.in PDFs                                         Mother's phone (Flutte
 
 ## Status
 
-The NCERT build tool is working and the pristine layer is being built overnight, class by class.
-The Azure infrastructure is not deployed yet (#19), and the Ask API is next (#35). The
-decisions so far are in
-[`docs/ideation/decision-log.md`](docs/ideation/decision-log.md), and the work is tracked in
-[Issues](../../issues).
+- **NCERT layer.** The build tool is working and the pristine layer is being built class by class
+  (`tools/ncert-build`).
+- **Infrastructure.** The UAT environment is deployed from Bicep by GitHub Actions; see
+  [`infra/README.md`](infra/README.md).
+- **API.** Firebase sign-in, `POST /v1/register` and `GET /v1/me` with per-family encryption are
+  live in UAT, and a keyless end-to-end test runs against it after every deploy. The Family split
+  (#48) is in review, followed by Class spaces (#49) and a cache for the Family key (#52). Running
+  it locally: [`deploy/local/README.md`](deploy/local/README.md).
+- **Next.** The Ask API (#35) and, before production, a Family key held on the device (#47).
+
+The decisions so far are in
+[`docs/ideation/decision-log.md`](docs/ideation/decision-log.md) and [`docs/adr`](docs/adr), and
+the work is tracked in [Issues](../../issues) and the project board.
