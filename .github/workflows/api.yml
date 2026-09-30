@@ -129,4 +129,4 @@ jobs:
         env:
           E2E_BASE_URL: ${{ steps.url.outputs.base }}
           E2E_STORAGE_TABLE_ENDPOINT: https://lanternuat.table.core.windows.net
-          FIREBASE_WEB_API_KEY: ${{ vars.FIREBASE_WEB_API_KEY }}
+          FIREBASE_WEB_API_KEY: ${{ secrets.FIREBASE_WEB_API_KEY }}

@@ -87,7 +87,7 @@ for a real ID token via a custom OpenID Connect sign-in provider — no key exis
      `aud` the job requests on its own OIDC token, not a secret).
    - Response type: ID token only — no client secret needed, since the fixture calls
      `accounts:signInWithIdp` directly with the token rather than doing a redirect/code exchange.
-3. `gh variable set FIREBASE_WEB_API_KEY --body "<apiKey from: firebase apps:sdkconfig WEB --project lantern-ai-bg1709>"`
+3. `gh secret set FIREBASE_WEB_API_KEY --body "<apiKey from: firebase apps:sdkconfig WEB --project lantern-ai-bg1709>"`
    — the project's web API key, not secret by Firebase's own design, just kept out of source.
 
 No GitHub secret is needed for Firebase, same as Azure. The `github-e2e-tests-lantern-ai-bg`
