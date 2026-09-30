@@ -171,3 +171,14 @@ producing bad context, not preemptively.
 rather than SKILL.md being changed to auto-discover a sibling bundle-v2 file by convention. This
 keeps the skill's existing contract (and its Class 1 behavior, D-prerequisite handling) unchanged
 for every caller that doesn't pass the new argument.
+
+## 2026-09-30: registration and workspace design
+
+### D21. Family is a group, Parents are equal members
+A **Family** groups Parents and Children, like a resource group. Each **Parent** has their own settings (Language, Consent); Region belongs to the Family. "Mother" and "Kid" are personas in these docs, not roles in the model, and there is no Admin. The POC allows one Parent per Family, and the layout stays open for more. See `GLOSSARY.md` and ADR-0001.
+
+### D22. Class spaces and History
+A Child's **History** (Scrubbed Questions, Tests, Class changes) is kept across Class changes as long as the Child is in Lantern, and is deleted with the Child. Each Class has its own **Class space**: Blob `family/{familyId}/{childId}/{class}/` and, later, Class-prefixed rows in the Child's History partition. Only the Parent changes a Child's Class; a repeated Class reuses its space. Built in issue #49 and the Ask API (#35).
+
+### D23. Scrubbing and shared intelligence
+Only the Child's and Parent's personal fields are encrypted. A Question is scrubbed by rules (the Family's known names, School and Region, plus phone and email patterns) before anything is stored; the raw Question is never stored. Per-Child History stays in the Family's space, and an anonymous store of scrubbed, tagged Questions and Answers is shared across Families with no link back. A client-held Family key is tracked in issue #47; the Family key cache in #52.

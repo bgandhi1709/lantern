@@ -63,17 +63,9 @@ public sealed class FamilyResponse
 {
     public Guid FamilyId { get; set; }
 
-    public string Name { get; set; } = string.Empty;
-
-    public string Email { get; set; } = string.Empty;
-
     public string Region { get; set; } = string.Empty;
 
-    public string Language { get; set; } = string.Empty;
-
-    public string ConsentVersion { get; set; } = string.Empty;
-
-    public DateTimeOffset ConsentAt { get; set; }
+    public ParentResponse Parent { get; set; } = new();
 
     public List<ChildResponse> Children { get; set; } = [];
 
@@ -84,13 +76,39 @@ public sealed class FamilyResponse
         return new FamilyResponse
         {
             FamilyId = family.FamilyId,
-            Name = family.Name,
-            Email = family.Email,
             Region = family.Region,
-            Language = family.Language,
-            ConsentVersion = family.ConsentVersion,
-            ConsentAt = family.ConsentAt,
+            Parent = ParentResponse.From(family.Parent),
             Children = [.. family.Children.Select(ChildResponse.From)],
+        };
+    }
+}
+
+public sealed class ParentResponse
+{
+    public Guid ParentId { get; set; }
+
+    public string Name { get; set; } = string.Empty;
+
+    public string Email { get; set; } = string.Empty;
+
+    public string Language { get; set; } = string.Empty;
+
+    public string ConsentVersion { get; set; } = string.Empty;
+
+    public DateTimeOffset ConsentAt { get; set; }
+
+    public static ParentResponse From(ParentView parent)
+    {
+        ArgumentNullException.ThrowIfNull(parent);
+
+        return new ParentResponse
+        {
+            ParentId = parent.ParentId,
+            Name = parent.Name,
+            Email = parent.Email,
+            Language = parent.Language,
+            ConsentVersion = parent.ConsentVersion,
+            ConsentAt = parent.ConsentAt,
         };
     }
 }

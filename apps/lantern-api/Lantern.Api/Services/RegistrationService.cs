@@ -9,7 +9,7 @@ using Lantern.Api.Services.Interfaces;
 namespace Lantern.Api.Services;
 
 internal sealed class RegistrationService(
-    IParentRepository parents,
+    IFamilyRepository families,
     IUidHasher hasher,
     IFieldCipher cipher,
     IFamilyKeyService familyKeys,
@@ -34,15 +34,16 @@ internal sealed class RegistrationService(
 
         var partitionKey = hasher.Hash(caller.Uid);
         var familyId = Guid.NewGuid();
+        var familyPartition = FamilyRepository.FamilyPartition(familyId);
         var (dek, wrappedFieldKey) = await familyKeys.GenerateAsync(cancellationToken);
 
-        var profile = new ParentProfile(
+        var family = new FamilyRecord(familyId, body.Region.Trim(), wrappedFieldKey, KeyScheme.KeyVault, now);
+        var parent = new ParentProfile(
             partitionKey,
+            Guid.NewGuid(),
             familyId,
-            cipher.Protect(dek, caller.Name, partitionKey, ParentRepository.ProfileRowKey, "name"),
-            cipher.Protect(dek, caller.Email, partitionKey, ParentRepository.ProfileRowKey, "email"),
-            wrappedFieldKey,
-            body.Region.Trim(),
+            cipher.Protect(dek, caller.Name, partitionKey, FamilyRepository.ProfileRowKey, "name"),
+            cipher.Protect(dek, caller.Email, partitionKey, FamilyRepository.ProfileRowKey, "email"),
             body.Language,
             body.Consent.NoticeVersion.Trim(),
             now,
@@ -56,15 +57,15 @@ internal sealed class RegistrationService(
         {
             var child = body.Children[position];
             var childId = Guid.NewGuid();
-            var rowKey = ParentRepository.ChildRowKey(childId);
+            var rowKey = FamilyRepository.ChildRowKey(childId);
             var name = child.Name.Trim();
             var school = string.IsNullOrWhiteSpace(child.School) ? null : child.School.Trim();
 
             records.Add(
                 new ChildRecord(
                     childId,
-                    cipher.Protect(dek, name, partitionKey, rowKey, "name"),
-                    school is null ? null : cipher.Protect(dek, school, partitionKey, rowKey, "school"),
+                    cipher.Protect(dek, name, familyPartition, rowKey, "name"),
+                    school is null ? null : cipher.Protect(dek, school, familyPartition, rowKey, "school"),
                     child.ClassLevel,
                     child.BirthYear,
                     position,
@@ -74,21 +75,14 @@ internal sealed class RegistrationService(
             views.Add(new ChildView(childId, name, school, child.ClassLevel, child.BirthYear));
         }
 
-        if (!await parents.TryRegisterAsync(profile, records, cancellationToken))
-        {
-            throw new AlreadyRegisteredException();
-        }
+        await families.RegisterAsync(parent, family, records, cancellationToken);
 
         Log.FamilyRegistered(logger, familyId, views.Count);
 
         return new FamilyView(
             familyId,
-            caller.Name,
-            caller.Email,
-            profile.Region,
-            profile.Language,
-            profile.ConsentVersion,
-            now,
+            family.Region,
+            new ParentView(parent.ParentId, caller.Name, caller.Email, parent.Language, parent.ConsentVersion, now),
             views
         );
     }
@@ -99,31 +93,34 @@ internal sealed class RegistrationService(
 
         var partitionKey = hasher.Hash(caller.Uid);
         var stored =
-            await parents.GetAsync(partitionKey, cancellationToken) ?? throw new NotRegisteredException();
+            await families.GetAsync(partitionKey, cancellationToken) ?? throw new NotRegisteredException();
 
-        var profile = stored.Profile;
-        var profileKey = ParentRepository.ProfileRowKey;
-        var dek = await familyKeys.UnwrapAsync(profile.WrappedFieldKey, cancellationToken);
+        var parent = stored.Parent;
+        var familyPartition = FamilyRepository.FamilyPartition(stored.Family.FamilyId);
+        var dek = await familyKeys.UnwrapAsync(stored.Family.WrappedFieldKey, cancellationToken);
 
         return new FamilyView(
-            profile.FamilyId,
-            cipher.Unprotect(dek, profile.NameCipher, partitionKey, profileKey, "name"),
-            cipher.Unprotect(dek, profile.EmailCipher, partitionKey, profileKey, "email"),
-            profile.Region,
-            profile.Language,
-            profile.ConsentVersion,
-            profile.ConsentAt,
+            stored.Family.FamilyId,
+            stored.Family.Region,
+            new ParentView(
+                parent.ParentId,
+                cipher.Unprotect(dek, parent.NameCipher, partitionKey, FamilyRepository.ProfileRowKey, "name"),
+                cipher.Unprotect(dek, parent.EmailCipher, partitionKey, FamilyRepository.ProfileRowKey, "email"),
+                parent.Language,
+                parent.ConsentVersion,
+                parent.ConsentAt
+            ),
             [
                 .. stored.Children.Select(child =>
                 {
-                    var rowKey = ParentRepository.ChildRowKey(child.ChildId);
+                    var rowKey = FamilyRepository.ChildRowKey(child.ChildId);
 
                     return new ChildView(
                         child.ChildId,
-                        cipher.Unprotect(dek, child.NameCipher, partitionKey, rowKey, "name"),
+                        cipher.Unprotect(dek, child.NameCipher, familyPartition, rowKey, "name"),
                         child.SchoolCipher is null
                             ? null
-                            : cipher.Unprotect(dek, child.SchoolCipher, partitionKey, rowKey, "school"),
+                            : cipher.Unprotect(dek, child.SchoolCipher, familyPartition, rowKey, "school"),
                         child.ClassLevel,
                         child.BirthYear
                     );

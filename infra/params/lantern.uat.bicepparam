@@ -3,6 +3,7 @@ using '../main.bicep'
 param environmentName = 'uat'
 param tables = [
   'parents'
+  'families'
 ]
 
 // Empty placeholder app. The API release sets the real image and port.

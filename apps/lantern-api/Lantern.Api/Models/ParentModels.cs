@@ -5,16 +5,22 @@ namespace Lantern.Api.Models;
 
 public sealed record ParentProfile(
     string PartitionKey,
+    Guid ParentId,
     Guid FamilyId,
     string NameCipher,
     string EmailCipher,
-    // This family's field-encryption key, wrapped by the Key Vault family-field-key. Unwrap it to
-    // decrypt NameCipher/EmailCipher/children's ciphers; clearing it makes them unreadable forever.
-    string WrappedFieldKey,
-    string Region,
     string Language,
     string ConsentVersion,
     DateTimeOffset ConsentAt,
+    DateTimeOffset CreatedAt
+);
+
+public sealed record FamilyRecord(
+    Guid FamilyId,
+    string Region,
+    // Unwrap to decrypt the parents' and children's ciphers; clearing it makes them unreadable forever.
+    string WrappedFieldKey,
+    KeyScheme KeyScheme,
     DateTimeOffset CreatedAt
 );
 
@@ -29,17 +35,26 @@ public sealed record ChildRecord(
     DateTimeOffset CreatedAt
 );
 
-public sealed record ParentAggregate(ParentProfile Profile, IReadOnlyList<ChildRecord> Children);
+public sealed record FamilyAggregate(
+    ParentProfile Parent,
+    FamilyRecord Family,
+    IReadOnlyList<ChildRecord> Children
+);
 
 public sealed record FamilyView(
     Guid FamilyId,
+    string Region,
+    ParentView Parent,
+    IReadOnlyList<ChildView> Children
+);
+
+public sealed record ParentView(
+    Guid ParentId,
     string Name,
     string Email,
-    string Region,
     string Language,
     string ConsentVersion,
-    DateTimeOffset ConsentAt,
-    IReadOnlyList<ChildView> Children
+    DateTimeOffset ConsentAt
 );
 
 public sealed record ChildView(
@@ -49,3 +64,8 @@ public sealed record ChildView(
     int ClassLevel,
     int BirthYear
 );
+
+public enum KeyScheme
+{
+    KeyVault,
+}

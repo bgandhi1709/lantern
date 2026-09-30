@@ -48,7 +48,7 @@ builder.Services.AddSingleton(serviceProvider =>
         ? new TableServiceClient(new Uri(options.TableEndpoint), new DefaultAzureCredential())
         : new TableServiceClient(options.ConnectionString);
 
-    return service.GetTableClient(options.ParentsTable);
+    return service;
 });
 
 builder.Services.AddSingleton<IFamilyKeyWrapper>(serviceProvider =>
@@ -64,14 +64,17 @@ builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<KeyMaterial>();
 builder.Services.AddSingleton<IUidHasher>(serviceProvider => serviceProvider.GetRequiredService<KeyMaterial>());
 builder.Services.AddSingleton<IFieldCipher, FieldCipher>();
-builder.Services.AddSingleton<IParentRepository>(serviceProvider =>
-    new ParentRepository(
-        serviceProvider.GetRequiredService<TableClient>(),
-        createTable: !string.IsNullOrWhiteSpace(
-            serviceProvider.GetRequiredService<IOptions<StorageOptions>>().Value.ConnectionString
-        )
-    )
-);
+builder.Services.AddSingleton<IFamilyRepository>(serviceProvider =>
+{
+    var options = serviceProvider.GetRequiredService<IOptions<StorageOptions>>().Value;
+    var service = serviceProvider.GetRequiredService<TableServiceClient>();
+
+    return new FamilyRepository(
+        service.GetTableClient(options.ParentsTable),
+        service.GetTableClient(options.FamiliesTable),
+        createTables: !string.IsNullOrWhiteSpace(options.ConnectionString)
+    );
+});
 builder.Services.AddScoped<IRegistrationService, RegistrationService>();
 
 // Google-only sign-in is enforced in the Firebase console. A revoked or disabled user stays valid
