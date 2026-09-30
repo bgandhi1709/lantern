@@ -22,6 +22,20 @@ internal sealed class TableParentRepository(TableClient table, bool createTable)
     {
         await this.EnsureTableAsync(cancellationToken);
 
+        // Cheap lookup-first check: the common case (an already-registered caller hitting register
+        // again) never throws. The atomic batch below still catches 409, which stays the correctness
+        // backstop for a genuine race between two concurrent first-time registrations.
+        var existing = await table.GetEntityIfExistsAsync<TableEntity>(
+            profile.PartitionKey,
+            ProfileRowKey,
+            select: [],
+            cancellationToken: cancellationToken
+        );
+        if (existing.HasValue)
+        {
+            return false;
+        }
+
         var actions = new List<TableTransactionAction>(children.Count + 1)
         {
             new(TableTransactionActionType.Add, ToEntity(profile)),
