@@ -51,6 +51,10 @@ assign "Key Vault Crypto User" "$VAULT_ID" "$ME" User
 # group like the Table role above, since the storage account isn't created yet either.
 assign "Storage Blob Data Contributor" "$RG_ID" "$ME" User
 
+# Owner grants no Storage data-plane access on its own (allowSharedKeyAccess is false), so without
+# this the person running this script can't read/write the parents table either - same gap as Blob.
+assign "Storage Table Data Contributor" "$RG_ID" "$ME" User
+
 # Create the secret only if it is missing. Overwriting or rotating it makes every existing
 # registration unreadable.
 if az keyvault secret show --vault-name "$VAULT" -n "$SECRET" -o none 2>/dev/null; then
