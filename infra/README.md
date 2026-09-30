@@ -76,6 +76,10 @@ downloaded key, it uses the GitHub Actions job's own OIDC identity, the same way
 already does: the runner mints a short-lived token for the job, and Firebase exchanges it directly
 for a real ID token via a custom OpenID Connect sign-in provider — no key exists anywhere.
 
+The job runs in the `uat-e2e` environment, which has no required reviewers: `uat` holds the approval
+gate and `deploy` already passed it. `infra/github-setup.sh` creates the environment and its
+federated credential.
+
 **One-time Firebase setup (console, not scriptable from here):**
 1. GCP Console → the `lantern-ai-bg1709` project → **Identity Platform** → Enable (free tier, does
    not touch existing Google sign-in users).

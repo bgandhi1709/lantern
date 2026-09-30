@@ -43,6 +43,10 @@ credential() { # name subject
 credential "pull-request" "${PREFIX}:pull_request"
 credential "main" "${PREFIX}:ref:refs/heads/main"
 credential "env-${ENV_NAME}" "${PREFIX}:environment:${ENV_NAME}"
+# The E2E job runs after the gated deploy, so it gets its own ungated environment: the OIDC
+# subject must name an environment (a branch-ref credential would reject feature branches),
+# and reusing ${ENV_NAME} would make you approve twice.
+credential "env-${ENV_NAME}-e2e" "${PREFIX}:environment:${ENV_NAME}-e2e"
 
 echo "Contributor on ${RG}"
 az role assignment create --role Contributor --assignee-object-id "$SP_ID" \
@@ -72,4 +76,5 @@ gh api -X PUT "repos/${REPO}/environments/${ENV_NAME}" \
   --input - >/dev/null <<JSON
 {"reviewers":[{"type":"User","id":${ME}}]}
 JSON
+gh api -X PUT "repos/${REPO}/environments/${ENV_NAME}-e2e" >/dev/null
 echo "Done."
