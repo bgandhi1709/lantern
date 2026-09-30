@@ -13,6 +13,9 @@ public sealed class StorageOptions : IValidatableObject
     [Required]
     public string ParentsTable { get; set; } = "parents";
 
+    [Required]
+    public string FamiliesTable { get; set; } = "families";
+
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
         var hasConnectionString = !string.IsNullOrWhiteSpace(ConnectionString);

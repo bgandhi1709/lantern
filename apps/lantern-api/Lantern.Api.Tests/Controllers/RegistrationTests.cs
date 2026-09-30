@@ -28,15 +28,17 @@ public sealed class RegistrationTests(AzuriteFixture azurite) : IDisposable
         var family = await created.Content.ReadFromJsonAsync<FamilyResponse>();
         Assert.NotNull(family);
         Assert.NotEqual(Guid.Empty, family.FamilyId);
-        Assert.Equal("Meena Patel", family.Name);
-        Assert.Equal("meena@example.test", family.Email);
+        Assert.NotEqual(Guid.Empty, family.Parent.ParentId);
+        Assert.Equal("Meena Patel", family.Parent.Name);
+        Assert.Equal("meena@example.test", family.Parent.Email);
 
         var me = await client.GetFromJsonAsync<FamilyResponse>(ApiClientExtensions.Me);
         Assert.NotNull(me);
         Assert.Equal(family.FamilyId, me.FamilyId);
         Assert.Equal("Gujarat", me.Region);
-        Assert.Equal("gu", me.Language);
-        Assert.Equal("2026-09", me.ConsentVersion);
+        Assert.Equal(family.Parent.ParentId, me.Parent.ParentId);
+        Assert.Equal("gu", me.Parent.Language);
+        Assert.Equal("2026-09", me.Parent.ConsentVersion);
         Assert.Equal(["Aarav", "Diya"], me.Children.Select(child => child.Name));
         Assert.Equal("Sunrise School", me.Children[0].School);
         Assert.Null(me.Children[1].School);
@@ -131,12 +133,16 @@ public sealed class RegistrationTests(AzuriteFixture azurite) : IDisposable
         body.Children[0].Name = childName;
         await client.RegisterAsync(body);
 
-        var table = new TableServiceClient(azurite.ConnectionString).GetTableClient("parents");
         var stored = new List<string>();
-        await foreach (var entity in table.QueryAsync<TableEntity>())
+        foreach (var tableName in new[] { "parents", "families" })
         {
-            stored.Add(entity.PartitionKey);
-            stored.AddRange(entity.Select(pair => pair.Value).OfType<string>());
+            var table = new TableServiceClient(azurite.ConnectionString).GetTableClient(tableName);
+            await foreach (var entity in table.QueryAsync<TableEntity>())
+            {
+                stored.Add(entity.PartitionKey);
+                stored.Add(entity.RowKey);
+                stored.AddRange(entity.Select(pair => pair.Value).OfType<string>());
+            }
         }
 
         Assert.NotEmpty(stored);
@@ -155,28 +161,35 @@ public sealed class RegistrationTests(AzuriteFixture azurite) : IDisposable
         var firstFamily = await (await first.RegisterAsync(ValidBody())).Content.ReadFromJsonAsync<FamilyResponse>();
         var secondFamily = await (await second.RegisterAsync(ValidBody())).Content.ReadFromJsonAsync<FamilyResponse>();
 
-        var table = new TableServiceClient(azurite.ConnectionString).GetTableClient("parents");
-        var ids = new[] { firstFamily!.FamilyId.ToString("D"), secondFamily!.FamilyId.ToString("D") };
-        var profiles = new List<TableEntity>();
-        await foreach (var entity in table.QueryAsync<TableEntity>(row => row.RowKey == "profile"))
+        var families = new TableServiceClient(azurite.ConnectionString).GetTableClient("families");
+        var wrapped = new List<string>();
+        foreach (var id in new[] { firstFamily!.FamilyId, secondFamily!.FamilyId })
         {
-            if (ids.Contains(entity.GetString("FamilyId")))
+            var row = await families.GetEntityAsync<TableEntity>(id.ToString("D"), "family");
+            wrapped.Add(row.Value.GetString("WrappedFieldKey"));
+        }
+
+        var parents = new TableServiceClient(azurite.ConnectionString).GetTableClient("parents");
+        var names = new List<string>();
+        await foreach (var entity in parents.QueryAsync<TableEntity>(row => row.RowKey == "profile"))
+        {
+            if (new[] { firstFamily.FamilyId, secondFamily.FamilyId }.Any(id => id.ToString("D") == entity.GetString("FamilyId")))
             {
-                profiles.Add(entity);
+                names.Add(entity.GetString("NameCipher"));
             }
         }
 
-        Assert.Equal(2, profiles.Count);
-        Assert.NotEqual(profiles[0].GetString("WrappedFieldKey"), profiles[1].GetString("WrappedFieldKey"));
-        Assert.NotEqual(profiles[0].GetString("NameCipher"), profiles[1].GetString("NameCipher"));
+        Assert.NotEqual(wrapped[0], wrapped[1]);
+        Assert.Equal(2, names.Count);
+        Assert.NotEqual(names[0], names[1]);
     }
 
     [Fact]
     public async Task Register_WhenStorageFails_IsAHardStopThatNeverLeaksTheDetail()
     {
-        var repository = new Mock<IParentRepository>();
+        var repository = new Mock<IFamilyRepository>();
         repository
-            .Setup(r => r.TryRegisterAsync(It.IsAny<Models.ParentProfile>(), It.IsAny<IReadOnlyList<Models.ChildRecord>>(), It.IsAny<CancellationToken>()))
+            .Setup(r => r.TryRegisterAsync(It.IsAny<Models.ParentProfile>(), It.IsAny<Models.FamilyRecord>(), It.IsAny<IReadOnlyList<Models.ChildRecord>>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new RequestFailedException(500, "secret-detail-account-name"));
         using var failing = factory.WithWebHostBuilder(builder =>
             builder.ConfigureTestServices(services => services.AddSingleton(repository.Object))

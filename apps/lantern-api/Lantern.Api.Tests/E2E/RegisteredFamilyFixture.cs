@@ -58,34 +58,32 @@ public sealed class RegisteredFamilyFixture : IAsyncLifetime
             return;
         }
 
-        var table = new TableClient(
-            new Uri(tableEndpoint),
+        var endpoint = new Uri(tableEndpoint);
+        var credential = new DefaultAzureCredential();
+        var parents = new TableClient(
+            endpoint,
             Environment.GetEnvironmentVariable("E2E_PARENTS_TABLE") ?? "parents",
-            new DefaultAzureCredential()
+            credential
+        );
+        var families = new TableClient(
+            endpoint,
+            Environment.GetEnvironmentVariable("E2E_FAMILIES_TABLE") ?? "families",
+            credential
         );
 
         // FamilyId is the only plaintext lookup key on the profile row - everything else is
         // per-family encrypted, so it's the only thing cleanup can filter by.
-        TableEntity? profile = null;
         await foreach (
-            var entity in table.QueryAsync<TableEntity>(
-                filter: $"FamilyId eq '{Family.FamilyId:D}'"
-            )
+            var profile in parents.QueryAsync<TableEntity>(filter: $"FamilyId eq '{Family.FamilyId:D}'")
         )
         {
-            profile = entity;
+            await parents.DeleteEntityAsync(profile.PartitionKey, profile.RowKey);
         }
 
-        if (profile is null)
+        var familyPartition = Family.FamilyId.ToString("D");
+        await foreach (var entity in families.QueryAsync<TableEntity>(row => row.PartitionKey == familyPartition))
         {
-            return;
-        }
-
-        await foreach (
-            var entity in table.QueryAsync<TableEntity>(row => row.PartitionKey == profile.PartitionKey)
-        )
-        {
-            await table.DeleteEntityAsync(entity.PartitionKey, entity.RowKey);
+            await families.DeleteEntityAsync(entity.PartitionKey, entity.RowKey);
         }
     }
 

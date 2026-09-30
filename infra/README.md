@@ -34,8 +34,8 @@ az deployment group what-if -g rg-lantern-dev -f infra/main.bicep -p infra/param
 az deployment group create  -g rg-lantern-dev -f infra/main.bicep -p infra/params/lantern.uat.bicepparam
 ```
 
-The deploying account needs Contributor only. It creates the storage account `lanternuat` with the table
-`parents`, the private `ncert` blob container (for `ncert-build`'s output — see
+The deploying account needs Contributor only. It creates the storage account `lanternuat` with the tables
+`parents` and `families`, the private `ncert` blob container (for `ncert-build`'s output — see
 [`tools/ncert-build`](../tools/ncert-build/README.md)), a Log Analytics workspace, and the Container
 Apps environment and app (0 to 1 replica, the identity attached). All names come from
 `environmentName`. The template reads the identity and the Key Vault by name and wires the app's

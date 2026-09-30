@@ -2,13 +2,14 @@ using Lantern.Api.Models;
 
 namespace Lantern.Api.Repository;
 
-public interface IParentRepository
+public interface IFamilyRepository
 {
     Task<bool> TryRegisterAsync(
-        ParentProfile profile,
+        ParentProfile parent,
+        FamilyRecord family,
         IReadOnlyList<ChildRecord> children,
         CancellationToken cancellationToken
     );
 
-    Task<ParentAggregate?> GetAsync(string partitionKey, CancellationToken cancellationToken);
+    Task<FamilyAggregate?> GetAsync(string partitionKey, CancellationToken cancellationToken);
 }

@@ -3,7 +3,7 @@ targetScope = 'resourceGroup'
 @description('Environment name. Every name below is derived from it: uat gives lanternuat, id-lantern-uat and so on.')
 param environmentName string
 
-@description('Table names. The API reads `parents` by default, so it must be listed. Add only; a renamed table is a new, empty one.')
+@description('Table names. The API reads `parents` and `families` by default, so both must be listed. Add only; a renamed table is a new, empty one.')
 param tables array
 
 @description('Empty placeholder app until the API image exists. The API release sets the image; see keep-running-image.sh.')
