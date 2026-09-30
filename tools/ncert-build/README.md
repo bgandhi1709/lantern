@@ -99,6 +99,52 @@ same way it applies to the draft hints.
   local `qwen3:8b`). Not yet a CLI stage — no `ncert-build bundle-v2` command exists yet, and the
   A/B test plan (issue #41 step 5) hasn't been run at scale.
 
+## Claude API (`ncert_build/claude.py`)
+
+A minimal client for direct Anthropic API calls, separate from the Ollama-based local models
+above and from Claude Code cloud sessions (`scripts/cloud_refine_*.sh`, which refine whole books
+by running the `ncert-refine` skill as an agent). This is the low-level primitive for small,
+targeted, metered API calls — currently used by `scripts/fix_flagged.py` to correct individual
+`ncert-build check` violations. It's deliberately generic: nothing in `claude.py` is fix-specific,
+so the same `Claude.complete()` call is meant to be reused for refining a future state board's
+chapters, or for a runtime "answer this question with this context" call — and to be wrapped by
+an admin-side HTTP layer later without changing this module.
+
+**Guardrails placed on every call, and why:**
+
+- **No retries.** `complete()` raises on error and never retries; callers (`fix_flagged.py`) catch
+  the error, log it, and move to the next item. A flaky or wrong call costs one attempt, not a
+  silent loop that burns budget.
+- **A budget ceiling, checked before every call.** `fix_flagged.py --budget-usd` tracks real spend
+  from the API's own `usage` field (not an estimate) and stops issuing new calls once the running
+  total would exceed it, printing what's left unfixed rather than going over.
+- **Minimal, single-field prompts.** Each call sends only the one offending field plus the rule it
+  broke — never the whole chapter or the source bundle text. A chapter with one bad field costs
+  one small call, not a full re-refine.
+- **`max_tokens` kept small (120)** to match that minimal scope — deliberately tight enough that a
+  runaway or off-task reply is cheap, not generous "just in case" headroom.
+- **Sonnet 5.5's thinking is explicitly turned off** (`thinking: {"type": "between_tools"}`).
+  Found the hard way: Sonnet 5.5 runs adaptive thinking by default, and thinking tokens count
+  against `max_tokens` — a small budget can be consumed entirely by invisible reasoning, returning
+  **empty visible text** while still billing for the call. Haiku 4.5 has no thinking to disable, so
+  this is a no-op there.
+- **Never write an empty reply over existing content.** `fix_flagged.py` checks the reply text
+  before applying it; an empty or clearly-too-long result is reported and the original value is
+  left in place, never blindly written. (This guard exists because the thinking bug above did once
+  overwrite ten fields with empty strings before it was caught and reverted from the cloud-session
+  git branches — see the fix-up pass in the project history.)
+- **Cheapest adequate model for the task**: Haiku 4.5 by default for these mechanical
+  shorten/rewrite edits, not Opus or Sonnet by default — the task doesn't need more reasoning than
+  that, and every call's real `$` cost is printed so a heavier model is a deliberate choice, not a
+  default.
+
+**A known limitation this surfaced, not yet fixed by more API calls:** the `no markdown in
+answers` check in `refine_check.py` flags any bare `_` character, including underscores used as
+fill-in-the-blank placeholders in genuine exercise content (`"In b_s, a bus"`). Asking the model to
+"remove markdown" on these just destroys the blank. This needs a rule change in `refine_check.py`
+(e.g. only flag paired/markdown-shaped underscores), not a retry loop — left as a handful of known
+false positives rather than spending more to satisfy a check that's wrong for this content.
+
 ## Known limits
 
 - **Maths layout is flattened.** Superscripts, fractions and roots lose their position:

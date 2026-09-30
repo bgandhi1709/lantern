@@ -1,3 +1,4 @@
+using Lantern.Api.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -22,10 +23,16 @@ public sealed class LanternApiFactory(string connectionString) : WebApplicationF
         builder.UseSetting("Firebase:ProjectId", TestTokens.ProjectId);
         builder.UseSetting("Storage:ConnectionString", connectionString);
         builder.UseSetting("Security:Key", SecurityKey);
+        // Key Vault has no local emulator; LocalRsaFamilyKeyWrapper below replaces the real wrapper,
+        // so these two values only need to satisfy startup validation, never actually resolve.
+        builder.UseSetting("KeyVault:VaultUri", "https://unused.vault.azure.net/");
+        builder.UseSetting("KeyVault:FamilyKeyName", "unused");
 
-        builder.ConfigureLogging(logging => logging.AddProvider(this.Logs));
+        builder.ConfigureLogging(logging => logging.AddProvider(Logs));
 
         builder.ConfigureTestServices(services =>
+        {
+            services.AddSingleton<IFamilyKeyWrapper, LocalRsaFamilyKeyWrapper>();
             services.PostConfigure<JwtBearerOptions>(
                 JwtBearerDefaults.AuthenticationScheme,
                 options =>
@@ -37,7 +44,7 @@ public sealed class LanternApiFactory(string connectionString) : WebApplicationF
                                 SigningKeys = { TestTokens.Key },
                             }
                         )
-            )
-        );
+            );
+        });
     }
 }

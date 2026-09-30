@@ -123,6 +123,10 @@ resource app 'Microsoft.App/containerApps@2025-01-01' = {
             { name: 'Firebase__ProjectId', value: firebaseProjectId }
             { name: 'Storage__TableEndpoint', value: storage.properties.primaryEndpoints.table }
             { name: 'Security__Key', secretRef: 'security-key' }
+            // Not a secret: the app only ever calls Key Vault's wrapKey/unwrapKey with this name.
+            // The key's own private material never leaves the vault.
+            { name: 'KeyVault__VaultUri', value: vault.properties.vaultUri }
+            { name: 'KeyVault__FamilyKeyName', value: 'family-field-key' }
           ]
           resources: {
             cpu: json('0.25')

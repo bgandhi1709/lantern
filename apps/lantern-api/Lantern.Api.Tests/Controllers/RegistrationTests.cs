@@ -20,7 +20,7 @@ public sealed class RegistrationTests(AzuriteFixture azurite) : IDisposable
     public async Task Register_Valid_Returns201AndMeReturnsTheSameFamily()
     {
         var uid = NewUid();
-        using var client = this.Client(uid, "Meena Patel", "meena@example.test");
+        using var client = Client(uid, "Meena Patel", "meena@example.test");
 
         var created = await client.RegisterAsync(ValidBody());
 
@@ -45,7 +45,7 @@ public sealed class RegistrationTests(AzuriteFixture azurite) : IDisposable
     [Fact]
     public async Task Register_Twice_Returns409AlreadyRegistered()
     {
-        using var client = this.Client(NewUid());
+        using var client = Client(NewUid());
         await client.RegisterAsync(ValidBody());
 
         var again = await client.RegisterAsync(ValidBody());
@@ -62,7 +62,7 @@ public sealed class RegistrationTests(AzuriteFixture azurite) : IDisposable
         var responses = await Task.WhenAll(
             Enumerable
                 .Range(0, 10)
-                .Select(_ => this.factory.CreateClient().WithBearer(token).RegisterAsync(ValidBody()))
+                .Select(_ => factory.CreateClient().WithBearer(token).RegisterAsync(ValidBody()))
         );
 
         Assert.Equal(1, responses.Count(response => response.StatusCode == HttpStatusCode.Created));
@@ -72,7 +72,7 @@ public sealed class RegistrationTests(AzuriteFixture azurite) : IDisposable
     [Fact]
     public async Task Me_BeforeRegister_Returns404NotRegistered()
     {
-        using var client = this.Client(NewUid());
+        using var client = Client(NewUid());
 
         var response = await client.GetAsync(ApiClientExtensions.Me);
 
@@ -83,9 +83,9 @@ public sealed class RegistrationTests(AzuriteFixture azurite) : IDisposable
     [Fact]
     public async Task Me_AnotherMother_NeverSeesTheFirstMothersFamily()
     {
-        using var first = this.Client(NewUid());
+        using var first = Client(NewUid());
         await first.RegisterAsync(ValidBody());
-        using var second = this.Client(NewUid());
+        using var second = Client(NewUid());
 
         var response = await second.GetAsync(ApiClientExtensions.Me);
 
@@ -109,7 +109,7 @@ public sealed class RegistrationTests(AzuriteFixture azurite) : IDisposable
     [InlineData("missing-consent-version")]
     public async Task Register_InvalidBody_Returns400AndStoresNothing(string scenario)
     {
-        using var client = this.Client(NewUid());
+        using var client = Client(NewUid());
         var body = ValidBody();
         Mutate(scenario, body);
 
@@ -126,7 +126,7 @@ public sealed class RegistrationTests(AzuriteFixture azurite) : IDisposable
         var name = $"Name-{Guid.NewGuid():N}";
         var email = $"{Guid.NewGuid():N}@example.test";
         var childName = $"Child-{Guid.NewGuid():N}";
-        using var client = this.Client(uid, name, email);
+        using var client = Client(uid, name, email);
         var body = ValidBody();
         body.Children[0].Name = childName;
         await client.RegisterAsync(body);
@@ -147,21 +147,47 @@ public sealed class RegistrationTests(AzuriteFixture azurite) : IDisposable
     }
 
     [Fact]
-    public async Task Register_WhenStorageFails_Returns503WithFixedBody()
+    public async Task Register_TwoFamiliesWithTheSameName_GetDifferentWrappedKeysAndCiphertext()
+    {
+        using var first = Client(NewUid(), "Meena Patel", "meena@example.test");
+        using var second = Client(NewUid(), "Meena Patel", "meena@example.test");
+
+        var firstFamily = await (await first.RegisterAsync(ValidBody())).Content.ReadFromJsonAsync<FamilyResponse>();
+        var secondFamily = await (await second.RegisterAsync(ValidBody())).Content.ReadFromJsonAsync<FamilyResponse>();
+
+        var table = new TableServiceClient(azurite.ConnectionString).GetTableClient("parents");
+        var ids = new[] { firstFamily!.FamilyId.ToString("D"), secondFamily!.FamilyId.ToString("D") };
+        var profiles = new List<TableEntity>();
+        await foreach (var entity in table.QueryAsync<TableEntity>(row => row.RowKey == "profile"))
+        {
+            if (ids.Contains(entity.GetString("FamilyId")))
+            {
+                profiles.Add(entity);
+            }
+        }
+
+        Assert.Equal(2, profiles.Count);
+        Assert.NotEqual(profiles[0].GetString("WrappedFieldKey"), profiles[1].GetString("WrappedFieldKey"));
+        Assert.NotEqual(profiles[0].GetString("NameCipher"), profiles[1].GetString("NameCipher"));
+    }
+
+    [Fact]
+    public async Task Register_WhenStorageFails_IsAHardStopThatNeverLeaksTheDetail()
     {
         var repository = new Mock<IParentRepository>();
         repository
             .Setup(r => r.TryRegisterAsync(It.IsAny<Models.ParentProfile>(), It.IsAny<IReadOnlyList<Models.ChildRecord>>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new RequestFailedException(500, "secret-detail-account-name"));
-        using var failing = this.factory.WithWebHostBuilder(builder =>
+        using var failing = factory.WithWebHostBuilder(builder =>
             builder.ConfigureTestServices(services => services.AddSingleton(repository.Object))
         );
         using var client = failing.CreateClient().WithBearer(TestTokens.Create(NewUid()));
 
         var response = await client.RegisterAsync(ValidBody());
 
-        Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
-        Assert.Equal("storage-unavailable", await response.ProblemCodeAsync());
+        // Storage failures aren't a known, mapped outcome: they're a hard stop (a real 500), not a
+        // glossed-over "service unavailable, try again" that pretends to know what happened.
+        Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         Assert.DoesNotContain("secret-detail", await response.Content.ReadAsStringAsync(), StringComparison.Ordinal);
     }
 
@@ -173,17 +199,17 @@ public sealed class RegistrationTests(AzuriteFixture azurite) : IDisposable
         var email = $"{Guid.NewGuid():N}@example.test";
         var token = TestTokens.Create(uid, name, email);
         var childName = $"Child-{Guid.NewGuid():N}";
-        using var client = this.factory.CreateClient().WithBearer(token);
+        using var client = factory.CreateClient().WithBearer(token);
         var body = ValidBody();
         body.Children[0].Name = childName;
 
         await client.RegisterAsync(body);
         await client.RegisterAsync(body);
         await client.GetAsync(ApiClientExtensions.Me);
-        using var refused = this.factory.CreateClient().WithBearer(TestTokens.Create(uid, key: TestTokens.OtherKey));
+        using var refused = factory.CreateClient().WithBearer(TestTokens.Create(uid, key: TestTokens.OtherKey));
         await refused.GetAsync(ApiClientExtensions.Me);
 
-        var logged = this.factory.Logs.Entries;
+        var logged = factory.Logs.Entries;
         Assert.NotEmpty(logged);
         foreach (var secret in new[] { uid, name, email, childName, token })
         {
@@ -192,7 +218,7 @@ public sealed class RegistrationTests(AzuriteFixture azurite) : IDisposable
     }
 
     private HttpClient Client(string uid, string? name = null, string? email = null) =>
-        this.factory.CreateClient().WithBearer(TestTokens.Create(uid, name, email));
+        factory.CreateClient().WithBearer(TestTokens.Create(uid, name, email));
 
     private static string NewUid() => $"uid-{Guid.NewGuid():N}";
 
@@ -233,5 +259,5 @@ public sealed class RegistrationTests(AzuriteFixture azurite) : IDisposable
         }
     }
 
-    public void Dispose() => this.factory.Dispose();
+    public void Dispose() => factory.Dispose();
 }

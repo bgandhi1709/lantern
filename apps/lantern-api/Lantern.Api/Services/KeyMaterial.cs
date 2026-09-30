@@ -6,17 +6,18 @@ using Microsoft.Extensions.Options;
 
 namespace Lantern.Api.Services;
 
+// Field-level encryption no longer derives from this: each family's field key is wrapped by
+// Key Vault instead (KeyVaultFamilyKeyWrapper). This is only the deterministic uid-hash key,
+// needed to find a row before any row-specific key exists.
 internal sealed class KeyMaterial(IOptions<SecurityOptions> options) : IUidHasher
 {
     private readonly byte[] uidKey = Derive(options.Value.Key, "lantern-uid-hash");
-
-    internal byte[] FieldKey { get; } = Derive(options.Value.Key, "lantern-field-encryption");
 
     public string Hash(string uid)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(uid);
 
-        return Convert.ToHexStringLower(HMACSHA256.HashData(this.uidKey, Encoding.UTF8.GetBytes(uid)));
+        return Convert.ToHexStringLower(HMACSHA256.HashData(uidKey, Encoding.UTF8.GetBytes(uid)));
     }
 
     private static byte[] Derive(string key, string purpose) =>

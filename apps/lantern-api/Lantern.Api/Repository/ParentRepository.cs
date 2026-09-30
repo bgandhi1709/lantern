@@ -7,12 +7,12 @@ namespace Lantern.Api.Repository;
 
 // One partition per mother, so the profile and every child commit in one atomic batch.
 // createTable is for Azurite only: in Azure the Bicep owns the table, and the API identity may touch entities but not create tables.
-internal sealed class TableParentRepository(TableClient table, bool createTable) : IParentRepository
+internal sealed class ParentRepository(TableClient table, bool createTable) : IParentRepository
 {
     internal const string ProfileRowKey = "profile";
-    internal const string ChildRowPrefix = "child_";
+     const string ChildRowPrefix = "child_";
 
-    private volatile bool tableEnsured;
+    private volatile bool _tableEnsured;
 
     public async Task<bool> TryRegisterAsync(
         ParentProfile profile,
@@ -20,7 +20,21 @@ internal sealed class TableParentRepository(TableClient table, bool createTable)
         CancellationToken cancellationToken
     )
     {
-        await this.EnsureTableAsync(cancellationToken);
+        await EnsureTableAsync(cancellationToken);
+
+        // Cheap lookup-first check: the common case (an already-registered caller hitting register
+        // again) never throws. The atomic batch below still catches 409, which stays the correctness
+        // backstop for a genuine race between two concurrent first-time registrations.
+        var existing = await table.GetEntityIfExistsAsync<TableEntity>(
+            profile.PartitionKey,
+            ProfileRowKey,
+            select: [],
+            cancellationToken: cancellationToken
+        );
+        if (existing.HasValue)
+        {
+            return false;
+        }
 
         var actions = new List<TableTransactionAction>(children.Count + 1)
         {
@@ -51,7 +65,7 @@ internal sealed class TableParentRepository(TableClient table, bool createTable)
         CancellationToken cancellationToken
     )
     {
-        await this.EnsureTableAsync(cancellationToken);
+        await EnsureTableAsync(cancellationToken);
 
         ParentProfile? profile = null;
         var children = new List<ChildRecord>();
@@ -83,13 +97,13 @@ internal sealed class TableParentRepository(TableClient table, bool createTable)
 
     private async Task EnsureTableAsync(CancellationToken cancellationToken)
     {
-        if (!createTable || this.tableEnsured)
+        if (!createTable || _tableEnsured)
         {
             return;
         }
 
         await table.CreateIfNotExistsAsync(cancellationToken);
-        this.tableEnsured = true;
+        _tableEnsured = true;
     }
 
     private static TableEntity ToEntity(ParentProfile profile) =>
@@ -98,6 +112,7 @@ internal sealed class TableParentRepository(TableClient table, bool createTable)
             ["FamilyId"] = profile.FamilyId.ToString("D"),
             ["NameCipher"] = profile.NameCipher,
             ["EmailCipher"] = profile.EmailCipher,
+            ["WrappedFieldKey"] = profile.WrappedFieldKey,
             ["Region"] = profile.Region,
             ["Language"] = profile.Language,
             ["ConsentVersion"] = profile.ConsentVersion,
@@ -130,6 +145,7 @@ internal sealed class TableParentRepository(TableClient table, bool createTable)
             Guid.Parse(entity.GetString("FamilyId")),
             entity.GetString("NameCipher"),
             entity.GetString("EmailCipher"),
+            entity.GetString("WrappedFieldKey"),
             entity.GetString("Region"),
             entity.GetString("Language"),
             entity.GetString("ConsentVersion"),

@@ -12,7 +12,7 @@ public sealed class AuthenticationTests(AzuriteFixture azurite) : IDisposable
     [Fact]
     public async Task Me_WithoutToken_Returns401()
     {
-        using var client = this.factory.CreateClient();
+        using var client = factory.CreateClient();
 
         var response = await client.GetAsync(ApiClientExtensions.Me);
 
@@ -22,7 +22,7 @@ public sealed class AuthenticationTests(AzuriteFixture azurite) : IDisposable
     [Fact]
     public async Task Register_WithoutToken_Returns401()
     {
-        using var client = this.factory.CreateClient();
+        using var client = factory.CreateClient();
 
         var response = await client.RegisterAsync(new { });
 
@@ -32,7 +32,7 @@ public sealed class AuthenticationTests(AzuriteFixture azurite) : IDisposable
     [Fact]
     public async Task Me_WithValidToken_IsAuthenticated()
     {
-        using var client = this.factory.CreateClient().WithBearer(TestTokens.Create(NewUid()));
+        using var client = factory.CreateClient().WithBearer(TestTokens.Create(NewUid()));
 
         var response = await client.GetAsync(ApiClientExtensions.Me);
 
@@ -56,7 +56,7 @@ public sealed class AuthenticationTests(AzuriteFixture azurite) : IDisposable
             "signed-by-another-key" => TestTokens.Create(uid, key: TestTokens.OtherKey),
             _ => "not.a.jwt",
         };
-        using var client = this.factory.CreateClient().WithBearer(token);
+        using var client = factory.CreateClient().WithBearer(token);
 
         var response = await client.GetAsync(ApiClientExtensions.Me);
 
@@ -66,5 +66,5 @@ public sealed class AuthenticationTests(AzuriteFixture azurite) : IDisposable
 
     private static string NewUid() => $"uid-{Guid.NewGuid():N}";
 
-    public void Dispose() => this.factory.Dispose();
+    public void Dispose() => factory.Dispose();
 }

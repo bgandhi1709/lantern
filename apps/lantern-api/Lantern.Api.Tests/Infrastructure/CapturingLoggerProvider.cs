@@ -7,9 +7,9 @@ public sealed class CapturingLoggerProvider : ILoggerProvider
 {
     private readonly ConcurrentQueue<string> entries = new();
 
-    public IReadOnlyCollection<string> Entries => [.. this.entries];
+    public IReadOnlyCollection<string> Entries => [.. entries];
 
-    public ILogger CreateLogger(string categoryName) => new CapturingLogger(this.entries);
+    public ILogger CreateLogger(string categoryName) => new CapturingLogger(entries);
 
     public void Dispose()
     {

@@ -21,9 +21,9 @@ public sealed class AzuriteFixture : IAsyncLifetime, IDisposable
     public async ValueTask InitializeAsync()
     {
         var port = GetFreeTcpPort();
-        this.dataDirectory = Directory.CreateTempSubdirectory("lantern-azurite-").FullName;
+        dataDirectory = Directory.CreateTempSubdirectory("lantern-azurite-").FullName;
 
-        this.ConnectionString = string.Create(
+        ConnectionString = string.Create(
             CultureInfo.InvariantCulture,
             $"DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;"
                 + $"AccountKey={EmulatorAccountKey};"
@@ -41,19 +41,19 @@ public sealed class AzuriteFixture : IAsyncLifetime, IDisposable
         startInfo.ArgumentList.Add("--tablePort");
         startInfo.ArgumentList.Add(port.ToString(CultureInfo.InvariantCulture));
         startInfo.ArgumentList.Add("--location");
-        startInfo.ArgumentList.Add(this.dataDirectory);
+        startInfo.ArgumentList.Add(dataDirectory);
         startInfo.ArgumentList.Add("--silent");
 
         try
         {
-            this.process = new Process { StartInfo = startInfo };
+            process = new Process { StartInfo = startInfo };
 
-            this.process.OutputDataReceived += (_, args) => this.output.AppendLine(args.Data);
-            this.process.ErrorDataReceived += (_, args) => this.output.AppendLine(args.Data);
+            process.OutputDataReceived += (_, args) => output.AppendLine(args.Data);
+            process.ErrorDataReceived += (_, args) => output.AppendLine(args.Data);
 
-            this.process.Start();
-            this.process.BeginOutputReadLine();
-            this.process.BeginErrorReadLine();
+            process.Start();
+            process.BeginOutputReadLine();
+            process.BeginErrorReadLine();
         }
         catch (Exception ex)
         {
@@ -63,38 +63,38 @@ public sealed class AzuriteFixture : IAsyncLifetime, IDisposable
             );
         }
 
-        await this.WaitUntilReadyAsync();
+        await WaitUntilReadyAsync();
     }
 
     public ValueTask DisposeAsync()
     {
-        this.Dispose();
+        Dispose();
         return ValueTask.CompletedTask;
     }
 
     public void Dispose()
     {
-        if (this.process is { HasExited: false })
+        if (process is { HasExited: false })
         {
-            this.process.Kill(entireProcessTree: true);
-            this.process.WaitForExit(5_000);
+            process.Kill(entireProcessTree: true);
+            process.WaitForExit(5_000);
         }
 
-        this.process?.Dispose();
-        this.process = null;
+        process?.Dispose();
+        process = null;
 
-        if (Directory.Exists(this.dataDirectory))
+        if (Directory.Exists(dataDirectory))
         {
-            Directory.Delete(this.dataDirectory, recursive: true);
+            Directory.Delete(dataDirectory, recursive: true);
         }
     }
 
-    public TableServiceClient CreateClient() => new(this.ConnectionString);
+    public TableServiceClient CreateClient() => new(ConnectionString);
 
     private async Task WaitUntilReadyAsync()
     {
         var deadline = DateTimeOffset.UtcNow.AddSeconds(20);
-        var probe = this.CreateClient().GetTableClient("startupprobe");
+        var probe = CreateClient().GetTableClient("startupprobe");
         Exception? lastError = null;
 
         while (DateTimeOffset.UtcNow < deadline)
@@ -113,7 +113,7 @@ public sealed class AzuriteFixture : IAsyncLifetime, IDisposable
 
         throw new TimeoutException(
             "Azurite did not become ready within 20 seconds. "
-                + $"Exited: {this.process?.HasExited}. Output: {this.output}. "
+                + $"Exited: {process?.HasExited}. Output: {output}. "
                 + $"Last probe error: {lastError?.Message}"
         );
     }
