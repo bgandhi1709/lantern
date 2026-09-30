@@ -14,9 +14,11 @@ infra/bootstrap.sh rg-lantern-dev uat
 
 Needs Owner or User Access Administrator on the resource group. Safe to run again. It creates the
 identity `id-lantern-uat`, the Key Vault `kv-lantern-uat`, the roles the identity needs (Storage Table
-Data Contributor on the resource group, Key Vault Secrets User on the vault), a Storage Blob Data
-Contributor role on the resource group for whoever runs it (so `ncert-build upload` works once the
-container exists), and the secret `security-key`, only if it is missing.
+Data Contributor on the resource group, Key Vault Secrets User on the vault), Storage Blob Data
+Contributor and Storage Table Data Contributor on the resource group for whoever runs it (Owner
+alone grants no Storage data-plane access, since `allowSharedKeyAccess` is off — without these
+even the account that owns the subscription can't read or write a blob or table), and the secret
+`security-key`, only if it is missing.
 
 **`security-key` derives the uid hash key and the field encryption key. Rotating it makes every
 registration unreadable.** Save a copy (the script prints the command).
