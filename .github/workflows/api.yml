@@ -96,13 +96,14 @@ jobs:
     name: E2E - uat
     needs: deploy
     runs-on: ubuntu-latest
-    # No `environment: uat` here on purpose: this reuses the same Entra app's plain push/dispatch
-    # OIDC credential (already trusted for build/image), not the gated `env-uat` one, so it runs
-    # right after deploy without a second manual approval. It only needs the storage role granted
-    # in infra/github-setup.sh - it never touches Key Vault or the container app itself.
-    # id-token: write also lets the test step mint this job's own OIDC token for Firebase (see
-    # RegisteredFamilyFixture) - the same permission line covers both exchanges, no separate
-    # credential needed for either one.
+    # environment: uat, same as deploy: its OIDC credential's subject is the environment name, not
+    # a branch ref, so this also works for a workflow_dispatch run off a feature branch (the plain
+    # push/dispatch credential is locked to refs/heads/main and rejects anything else - AADSTS700213).
+    # It only needs the storage role granted in infra/github-setup.sh - it never touches Key Vault
+    # or the container app itself. id-token: write also lets the test step mint this job's own
+    # OIDC token for Firebase (see RegisteredFamilyFixture) - the same permission line covers both
+    # exchanges, no separate credential needed for either one.
+    environment: uat
     permissions:
       id-token: write
       contents: read
