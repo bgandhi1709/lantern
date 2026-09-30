@@ -39,8 +39,8 @@ internal sealed class RegistrationService(
         var profile = new ParentProfile(
             partitionKey,
             familyId,
-            cipher.Protect(dek, caller.Name, partitionKey, TableParentRepository.ProfileRowKey, "name"),
-            cipher.Protect(dek, caller.Email, partitionKey, TableParentRepository.ProfileRowKey, "email"),
+            cipher.Protect(dek, caller.Name, partitionKey, ParentRepository.ProfileRowKey, "name"),
+            cipher.Protect(dek, caller.Email, partitionKey, ParentRepository.ProfileRowKey, "email"),
             wrappedFieldKey,
             body.Region.Trim(),
             body.Language,
@@ -56,7 +56,7 @@ internal sealed class RegistrationService(
         {
             var child = body.Children[position];
             var childId = Guid.NewGuid();
-            var rowKey = TableParentRepository.ChildRowKey(childId);
+            var rowKey = ParentRepository.ChildRowKey(childId);
             var name = child.Name.Trim();
             var school = string.IsNullOrWhiteSpace(child.School) ? null : child.School.Trim();
 
@@ -102,7 +102,7 @@ internal sealed class RegistrationService(
             await parents.GetAsync(partitionKey, cancellationToken) ?? throw new NotRegisteredException();
 
         var profile = stored.Profile;
-        var profileKey = TableParentRepository.ProfileRowKey;
+        var profileKey = ParentRepository.ProfileRowKey;
         var dek = await familyKeys.UnwrapAsync(profile.WrappedFieldKey, cancellationToken);
 
         return new FamilyView(
@@ -116,7 +116,7 @@ internal sealed class RegistrationService(
             [
                 .. stored.Children.Select(child =>
                 {
-                    var rowKey = TableParentRepository.ChildRowKey(child.ChildId);
+                    var rowKey = ParentRepository.ChildRowKey(child.ChildId);
 
                     return new ChildView(
                         child.ChildId,

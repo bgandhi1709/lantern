@@ -7,9 +7,9 @@ namespace Lantern.Api.Tests.Repository;
 
 [Collection(ApiCollection.Name)]
 // Real Azurite: batch atomicity and 409 behaviour are emulator behaviour a fake would hide.
-public sealed class TableParentRepositoryTests(AzuriteFixture azurite)
+public sealed class ParentRepositoryTests(AzuriteFixture azurite)
 {
-    private readonly TableParentRepository repository = new(
+    private readonly ParentRepository repository = new(
         new TableServiceClient(azurite.ConnectionString).GetTableClient($"parents{Guid.NewGuid():N}"),
         createTable: true
     );
@@ -21,9 +21,9 @@ public sealed class TableParentRepositoryTests(AzuriteFixture azurite)
         var first = NewChild(0);
         var second = NewChild(1);
 
-        Assert.True(await this.repository.TryRegisterAsync(NewProfile(pk), [second, first], CancellationToken.None));
+        Assert.True(await repository.TryRegisterAsync(NewProfile(pk), [second, first], CancellationToken.None));
 
-        var stored = await this.repository.GetAsync(pk, CancellationToken.None);
+        var stored = await repository.GetAsync(pk, CancellationToken.None);
 
         Assert.NotNull(stored);
         Assert.Equal(pk, stored.Profile.PartitionKey);
@@ -35,12 +35,12 @@ public sealed class TableParentRepositoryTests(AzuriteFixture azurite)
     {
         var pk = NewKey();
         var original = NewChild(0);
-        await this.repository.TryRegisterAsync(NewProfile(pk), [original], CancellationToken.None);
+        await repository.TryRegisterAsync(NewProfile(pk), [original], CancellationToken.None);
 
-        var again = await this.repository.TryRegisterAsync(NewProfile(pk), [NewChild(0)], CancellationToken.None);
+        var again = await repository.TryRegisterAsync(NewProfile(pk), [NewChild(0)], CancellationToken.None);
 
         Assert.False(again);
-        var stored = await this.repository.GetAsync(pk, CancellationToken.None);
+        var stored = await repository.GetAsync(pk, CancellationToken.None);
         Assert.Equal([original.ChildId], stored!.Children.Select(child => child.ChildId));
     }
 
@@ -52,11 +52,11 @@ public sealed class TableParentRepositoryTests(AzuriteFixture azurite)
         var results = await Task.WhenAll(
             Enumerable
                 .Range(0, 10)
-                .Select(_ => this.repository.TryRegisterAsync(NewProfile(pk), [NewChild(0)], CancellationToken.None))
+                .Select(_ => repository.TryRegisterAsync(NewProfile(pk), [NewChild(0)], CancellationToken.None))
         );
 
         Assert.Equal(1, results.Count(won => won));
-        Assert.Single((await this.repository.GetAsync(pk, CancellationToken.None))!.Children);
+        Assert.Single((await repository.GetAsync(pk, CancellationToken.None))!.Children);
     }
 
     [Fact]
@@ -64,24 +64,24 @@ public sealed class TableParentRepositoryTests(AzuriteFixture azurite)
     {
         var mine = NewKey();
         var theirs = NewKey();
-        await this.repository.TryRegisterAsync(NewProfile(mine), [NewChild(0)], CancellationToken.None);
-        await this.repository.TryRegisterAsync(NewProfile(theirs), [NewChild(0), NewChild(0)], CancellationToken.None);
+        await repository.TryRegisterAsync(NewProfile(mine), [NewChild(0)], CancellationToken.None);
+        await repository.TryRegisterAsync(NewProfile(theirs), [NewChild(0), NewChild(0)], CancellationToken.None);
 
-        Assert.Single((await this.repository.GetAsync(mine, CancellationToken.None))!.Children);
+        Assert.Single((await repository.GetAsync(mine, CancellationToken.None))!.Children);
     }
 
     [Fact]
     public async Task GetAsync_Unknown_ReturnsNull() =>
-        Assert.Null(await this.repository.GetAsync(NewKey(), CancellationToken.None));
+        Assert.Null(await repository.GetAsync(NewKey(), CancellationToken.None));
 
     [Fact]
     public async Task TryRegisterAsync_StoresTimesAsUtc()
     {
         var pk = NewKey();
         var profile = NewProfile(pk) with { ConsentAt = new DateTimeOffset(2026, 9, 25, 12, 0, 0, TimeSpan.FromHours(5.5)) };
-        await this.repository.TryRegisterAsync(profile, [NewChild(0)], CancellationToken.None);
+        await repository.TryRegisterAsync(profile, [NewChild(0)], CancellationToken.None);
 
-        var stored = await this.repository.GetAsync(pk, CancellationToken.None);
+        var stored = await repository.GetAsync(pk, CancellationToken.None);
 
         Assert.Equal(profile.ConsentAt, stored!.Profile.ConsentAt);
         Assert.Equal(TimeSpan.Zero, stored.Profile.ConsentAt.Offset);
@@ -92,11 +92,11 @@ public sealed class TableParentRepositoryTests(AzuriteFixture azurite)
     {
         var name = $"parents{Guid.NewGuid():N}";
         var service = new TableServiceClient(azurite.ConnectionString);
-        var azureStyle = new TableParentRepository(service.GetTableClient(name), createTable: false);
+        var azureStyle = new ParentRepository(service.GetTableClient(name), createTable: false);
 
         // A batch submission against a missing table fails as a TableTransactionFailedException,
         // not the plain RequestFailedException a single-entity call would throw.
-        var register = await Assert.ThrowsAsync<Azure.Data.Tables.TableTransactionFailedException>(() =>
+        var register = await Assert.ThrowsAsync<TableTransactionFailedException>(() =>
             azureStyle.TryRegisterAsync(NewProfile(NewKey()), [NewChild(0)], CancellationToken.None)
         );
         var read = await Assert.ThrowsAsync<Azure.RequestFailedException>(() =>
@@ -114,7 +114,7 @@ public sealed class TableParentRepositoryTests(AzuriteFixture azurite)
         var name = $"parents{Guid.NewGuid():N}";
         var service = new TableServiceClient(azurite.ConnectionString);
         await service.CreateTableAsync(name);
-        var azureStyle = new TableParentRepository(service.GetTableClient(name), createTable: false);
+        var azureStyle = new ParentRepository(service.GetTableClient(name), createTable: false);
         var pk = NewKey();
 
         Assert.True(await azureStyle.TryRegisterAsync(NewProfile(pk), [NewChild(0)], CancellationToken.None));

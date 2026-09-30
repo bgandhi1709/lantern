@@ -1,10 +1,9 @@
 using System.Net;
-using Lantern.Api.Exceptions;
 using Lantern.Api.Logging;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Lantern.Api.ErrorHandling;
+namespace Lantern.Api.Exceptions;
 
 // Only the exceptions a caller can legitimately trigger get mapped to a response. Anything else
 // (storage, unexpected bugs) is a hard stop: TryHandleAsync returns false and it becomes a real,

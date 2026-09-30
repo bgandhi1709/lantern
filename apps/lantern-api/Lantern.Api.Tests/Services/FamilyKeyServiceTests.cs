@@ -10,16 +10,16 @@ public sealed class FamilyKeyServiceTests
     [Fact]
     public async Task GenerateThenUnwrap_ReturnsTheSameDek()
     {
-        var (dek, wrapped) = await this.keys.GenerateAsync(CancellationToken.None);
+        var (dek, wrapped) = await keys.GenerateAsync(CancellationToken.None);
 
-        Assert.Equal(dek, await this.keys.UnwrapAsync(wrapped, CancellationToken.None));
+        Assert.Equal(dek, await keys.UnwrapAsync(wrapped, CancellationToken.None));
     }
 
     [Fact]
     public async Task Generate_TwiceForDifferentFamilies_GivesDifferentDeksAndDifferentWrappedKeys()
     {
-        var first = await this.keys.GenerateAsync(CancellationToken.None);
-        var second = await this.keys.GenerateAsync(CancellationToken.None);
+        var first = await keys.GenerateAsync(CancellationToken.None);
+        var second = await keys.GenerateAsync(CancellationToken.None);
 
         Assert.NotEqual(first.Dek, second.Dek);
         Assert.NotEqual(first.WrappedFieldKey, second.WrappedFieldKey);
@@ -28,15 +28,15 @@ public sealed class FamilyKeyServiceTests
     [Fact]
     public async Task Unwrap_TamperedWrappedKey_Throws()
     {
-        var (_, wrapped) = await this.keys.GenerateAsync(CancellationToken.None);
+        var (_, wrapped) = await keys.GenerateAsync(CancellationToken.None);
         var raw = Convert.FromBase64String(wrapped);
         raw[^1] ^= 0xFF;
         var tampered = Convert.ToBase64String(raw);
 
-        await Assert.ThrowsAnyAsync<Exception>(() => this.keys.UnwrapAsync(tampered, CancellationToken.None));
+        await Assert.ThrowsAnyAsync<Exception>(() => keys.UnwrapAsync(tampered, CancellationToken.None));
     }
 
     [Fact]
     public async Task Unwrap_GarbageWrappedKey_Throws() =>
-        await Assert.ThrowsAnyAsync<Exception>(() => this.keys.UnwrapAsync(Convert.ToBase64String([1, 2, 3]), CancellationToken.None));
+        await Assert.ThrowsAnyAsync<Exception>(() => keys.UnwrapAsync(Convert.ToBase64String([1, 2, 3]), CancellationToken.None));
 }

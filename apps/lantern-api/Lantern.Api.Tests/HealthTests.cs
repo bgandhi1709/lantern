@@ -11,12 +11,12 @@ public sealed class HealthTests(AzuriteFixture azurite) : IDisposable
     [Fact]
     public async Task Live_Anonymous_Returns200()
     {
-        using var client = this.factory.CreateClient();
+        using var client = factory.CreateClient();
 
         var response = await client.GetAsync(new Uri("/health/live", UriKind.Relative));
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
-    public void Dispose() => this.factory.Dispose();
+    public void Dispose() => factory.Dispose();
 }

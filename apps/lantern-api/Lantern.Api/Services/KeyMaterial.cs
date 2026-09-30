@@ -17,7 +17,7 @@ internal sealed class KeyMaterial(IOptions<SecurityOptions> options) : IUidHashe
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(uid);
 
-        return Convert.ToHexStringLower(HMACSHA256.HashData(this.uidKey, Encoding.UTF8.GetBytes(uid)));
+        return Convert.ToHexStringLower(HMACSHA256.HashData(uidKey, Encoding.UTF8.GetBytes(uid)));
     }
 
     private static byte[] Derive(string key, string purpose) =>

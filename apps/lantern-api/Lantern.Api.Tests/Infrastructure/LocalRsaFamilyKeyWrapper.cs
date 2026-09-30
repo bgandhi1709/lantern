@@ -10,8 +10,8 @@ public sealed class LocalRsaFamilyKeyWrapper : IFamilyKeyWrapper
     private readonly RSA rsa = RSA.Create(2048);
 
     public Task<byte[]> WrapAsync(byte[] dek, CancellationToken cancellationToken) =>
-        Task.FromResult(this.rsa.Encrypt(dek, RSAEncryptionPadding.OaepSHA256));
+        Task.FromResult(rsa.Encrypt(dek, RSAEncryptionPadding.OaepSHA256));
 
     public Task<byte[]> UnwrapAsync(byte[] wrapped, CancellationToken cancellationToken) =>
-        Task.FromResult(this.rsa.Decrypt(wrapped, RSAEncryptionPadding.OaepSHA256));
+        Task.FromResult(rsa.Decrypt(wrapped, RSAEncryptionPadding.OaepSHA256));
 }

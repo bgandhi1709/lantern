@@ -4,7 +4,7 @@ using Azure.Data.Tables;
 using Azure.Identity;
 using Azure.Security.KeyVault.Keys;
 using Lantern.Api.Configuration;
-using Lantern.Api.ErrorHandling;
+using Lantern.Api.Exceptions;
 using Lantern.Api.Logging;
 using Lantern.Api.Repository;
 using Lantern.Api.Services;
@@ -65,7 +65,7 @@ builder.Services.AddSingleton<KeyMaterial>();
 builder.Services.AddSingleton<IUidHasher>(serviceProvider => serviceProvider.GetRequiredService<KeyMaterial>());
 builder.Services.AddSingleton<IFieldCipher, FieldCipher>();
 builder.Services.AddSingleton<IParentRepository>(serviceProvider =>
-    new TableParentRepository(
+    new ParentRepository(
         serviceProvider.GetRequiredService<TableClient>(),
         createTable: !string.IsNullOrWhiteSpace(
             serviceProvider.GetRequiredService<IOptions<StorageOptions>>().Value.ConnectionString

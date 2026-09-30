@@ -5,7 +5,7 @@ namespace Lantern.Api.Contracts;
 
 public sealed class RegisterBody
 {
-    public const int MaxChildren = 6;
+    private const int MaxChildren = 6;
 
     [Required]
     [StringLength(60, MinimumLength = 1)]

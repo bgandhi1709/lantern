@@ -14,21 +14,21 @@ public sealed class FieldCipherTests
     [Fact]
     public void Unprotect_RoundTripsWhatProtectWrote()
     {
-        var stored = this.cipher.Protect(Key, "Aarav", "p1", "child_1", "name");
+        var stored = cipher.Protect(Key, "Aarav", "p1", "child_1", "name");
 
-        Assert.Equal("Aarav", this.cipher.Unprotect(Key, stored, "p1", "child_1", "name"));
+        Assert.Equal("Aarav", cipher.Unprotect(Key, stored, "p1", "child_1", "name"));
     }
 
     [Fact]
     public void Protect_SamePlaintextTwice_GivesDifferentCiphertext() =>
         Assert.NotEqual(
-            this.cipher.Protect(Key, "Aarav", "p1", "child_1", "name"),
-            this.cipher.Protect(Key, "Aarav", "p1", "child_1", "name")
+            cipher.Protect(Key, "Aarav", "p1", "child_1", "name"),
+            cipher.Protect(Key, "Aarav", "p1", "child_1", "name")
         );
 
     [Fact]
     public void Protect_Output_DoesNotContainThePlaintext() =>
-        Assert.DoesNotContain("Aarav", this.cipher.Protect(Key, "Aarav", "p1", "child_1", "name"), StringComparison.Ordinal);
+        Assert.DoesNotContain("Aarav", cipher.Protect(Key, "Aarav", "p1", "child_1", "name"), StringComparison.Ordinal);
 
     [Theory]
     [InlineData("other-partition", "child_1", "name")]
@@ -36,29 +36,29 @@ public sealed class FieldCipherTests
     [InlineData("p1", "child_1", "school")]
     public void Unprotect_ValueMovedToAnotherRowOrColumn_Throws(string partition, string row, string column)
     {
-        var stored = this.cipher.Protect(Key, "Aarav", "p1", "child_1", "name");
+        var stored = cipher.Protect(Key, "Aarav", "p1", "child_1", "name");
 
-        Assert.ThrowsAny<CryptographicException>(() => this.cipher.Unprotect(Key, stored, partition, row, column));
+        Assert.ThrowsAny<CryptographicException>(() => cipher.Unprotect(Key, stored, partition, row, column));
     }
 
     [Fact]
     public void Unprotect_TamperedValue_Throws()
     {
-        var stored = this.cipher.Protect(Key, "Aarav", "p1", "child_1", "name");
+        var stored = cipher.Protect(Key, "Aarav", "p1", "child_1", "name");
         var raw = Convert.FromBase64String(stored[3..]);
         raw[^1] ^= 0xFF;
         var tampered = "v1." + Convert.ToBase64String(raw);
 
-        Assert.ThrowsAny<CryptographicException>(() => this.cipher.Unprotect(Key, tampered, "p1", "child_1", "name"));
+        Assert.ThrowsAny<CryptographicException>(() => cipher.Unprotect(Key, tampered, "p1", "child_1", "name"));
     }
 
     [Fact]
     public void Unprotect_ValueFromAnotherKey_Throws()
     {
         var otherKey = RandomNumberGenerator.GetBytes(32);
-        var stored = this.cipher.Protect(otherKey, "Aarav", "p1", "child_1", "name");
+        var stored = cipher.Protect(otherKey, "Aarav", "p1", "child_1", "name");
 
-        Assert.ThrowsAny<CryptographicException>(() => this.cipher.Unprotect(Key, stored, "p1", "child_1", "name"));
+        Assert.ThrowsAny<CryptographicException>(() => cipher.Unprotect(Key, stored, "p1", "child_1", "name"));
     }
 
     [Theory]
@@ -67,7 +67,7 @@ public sealed class FieldCipherTests
     [InlineData("v1.not-base64!")]
     [InlineData("v1.AAAA")]
     public void Unprotect_MalformedValue_ThrowsCryptographicException(string value) =>
-        Assert.ThrowsAny<CryptographicException>(() => this.cipher.Unprotect(Key, value, "p1", "child_1", "name"));
+        Assert.ThrowsAny<CryptographicException>(() => cipher.Unprotect(Key, value, "p1", "child_1", "name"));
 
     [Fact]
     public void Hash_IsStableCaseSensitiveAndNotTheUid()

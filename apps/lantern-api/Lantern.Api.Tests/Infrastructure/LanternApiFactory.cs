@@ -28,7 +28,7 @@ public sealed class LanternApiFactory(string connectionString) : WebApplicationF
         builder.UseSetting("KeyVault:VaultUri", "https://unused.vault.azure.net/");
         builder.UseSetting("KeyVault:FamilyKeyName", "unused");
 
-        builder.ConfigureLogging(logging => logging.AddProvider(this.Logs));
+        builder.ConfigureLogging(logging => logging.AddProvider(Logs));
 
         builder.ConfigureTestServices(services =>
         {

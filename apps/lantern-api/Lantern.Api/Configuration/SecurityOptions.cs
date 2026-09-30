@@ -2,15 +2,14 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Lantern.Api.Configuration;
 
-// Changing the key orphans every registration, so never rotate it without a migration. Key Vault envelope encryption (#23) replaces this.
 public sealed class SecurityOptions : IValidatableObject
 {
-    public const string SectionName = "Security";
+    internal const string SectionName = "Security";
 
-    public const int MinimumKeyBytes = 32;
+    const int MinimumKeyBytes = 32;
 
     [Required]
-    public string Key { get; set; } = string.Empty;
+    public string Key { get; init; } = string.Empty;
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {

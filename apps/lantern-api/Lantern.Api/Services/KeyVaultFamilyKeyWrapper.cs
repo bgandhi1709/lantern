@@ -12,18 +12,18 @@ internal sealed class KeyVaultFamilyKeyWrapper : IFamilyKeyWrapper
     private readonly CryptographyClient cryptoClient;
 
     public KeyVaultFamilyKeyWrapper(KeyClient keyClient, string keyName) =>
-        this.cryptoClient = keyClient.GetCryptographyClient(keyName);
+        cryptoClient = keyClient.GetCryptographyClient(keyName);
 
     public async Task<byte[]> WrapAsync(byte[] dek, CancellationToken cancellationToken)
     {
-        var result = await this.cryptoClient.WrapKeyAsync(KeyWrapAlgorithm.RsaOaep256, dek, cancellationToken);
+        var result = await cryptoClient.WrapKeyAsync(KeyWrapAlgorithm.RsaOaep256, dek, cancellationToken);
 
         return result.EncryptedKey;
     }
 
     public async Task<byte[]> UnwrapAsync(byte[] wrapped, CancellationToken cancellationToken)
     {
-        var result = await this.cryptoClient.UnwrapKeyAsync(KeyWrapAlgorithm.RsaOaep256, wrapped, cancellationToken);
+        var result = await cryptoClient.UnwrapKeyAsync(KeyWrapAlgorithm.RsaOaep256, wrapped, cancellationToken);
 
         return result.Key;
     }

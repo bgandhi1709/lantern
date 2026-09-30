@@ -20,26 +20,26 @@ public sealed class RegistrationController(IRegistrationService registration) : 
         CancellationToken cancellationToken
     )
     {
-        if (Caller.From(this.User) is not { } caller)
+        if (Caller.From(User) is not { } caller)
         {
-            return this.Unauthorized();
+            return Unauthorized();
         }
 
         var family = await registration.RegisterAsync(caller, body, cancellationToken);
 
-        return this.CreatedAtAction(nameof(Me), null, FamilyResponse.From(family));
+        return CreatedAtAction(nameof(Me), null, FamilyResponse.From(family));
     }
 
     [HttpGet("me")]
     public async Task<ActionResult<FamilyResponse>> Me(CancellationToken cancellationToken)
     {
-        if (Caller.From(this.User) is not { } caller)
+        if (Caller.From(User) is not { } caller)
         {
             return Unauthorized();
         }
 
         var family = await registration.GetAsync(caller, cancellationToken);
 
-        return this.Ok(FamilyResponse.From(family));
+        return Ok(FamilyResponse.From(family));
     }
 }
