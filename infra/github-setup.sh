@@ -49,6 +49,20 @@ az role assignment create --role Contributor --assignee-object-id "$SP_ID" \
   --assignee-principal-type ServicePrincipal \
   --scope "/subscriptions/${SUB_ID}/resourceGroups/${RG}" -o none
 
+# Contributor is control-plane only (Azure deliberately keeps storage/Key Vault data access
+# separate). The E2E job (api.yml's e2e-uat) deletes the rows it creates directly from the
+# 'parents' table, so it needs this one data-plane role, scoped to just that storage account -
+# not the whole resource group, and not the app's own managed identity (id-lantern-uat already
+# has this for its own purposes; this is a separate grant to the CI identity).
+STORAGE_ID=$(az storage account show -g "$RG" -n "lantern${ENV_NAME}" --query id -o tsv 2>/dev/null || true)
+if [ -n "$STORAGE_ID" ]; then
+  echo "Storage Table Data Contributor on lantern${ENV_NAME} (for e2e-uat cleanup)"
+  az role assignment create --role "Storage Table Data Contributor" --assignee-object-id "$SP_ID" \
+    --assignee-principal-type ServicePrincipal --scope "$STORAGE_ID" -o none
+else
+  echo "Storage account lantern${ENV_NAME} not deployed yet; run infra deploy first, then re-run this script."
+fi
+
 echo "GitHub variables and environment ${ENV_NAME}"
 gh variable set AZURE_CLIENT_ID --body "$CLIENT_ID"
 gh variable set AZURE_TENANT_ID --body "$TENANT_ID"

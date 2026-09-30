@@ -37,7 +37,9 @@ jobs:
           node-version: 22
       - run: npm install -g azurite@3
       - run: dotnet build Lantern.slnx -c Release
-      - run: dotnet test --solution Lantern.slnx -c Release --no-build
+      # The E2E class (Category=E2E) needs a real deployed UAT and Firebase secrets it doesn't
+      # have here; it only runs in the e2e-uat job below, after a real deploy.
+      - run: dotnet test --solution Lantern.slnx -c Release --no-build --filter-not-trait "Category=E2E"
 
   image:
     name: Build image
@@ -89,3 +91,41 @@ jobs:
             --image "ghcr.io/${{ github.repository_owner }}/lantern-api:${{ needs.image.outputs.tag }}"
           az containerapp ingress update -g rg-lantern-dev -n ca-lantern-uat \
             --target-port 8080
+
+  e2e-uat:
+    name: E2E - uat
+    needs: deploy
+    runs-on: ubuntu-latest
+    # No `environment: uat` here on purpose: this reuses the same Entra app's plain push/dispatch
+    # OIDC credential (already trusted for build/image), not the gated `env-uat` one, so it runs
+    # right after deploy without a second manual approval. It only needs the storage role granted
+    # in infra/github-setup.sh - it never touches Key Vault or the container app itself.
+    # id-token: write also lets the test step mint this job's own OIDC token for Firebase (see
+    # RegisteredFamilyFixture) - the same permission line covers both exchanges, no separate
+    # credential needed for either one.
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+      - uses: azure/login@7184910d9eb2b1c5e48f7073824a90609bb9b6d6 # v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - id: url
+        run: |
+          fqdn=$(az containerapp show -g rg-lantern-dev -n ca-lantern-uat \
+            --query properties.configuration.ingress.fqdn -o tsv)
+          echo "base=https://${fqdn}" >> "$GITHUB_OUTPUT"
+      - run: dotnet build apps/lantern-api/Lantern.Api.Tests -c Release
+      - run: >
+          dotnet test --project apps/lantern-api/Lantern.Api.Tests -c Release --no-build
+          --filter-trait "Category=E2E"
+        env:
+          E2E_BASE_URL: ${{ steps.url.outputs.base }}
+          E2E_STORAGE_TABLE_ENDPOINT: https://lanternuat.table.core.windows.net
+          FIREBASE_WEB_API_KEY: ${{ vars.FIREBASE_WEB_API_KEY }}
