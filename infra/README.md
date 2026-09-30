@@ -3,8 +3,9 @@
 Base infrastructure for Lantern, environment `uat`, deployed into the existing `rg-lantern-dev`
 (Central India). One file, `main.bicep`; the environment is in `params/lantern.uat.bicepparam`.
 It creates the Container App fully wired (Firebase project id, storage table endpoint, the
-`security-key` secret from Key Vault) but on a placeholder image; the API release swaps in the
-real image and port (`.github/workflows/api.yml`), nothing else.
+`security-key` secret from Key Vault, the `family-field-key` name and vault URI) but on a
+placeholder image; the API release swaps in the real image and port (`.github/workflows/api.yml`),
+nothing else.
 
 ## 1. Bootstrap, once
 
@@ -14,12 +15,17 @@ infra/bootstrap.sh rg-lantern-dev uat
 
 Needs Owner or User Access Administrator on the resource group. Safe to run again. It creates the
 identity `id-lantern-uat`, the Key Vault `kv-lantern-uat`, the roles the identity needs (Storage Table
-Data Contributor on the resource group, Key Vault Secrets User on the vault), a Storage Blob Data
-Contributor role on the resource group for whoever runs it (so `ncert-build upload` works once the
-container exists), and the secret `security-key`, only if it is missing.
+Data Contributor on the resource group, Key Vault Secrets User and Key Vault Crypto User on the vault),
+a Storage Blob Data Contributor role on the resource group for whoever runs it (so `ncert-build upload`
+works once the container exists), the secret `security-key`, and the key `family-field-key`, each only
+if missing. Whoever runs it also gets Key Vault Crypto User on the vault, since local development has
+no Key Vault emulator and calls the real vault through `az login`.
 
-**`security-key` derives the uid hash key and the field encryption key. Rotating it makes every
-registration unreadable.** Save a copy (the script prints the command).
+**`security-key` derives the uid hash key. Rotating it makes every registration unreadable.**
+Save a copy (the script prints the command). **`family-field-key` wraps each family's own
+field-encryption key (issue #23) — its private material never leaves the vault.** Deleting it makes
+every family's data unreadable; rotating it is safe, since Key Vault keeps prior versions and
+already-wrapped keys keep unwrapping.
 
 ## 2. Deploy
 
@@ -34,9 +40,11 @@ The deploying account needs Contributor only. It creates the storage account `la
 Apps environment and app (0 to 1 replica, the identity attached). All names come from
 `environmentName`. The template reads the identity and the Key Vault by name and wires the app's
 settings: `Firebase__ProjectId` (a param, not a secret), `Storage__TableEndpoint` (read from the
-storage account), `Security__Key` (a Key Vault secret reference), and `AZURE_CLIENT_ID` (the
-identity's client id, needed since `DefaultAzureCredential` can't otherwise tell which
-user-assigned identity to use). Add tables, never rename one.
+storage account), `Security__Key` (a Key Vault secret reference), `KeyVault__VaultUri` and
+`KeyVault__FamilyKeyName` (plain values — the app only ever calls Key Vault's wrapKey/unwrapKey by
+name, it never holds the key itself), and `AZURE_CLIENT_ID` (the identity's client id, needed since
+`DefaultAzureCredential` can't otherwise tell which user-assigned identity to use). Add tables, never
+rename one.
 
 The API release, not this template, sets the real image and port. Until then the params file uses a
 placeholder image on port 80. Later deployments of this template read the running image and port

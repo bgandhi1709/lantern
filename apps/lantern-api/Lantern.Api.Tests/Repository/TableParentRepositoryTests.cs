@@ -124,7 +124,7 @@ public sealed class TableParentRepositoryTests(AzuriteFixture azurite)
     private static string NewKey() => Guid.NewGuid().ToString("N");
 
     private static ParentProfile NewProfile(string pk) =>
-        new(pk, Guid.NewGuid(), "cipher-name", "cipher-email", "Gujarat", "gu", "2026-09", DateTimeOffset.UtcNow, DateTimeOffset.UtcNow);
+        new(pk, Guid.NewGuid(), "cipher-name", "cipher-email", "wrapped-key", "Gujarat", "gu", "2026-09", DateTimeOffset.UtcNow, DateTimeOffset.UtcNow);
 
     private static ChildRecord NewChild(int position) =>
         new(Guid.NewGuid(), "cipher-child", null, 1, 2020, position, DateTimeOffset.UtcNow);

@@ -8,6 +8,9 @@ public sealed record ParentProfile(
     Guid FamilyId,
     string NameCipher,
     string EmailCipher,
+    // This family's field-encryption key, wrapped by the Key Vault family-field-key. Unwrap it to
+    // decrypt NameCipher/EmailCipher/children's ciphers; clearing it makes them unreadable forever.
+    string WrappedFieldKey,
     string Region,
     string Language,
     string ConsentVersion,

@@ -29,11 +29,4 @@ internal static partial class Log
         Message = "Registration refused: {Reason}"
     )]
     internal static partial void RegistrationInvalid(ILogger logger, string reason);
-
-    [LoggerMessage(
-        EventId = 1004,
-        Level = LogLevel.Error,
-        Message = "Table storage failed with status {StatusCode}"
-    )]
-    internal static partial void StorageFailed(ILogger logger, Exception exception, int statusCode);
 }

@@ -23,5 +23,8 @@ __azurite*
 deploy/local/certs/
 
 # AI files
-.superpowers 
+.superpowers
 docs/
+
+# IDE
+.idea/

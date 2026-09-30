@@ -147,7 +147,32 @@ public sealed class RegistrationTests(AzuriteFixture azurite) : IDisposable
     }
 
     [Fact]
-    public async Task Register_WhenStorageFails_Returns503WithFixedBody()
+    public async Task Register_TwoFamiliesWithTheSameName_GetDifferentWrappedKeysAndCiphertext()
+    {
+        using var first = this.Client(NewUid(), "Meena Patel", "meena@example.test");
+        using var second = this.Client(NewUid(), "Meena Patel", "meena@example.test");
+
+        var firstFamily = await (await first.RegisterAsync(ValidBody())).Content.ReadFromJsonAsync<FamilyResponse>();
+        var secondFamily = await (await second.RegisterAsync(ValidBody())).Content.ReadFromJsonAsync<FamilyResponse>();
+
+        var table = new TableServiceClient(azurite.ConnectionString).GetTableClient("parents");
+        var ids = new[] { firstFamily!.FamilyId.ToString("D"), secondFamily!.FamilyId.ToString("D") };
+        var profiles = new List<TableEntity>();
+        await foreach (var entity in table.QueryAsync<TableEntity>(row => row.RowKey == "profile"))
+        {
+            if (ids.Contains(entity.GetString("FamilyId")))
+            {
+                profiles.Add(entity);
+            }
+        }
+
+        Assert.Equal(2, profiles.Count);
+        Assert.NotEqual(profiles[0].GetString("WrappedFieldKey"), profiles[1].GetString("WrappedFieldKey"));
+        Assert.NotEqual(profiles[0].GetString("NameCipher"), profiles[1].GetString("NameCipher"));
+    }
+
+    [Fact]
+    public async Task Register_WhenStorageFails_IsAHardStopThatNeverLeaksTheDetail()
     {
         var repository = new Mock<IParentRepository>();
         repository
@@ -160,8 +185,9 @@ public sealed class RegistrationTests(AzuriteFixture azurite) : IDisposable
 
         var response = await client.RegisterAsync(ValidBody());
 
-        Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
-        Assert.Equal("storage-unavailable", await response.ProblemCodeAsync());
+        // Storage failures aren't a known, mapped outcome: they're a hard stop (a real 500), not a
+        // glossed-over "service unavailable, try again" that pretends to know what happened.
+        Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         Assert.DoesNotContain("secret-detail", await response.Content.ReadAsStringAsync(), StringComparison.Ordinal);
     }
 

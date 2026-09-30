@@ -12,6 +12,7 @@ internal sealed class RegistrationService(
     IParentRepository parents,
     IUidHasher hasher,
     IFieldCipher cipher,
+    IFamilyKeyService familyKeys,
     TimeProvider clock,
     ILogger<RegistrationService> logger
 ) : IRegistrationService
@@ -33,12 +34,14 @@ internal sealed class RegistrationService(
 
         var partitionKey = hasher.Hash(caller.Uid);
         var familyId = Guid.NewGuid();
+        var (dek, wrappedFieldKey) = await familyKeys.GenerateAsync(cancellationToken);
 
         var profile = new ParentProfile(
             partitionKey,
             familyId,
-            cipher.Protect(caller.Name, partitionKey, TableParentRepository.ProfileRowKey, "name"),
-            cipher.Protect(caller.Email, partitionKey, TableParentRepository.ProfileRowKey, "email"),
+            cipher.Protect(dek, caller.Name, partitionKey, TableParentRepository.ProfileRowKey, "name"),
+            cipher.Protect(dek, caller.Email, partitionKey, TableParentRepository.ProfileRowKey, "email"),
+            wrappedFieldKey,
             body.Region.Trim(),
             body.Language,
             body.Consent.NoticeVersion.Trim(),
@@ -60,8 +63,8 @@ internal sealed class RegistrationService(
             records.Add(
                 new ChildRecord(
                     childId,
-                    cipher.Protect(name, partitionKey, rowKey, "name"),
-                    school is null ? null : cipher.Protect(school, partitionKey, rowKey, "school"),
+                    cipher.Protect(dek, name, partitionKey, rowKey, "name"),
+                    school is null ? null : cipher.Protect(dek, school, partitionKey, rowKey, "school"),
                     child.ClassLevel,
                     child.BirthYear,
                     position,
@@ -100,11 +103,12 @@ internal sealed class RegistrationService(
 
         var profile = stored.Profile;
         var profileKey = TableParentRepository.ProfileRowKey;
+        var dek = await familyKeys.UnwrapAsync(profile.WrappedFieldKey, cancellationToken);
 
         return new FamilyView(
             profile.FamilyId,
-            cipher.Unprotect(profile.NameCipher, partitionKey, profileKey, "name"),
-            cipher.Unprotect(profile.EmailCipher, partitionKey, profileKey, "email"),
+            cipher.Unprotect(dek, profile.NameCipher, partitionKey, profileKey, "name"),
+            cipher.Unprotect(dek, profile.EmailCipher, partitionKey, profileKey, "email"),
             profile.Region,
             profile.Language,
             profile.ConsentVersion,
@@ -116,10 +120,10 @@ internal sealed class RegistrationService(
 
                     return new ChildView(
                         child.ChildId,
-                        cipher.Unprotect(child.NameCipher, partitionKey, rowKey, "name"),
+                        cipher.Unprotect(dek, child.NameCipher, partitionKey, rowKey, "name"),
                         child.SchoolCipher is null
                             ? null
-                            : cipher.Unprotect(child.SchoolCipher, partitionKey, rowKey, "school"),
+                            : cipher.Unprotect(dek, child.SchoolCipher, partitionKey, rowKey, "school"),
                         child.ClassLevel,
                         child.BirthYear
                     );

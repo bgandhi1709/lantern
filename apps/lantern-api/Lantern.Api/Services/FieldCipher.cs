@@ -4,13 +4,13 @@ using Lantern.Api.Services.Interfaces;
 
 namespace Lantern.Api.Services;
 
-internal sealed class FieldCipher(KeyMaterial keys) : IFieldCipher
+internal sealed class FieldCipher : IFieldCipher
 {
     private const string Prefix = "v1.";
     private const int NonceBytes = 12;
     private const int TagBytes = 16;
 
-    public string Protect(string plaintext, string partitionKey, string rowKey, string column)
+    public string Protect(byte[] familyKey, string plaintext, string partitionKey, string rowKey, string column)
     {
         ArgumentNullException.ThrowIfNull(plaintext);
 
@@ -19,13 +19,13 @@ internal sealed class FieldCipher(KeyMaterial keys) : IFieldCipher
         var tag = new byte[TagBytes];
         var cipher = new byte[plain.Length];
 
-        using var aes = new AesGcm(keys.FieldKey, TagBytes);
+        using var aes = new AesGcm(familyKey, TagBytes);
         aes.Encrypt(nonce, plain, cipher, tag, AssociatedData(partitionKey, rowKey, column));
 
         return Prefix + Convert.ToBase64String([.. nonce, .. tag, .. cipher]);
     }
 
-    public string Unprotect(string value, string partitionKey, string rowKey, string column)
+    public string Unprotect(byte[] familyKey, string value, string partitionKey, string rowKey, string column)
     {
         ArgumentNullException.ThrowIfNull(value);
 
@@ -54,7 +54,7 @@ internal sealed class FieldCipher(KeyMaterial keys) : IFieldCipher
         var cipher = raw.AsSpan(NonceBytes + TagBytes);
         var plain = new byte[cipher.Length];
 
-        using var aes = new AesGcm(keys.FieldKey, TagBytes);
+        using var aes = new AesGcm(familyKey, TagBytes);
         aes.Decrypt(nonce, cipher, tag, plain, AssociatedData(partitionKey, rowKey, column));
 
         return Encoding.UTF8.GetString(plain);
