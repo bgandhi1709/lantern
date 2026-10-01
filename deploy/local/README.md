@@ -58,8 +58,8 @@ E2E_BASE_URL=https://local.lantern.api E2E_AUTH_EMULATOR=http://127.0.0.1:9099 \
   dotnet test --project apps/lantern-api/Lantern.Api.Test.Integration --filter-trait "Category=E2E"
 ```
 
-The same `Category=E2E` tests run against UAT in CI (a GitHub OIDC token instead of the emulator; the
-`Environment=Local` ones are skipped there), so a flow proven here is the flow UAT runs.
+CI runs the same tests in its `e2e-docker` job on every PR and push, and the release waits for it, so what passes here
+is what gates the release. They do not run against real UAT.
 
 None of this can reach another environment: the stand-ins are not in the API or its production image. The emulator's
 tokens are unsigned, so the local host relaxes signature checking; issuer, audience and expiry are still checked (the
