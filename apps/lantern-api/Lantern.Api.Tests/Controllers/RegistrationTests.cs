@@ -203,6 +203,25 @@ public sealed class RegistrationTests(AzuriteFixture azurite) : IDisposable
     }
 
     [Fact]
+    public async Task Register_Twice_StartsNoClassSpacesTheSecondTime()
+    {
+        var classSpaces = new Mock<IClassSpaceStore>();
+        using var counting = factory.WithWebHostBuilder(builder =>
+            builder.ConfigureTestServices(services => services.AddSingleton(classSpaces.Object))
+        );
+        using var client = counting.CreateClient().WithBearer(TestTokens.Create(NewUid()));
+        await client.RegisterAsync(ValidBody());
+
+        var again = await client.RegisterAsync(ValidBody());
+
+        Assert.Equal(HttpStatusCode.Conflict, again.StatusCode);
+        classSpaces.Verify(
+            s => s.StartAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<int>(), It.IsAny<CancellationToken>()),
+            Times.Exactly(ValidBody().Children.Count)
+        );
+    }
+
+    [Fact]
     public async Task Register_WhenAClassSpaceFails_LeavesTheCallerUnregistered()
     {
         var classSpaces = new Mock<IClassSpaceStore>();

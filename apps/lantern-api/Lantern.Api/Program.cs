@@ -14,9 +14,16 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
+
+LocalDevelopmentGuard.Require(
+    builder.Environment,
+    builder.Configuration.GetSection(FirebaseOptions.SectionName).Get<FirebaseOptions>() ?? new(),
+    builder.Configuration.GetSection(KeyVaultOptions.SectionName).Get<KeyVaultOptions>() ?? new()
+);
 
 builder
     .Services.AddOptions<FirebaseOptions>()
@@ -64,6 +71,11 @@ builder.Services.AddSingleton(serviceProvider =>
 builder.Services.AddSingleton<IFamilyKeyWrapper>(serviceProvider =>
 {
     var options = serviceProvider.GetRequiredService<IOptions<KeyVaultOptions>>().Value;
+    if (!string.IsNullOrWhiteSpace(options.LocalKeyPath))
+    {
+        return new LocalFamilyKeyWrapper(options.LocalKeyPath);
+    }
+
     var keyClient = new KeyClient(new Uri(options.VaultUri), new DefaultAzureCredential());
 
     return new KeyVaultFamilyKeyWrapper(keyClient, options.FamilyKeyName);
@@ -96,6 +108,7 @@ builder.Services.AddSingleton<IClassSpaceStore>(serviceProvider =>
     );
 });
 builder.Services.AddScoped<IRegistrationService, RegistrationService>();
+builder.Services.AddScoped<DevelopmentSeeder>();
 
 // Google-only sign-in is enforced in the Firebase console. A revoked or disabled user stays valid
 // until their ID token expires (1 hour at most).
@@ -109,8 +122,10 @@ builder
             var projectId = firebase.Value.ProjectId;
             var issuer = $"https://securetoken.google.com/{projectId}";
             var logger = loggerFactory.CreateLogger("Lantern.Api.Auth");
+            var emulator = !string.IsNullOrWhiteSpace(firebase.Value.EmulatorHost);
 
-            options.Authority = issuer;
+            // The emulator has no signing keys to fetch; everything else is still checked.
+            options.Authority = emulator ? null : issuer;
             options.MapInboundClaims = false;
             options.IncludeErrorDetails = false;
             options.TokenValidationParameters = new TokenValidationParameters
@@ -120,7 +135,9 @@ builder
                 ValidateAudience = true,
                 ValidAudience = projectId,
                 ValidateLifetime = true,
-                ValidateIssuerSigningKey = true,
+                ValidateIssuerSigningKey = !emulator,
+                RequireSignedTokens = !emulator,
+                SignatureValidator = emulator ? (token, _) => new JsonWebToken(token) : null,
                 ClockSkew = TimeSpan.FromMinutes(2),
             };
             options.Events = new JwtBearerEvents
@@ -161,6 +178,19 @@ builder.Services.AddExceptionHandler<RegistrationExceptionHandler>();
 builder.Services.AddProblemDetails();
 
 var app = builder.Build();
+
+// `dotnet Lantern.Api.dll seed`: the local Docker seed service. Never in any other environment.
+if (args is ["seed"])
+{
+    if (!app.Environment.IsDevelopment())
+    {
+        throw new InvalidOperationException("The seed command is for local development only.");
+    }
+
+    using var scope = app.Services.CreateScope();
+    await scope.ServiceProvider.GetRequiredService<DevelopmentSeeder>().SeedAsync(CancellationToken.None);
+    return;
+}
 
 // First, so it wraps every other middleware below.
 app.UseExceptionHandler();

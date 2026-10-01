@@ -1,6 +1,7 @@
 # Run the API locally over HTTPS
 
-Serves the API at `https://local.lantern.api` in Docker, with an Azurite table and blob emulator beside it.
+Serves the API at `https://local.lantern.api` in Docker, with stand-ins beside it for everything that is not local: an Azurite table and blob emulator, the Firebase
+Auth Emulator and a key file in place of Key Vault.
 Works from WSL and from Windows.
 
 ## Setup (once)
@@ -37,7 +38,27 @@ Then open <https://local.lantern.api/health/live>. Without a token, `https://loc
 returns 401, which is correct. The Development settings apply (`Firebase:ProjectId` and a throwaway
 `Security:Key`). Set `LANTERN_HTTPS_PORT` if port 443 is taken; the URL then needs that port.
 
-Table and Blob data is kept in the `lantern-local_azurite-data` volume. Reset it with
+## Sign in and test end to end
+
+The Firebase Auth Emulator replaces Google sign-in and a PEM file in the `keys` volume replaces Key Vault
+(same RSA-OAEP-256 wrapping). A one-shot `seed` service writes a dev Family before the API starts: two
+Parents (`dev-parent-1`, `dev-parent-2`) and ten Children, one in each Class from 1 to 10, with a Class space
+for each.
+
+```sh
+deploy/local/token.sh dev-parent-1                          # an ID token; any uid works, new ones are created
+curl --cacert deploy/local/certs/ca.crt --resolve local.lantern.api:443:127.0.0.1 \
+  -H "Authorization: Bearer $(deploy/local/token.sh dev-parent-1)" https://local.lantern.api/v1/me
+deploy/local/e2e.sh                                         # the whole flow: seeded Family, register, 409, isolation
+```
+
+None of this can reach another environment. The API refuses to start with `Firebase:EmulatorHost` or
+`KeyVault:LocalKeyPath` set outside Development, and the `seed` command only runs in Development. The emulator's
+tokens are unsigned, so the API accepts them only when `Firebase:EmulatorHost` is set; issuer, audience and expiry
+are still checked.
+
+Table and Blob data is kept in the `lantern-local_azurite-data` volume and the Key Vault stand-in key in
+`lantern-local_keys`. Reset both with
 `docker compose -f deploy/local/docker-compose.yml down -v`.
 
 ## Notes

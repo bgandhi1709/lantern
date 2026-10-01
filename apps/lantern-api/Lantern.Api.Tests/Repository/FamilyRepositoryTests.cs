@@ -191,6 +191,40 @@ public sealed class FamilyRepositoryTests(AzuriteFixture azurite)
         Assert.Single((await azureStyle.GetAsync(pk, CancellationToken.None))!.Children);
     }
 
+    [Fact]
+    public async Task JoinAsync_SecondParent_SeesTheSameFamilyAndChildren()
+    {
+        var first = NewKey();
+        var second = NewKey();
+        var family = NewFamily();
+        var child = NewChild(0);
+        await Repository.RegisterAsync(NewParent(first, family), family, [child], CancellationToken.None);
+
+        await Repository.JoinAsync(NewParent(second, family), CancellationToken.None);
+
+        var stored = await Repository.GetAsync(second, CancellationToken.None);
+        Assert.NotNull(stored);
+        Assert.Equal(family.FamilyId, stored.Family.FamilyId);
+        Assert.Equal([child.ChildId], stored.Children.Select(c => c.ChildId));
+    }
+
+    [Fact]
+    public async Task JoinAsync_AlreadyRegisteredParent_ThrowsAndLeavesTheFamilyAlone()
+    {
+        var first = NewKey();
+        var family = NewFamily();
+        await Repository.RegisterAsync(NewParent(first, family), family, [NewChild(0)], CancellationToken.None);
+        var other = NewFamily();
+        await Repository.RegisterAsync(NewParent(NewKey(), other), other, [NewChild(0)], CancellationToken.None);
+
+        await Assert.ThrowsAsync<AlreadyRegisteredException>(() =>
+            Repository.JoinAsync(NewParent(first, other), CancellationToken.None)
+        );
+
+        var memberships = families.Query<TableEntity>(row => row.PartitionKey == other.FamilyId.ToString("D")).Count(row => row.RowKey.StartsWith("parent_", StringComparison.Ordinal));
+        Assert.Equal(1, memberships);
+    }
+
     private static string NewKey() => Guid.NewGuid().ToString("N");
 
     private static FamilyRecord NewFamily() =>

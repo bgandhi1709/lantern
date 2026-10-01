@@ -51,5 +51,17 @@ public static class TestTokens
         );
     }
 
+    // What the Firebase Auth Emulator issues: the real claims, alg none, no signature.
+    public static string WithoutSignature(string uid) =>
+        new JsonWebTokenHandler().CreateToken(
+            new SecurityTokenDescriptor
+            {
+                Issuer = $"https://securetoken.google.com/{ProjectId}",
+                Audience = ProjectId,
+                Expires = DateTime.UtcNow.AddMinutes(30),
+                Claims = new Dictionary<string, object> { ["sub"] = uid },
+            }
+        );
+
     private static RsaSecurityKey NewKey(string keyId) => new(RSA.Create(2048)) { KeyId = keyId };
 }

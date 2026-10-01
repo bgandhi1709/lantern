@@ -1,29 +1,57 @@
 name: lantern-local
 
+x-api: &api
+  build:
+    context: ../..
+    dockerfile: apps/lantern-api/Dockerfile
+  image: lantern-api:local
+  environment: &api-environment
+    ASPNETCORE_ENVIRONMENT: Development
+    Storage__ConnectionString: "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;TableEndpoint=http://azurite:10002/devstoreaccount1;BlobEndpoint=http://azurite:10000/devstoreaccount1;"
+    # Stand-ins for Firebase and Key Vault. The API refuses to start with these outside Development.
+    Firebase__EmulatorHost: http://auth-emulator:9099
+    KeyVault__LocalKeyPath: /keys/family-field-key.pem
+  volumes:
+    - keys:/keys
+
 services:
   azurite:
     image: mcr.microsoft.com/azure-storage/azurite:latest
     command: azurite --location /data --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0 --skipApiVersionCheck
     ports:
+      - "127.0.0.1:10000:10000"
       - "127.0.0.1:10002:10002"
     volumes:
       - azurite-data:/data
 
-  api:
-    build:
-      context: ../..
-      dockerfile: apps/lantern-api/Dockerfile
+  auth-emulator:
+    build: ./auth-emulator
+    ports:
+      - "127.0.0.1:9099:9099"
+
+  # One-shot: writes the dev Family (two Parents, ten Children in Classes 1 to 10) and exits.
+  seed:
+    <<: *api
+    command: ["seed"]
     depends_on:
       - azurite
+
+  api:
+    <<: *api
+    depends_on:
+      seed:
+        condition: service_completed_successfully
+      auth-emulator:
+        condition: service_started
     ports:
       - "${LANTERN_HTTPS_PORT:-443}:8443"
     environment:
-      ASPNETCORE_ENVIRONMENT: Development
+      <<: *api-environment
       ASPNETCORE_URLS: https://+:8443
       Kestrel__Certificates__Default__Path: /certs/local.lantern.api.crt
       Kestrel__Certificates__Default__KeyPath: /certs/local.lantern.api.key
-      Storage__ConnectionString: "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;TableEndpoint=http://azurite:10002/devstoreaccount1;BlobEndpoint=http://azurite:10000/devstoreaccount1;"
     volumes:
+      - keys:/keys
       - ./certs:/certs:ro
     networks:
       default:
@@ -32,3 +60,4 @@ services:
 
 volumes:
   azurite-data:
+  keys:

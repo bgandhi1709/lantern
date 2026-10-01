@@ -117,7 +117,8 @@ ncert.nic.in PDFs                                         Mother's phone (Flutte
 - **API.** Firebase sign-in, `POST /v1/register` and `GET /v1/me` with per-family encryption are
   live in UAT, and a keyless end-to-end test runs against it after every deploy. The Family split
   (#48) and Class spaces (#49) are merged. A cache for the Family key (#52) comes next. Running
-  it locally: [`deploy/local/README.md`](deploy/local/README.md).
+  it locally, with the Firebase Auth Emulator, a Key Vault stand-in and a seeded dev Family:
+  [`deploy/local/README.md`](deploy/local/README.md).
 - **Next.** The Ask API, to be designed, and, before production, a Family key held on the device (#47).
 
 How we work in this repo (cycle, skills, standards) is in

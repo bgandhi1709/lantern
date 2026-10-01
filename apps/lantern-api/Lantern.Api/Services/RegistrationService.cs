@@ -34,6 +34,13 @@ internal sealed class RegistrationService(
         Validate(body, now.Year);
 
         var partitionKey = hasher.Hash(caller.Uid);
+
+        // Before any write, so a repeat register leaves nothing behind; the profile Add still settles a real race.
+        if (await families.GetAsync(partitionKey, cancellationToken) is not null)
+        {
+            throw new AlreadyRegisteredException();
+        }
+
         var familyId = Guid.NewGuid();
         var familyPartition = FamilyRepository.FamilyPartition(familyId);
         var (dek, wrappedFieldKey) = await familyKeys.GenerateAsync(cancellationToken);

@@ -29,23 +29,10 @@ internal sealed class FamilyRepository(TableClient parents, TableClient families
         await EnsureTablesAsync(cancellationToken);
 
         // Lookup first so a repeat register writes nothing; the profile Add below still settles a real race.
-        var existing = await parents.GetEntityIfExistsAsync<TableEntity>(
-            parent.PartitionKey,
-            ProfileRowKey,
-            select: [],
-            cancellationToken: cancellationToken
-        );
-        if (existing.HasValue)
-        {
-            throw new AlreadyRegisteredException();
-        }
+        await EnsureNotRegisteredAsync(parent.PartitionKey, cancellationToken);
 
         var familyPartition = FamilyPartition(family.FamilyId);
-        var membership = new TableEntity(familyPartition, ParentRowPrefix + parent.PartitionKey)
-        {
-            ["ParentId"] = parent.ParentId,
-            ["CreatedAt"] = parent.CreatedAt,
-        };
+        var membership = MembershipOf(parent);
         List<TableTransactionAction> actions =
         [
             new(TableTransactionActionType.Add, ToEntity(family, familyPartition, FamilyRowKey)),
@@ -74,6 +61,26 @@ internal sealed class FamilyRepository(TableClient parents, TableClient families
                 )),
                 cancellationToken
             );
+
+            throw new AlreadyRegisteredException();
+        }
+    }
+
+    public async Task JoinAsync(ParentProfile parent, CancellationToken cancellationToken)
+    {
+        await EnsureTablesAsync(cancellationToken);
+        await EnsureNotRegisteredAsync(parent.PartitionKey, cancellationToken);
+
+        var membership = MembershipOf(parent);
+        await families.AddEntityAsync(membership, cancellationToken);
+
+        try
+        {
+            await parents.AddEntityAsync(ToEntity(parent, parent.PartitionKey, ProfileRowKey), cancellationToken);
+        }
+        catch (RequestFailedException ex) when (ex.Status == 409)
+        {
+            await families.DeleteEntityAsync(membership.PartitionKey, membership.RowKey, cancellationToken: cancellationToken);
 
             throw new AlreadyRegisteredException();
         }
@@ -127,6 +134,27 @@ internal sealed class FamilyRepository(TableClient parents, TableClient families
 
     internal static string ChildRowKey(Guid childId) =>
         ChildRowPrefix + childId.ToString("N", CultureInfo.InvariantCulture);
+
+    private async Task EnsureNotRegisteredAsync(string partitionKey, CancellationToken cancellationToken)
+    {
+        var existing = await parents.GetEntityIfExistsAsync<TableEntity>(
+            partitionKey,
+            ProfileRowKey,
+            select: [],
+            cancellationToken: cancellationToken
+        );
+        if (existing.HasValue)
+        {
+            throw new AlreadyRegisteredException();
+        }
+    }
+
+    private static TableEntity MembershipOf(ParentProfile parent) =>
+        new(FamilyPartition(parent.FamilyId), ParentRowPrefix + parent.PartitionKey)
+        {
+            ["ParentId"] = parent.ParentId,
+            ["CreatedAt"] = parent.CreatedAt,
+        };
 
     private async Task EnsureTablesAsync(CancellationToken cancellationToken)
     {
