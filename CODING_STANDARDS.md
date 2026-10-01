@@ -12,6 +12,15 @@ Read during review. These are judgement calls; anything a linter or CI check can
 - Comments: only a rare one-line why (a security property, a platform quirk, a decision). No banner comments, no XML summaries that restate the code.
 - Do not add checks that the platform already enforces (for example, what JwtBearer validates).
 
+## Test and development support
+
+Production assemblies contain production code only. A reviewer on PR #61 flagged this three times, so check it before every PR.
+
+- **No test or dev-only code in `Lantern.Api`.** That includes seeders, local stand-ins for Azure services, repository or interface members that exist only so a test or seed can call them, dev-only options, and `Development` branches in `Program.cs`. Put them in `Lantern.Api.Test.Integration` (E2E tests), `Lantern.Api.Test.Integration.Host` (local-run stand-ins) or `Lantern.Api.Tests` (unit and in-process tests), and reach internals with `InternalsVisibleTo`.
+- **Plug local code in from outside.** Run the API through `WebApplicationFactory` with `ConfigureTestServices`, which applies after the API's own registrations, so the production image never contains the stand-in. A plain ASP.NET hosting startup does not work: it registers before the API, so the API's services win.
+- **A test helper that needs a new production member is a design smell.** Write the rows or call the internals from the helper instead.
+- **No shared mutable flags for one-time setup** (`volatile bool` check-then-set). `volatile` gives visibility, not atomicity, so two callers can both pass the check. Make the call idempotent and make it every time, or use `Lazy<T>` or a `SemaphoreSlim` when the setup must run once.
+
 ## Security and endpoints
 
 Every new endpoint follows these. `/security-review` checks them before the PR (step 6 of `docs/agents/workflow.md`).

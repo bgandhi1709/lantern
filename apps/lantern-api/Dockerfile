@@ -12,8 +12,6 @@ RUN dotnet publish apps/lantern-api/Lantern.Api/Lantern.Api.csproj -c Release --
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 COPY --from=build /out .
-# Local Docker only: the shared volume for the stand-in Key Vault key (see KeyVault:LocalKeyPath).
-RUN mkdir /keys && chown $APP_UID /keys
 USER $APP_UID
 EXPOSE 8080 8443
 ENTRYPOINT ["dotnet", "Lantern.Api.dll"]

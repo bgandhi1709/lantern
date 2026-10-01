@@ -8,7 +8,4 @@ public sealed class FirebaseOptions
 
     [Required]
     public string ProjectId { get; set; } = string.Empty;
-
-    // Local Docker only: accept the Firebase Auth Emulator's unsigned tokens. LocalDevelopmentGuard keeps it out of every other environment.
-    public string EmulatorHost { get; set; } = string.Empty;
 }

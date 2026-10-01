@@ -72,7 +72,7 @@ deployed, so re-run the script once after the first infra deploy if it printed "
 ## 4. E2E tests against the real UAT API
 
 `e2e-uat` runs after every successful `deploy`, registering one real family through a real
-Firebase-issued ID token and deleting it again afterward (`apps/lantern-api/Lantern.Api.Tests/E2E`).
+Firebase-issued ID token and deleting it again afterward (`apps/lantern-api/Lantern.Api.Test.Integration/E2E`).
 Sign-in is Google-only, so it can't do a scripted login. Instead of a service account with a
 downloaded key, it uses the GitHub Actions job's own OIDC identity, the same way `azure/login`
 already does: the runner mints a short-lived token for the job, and Firebase exchanges it directly

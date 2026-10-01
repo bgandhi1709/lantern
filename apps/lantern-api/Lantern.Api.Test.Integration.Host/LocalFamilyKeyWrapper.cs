@@ -1,10 +1,9 @@
 using System.Security.Cryptography;
 using Lantern.Api.Services.Interfaces;
 
-namespace Lantern.Api.Services;
+namespace Lantern.Api.Test.Integration.Host;
 
-// Development only: stands in for Key Vault (same RSA-OAEP-256) with a key in a PEM file, created on first use so the
-// API and the seeder share it through a volume. Program refuses to register this outside Development.
+// Local Docker only: stands in for Key Vault (same RSA-OAEP-256) with a key in a PEM file, created on first use.
 internal sealed class LocalFamilyKeyWrapper : IFamilyKeyWrapper
 {
     private readonly RSA rsa = RSA.Create(2048);

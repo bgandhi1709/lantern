@@ -123,10 +123,10 @@ jobs:
           fqdn=$(az containerapp show -g rg-lantern-dev -n ca-lantern-uat \
             --query properties.configuration.ingress.fqdn -o tsv)
           echo "base=https://${fqdn}" >> "$GITHUB_OUTPUT"
-      - run: dotnet build apps/lantern-api/Lantern.Api.Tests -c Release
+      - run: dotnet build apps/lantern-api/Lantern.Api.Test.Integration -c Release
       - run: >
-          dotnet test --project apps/lantern-api/Lantern.Api.Tests -c Release --no-build
-          --filter-trait "Category=E2E"
+          dotnet test --project apps/lantern-api/Lantern.Api.Test.Integration -c Release --no-build
+          --filter-trait "Category=E2E" --filter-not-trait "Environment=Local"
         env:
           E2E_BASE_URL: ${{ steps.url.outputs.base }}
           E2E_STORAGE_TABLE_ENDPOINT: https://lanternuat.table.core.windows.net

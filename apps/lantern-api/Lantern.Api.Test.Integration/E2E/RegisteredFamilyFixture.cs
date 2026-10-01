@@ -5,11 +5,11 @@ using Azure.Data.Tables;
 using Azure.Identity;
 using Lantern.Api.Contracts;
 
-namespace Lantern.Api.Tests.E2E;
+namespace Lantern.Api.Test.Integration.E2E;
 
-// Talks to the real, deployed UAT API over HTTPS: no WebApplicationFactory, no Azurite, no local
-// key wrapper. Registers one real family through a real Firebase-issued ID token, and deletes it
-// again in DisposeAsync regardless of whether the tests passed.
+// Talks to a deployed API over HTTPS (UAT, or the local Docker stack): no WebApplicationFactory, no Azurite, no local
+// key wrapper. Registers one family through a Firebase-issued ID token, and deletes it again in DisposeAsync when
+// E2E_STORAGE_TABLE_ENDPOINT is set, regardless of whether the tests passed.
 //
 // The ID token comes from the GitHub Actions job's own OIDC identity, not a service account: the
 // runner mints a short-lived token for this job (ACTIONS_ID_TOKEN_REQUEST_URL/TOKEN, present
@@ -104,7 +104,13 @@ public sealed class RegisteredFamilyFixture : IAsyncLifetime
             ],
         };
 
-    private static async Task<string> MintIdTokenAsync()
+    // Local Docker sets E2E_AUTH_EMULATOR; UAT in CI uses the job's own GitHub OIDC identity.
+    private static Task<string> MintIdTokenAsync() =>
+        Environment.GetEnvironmentVariable("E2E_AUTH_EMULATOR") is { Length: > 0 } emulator
+            ? EmulatorTokens.MintAsync(emulator, $"e2e-{Guid.NewGuid():N}")
+            : MintFirebaseTokenFromGitHubAsync();
+
+    private static async Task<string> MintFirebaseTokenFromGitHubAsync()
     {
         var githubToken = await RequestGitHubOidcTokenAsync();
 

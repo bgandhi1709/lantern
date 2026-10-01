@@ -1,19 +1,23 @@
+using Azure.Data.Tables;
 using Lantern.Api.Auth;
+using Lantern.Api.Configuration;
 using Lantern.Api.Contracts;
-using Lantern.Api.Models;
 using Lantern.Api.Repository;
 using Lantern.Api.Services.Interfaces;
+using Microsoft.Extensions.Options;
 
-namespace Lantern.Api.Services;
+namespace Lantern.Api.Test.Integration.Host;
 
-// Local Docker only (`dotnet Lantern.Api.dll seed`): one Family with two Parents and ten Children, one per Class,
-// for the two Auth Emulator users with these uids. Registration rules (six Children, one Parent) do not apply here.
+// One Family with two Parents and ten Children, one per Class, for the two Auth Emulator users with these uids.
+// Registration limits (six Children, one Parent) do not apply: the second Parent is written straight to the tables.
 internal sealed class DevelopmentSeeder(
     IRegistrationService registration,
     IFamilyRepository families,
     IFamilyKeyService familyKeys,
     IFieldCipher cipher,
     IUidHasher hasher,
+    TableServiceClient tables,
+    IOptions<StorageOptions> storage,
     TimeProvider clock
 )
 {
@@ -39,29 +43,36 @@ internal sealed class DevelopmentSeeder(
         var second = hasher.Hash(ParentTwoUid);
         if (stored is not null && await families.GetAsync(second, cancellationToken) is null)
         {
-            await JoinSecondParentAsync(stored.Family, second, cancellationToken);
+            await AddSecondParentAsync(stored.Family, second, cancellationToken);
         }
     }
 
-    private async Task JoinSecondParentAsync(FamilyRecord family, string partitionKey, CancellationToken cancellationToken)
+    private async Task AddSecondParentAsync(Models.FamilyRecord family, string partitionKey, CancellationToken cancellationToken)
     {
         var dek = await familyKeys.UnwrapAsync(family.WrappedFieldKey, cancellationToken);
         var now = clock.GetUtcNow();
+        var parentId = Guid.NewGuid();
 
-        await families.JoinAsync(
-            new ParentProfile(
-                partitionKey,
-                Guid.NewGuid(),
-                family.FamilyId,
-                cipher.Protect(dek, "Dev Parent Two", partitionKey, FamilyRepository.ProfileRowKey, "name"),
-                cipher.Protect(dek, "dev-parent-2@lantern.local", partitionKey, FamilyRepository.ProfileRowKey, "email"),
-                "gu",
-                "dev",
-                now,
-                now
-            ),
-            cancellationToken
-        );
+        var membership = new TableEntity(FamilyRepository.FamilyPartition(family.FamilyId), $"parent_{partitionKey}")
+        {
+            ["ParentId"] = parentId,
+            ["CreatedAt"] = now,
+        };
+        var profile = new TableEntity(partitionKey, FamilyRepository.ProfileRowKey)
+        {
+            ["ParentId"] = parentId,
+            ["FamilyId"] = family.FamilyId,
+            ["NameCipher"] = cipher.Protect(dek, "Dev Parent Two", partitionKey, FamilyRepository.ProfileRowKey, "name"),
+            ["EmailCipher"] = cipher.Protect(dek, "dev-parent-2@lantern.local", partitionKey, FamilyRepository.ProfileRowKey, "email"),
+            ["Language"] = "gu",
+            ["ConsentVersion"] = "dev",
+            ["ConsentAt"] = now,
+            ["CreatedAt"] = now,
+        };
+
+        // Same order as registration: the Parent's profile row is the commit point.
+        await tables.GetTableClient(storage.Value.FamiliesTable).AddEntityAsync(membership, cancellationToken);
+        await tables.GetTableClient(storage.Value.ParentsTable).AddEntityAsync(profile, cancellationToken);
     }
 
     private static RegisterBody FamilyBody(int year) =>

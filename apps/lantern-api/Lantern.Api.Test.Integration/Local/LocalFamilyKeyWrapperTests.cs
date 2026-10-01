@@ -1,6 +1,6 @@
-using Lantern.Api.Services;
+using Lantern.Api.Test.Integration.Host;
 
-namespace Lantern.Api.Tests.Services;
+namespace Lantern.Api.Test.Integration.Local;
 
 public sealed class LocalFamilyKeyWrapperTests : IDisposable
 {
