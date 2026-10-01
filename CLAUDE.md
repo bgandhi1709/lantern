@@ -8,6 +8,14 @@ GitHub Issues via the `gh` CLI (`bgandhi1709/lantern`). See `docs/agents/issue-t
 
 Default five-label vocabulary (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`). See `docs/agents/triage-labels.md`.
 
+### Working cycle
+
+Grill, plan, implement, verify, PR, doc sync, review, retro, with a tech-to-skill routing table and token rules. See `docs/agents/workflow.md`.
+
+### Coding standards
+
+Read during review. See `CODING_STANDARDS.md`.
+
 ### Domain docs
 
 Single-context: one `GLOSSARY.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
