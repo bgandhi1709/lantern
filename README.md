@@ -115,9 +115,12 @@ ncert.nic.in PDFs                                         Mother's phone (Flutte
   [`infra/README.md`](infra/README.md).
 - **API.** Firebase sign-in, `POST /v1/register` and `GET /v1/me` with per-family encryption are
   live in UAT, and a keyless end-to-end test runs against it after every deploy. The Family split
-  (#48) is in review, followed by Class spaces (#49) and a cache for the Family key (#52). Running
+  (#48) is merged. Class spaces (#49) and a cache for the Family key (#52) come next. Running
   it locally: [`deploy/local/README.md`](deploy/local/README.md).
-- **Next.** The Ask API (#35) and, before production, a Family key held on the device (#47).
+- **Next.** The Ask API, to be designed, and, before production, a Family key held on the device (#47).
+
+How we work in this repo (cycle, skills, standards) is in
+[`docs/agents/workflow.md`](docs/agents/workflow.md) and [`CODING_STANDARDS.md`](CODING_STANDARDS.md).
 
 The decisions so far are in
 [`docs/ideation/decision-log.md`](docs/ideation/decision-log.md) and [`docs/adr`](docs/adr), and
