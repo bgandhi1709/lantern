@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# One-time setup so .github/workflows/infra.yml can sign in to Azure without a stored secret.
+# One-time setup so .github/workflows/api.yml can sign in to Azure without a stored secret.
 # Creates an Entra app with federated credentials for this repository, gives it Contributor on
 # the resource group, and sets the GitHub variables and the `uat` environment (you approve deploys).
 # Needs: az login (able to create app registrations, Owner on the resource group) and gh auth login.
