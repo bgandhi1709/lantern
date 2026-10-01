@@ -55,7 +55,7 @@ Load a skill only when the issue touches its area. Each loaded skill costs conte
 - **Where memory lives:**
   - Durable decisions go in the repo: `GLOSSARY.md`, `docs/adr/`, `docs/ideation/decision-log.md`. They load only when relevant.
   - Working preferences live in the native memory index (`MEMORY.md`), which is small and loaded every session.
-  - claude-mem is a searchable archive of past sessions. Query it on demand with `/claude-mem:mem-search` instead of relying on the startup injection.
+  - claude-mem is disabled: its startup injection cost about 23k tokens per session. Past-session history stays in `~/.claude-mem` and in the transcripts under `~/.claude/projects/`; re-enable the plugin only to search it.
 - **Reads:** read the specific lines you need, not whole files. Search before reading.
 - **Output:** short chat replies, normal prose in files and commits.
 - **Tests:** single test files while iterating, the full suite once at the end.
