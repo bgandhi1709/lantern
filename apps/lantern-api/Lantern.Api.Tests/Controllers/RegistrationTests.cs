@@ -4,6 +4,7 @@ using Azure;
 using Azure.Data.Tables;
 using Lantern.Api.Contracts;
 using Lantern.Api.Repository;
+using Lantern.Api.Services.Interfaces;
 using Lantern.Api.Tests.Infrastructure;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
@@ -182,6 +183,42 @@ public sealed class RegistrationTests(AzuriteFixture azurite) : IDisposable
         Assert.NotEqual(wrapped[0], wrapped[1]);
         Assert.Equal(2, names.Count);
         Assert.NotEqual(names[0], names[1]);
+    }
+
+    [Fact]
+    public async Task Register_StartsAClassSpaceForEachChildAtTheirClass()
+    {
+        using var client = Client(NewUid());
+
+        var response = await client.RegisterAsync(ValidBody());
+
+        var family = await response.Content.ReadFromJsonAsync<FamilyResponse>();
+        Assert.NotNull(family);
+        var container = azurite.CreateBlobClient().GetBlobContainerClient("family");
+        foreach (var child in family.Children)
+        {
+            var marker = container.GetBlobClient($"{family.FamilyId:D}/{child.ChildId:D}/{child.ClassLevel}/class.json");
+            Assert.True(await marker.ExistsAsync());
+        }
+    }
+
+    [Fact]
+    public async Task Register_WhenAClassSpaceFails_LeavesTheCallerUnregistered()
+    {
+        var classSpaces = new Mock<IClassSpaceStore>();
+        classSpaces
+            .Setup(s => s.StartAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new RequestFailedException(500, "blob down"));
+        using var failing = factory.WithWebHostBuilder(builder =>
+            builder.ConfigureTestServices(services => services.AddSingleton(classSpaces.Object))
+        );
+        using var client = failing.CreateClient().WithBearer(TestTokens.Create(NewUid()));
+
+        var registered = await client.RegisterAsync(ValidBody());
+        var me = await client.GetAsync(ApiClientExtensions.Me);
+
+        Assert.Equal(HttpStatusCode.InternalServerError, registered.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, me.StatusCode);
     }
 
     [Fact]

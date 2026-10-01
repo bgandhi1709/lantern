@@ -13,6 +13,7 @@ internal sealed class RegistrationService(
     IUidHasher hasher,
     IFieldCipher cipher,
     IFamilyKeyService familyKeys,
+    IClassSpaceStore classSpaces,
     TimeProvider clock,
     ILogger<RegistrationService> logger
 ) : IRegistrationService
@@ -73,6 +74,12 @@ internal sealed class RegistrationService(
                 )
             );
             views.Add(new ChildView(childId, name, school, child.ClassLevel, child.BirthYear));
+        }
+
+        // Before the profile row, which is the commit point: a failure here leaves the caller unregistered.
+        foreach (var child in records)
+        {
+            await classSpaces.StartAsync(familyId, child.ChildId, child.ClassLevel, cancellationToken);
         }
 
         await families.RegisterAsync(parent, family, records, cancellationToken);

@@ -15,7 +15,7 @@ infra/bootstrap.sh rg-lantern-dev uat
 
 Needs Owner or User Access Administrator on the resource group. Safe to run again. It creates the
 identity `id-lantern-uat`, the Key Vault `kv-lantern-uat`, the roles the identity needs (Storage Table
-Data Contributor on the resource group, Key Vault Secrets User and Key Vault Crypto User on the vault),
+Data Contributor and Storage Blob Data Contributor on the resource group, Key Vault Secrets User and Key Vault Crypto User on the vault),
 a Storage Blob Data Contributor role on the resource group for whoever runs it (so `ncert-build upload`
 works once the container exists), the secret `security-key`, and the key `family-field-key`, each only
 if missing. Whoever runs it also gets Key Vault Crypto User on the vault, since local development has
@@ -34,12 +34,14 @@ az deployment group what-if -g rg-lantern-dev -f infra/main.bicep -p infra/param
 az deployment group create  -g rg-lantern-dev -f infra/main.bicep -p infra/params/lantern.uat.bicepparam
 ```
 
+Re-run `bootstrap.sh` before the first API release that uses Blob: the API identity needs the new role.
+
 The deploying account needs Contributor only. It creates the storage account `lanternuat` with the tables
-`parents` and `families`, the private `ncert` blob container (for `ncert-build`'s output — see
+`parents` and `families`, the private `family` blob container (a Class space per Child and Class), the private `ncert` blob container (for `ncert-build`'s output — see
 [`tools/ncert-build`](../tools/ncert-build/README.md)), a Log Analytics workspace, and the Container
 Apps environment and app (0 to 1 replica, the identity attached). All names come from
 `environmentName`. The template reads the identity and the Key Vault by name and wires the app's
-settings: `Firebase__ProjectId` (a param, not a secret), `Storage__TableEndpoint` (read from the
+settings: `Firebase__ProjectId` (a param, not a secret), `Storage__TableEndpoint` and `Storage__BlobEndpoint` (read from the
 storage account), `Security__Key` (a Key Vault secret reference), `KeyVault__VaultUri` and
 `KeyVault__FamilyKeyName` (plain values — the app only ever calls Key Vault's wrapKey/unwrapKey by
 name, it never holds the key itself), and `AZURE_CLIENT_ID` (the identity's client id, needed since

@@ -91,9 +91,10 @@ ncert.nic.in PDFs                                         Mother's phone (Flutte
   however many Parents the Family has. In Table Storage the `parents` table holds each Parent's
   settings and their `FamilyId`, and the `families` table holds the Family, its Parents'
   membership and its Children. The terms are defined in [`GLOSSARY.md`](GLOSSARY.md) and the
-  layout is [ADR-0001](docs/adr/0001-family-and-parent-in-separate-tables.md). Next, each Child gets
-  a Blob folder per Class under `family/{familyId}/{childId}/{class}/` (#49), kept for the Child's
-  History.
+  layout is [ADR-0001](docs/adr/0001-family-and-parent-in-separate-tables.md). Each Child also has
+  a Blob **Class space** per Class under `family/{familyId}/{childId}/{class}/`, started at
+  registration and kept for the Child's History
+  ([ADR-0002](docs/adr/0002-class-space-in-blob.md)).
 
 | Area | Choice |
 | --- | --- |
@@ -115,7 +116,7 @@ ncert.nic.in PDFs                                         Mother's phone (Flutte
   [`infra/README.md`](infra/README.md).
 - **API.** Firebase sign-in, `POST /v1/register` and `GET /v1/me` with per-family encryption are
   live in UAT, and a keyless end-to-end test runs against it after every deploy. The Family split
-  (#48) is merged. Class spaces (#49) and a cache for the Family key (#52) come next. Running
+  (#48) and Class spaces (#49) are merged. A cache for the Family key (#52) comes next. Running
   it locally: [`deploy/local/README.md`](deploy/local/README.md).
 - **Next.** The Ask API, to be designed, and, before production, a Family key held on the device (#47).
 

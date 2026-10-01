@@ -182,3 +182,8 @@ A Child's **History** (Scrubbed Questions, Tests, Class changes) is kept across 
 
 ### D23. Scrubbing and shared intelligence
 Only the Child's and Parent's personal fields are encrypted. A Question is scrubbed by rules (the Family's known names, School and Region, plus phone and email patterns) before anything is stored; the raw Question is never stored. Per-Child History stays in the Family's space, and an anonymous store of scrubbed, tagged Questions and Answers is shared across Families with no link back. A client-held Family key is tracked in issue #47; the Family key cache in #52.
+
+## 2026-10-01: Class space (issue #49)
+
+### D24. A Class space is created at the start of a Class, before the registration commit
+Registration starts one Class space per Child through the same operation a later Class change will use, and does it before the `parents` profile row so a failure leaves the caller unregistered. The marker is an empty `class.json`; the container name `family` is a constant, not a setting. See ADR-0002. Supersedes nothing; it builds the Blob side of D22.

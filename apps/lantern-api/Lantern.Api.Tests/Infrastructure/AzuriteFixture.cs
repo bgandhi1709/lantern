@@ -4,6 +4,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using Azure.Data.Tables;
+using Azure.Storage.Blobs;
 
 namespace Lantern.Api.Tests.Infrastructure;
 
@@ -20,28 +21,40 @@ public sealed class AzuriteFixture : IAsyncLifetime, IDisposable
 
     public async ValueTask InitializeAsync()
     {
-        var port = GetFreeTcpPort();
+        var tablePort = GetFreeTcpPort();
+        var blobPort = GetFreeTcpPort();
+        var queuePort = GetFreeTcpPort();
         dataDirectory = Directory.CreateTempSubdirectory("lantern-azurite-").FullName;
 
         ConnectionString = string.Create(
             CultureInfo.InvariantCulture,
             $"DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;"
                 + $"AccountKey={EmulatorAccountKey};"
-                + $"TableEndpoint=http://127.0.0.1:{port}/devstoreaccount1;"
+                + $"TableEndpoint=http://127.0.0.1:{tablePort}/devstoreaccount1;"
+                + $"BlobEndpoint=http://127.0.0.1:{blobPort}/devstoreaccount1;"
         );
 
-        var startInfo = new ProcessStartInfo("azurite-table")
+        var startInfo = new ProcessStartInfo("azurite")
         {
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,
         };
+        startInfo.ArgumentList.Add("--blobHost");
+        startInfo.ArgumentList.Add("127.0.0.1");
+        startInfo.ArgumentList.Add("--blobPort");
+        startInfo.ArgumentList.Add(blobPort.ToString(CultureInfo.InvariantCulture));
         startInfo.ArgumentList.Add("--tableHost");
         startInfo.ArgumentList.Add("127.0.0.1");
         startInfo.ArgumentList.Add("--tablePort");
-        startInfo.ArgumentList.Add(port.ToString(CultureInfo.InvariantCulture));
+        startInfo.ArgumentList.Add(tablePort.ToString(CultureInfo.InvariantCulture));
+        startInfo.ArgumentList.Add("--queueHost");
+        startInfo.ArgumentList.Add("127.0.0.1");
+        startInfo.ArgumentList.Add("--queuePort");
+        startInfo.ArgumentList.Add(queuePort.ToString(CultureInfo.InvariantCulture));
         startInfo.ArgumentList.Add("--location");
         startInfo.ArgumentList.Add(dataDirectory);
+        startInfo.ArgumentList.Add("--skipApiVersionCheck");
         startInfo.ArgumentList.Add("--silent");
 
         try
@@ -58,7 +71,7 @@ public sealed class AzuriteFixture : IAsyncLifetime, IDisposable
         catch (Exception ex)
         {
             throw new InvalidOperationException(
-                "Could not start 'azurite-table'. Install it with 'npm install -g azurite'.",
+                "Could not start 'azurite'. Install it with 'npm install -g azurite'.",
                 ex
             );
         }
@@ -90,6 +103,8 @@ public sealed class AzuriteFixture : IAsyncLifetime, IDisposable
     }
 
     public TableServiceClient CreateClient() => new(ConnectionString);
+
+    public BlobServiceClient CreateBlobClient() => new(ConnectionString);
 
     private async Task WaitUntilReadyAsync()
     {

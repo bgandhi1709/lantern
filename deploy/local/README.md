@@ -1,6 +1,6 @@
 # Run the API locally over HTTPS
 
-Serves the API at `https://local.lantern.api` in Docker, with an Azurite table emulator beside it.
+Serves the API at `https://local.lantern.api` in Docker, with an Azurite table and blob emulator beside it.
 Works from WSL and from Windows.
 
 ## Setup (once)
@@ -37,7 +37,7 @@ Then open <https://local.lantern.api/health/live>. Without a token, `https://loc
 returns 401, which is correct. The Development settings apply (`Firebase:ProjectId` and a throwaway
 `Security:Key`). Set `LANTERN_HTTPS_PORT` if port 443 is taken; the URL then needs that port.
 
-Table data is kept in the `lantern-local_azurite-data` volume. Reset it with
+Table and Blob data is kept in the `lantern-local_azurite-data` volume. Reset it with
 `docker compose -f deploy/local/docker-compose.yml down -v`.
 
 ## Notes
