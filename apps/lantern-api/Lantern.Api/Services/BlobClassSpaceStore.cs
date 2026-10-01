@@ -13,11 +13,12 @@ internal sealed class BlobClassSpaceStore(BlobContainerClient container, bool cr
     internal const string ContainerName = "family";
     private const string MarkerName = "class.json";
 
-    private volatile bool _containerEnsured;
-
     public async Task StartAsync(Guid familyId, Guid childId, int classLevel, CancellationToken cancellationToken)
     {
-        await EnsureContainerAsync(cancellationToken);
+        if (createContainer)
+        {
+            await container.CreateIfNotExistsAsync(cancellationToken: cancellationToken);
+        }
 
         var path = string.Create(CultureInfo.InvariantCulture, $"{familyId:D}/{childId:D}/{classLevel}/{MarkerName}");
         var options = new BlobUploadOptions { Conditions = new BlobRequestConditions { IfNoneMatch = ETag.All } };
@@ -30,16 +31,5 @@ internal sealed class BlobClassSpaceStore(BlobContainerClient container, bool cr
         {
             // Repeated Class: the space already exists.
         }
-    }
-
-    private async Task EnsureContainerAsync(CancellationToken cancellationToken)
-    {
-        if (!createContainer || _containerEnsured)
-        {
-            return;
-        }
-
-        await container.CreateIfNotExistsAsync(cancellationToken: cancellationToken);
-        _containerEnsured = true;
     }
 }
