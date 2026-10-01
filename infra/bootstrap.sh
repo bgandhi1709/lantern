@@ -28,7 +28,7 @@ if ! az keyvault show -n "$VAULT" -g "$RG" -o none 2>/dev/null; then
 fi
 VAULT_ID=$(az keyvault show -n "$VAULT" -g "$RG" --query id -o tsv)
 
-# One identity, two roles. The Table role is on the resource group so they
+# One identity, four roles. The Table and Blob roles are on the resource group so they
 # cover the storage account the template creates later. Key Vault Secrets User is on the vault.
 assign() { # role scope assignee-object-id assignee-type
   az role assignment create --role "$1" --scope "$2" --assignee-object-id "$3" \
@@ -36,6 +36,7 @@ assign() { # role scope assignee-object-id assignee-type
 }
 echo "Roles for ${IDENTITY}"
 assign "Storage Table Data Contributor" "$RG_ID" "$PRINCIPAL_ID" ServicePrincipal
+assign "Storage Blob Data Contributor" "$RG_ID" "$PRINCIPAL_ID" ServicePrincipal
 assign "Key Vault Secrets User" "$VAULT_ID" "$PRINCIPAL_ID" ServicePrincipal
 # Wrap/unwrap only, not manage: the app never needs to create or delete the key itself.
 assign "Key Vault Crypto User" "$VAULT_ID" "$PRINCIPAL_ID" ServicePrincipal

@@ -3,6 +3,7 @@ using Asp.Versioning;
 using Azure.Data.Tables;
 using Azure.Identity;
 using Azure.Security.KeyVault.Keys;
+using Azure.Storage.Blobs;
 using Lantern.Api.Configuration;
 using Lantern.Api.Exceptions;
 using Lantern.Api.Logging;
@@ -51,6 +52,15 @@ builder.Services.AddSingleton(serviceProvider =>
     return service;
 });
 
+builder.Services.AddSingleton(serviceProvider =>
+{
+    var options = serviceProvider.GetRequiredService<IOptions<StorageOptions>>().Value;
+
+    return string.IsNullOrWhiteSpace(options.ConnectionString)
+        ? new BlobServiceClient(new Uri(options.BlobEndpoint), new DefaultAzureCredential())
+        : new BlobServiceClient(options.ConnectionString);
+});
+
 builder.Services.AddSingleton<IFamilyKeyWrapper>(serviceProvider =>
 {
     var options = serviceProvider.GetRequiredService<IOptions<KeyVaultOptions>>().Value;
@@ -73,6 +83,16 @@ builder.Services.AddSingleton<IFamilyRepository>(serviceProvider =>
         service.GetTableClient(options.ParentsTable),
         service.GetTableClient(options.FamiliesTable),
         createTables: !string.IsNullOrWhiteSpace(options.ConnectionString)
+    );
+});
+builder.Services.AddSingleton<IClassSpaceStore>(serviceProvider =>
+{
+    var options = serviceProvider.GetRequiredService<IOptions<StorageOptions>>().Value;
+    var service = serviceProvider.GetRequiredService<BlobServiceClient>();
+
+    return new BlobClassSpaceStore(
+        service.GetBlobContainerClient(BlobClassSpaceStore.ContainerName),
+        createContainer: !string.IsNullOrWhiteSpace(options.ConnectionString)
     );
 });
 builder.Services.AddScoped<IRegistrationService, RegistrationService>();

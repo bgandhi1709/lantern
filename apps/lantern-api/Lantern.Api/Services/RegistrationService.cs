@@ -13,6 +13,7 @@ internal sealed class RegistrationService(
     IUidHasher hasher,
     IFieldCipher cipher,
     IFamilyKeyService familyKeys,
+    IClassSpaceStore classSpaces,
     TimeProvider clock,
     ILogger<RegistrationService> logger
 ) : IRegistrationService
@@ -33,6 +34,13 @@ internal sealed class RegistrationService(
         Validate(body, now.Year);
 
         var partitionKey = hasher.Hash(caller.Uid);
+
+        // Before any write, so a repeat register leaves nothing behind; the profile Add still settles a real race.
+        if (await families.GetAsync(partitionKey, cancellationToken) is not null)
+        {
+            throw new AlreadyRegisteredException();
+        }
+
         var familyId = Guid.NewGuid();
         var familyPartition = FamilyRepository.FamilyPartition(familyId);
         var (dek, wrappedFieldKey) = await familyKeys.GenerateAsync(cancellationToken);
@@ -73,6 +81,12 @@ internal sealed class RegistrationService(
                 )
             );
             views.Add(new ChildView(childId, name, school, child.ClassLevel, child.BirthYear));
+        }
+
+        // Before the profile row, which is the commit point: a failure here leaves the caller unregistered.
+        foreach (var child in records)
+        {
+            await classSpaces.StartAsync(familyId, child.ChildId, child.ClassLevel, cancellationToken);
         }
 
         await families.RegisterAsync(parent, family, records, cancellationToken);

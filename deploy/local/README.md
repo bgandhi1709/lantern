@@ -1,6 +1,7 @@
 # Run the API locally over HTTPS
 
-Serves the API at `https://local.lantern.api` in Docker, with an Azurite table emulator beside it.
+Serves the API at `https://local.lantern.api` in Docker, with stand-ins beside it for everything that is not local: an Azurite table and blob emulator, the Firebase
+Auth Emulator and a key file in place of Key Vault.
 Works from WSL and from Windows.
 
 ## Setup (once)
@@ -37,7 +38,35 @@ Then open <https://local.lantern.api/health/live>. Without a token, `https://loc
 returns 401, which is correct. The Development settings apply (`Firebase:ProjectId` and a throwaway
 `Security:Key`). Set `LANTERN_HTTPS_PORT` if port 443 is taken; the URL then needs that port.
 
-Table data is kept in the `lantern-local_azurite-data` volume. Reset it with
+## Sign in and test end to end
+
+The Firebase Auth Emulator replaces Google sign-in and a PEM file in the `keys` volume replaces Key Vault
+(same RSA-OAEP-256 wrapping). On start the API also writes a dev Family: two Parents (`dev-parent-1`,
+`dev-parent-2`) and ten Children, one in each Class from 1 to 10, with a Class space for each.
+
+This lives in `apps/lantern-api/Lantern.Api.Test.Integration.Host`, not in the API. `deploy/local/api.Dockerfile` runs the
+API through that host (a `WebApplicationFactory` on Kestrel, so the stand-ins replace the API's own registrations); the
+production `Dockerfile` never contains it. The E2E tests are in `apps/lantern-api/Lantern.Api.Test.Integration`.
+
+```sh
+deploy/local/token.sh dev-parent-1                          # an ID token; any uid works, new ones are created
+curl --cacert deploy/local/certs/ca.crt --resolve local.lantern.api:443:127.0.0.1 \
+  -H "Authorization: Bearer $(deploy/local/token.sh dev-parent-1)" https://local.lantern.api/v1/me
+
+# The whole flow as tests: seeded Family, register, 409, isolation, tokens that must be refused
+E2E_BASE_URL=https://local.lantern.api E2E_AUTH_EMULATOR=http://127.0.0.1:9099 \
+  dotnet test --project apps/lantern-api/Lantern.Api.Test.Integration --filter-trait "Category=E2E"
+```
+
+The same `Category=E2E` tests run against UAT in CI (a GitHub OIDC token instead of the emulator; the
+`Environment=Local` ones are skipped there), so a flow proven here is the flow UAT runs.
+
+None of this can reach another environment: the stand-ins are not in the API or its production image. The emulator's
+tokens are unsigned, so the local host relaxes signature checking; issuer, audience and expiry are still checked (the
+tests prove a wrong one gets 401).
+
+Table and Blob data is kept in the `lantern-local_azurite-data` volume and the Key Vault stand-in key in
+`lantern-local_keys`. Reset both with
 `docker compose -f deploy/local/docker-compose.yml down -v`.
 
 ## Notes

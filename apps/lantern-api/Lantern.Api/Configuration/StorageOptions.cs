@@ -10,6 +10,8 @@ public sealed class StorageOptions : IValidatableObject
 
     public string TableEndpoint { get; set; } = string.Empty;
 
+    public string BlobEndpoint { get; set; } = string.Empty;
+
     [Required]
     public string ParentsTable { get; set; } = "parents";
 
@@ -26,6 +28,14 @@ public sealed class StorageOptions : IValidatableObject
             yield return new ValidationResult(
                 "Set exactly one of Storage:ConnectionString or Storage:TableEndpoint.",
                 [nameof(ConnectionString), nameof(TableEndpoint)]
+            );
+        }
+
+        if (hasEndpoint && string.IsNullOrWhiteSpace(BlobEndpoint))
+        {
+            yield return new ValidationResult(
+                "Set Storage:BlobEndpoint together with Storage:TableEndpoint.",
+                [nameof(BlobEndpoint)]
             );
         }
     }

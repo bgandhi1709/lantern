@@ -2,6 +2,8 @@
   <Folder Name="/apps/" />
   <Folder Name="/apps/lantern-api/">
     <Project Path="apps/lantern-api/Lantern.Api/Lantern.Api.csproj" />
+    <Project Path="apps/lantern-api/Lantern.Api.Test.Integration.Host/Lantern.Api.Test.Integration.Host.csproj" />
+    <Project Path="apps/lantern-api/Lantern.Api.Test.Integration/Lantern.Api.Test.Integration.csproj" />
     <Project Path="apps/lantern-api/Lantern.Api.Tests/Lantern.Api.Tests.csproj" />
   </Folder>
 </Solution>

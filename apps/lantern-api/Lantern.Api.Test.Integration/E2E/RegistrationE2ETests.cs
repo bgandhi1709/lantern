@@ -2,7 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using Lantern.Api.Contracts;
 
-namespace Lantern.Api.Tests.E2E;
+namespace Lantern.Api.Test.Integration.E2E;
 
 // Excluded from `dotnet test --filter-not-trait "Category=E2E"` (the PR/build-test job, which has
 // no network access or secrets). Run explicitly with `--filter-trait "Category=E2E"` against a

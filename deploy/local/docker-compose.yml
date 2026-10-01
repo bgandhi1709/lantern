@@ -5,25 +5,34 @@ services:
     image: mcr.microsoft.com/azure-storage/azurite:latest
     command: azurite --location /data --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0 --skipApiVersionCheck
     ports:
+      - "127.0.0.1:10000:10000"
       - "127.0.0.1:10002:10002"
     volumes:
       - azurite-data:/data
 
+  auth-emulator:
+    build: ./auth-emulator
+    ports:
+      - "127.0.0.1:9099:9099"
+
   api:
     build:
       context: ../..
-      dockerfile: apps/lantern-api/Dockerfile
+      dockerfile: deploy/local/api.Dockerfile
     depends_on:
       - azurite
+      - auth-emulator
     ports:
       - "${LANTERN_HTTPS_PORT:-443}:8443"
     environment:
       ASPNETCORE_ENVIRONMENT: Development
-      ASPNETCORE_URLS: https://+:8443
       Kestrel__Certificates__Default__Path: /certs/local.lantern.api.crt
       Kestrel__Certificates__Default__KeyPath: /certs/local.lantern.api.key
-      Storage__ConnectionString: "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;TableEndpoint=http://azurite:10002/devstoreaccount1;"
+      Storage__ConnectionString: "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;TableEndpoint=http://azurite:10002/devstoreaccount1;BlobEndpoint=http://azurite:10000/devstoreaccount1;"
+      # Read by the local host (see api.Dockerfile): the Key Vault stand-in's key file.
+      Local__KeyPath: /keys/family-field-key.pem
     volumes:
+      - keys:/keys
       - ./certs:/certs:ro
     networks:
       default:
@@ -32,3 +41,4 @@ services:
 
 volumes:
   azurite-data:
+  keys:

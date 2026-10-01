@@ -65,6 +65,14 @@ resource storage 'Microsoft.Storage/storageAccounts@2023-05-01' = {
   resource blobService 'blobServices' = {
     name: 'default'
 
+    // One Class space per Child and Class, as blobs under family/{familyId}/{childId}/{class}/.
+    resource familyContainer 'containers' = {
+      name: 'family'
+      properties: {
+        publicAccess: 'None'
+      }
+    }
+
     resource ncertContainer 'containers' = {
       name: 'ncert'
       properties: {
@@ -122,6 +130,7 @@ resource app 'Microsoft.App/containerApps@2025-01-01' = {
             { name: 'AZURE_CLIENT_ID', value: identity.properties.clientId }
             { name: 'Firebase__ProjectId', value: firebaseProjectId }
             { name: 'Storage__TableEndpoint', value: storage.properties.primaryEndpoints.table }
+            { name: 'Storage__BlobEndpoint', value: storage.properties.primaryEndpoints.blob }
             { name: 'Security__Key', secretRef: 'security-key' }
             // Not a secret: the app only ever calls Key Vault's wrapKey/unwrapKey with this name.
             // The key's own private material never leaves the vault.

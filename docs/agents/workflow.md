@@ -10,10 +10,11 @@ One issue, one pass through these steps. Work inline: no subagents unless the us
 | 3 | Plan | Plan in chat: behaviours to test, files touched, risks. User approves in one word. | Approved plan |
 | 4 | Implement | `/implement`, driving `/tdd` one red-green slice at a time. Build and run single tests as you go, the full suite once at the end. | Commits on the branch |
 | 5 | Verify | `/verify` against local Docker. Write down every test scenario. | Scenario list |
-| 6 | PR | `/pr` with the scenarios and acceptance criteria. | PR |
-| 7 | Doc sync | Root `README.md` (Status and runtime), `docs/ideation/decision-log.md`, ADRs, any README or skill the change touches. | Docs match the code |
-| 8 | Review | User reviews on GitHub. Fix, reply as Claude, resolve the threads. | Resolved threads |
-| 9 | Retro | `/retro` in the same session, before `/clear`. Mechanical misses become checks, judgement calls go to `CODING_STANDARDS.md`. | Environment fixes |
+| 6 | Security | `/security-review` on the branch diff, before the PR. Fix findings in the same branch. Check the security rules in `CODING_STANDARDS.md`. | Findings fixed or recorded |
+| 7 | PR | `/pr` with the scenarios and acceptance criteria. | PR |
+| 8 | Doc sync | Root `README.md` (Status and runtime), `docs/ideation/decision-log.md`, ADRs, any README or skill the change touches. | Docs match the code |
+| 9 | Review | User reviews on GitHub. Fix, reply as Claude, resolve the threads. | Resolved threads |
+| 10 | Retro | `/retro` in the same session, before `/clear`. Mechanical misses become checks, judgement calls go to `CODING_STANDARDS.md`. | Environment fixes |
 
 Skip `/to-spec` and `/to-tickets` at this scope. Use them only when the work spans several sessions.
 
@@ -35,6 +36,7 @@ Applies to architecture, data layout, domain terms, the cycle itself and the cod
 
 | Issue touches | Skills |
 |---|---|
+| Any code | `ponytail`: reuse and simplify before adding code |
 | Any C# | `uncle-bob-clean-code`, `modern-csharp-coding-standards` |
 | HTTP endpoints, contracts | `minimal-api` |
 | External calls, retries | `resilience`; the API-call guardrails below override its retry advice |
