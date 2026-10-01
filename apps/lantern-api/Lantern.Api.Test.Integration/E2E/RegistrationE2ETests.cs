@@ -4,9 +4,8 @@ using Lantern.Api.Contracts;
 
 namespace Lantern.Api.Test.Integration.E2E;
 
-// Excluded from `dotnet test --filter-not-trait "Category=E2E"` (the PR/build-test job, which has
-// no network access or secrets). Run explicitly with `--filter-trait "Category=E2E"` against a
-// real deployed environment - see .github/workflows/api.yml's e2e-uat job.
+// Excluded from `dotnet test --filter-not-trait "Category=E2E"` (the build-test job, which has no Docker stack).
+// Run with `--filter-trait "Category=E2E"` against the local Docker stack - see .github/workflows/api.yml's e2e-docker job.
 [Trait("Category", "E2E")]
 public sealed class RegistrationE2ETests(RegisteredFamilyFixture fixture) : IClassFixture<RegisteredFamilyFixture>
 {

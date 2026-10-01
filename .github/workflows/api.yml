@@ -37,13 +37,35 @@ jobs:
           node-version: 22
       - run: npm install -g azurite@3
       - run: dotnet build Lantern.slnx -c Release
-      # The E2E class (Category=E2E) needs a real deployed UAT and Firebase secrets it doesn't
-      # have here; it only runs in the e2e-uat job below, after a real deploy.
+      # The E2E tests (Category=E2E) need the Docker stack; they run in the e2e-docker job.
       - run: dotnet test --solution Lantern.slnx -c Release --no-build --filter-not-trait "Category=E2E"
+
+  # The same E2E tests the cloud used to run, against the Docker stack in deploy/local: Azurite, the Firebase Auth
+  # Emulator, a key file for Key Vault and a seeded dev Family. It gates the release.
+  e2e-docker:
+    name: E2E - docker
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+      - run: deploy/local/setup.sh --no-windows
+      - run: docker compose -f deploy/local/docker-compose.yml up --build -d
+      - run: curl --silent --fail --retry 30 --retry-delay 3 --retry-all-errors https://local.lantern.api/health/live
+      - run: >
+          dotnet test --project apps/lantern-api/Lantern.Api.Test.Integration -c Release
+          --filter-trait "Category=E2E"
+        env:
+          E2E_BASE_URL: https://local.lantern.api
+          E2E_AUTH_EMULATOR: http://127.0.0.1:9099
+      - if: failure()
+        run: docker compose -f deploy/local/docker-compose.yml logs
 
   image:
     name: Build image
-    needs: build-test
+    needs: [build-test, e2e-docker]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -83,6 +105,14 @@ jobs:
           client-id: ${{ vars.AZURE_CLIENT_ID }}
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      # Roles are granted once by infra/bootstrap.sh and rarely change; fail the release here, with the fix, if one is
+      # missing rather than ship an API that returns 500s. Read-only.
+      - run: |
+          principal=$(az identity show -g rg-lantern-dev -n id-lantern-uat --query principalId -o tsv)
+          roles=$(az role assignment list --assignee "$principal" --all --query "[].roleDefinitionName" -o tsv)
+          for role in "Storage Table Data Contributor" "Storage Blob Data Contributor"; do
+            grep -qxF "$role" <<<"$roles" || { echo "::error::id-lantern-uat lacks '$role'. Run infra/bootstrap.sh with an Owner login."; exit 1; }
+          done
       # Only ever swaps the image and port; infra.yml owns every other setting and keeps this
       # image and port on its own next deploy (keep-running-image.sh). Target port is ingress
       # config, not a container-update argument, so it's a separate command.
@@ -91,43 +121,9 @@ jobs:
             --image "ghcr.io/${{ github.repository_owner }}/lantern-api:${{ needs.image.outputs.tag }}"
           az containerapp ingress update -g rg-lantern-dev -n ca-lantern-uat \
             --target-port 8080
-
-  e2e-uat:
-    name: E2E - uat
-    needs: deploy
-    runs-on: ubuntu-latest
-    # environment: uat-e2e, not uat: uat has the approval gate and deploy already passed it. An
-    # environment's OIDC subject is its name, not a branch ref, so this also works for a
-    # workflow_dispatch run off a feature branch (the plain push/dispatch credential is locked to
-    # refs/heads/main and rejects anything else - AADSTS700213).
-    # It only needs the storage role granted in infra/github-setup.sh - it never touches Key Vault
-    # or the container app itself. id-token: write also lets the test step mint this job's own
-    # OIDC token for Firebase (see RegisteredFamilyFixture) - the same permission line covers both
-    # exchanges, no separate credential needed for either one.
-    environment: uat-e2e
-    permissions:
-      id-token: write
-      contents: read
-    steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
-        with:
-          global-json-file: global.json
-      - uses: azure/login@7184910d9eb2b1c5e48f7073824a90609bb9b6d6 # v2
-        with:
-          client-id: ${{ vars.AZURE_CLIENT_ID }}
-          tenant-id: ${{ vars.AZURE_TENANT_ID }}
-          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
-      - id: url
-        run: |
-          fqdn=$(az containerapp show -g rg-lantern-dev -n ca-lantern-uat \
-            --query properties.configuration.ingress.fqdn -o tsv)
-          echo "base=https://${fqdn}" >> "$GITHUB_OUTPUT"
-      - run: dotnet build apps/lantern-api/Lantern.Api.Test.Integration -c Release
-      - run: >
-          dotnet test --project apps/lantern-api/Lantern.Api.Test.Integration -c Release --no-build
-          --filter-trait "Category=E2E" --filter-not-trait "Environment=Local"
-        env:
-          E2E_BASE_URL: ${{ steps.url.outputs.base }}
-          E2E_STORAGE_TABLE_ENDPOINT: https://lanternuat.table.core.windows.net
-          FIREBASE_WEB_API_KEY: ${{ secrets.FIREBASE_WEB_API_KEY }}
+      # Smoke check: the app is up and refuses an anonymous caller. No secrets, no Firebase.
+      - run: |
+          fqdn=$(az containerapp show -g rg-lantern-dev -n ca-lantern-uat --query properties.configuration.ingress.fqdn -o tsv)
+          curl --silent --fail --retry 30 --retry-delay 5 --retry-all-errors "https://${fqdn}/health/live"
+          status=$(curl --silent --output /dev/null --write-out '%{http_code}' "https://${fqdn}/v1/me")
+          [ "$status" = 401 ] || { echo "::error::GET /v1/me without a token returned $status, expected 401"; exit 1; }

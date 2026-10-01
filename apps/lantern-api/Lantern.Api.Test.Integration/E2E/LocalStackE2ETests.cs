@@ -9,9 +9,8 @@ using Microsoft.IdentityModel.Tokens;
 namespace Lantern.Api.Test.Integration.E2E;
 
 // Needs the local Docker stack (deploy/local): the seeded dev Family, the Auth Emulator and Azurite.
-// Run with E2E_BASE_URL and E2E_AUTH_EMULATOR set; CI's UAT job excludes Environment=Local.
+// Run with E2E_BASE_URL and E2E_AUTH_EMULATOR set, as CI's e2e-docker job does.
 [Trait("Category", "E2E")]
-[Trait("Environment", "Local")]
 public sealed class LocalStackE2ETests
 {
     private const string ProjectId = "lantern-ai-bg1709";

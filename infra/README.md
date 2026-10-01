@@ -64,41 +64,20 @@ infra/github-setup.sh rg-lantern-dev uat   # once: Entra app with OIDC, Contribu
 ```
 
 No secret is stored for Azure. The variables are `AZURE_CLIENT_ID`, `AZURE_TENANT_ID` and
-`AZURE_SUBSCRIPTION_ID`. The script also grants the same Entra app `Storage Table Data Contributor`,
-scoped to just the `lanternuat` storage account, so the API's E2E job (`.github/workflows/api.yml`,
-job `e2e-uat`) can delete the rows it creates after each run — needs the storage account already
-deployed, so re-run the script once after the first infra deploy if it printed "not deployed yet".
+`AZURE_SUBSCRIPTION_ID`.
 
-## 4. E2E tests against the real UAT API
+## 4. Checks around the API release
 
-`e2e-uat` runs after every successful `deploy`, registering one real family through a real
-Firebase-issued ID token and deleting it again afterward (`apps/lantern-api/Lantern.Api.Test.Integration/E2E`).
-Sign-in is Google-only, so it can't do a scripted login. Instead of a service account with a
-downloaded key, it uses the GitHub Actions job's own OIDC identity, the same way `azure/login`
-already does: the runner mints a short-lived token for the job, and Firebase exchanges it directly
-for a real ID token via a custom OpenID Connect sign-in provider — no key exists anywhere.
+The end-to-end tests run in Docker, not against UAT: the `e2e-docker` job in `.github/workflows/api.yml` brings up
+`deploy/local` and runs them on every PR and push, and the release waits for it (decision D28). The gated `deploy`
+job adds two cheap checks of its own. Before it swaps the image, a read-only preflight confirms `id-lantern-uat` still
+has the Storage Table and Blob data roles from `bootstrap.sh`, and fails with the fix if not. After the swap, a smoke
+check confirms `/health/live` answers 200 and `/v1/me` without a token answers 401.
 
-The job runs in the `uat-e2e` environment, which has no required reviewers: `uat` holds the approval
-gate and `deploy` already passed it. `infra/github-setup.sh` creates the environment and its
-federated credential.
-
-**One-time Firebase setup (console, not scriptable from here):**
-1. GCP Console → the `lantern-ai-bg1709` project → **Identity Platform** → Enable (free tier, does
-   not touch existing Google sign-in users).
-2. Firebase Console → Authentication → Sign-in method → Add new provider → **OpenID Connect**.
-   - Name it `github-actions` (the provider ID becomes `oidc.github-actions` — must match
-     `FirebaseOidcProviderId` in `RegisteredFamilyFixture.cs`).
-   - Issuer: `https://token.actions.githubusercontent.com`
-   - Client ID: `lantern-e2e` (must match `GitHubOidcAudience` in the same file — this is the
-     `aud` the job requests on its own OIDC token, not a secret).
-   - Response type: ID token only — no client secret needed, since the fixture calls
-     `accounts:signInWithIdp` directly with the token rather than doing a redirect/code exchange.
-3. `gh secret set FIREBASE_WEB_API_KEY --body "<apiKey from: firebase apps:sdkconfig WEB --project lantern-ai-bg1709>"`
-   — the project's web API key, not secret by Firebase's own design, just kept out of source.
-
-No GitHub secret is needed for Firebase, same as Azure. The `github-e2e-tests-lantern-ai-bg`
-service account created during an earlier iteration of this setup is unused by this approach and
-can be deleted.
+If you set up the earlier cloud E2E, these are no longer used and can be deleted by hand: the `uat-e2e` GitHub
+environment, the `env-uat-e2e` federated credential on the Entra app, its `Storage Table Data Contributor` role on
+`lanternuat`, the Firebase `github-actions` OpenID Connect provider, the `FIREBASE_WEB_API_KEY` secret and the
+`github-e2e-tests-lantern-ai-bg` service account.
 
 ## Not here yet
 

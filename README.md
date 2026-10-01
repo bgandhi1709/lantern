@@ -115,7 +115,7 @@ ncert.nic.in PDFs                                         Mother's phone (Flutte
 - **Infrastructure.** The UAT environment is deployed from Bicep by GitHub Actions; see
   [`infra/README.md`](infra/README.md).
 - **API.** Firebase sign-in, `POST /v1/register` and `GET /v1/me` with per-family encryption are
-  live in UAT, and a keyless end-to-end test runs against it after every deploy. The Family split
+  live in UAT. The end-to-end tests run in Docker on every PR and gate the release, and a smoke check follows each UAT deploy. The Family split
   (#48) is merged and Class spaces (#49) are built. A cache for the Family key (#52) comes next.
   Under `apps/lantern-api`: `Lantern.Api` is production code only; `Lantern.Api.Tests` holds unit and
   in-process tests; `Lantern.Api.Test.Integration` holds the end-to-end tests, which run unchanged
