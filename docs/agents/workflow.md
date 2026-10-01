@@ -36,7 +36,7 @@ Applies to architecture, data layout, domain terms, the cycle itself and the cod
 | Issue touches | Skills |
 |---|---|
 | Any C# | `uncle-bob-clean-code`, `modern-csharp-coding-standards` |
-| HTTP endpoints, contracts | `minimal-api`, `api-design` |
+| HTTP endpoints, contracts | `minimal-api` |
 | External calls, retries | `resilience`; the API-call guardrails below override its retry advice |
 | Storage, keys, access | `azure-table-storage`, `azure-key-vault`, `azure-rbac`, `lean-azure-infra` |
 | Service boundaries, async flows | `microservices-architect` |
@@ -45,7 +45,6 @@ Applies to architecture, data layout, domain terms, the cycle itself and the cod
 | Python | `python-pro` |
 | React | `vercel-react-best-practices`, `vercel-composition-patterns` |
 | Module shape, testability | `codebase-design` |
-| Complexity check before PR | `crap-analysis` |
 
 Load a skill only when the issue touches its area. Each loaded skill costs context for the rest of the session.
 
