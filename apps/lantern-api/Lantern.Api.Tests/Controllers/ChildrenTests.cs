@@ -18,6 +18,8 @@ namespace Lantern.Api.Tests.Controllers;
 [Collection(ApiCollection.Name)]
 public sealed class ChildrenTests(AzuriteFixture azurite) : IDisposable
 {
+    private static readonly RowKeys Keys = new();
+
     private static readonly int Year = DateTime.UtcNow.Year;
 
     private readonly LanternApiFactory factory = new(azurite.ConnectionString);
@@ -185,8 +187,8 @@ public sealed class ChildrenTests(AzuriteFixture azurite) : IDisposable
         await client.PostAsJsonAsync(ApiClientExtensions.Children, NewChild(id, name, 3, school));
 
         var row = await Families.GetEntityAsync<TableEntity>(
-            FamilyRepository.FamilyPartition((await MeAsync(client)).FamilyId),
-            FamilyRepository.ChildRowKey(id)
+            Keys.FamilyPartition((await MeAsync(client)).FamilyId),
+            Keys.ChildRowKey(id)
         );
         Assert.DoesNotContain(name, Flat(row.Value), StringComparison.Ordinal);
         Assert.DoesNotContain(school, Flat(row.Value), StringComparison.Ordinal);
@@ -250,7 +252,7 @@ public sealed class ChildrenTests(AzuriteFixture azurite) : IDisposable
         await client.PutAsJsonAsync(ApiClientExtensions.Child(child.ChildId), new { Name = name, School = "  ", BirthYear = child.BirthYear });
 
         Assert.Null((await MeAsync(client)).Children[0].School);
-        var row = await Families.GetEntityAsync<TableEntity>(FamilyRepository.FamilyPartition(me.FamilyId), FamilyRepository.ChildRowKey(child.ChildId));
+        var row = await Families.GetEntityAsync<TableEntity>(Keys.FamilyPartition(me.FamilyId), Keys.ChildRowKey(child.ChildId));
         Assert.False(row.Value.ContainsKey("SchoolCipher"));
         Assert.DoesNotContain(name, Flat(row.Value), StringComparison.Ordinal);
     }
@@ -324,7 +326,7 @@ public sealed class ChildrenTests(AzuriteFixture azurite) : IDisposable
         Assert.Empty(await BlobNamesAsync($"{me.FamilyId:D}/{gone.ChildId:D}/"));
         Assert.True(await Blobs.GetBlobClient($"{me.FamilyId:D}/{kept.ChildId:D}/{kept.ClassLevel}/class.json").ExistsAsync());
         Assert.Empty(await PendingAsync(me.FamilyId));
-        Assert.Empty(await Families.QueryAsync<TableEntity>(r => r.PartitionKey == FamilyRepository.FamilyPartition(me.FamilyId) && r.RowKey == FamilyRepository.ChildRowKey(gone.ChildId)).ToListAsync());
+        Assert.Empty(await Families.QueryAsync<TableEntity>(r => r.PartitionKey == Keys.FamilyPartition(me.FamilyId) && r.RowKey == Keys.ChildRowKey(gone.ChildId)).ToListAsync());
     }
 
     [Fact]
@@ -359,7 +361,7 @@ public sealed class ChildrenTests(AzuriteFixture azurite) : IDisposable
         Assert.Equal(2, (await MeAsync(theirs)).Children.Count);
         Assert.NotEmpty(await BlobNamesAsync($"{theirFamily.FamilyId:D}/{theirChild.ChildId:D}/"));
         Assert.Empty(await PendingAsync(theirFamily.FamilyId));
-        var row = await Families.GetEntityAsync<TableEntity>(FamilyRepository.FamilyPartition(theirFamily.FamilyId), FamilyRepository.ChildRowKey(theirChild.ChildId));
+        var row = await Families.GetEntityAsync<TableEntity>(Keys.FamilyPartition(theirFamily.FamilyId), Keys.ChildRowKey(theirChild.ChildId));
         Assert.Equal("Active", row.Value.GetString("Status"));
     }
 
@@ -406,7 +408,7 @@ public sealed class ChildrenTests(AzuriteFixture azurite) : IDisposable
         await broken.Services.GetRequiredService<ChildDeletionWorker>().RunOnceAsync(CancellationToken.None);
 
         Assert.Single(await PendingAsync(me.FamilyId));
-        Assert.True(await Families.GetEntityIfExistsAsync<TableEntity>(FamilyRepository.FamilyPartition(me.FamilyId), FamilyRepository.ChildRowKey(child.ChildId)) is { HasValue: true });
+        Assert.True(await Families.GetEntityIfExistsAsync<TableEntity>(Keys.FamilyPartition(me.FamilyId), Keys.ChildRowKey(child.ChildId)) is { HasValue: true });
         Assert.NotEmpty(await BlobNamesAsync($"{me.FamilyId:D}/{child.ChildId:D}/"));
         Assert.Single((await MeAsync(client)).Children);
 
@@ -425,7 +427,7 @@ public sealed class ChildrenTests(AzuriteFixture azurite) : IDisposable
         var child = me.Children[0];
         await client.DeleteAsync(ApiClientExtensions.Child(child.ChildId));
         await Blobs.DeleteBlobIfExistsAsync($"{me.FamilyId:D}/{child.ChildId:D}/{child.ClassLevel}/class.json");
-        await Families.DeleteEntityAsync(FamilyRepository.FamilyPartition(me.FamilyId), FamilyRepository.ChildRowKey(child.ChildId));
+        await Families.DeleteEntityAsync(Keys.FamilyPartition(me.FamilyId), Keys.ChildRowKey(child.ChildId));
 
         await Worker.RunOnceAsync(CancellationToken.None);
 

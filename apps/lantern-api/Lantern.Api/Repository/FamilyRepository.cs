@@ -9,12 +9,11 @@ namespace Lantern.Api.Repository;
 
 // Table batches never span partitions, so a registration is two writes: the family batch, then the parent's
 // profile row as the commit point. createTables is for Azurite only; in Azure the Bicep owns the tables.
-internal sealed class FamilyRepository(TableClient parents, TableClient families, bool createTables)
+internal sealed class FamilyRepository(TableClient parents, TableClient families, IRowKeys keys, bool createTables)
     : IFamilyRepository
 {
     internal const string ProfileRowKey = "profile";
     private const string FamilyRowKey = "family";
-    private const string ChildRowPrefix = "child_";
     private const string ParentRowPrefix = "parent_";
     private const int MaxEditAttempts = 3;
 
@@ -41,7 +40,7 @@ internal sealed class FamilyRepository(TableClient parents, TableClient families
             throw new AlreadyRegisteredException();
         }
 
-        var familyPartition = FamilyPartition(family.FamilyId);
+        var familyPartition = keys.FamilyPartition(family.FamilyId);
         var membership = new TableEntity(familyPartition, ParentRowPrefix + parent.PartitionKey)
         {
             ["ParentId"] = parent.ParentId,
@@ -54,7 +53,7 @@ internal sealed class FamilyRepository(TableClient parents, TableClient families
             .. children.Select(child =>
                 new TableTransactionAction(
                     TableTransactionActionType.Add,
-                    ToEntity(child, familyPartition, ChildRowKey(child.ChildId))
+                    ToEntity(child, familyPartition, keys.ChildRowKey(child.ChildId))
                 )
             ),
         ];
@@ -98,7 +97,7 @@ internal sealed class FamilyRepository(TableClient parents, TableClient families
         }
 
         var parent = profile.Adapt<ParentProfile>();
-        var familyPartition = FamilyPartition(parent.FamilyId);
+        var familyPartition = keys.FamilyPartition(parent.FamilyId);
         FamilyRecord? family = null;
         var familyETag = string.Empty;
         var children = new List<ChildRecord>();
@@ -115,7 +114,7 @@ internal sealed class FamilyRepository(TableClient parents, TableClient families
                 family = entity.Adapt<FamilyRecord>();
                 familyETag = entity.ETag.ToString();
             }
-            else if (entity.RowKey.StartsWith(ChildRowPrefix, StringComparison.Ordinal))
+            else if (keys.IsChildRow(entity.RowKey))
             {
                 children.Add(entity.Adapt<ChildRecord>());
             }
@@ -135,7 +134,7 @@ internal sealed class FamilyRepository(TableClient parents, TableClient families
     {
         await EnsureTablesAsync(cancellationToken);
 
-        var familyPartition = FamilyPartition(familyId);
+        var familyPartition = keys.FamilyPartition(familyId);
         // Touching the family row under its ETag makes two concurrent adds conflict instead of both passing the limit.
         var touch = new TableEntity(familyPartition, FamilyRowKey) { ["ChildrenChangedAt"] = child.CreatedAt };
 
@@ -143,7 +142,7 @@ internal sealed class FamilyRepository(TableClient parents, TableClient families
         {
             await families.SubmitTransactionAsync(
                 [
-                    new(TableTransactionActionType.Add, ToEntity(child, familyPartition, ChildRowKey(child.ChildId))),
+                    new(TableTransactionActionType.Add, ToEntity(child, familyPartition, keys.ChildRowKey(child.ChildId))),
                     new(TableTransactionActionType.UpdateMerge, touch, new ETag(familyETag)),
                 ],
                 cancellationToken
@@ -166,8 +165,8 @@ internal sealed class FamilyRepository(TableClient parents, TableClient families
     {
         await EnsureTablesAsync(cancellationToken);
 
-        var familyPartition = FamilyPartition(familyId);
-        var rowKey = ChildRowKey(childId);
+        var familyPartition = keys.FamilyPartition(familyId);
+        var rowKey = keys.ChildRowKey(childId);
 
         // The row's own ETag keeps an edit from writing a stale Status over a delete that just marked it.
         for (var attempt = 0; attempt < MaxEditAttempts; attempt++)
@@ -208,10 +207,6 @@ internal sealed class FamilyRepository(TableClient parents, TableClient families
         throw new FamilyChangedException();
     }
 
-    internal static string FamilyPartition(Guid familyId) => familyId.ToString("D", CultureInfo.InvariantCulture);
-
-    internal static string ChildRowKey(Guid childId) =>
-        ChildRowPrefix + childId.ToString("N", CultureInfo.InvariantCulture);
 
     private async Task EnsureTablesAsync(CancellationToken cancellationToken)
     {

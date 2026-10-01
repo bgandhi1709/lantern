@@ -57,6 +57,17 @@ internal sealed class RegistrationExceptionHandler(ILogger<RegistrationException
                 );
                 return true;
 
+            case CallerNotIdentifiedException:
+                await WriteProblemAsync(
+                    httpContext,
+                    HttpStatusCode.Unauthorized,
+                    "caller-not-identified",
+                    "Not signed in",
+                    "The token does not identify a caller.",
+                    cancellationToken
+                );
+                return true;
+
             case ChildNotFoundException:
                 await WriteProblemAsync(
                     httpContext,

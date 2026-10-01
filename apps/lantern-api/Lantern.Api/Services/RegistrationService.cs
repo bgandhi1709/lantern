@@ -13,6 +13,7 @@ internal sealed class RegistrationService(
     IFamilyRepository families,
     IUidHasher hasher,
     IFieldCipher cipher,
+    IRowKeys keys,
     IFamilyKeyService familyKeys,
     IClassSpaceStore classSpaces,
     IValidator<RegisterBody> validator,
@@ -42,7 +43,7 @@ internal sealed class RegistrationService(
         }
 
         var familyId = Guid.NewGuid();
-        var familyPartition = FamilyRepository.FamilyPartition(familyId);
+        var familyPartition = keys.FamilyPartition(familyId);
         var (dek, wrappedFieldKey) = await familyKeys.GenerateAsync(cancellationToken);
 
         var family = new FamilyRecord(familyId, body.Region.Trim(), wrappedFieldKey, KeyScheme.KeyVault, now);
@@ -65,7 +66,7 @@ internal sealed class RegistrationService(
         {
             var child = body.Children[position];
             var childId = Guid.NewGuid();
-            var rowKey = FamilyRepository.ChildRowKey(childId);
+            var rowKey = keys.ChildRowKey(childId);
             var name = text.Name(child.Name);
             var school = text.School(child.School);
 
@@ -110,7 +111,7 @@ internal sealed class RegistrationService(
             await families.GetAsync(partitionKey, cancellationToken) ?? throw new NotRegisteredException();
 
         var parent = stored.Parent;
-        var familyPartition = FamilyRepository.FamilyPartition(stored.Family.FamilyId);
+        var familyPartition = keys.FamilyPartition(stored.Family.FamilyId);
         var dek = await familyKeys.UnwrapAsync(stored.Family.WrappedFieldKey, cancellationToken);
 
         return new FamilyView(
@@ -127,7 +128,7 @@ internal sealed class RegistrationService(
             [
                 .. stored.Children.Where(child => child.Status == ChildStatus.Active).Select(child =>
                 {
-                    var rowKey = FamilyRepository.ChildRowKey(child.ChildId);
+                    var rowKey = keys.ChildRowKey(child.ChildId);
 
                     return new ChildView(
                         child.ChildId,

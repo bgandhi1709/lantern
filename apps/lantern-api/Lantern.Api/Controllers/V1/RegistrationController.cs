@@ -2,6 +2,7 @@ using Asp.Versioning;
 using Lantern.Api.Auth;
 using Lantern.Api.Contracts;
 using Lantern.Api.Services.Interfaces;
+using MapsterMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,7 +13,8 @@ namespace Lantern.Api.Controllers.V1;
 [Route("v1")]
 [Authorize]
 // The caller comes only from the verified token: no route or body field names a family.
-public sealed class RegistrationController(IRegistrationService registration) : ControllerBase
+public sealed class RegistrationController(IRegistrationService registration, ICurrentCaller currentCaller, IMapper mapper)
+    : ControllerBase
 {
     [HttpPost("register")]
     public async Task<ActionResult<FamilyResponse>> Register(
@@ -20,26 +22,16 @@ public sealed class RegistrationController(IRegistrationService registration) : 
         CancellationToken cancellationToken
     )
     {
-        if (Caller.From(User) is not { } caller)
-        {
-            return Unauthorized();
-        }
+        var family = await registration.RegisterAsync(currentCaller.Require(), body, cancellationToken);
 
-        var family = await registration.RegisterAsync(caller, body, cancellationToken);
-
-        return CreatedAtAction(nameof(Me), null, FamilyResponse.From(family));
+        return CreatedAtAction(nameof(Me), null, mapper.Map<FamilyResponse>(family));
     }
 
     [HttpGet("me")]
     public async Task<ActionResult<FamilyResponse>> Me(CancellationToken cancellationToken)
     {
-        if (Caller.From(User) is not { } caller)
-        {
-            return Unauthorized();
-        }
+        var family = await registration.GetAsync(currentCaller.Require(), cancellationToken);
 
-        var family = await registration.GetAsync(caller, cancellationToken);
-
-        return Ok(FamilyResponse.From(family));
+        return Ok(mapper.Map<FamilyResponse>(family));
     }
 }

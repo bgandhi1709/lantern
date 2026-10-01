@@ -3,6 +3,7 @@ using Lantern.Api.Auth;
 using Lantern.Api.Configuration;
 using Lantern.Api.Contracts;
 using Lantern.Api.Services.Interfaces;
+using MapsterMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -16,20 +17,16 @@ namespace Lantern.Api.Controllers.V1;
 [EnableRateLimiting(RateLimits.Children)]
 [RequestSizeLimit(MaxBodyBytes)]
 // The Family comes only from the verified token: no route or body field names one.
-public sealed class ChildrenController(IChildService children) : ControllerBase
+public sealed class ChildrenController(IChildService children, ICurrentCaller currentCaller, IMapper mapper)
+    : ControllerBase
 {
     const int MaxBodyBytes = 2048;
 
     [HttpPost]
     public async Task<ActionResult<ChildResponse>> Add([FromBody] AddChildBody body, CancellationToken cancellationToken)
     {
-        if (Caller.From(User) is not { } caller)
-        {
-            return Unauthorized();
-        }
-
-        var result = await children.AddAsync(caller, body, cancellationToken);
-        var response = ChildResponse.From(result.Child);
+        var result = await children.AddAsync(currentCaller.Require(), body, cancellationToken);
+        var response = mapper.Map<ChildResponse>(result.Child);
 
         return result.Created
             ? Created(new Uri($"/v1/family/children/{response.ChildId}", UriKind.Relative), response)
@@ -43,23 +40,13 @@ public sealed class ChildrenController(IChildService children) : ControllerBase
         CancellationToken cancellationToken
     )
     {
-        if (Caller.From(User) is not { } caller)
-        {
-            return Unauthorized();
-        }
-
-        return Ok(ChildResponse.From(await children.EditAsync(caller, childId, body, cancellationToken)));
+        return Ok(mapper.Map<ChildResponse>(await children.EditAsync(currentCaller.Require(), childId, body, cancellationToken)));
     }
 
     [HttpDelete("{childId:guid}")]
     public async Task<IActionResult> Delete(Guid childId, CancellationToken cancellationToken)
     {
-        if (Caller.From(User) is not { } caller)
-        {
-            return Unauthorized();
-        }
-
-        await children.DeleteAsync(caller, childId, cancellationToken);
+        await children.DeleteAsync(currentCaller.Require(), childId, cancellationToken);
 
         return Accepted();
     }

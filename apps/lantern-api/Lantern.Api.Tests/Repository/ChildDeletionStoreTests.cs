@@ -10,11 +10,13 @@ namespace Lantern.Api.Tests.Repository;
 // Real Azurite: ETag claims and conditional writes are emulator behaviour a fake would hide.
 public sealed class ChildDeletionStoreTests(AzuriteFixture azurite)
 {
+    private static readonly RowKeys Keys = new();
+
     private readonly TableClient families = new TableServiceClient(azurite.ConnectionString).GetTableClient(
         $"families{Guid.NewGuid():N}"
     );
 
-    private ChildDeletionStore Store => new(families, createTables: true);
+    private ChildDeletionStore Store => new(families, Keys, createTables: true);
 
     [Fact]
     public async Task RequestAsync_MarksTheChildDeletingAndRecordsOneJob()
@@ -25,8 +27,8 @@ public sealed class ChildDeletionStoreTests(AzuriteFixture azurite)
         await Store.RequestAsync(familyId, childId, DateTimeOffset.UtcNow, CancellationToken.None);
 
         var row = await families.GetEntityAsync<TableEntity>(
-            FamilyRepository.FamilyPartition(familyId),
-            FamilyRepository.ChildRowKey(childId)
+            Keys.FamilyPartition(familyId),
+            Keys.ChildRowKey(childId)
         );
         Assert.Equal("Deleting", row.Value.GetString("Status"));
         Assert.Single(await families.QueryAsync<TableEntity>(r => r.PartitionKey == ChildDeletionStore.PendingPartition).ToListAsync());
@@ -90,7 +92,7 @@ public sealed class ChildDeletionStoreTests(AzuriteFixture azurite)
         Assert.Empty(await families.QueryAsync<TableEntity>(r => r.PartitionKey == ChildDeletionStore.PendingPartition).ToListAsync());
         Assert.Empty(
             await families
-                .QueryAsync<TableEntity>(r => r.PartitionKey == FamilyRepository.FamilyPartition(familyId) && r.RowKey == FamilyRepository.ChildRowKey(childId))
+                .QueryAsync<TableEntity>(r => r.PartitionKey == Keys.FamilyPartition(familyId) && r.RowKey == Keys.ChildRowKey(childId))
                 .ToListAsync()
         );
     }
@@ -101,7 +103,7 @@ public sealed class ChildDeletionStoreTests(AzuriteFixture azurite)
         var familyId = Guid.NewGuid();
         var childId = Guid.NewGuid();
         await families.AddEntityAsync(
-            new TableEntity(FamilyRepository.FamilyPartition(familyId), FamilyRepository.ChildRowKey(childId))
+            new TableEntity(Keys.FamilyPartition(familyId), Keys.ChildRowKey(childId))
             {
                 ["NameCipher"] = "cipher",
                 ["Status"] = nameof(ChildStatus.Active),

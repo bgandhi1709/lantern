@@ -8,7 +8,7 @@ namespace Lantern.Api.Repository;
 
 // Pending jobs live in their own partition of the families table. The pending row is the commit point of a delete:
 // once it exists the worker finishes the job, whatever happened to the request that wrote it.
-internal sealed class ChildDeletionStore(TableClient families, bool createTables) : IChildDeletionStore
+internal sealed class ChildDeletionStore(TableClient families, IRowKeys keys, bool createTables) : IChildDeletionStore
 {
     internal const string PendingPartition = "deletes";
     private const int MaxLeaseMinutes = 10;
@@ -17,8 +17,8 @@ internal sealed class ChildDeletionStore(TableClient families, bool createTables
     {
         await EnsureTableAsync(cancellationToken);
 
-        var familyPartition = FamilyRepository.FamilyPartition(familyId);
-        var childRow = FamilyRepository.ChildRowKey(childId);
+        var familyPartition = keys.FamilyPartition(familyId);
+        var childRow = keys.ChildRowKey(childId);
         var existing = await families.GetEntityIfExistsAsync<TableEntity>(
             familyPartition,
             childRow,
@@ -98,8 +98,8 @@ internal sealed class ChildDeletionStore(TableClient families, bool createTables
     public async Task RemoveChildRowAsync(PendingDelete job, CancellationToken cancellationToken)
     {
         await families.DeleteEntityAsync(
-            FamilyRepository.FamilyPartition(job.FamilyId),
-            FamilyRepository.ChildRowKey(job.ChildId),
+            keys.FamilyPartition(job.FamilyId),
+            keys.ChildRowKey(job.ChildId),
             cancellationToken: cancellationToken
         );
     }

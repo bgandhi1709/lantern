@@ -10,6 +10,8 @@ namespace Lantern.Api.Tests.Repository;
 // Real Azurite: batch atomicity and 409 behaviour are emulator behaviour a fake would hide.
 public sealed class FamilyRepositoryTests(AzuriteFixture azurite)
 {
+    private static readonly RowKeys Keys = new();
+
     private readonly TableClient parents = new TableServiceClient(azurite.ConnectionString).GetTableClient(
         $"parents{Guid.NewGuid():N}"
     );
@@ -18,7 +20,7 @@ public sealed class FamilyRepositoryTests(AzuriteFixture azurite)
         $"families{Guid.NewGuid():N}"
     );
 
-    private FamilyRepository Repository => new(parents, families, createTables: true);
+    private FamilyRepository Repository => new(parents, families, Keys, createTables: true);
 
     [Fact]
     public async Task RegisterAsync_ThenGet_ReturnsParentFamilyAndChildrenInOrder()
@@ -153,6 +155,7 @@ public sealed class FamilyRepositoryTests(AzuriteFixture azurite)
         var azureStyle = new FamilyRepository(
             service.GetTableClient(parentsName),
             service.GetTableClient(familiesName),
+            Keys,
             createTables: false
         );
         var family = NewFamily();
@@ -182,6 +185,7 @@ public sealed class FamilyRepositoryTests(AzuriteFixture azurite)
         var azureStyle = new FamilyRepository(
             service.GetTableClient(parentsName),
             service.GetTableClient(familiesName),
+            Keys,
             createTables: false
         );
         var pk = NewKey();
@@ -282,7 +286,7 @@ public sealed class FamilyRepositoryTests(AzuriteFixture azurite)
             Repository.UpdateChildAsync(family.FamilyId, Guid.NewGuid(), "n", null, 2019, CancellationToken.None)
         );
 
-        await new ChildDeletionStore(families, createTables: true).RequestAsync(
+        await new ChildDeletionStore(families, Keys, createTables: true).RequestAsync(
             family.FamilyId,
             child.ChildId,
             DateTimeOffset.UtcNow,

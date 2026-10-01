@@ -16,6 +16,7 @@ internal sealed class ChildService(
     IChildDeletionStore deletions,
     IUidHasher hasher,
     IFieldCipher cipher,
+    IRowKeys keys,
     IFamilyKeyService familyKeys,
     IClassSpaceStore classSpaces,
     IValidator<AddChildBody> addValidator,
@@ -34,7 +35,7 @@ internal sealed class ChildService(
         addValidator.Validate(body);
 
         var family = await LoadAsync(caller, cancellationToken);
-        var familyPartition = FamilyRepository.FamilyPartition(family.Family.FamilyId);
+        var familyPartition = keys.FamilyPartition(family.Family.FamilyId);
         var dek = await familyKeys.UnwrapAsync(family.Family.WrappedFieldKey, cancellationToken);
 
         if (family.Children.FirstOrDefault(child => child.ChildId == body.ChildId) is { } existing)
@@ -49,7 +50,7 @@ internal sealed class ChildService(
             throw new ChildLimitReachedException();
         }
 
-        var rowKey = FamilyRepository.ChildRowKey(body.ChildId);
+        var rowKey = keys.ChildRowKey(body.ChildId);
         var name = text.Name(body.Name);
         var school = text.School(body.School);
         var record = new ChildRecord(
@@ -85,9 +86,9 @@ internal sealed class ChildService(
 
         var family = await LoadAsync(caller, cancellationToken);
         var child = FindActive(family, childId);
-        var familyPartition = FamilyRepository.FamilyPartition(family.Family.FamilyId);
+        var familyPartition = keys.FamilyPartition(family.Family.FamilyId);
         var dek = await familyKeys.UnwrapAsync(family.Family.WrappedFieldKey, cancellationToken);
-        var rowKey = FamilyRepository.ChildRowKey(childId);
+        var rowKey = keys.ChildRowKey(childId);
         var name = text.Name(body.Name);
         var school = text.School(body.School);
 
@@ -130,7 +131,7 @@ internal sealed class ChildService(
 
     private ChildView ToView(ChildRecord child, byte[] dek, string familyPartition)
     {
-        var rowKey = FamilyRepository.ChildRowKey(child.ChildId);
+        var rowKey = keys.ChildRowKey(child.ChildId);
 
         return new ChildView(
             child.ChildId,

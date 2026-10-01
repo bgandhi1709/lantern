@@ -4,6 +4,7 @@ using Azure.Data.Tables;
 using Azure.Identity;
 using Azure.Security.KeyVault.Keys;
 using Azure.Storage.Blobs;
+using Lantern.Api.Auth;
 using Lantern.Api.Configuration;
 using Lantern.Api.Contracts;
 using Lantern.Api.Exceptions;
@@ -12,6 +13,8 @@ using Lantern.Api.Repository;
 using Lantern.Api.Services;
 using Lantern.Api.Services.Interfaces;
 using Lantern.Api.Validation;
+using Mapster;
+using MapsterMapper;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -83,6 +86,11 @@ builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<KeyMaterial>();
 builder.Services.AddSingleton<IUidHasher>(serviceProvider => serviceProvider.GetRequiredService<KeyMaterial>());
 builder.Services.AddSingleton<IFieldCipher, FieldCipher>();
+builder.Services.AddSingleton<IRowKeys, RowKeys>();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentCaller, CurrentCaller>();
+builder.Services.AddSingleton(new TypeAdapterConfig());
+builder.Services.AddScoped<IMapper, ServiceMapper>();
 builder.Services.AddSingleton<IFamilyRepository>(serviceProvider =>
 {
     var options = serviceProvider.GetRequiredService<IOptions<StorageOptions>>().Value;
@@ -91,6 +99,7 @@ builder.Services.AddSingleton<IFamilyRepository>(serviceProvider =>
     return new FamilyRepository(
         service.GetTableClient(options.ParentsTable),
         service.GetTableClient(options.FamiliesTable),
+        serviceProvider.GetRequiredService<IRowKeys>(),
         createTables: !string.IsNullOrWhiteSpace(options.ConnectionString)
     );
 });
@@ -111,6 +120,7 @@ builder.Services.AddSingleton<IChildDeletionStore>(serviceProvider =>
 
     return new ChildDeletionStore(
         service.GetTableClient(options.FamiliesTable),
+        serviceProvider.GetRequiredService<IRowKeys>(),
         createTables: !string.IsNullOrWhiteSpace(options.ConnectionString)
     );
 });

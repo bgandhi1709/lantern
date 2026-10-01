@@ -15,6 +15,7 @@ internal sealed class DevelopmentSeeder(
     IFamilyRepository families,
     IFamilyKeyService familyKeys,
     IFieldCipher cipher,
+    IRowKeys keys,
     IUidHasher hasher,
     TableServiceClient tables,
     IOptions<StorageOptions> storage,
@@ -53,7 +54,7 @@ internal sealed class DevelopmentSeeder(
         var now = clock.GetUtcNow();
         var parentId = Guid.NewGuid();
 
-        var membership = new TableEntity(FamilyRepository.FamilyPartition(family.FamilyId), $"parent_{partitionKey}")
+        var membership = new TableEntity(keys.FamilyPartition(family.FamilyId), $"parent_{partitionKey}")
         {
             ["ParentId"] = parentId,
             ["CreatedAt"] = now,

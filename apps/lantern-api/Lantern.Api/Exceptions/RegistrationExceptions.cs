@@ -13,3 +13,5 @@ public sealed class ChildLimitReachedException() : Exception("A family holds at 
 public sealed class ChildDeletingException() : Exception("This child is being deleted.");
 
 public sealed class FamilyChangedException() : Exception("The family changed; try again.");
+
+public sealed class CallerNotIdentifiedException() : Exception("The token names no caller.");

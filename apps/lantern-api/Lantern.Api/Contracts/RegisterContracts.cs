@@ -74,19 +74,6 @@ public sealed class FamilyResponse
     public ParentResponse Parent { get; set; } = new();
 
     public List<ChildResponse> Children { get; set; } = [];
-
-    public static FamilyResponse From(FamilyView family)
-    {
-        ArgumentNullException.ThrowIfNull(family);
-
-        return new FamilyResponse
-        {
-            FamilyId = family.FamilyId,
-            Region = family.Region,
-            Parent = ParentResponse.From(family.Parent),
-            Children = [.. family.Children.Select(ChildResponse.From)],
-        };
-    }
 }
 
 public sealed class ParentResponse
@@ -102,21 +89,6 @@ public sealed class ParentResponse
     public string ConsentVersion { get; set; } = string.Empty;
 
     public DateTimeOffset ConsentAt { get; set; }
-
-    public static ParentResponse From(ParentView parent)
-    {
-        ArgumentNullException.ThrowIfNull(parent);
-
-        return new ParentResponse
-        {
-            ParentId = parent.ParentId,
-            Name = parent.Name,
-            Email = parent.Email,
-            Language = parent.Language,
-            ConsentVersion = parent.ConsentVersion,
-            ConsentAt = parent.ConsentAt,
-        };
-    }
 }
 
 public sealed class ChildResponse
@@ -130,18 +102,4 @@ public sealed class ChildResponse
     public int ClassLevel { get; set; }
 
     public int BirthYear { get; set; }
-
-    public static ChildResponse From(ChildView child)
-    {
-        ArgumentNullException.ThrowIfNull(child);
-
-        return new ChildResponse
-        {
-            ChildId = child.ChildId,
-            Name = child.Name,
-            School = child.School,
-            ClassLevel = child.ClassLevel,
-            BirthYear = child.BirthYear,
-        };
-    }
 }
