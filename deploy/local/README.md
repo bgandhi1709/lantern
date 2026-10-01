@@ -58,6 +58,8 @@ E2E_BASE_URL=https://local.lantern.api E2E_AUTH_EMULATOR=http://127.0.0.1:9099 \
   dotnet test --project apps/lantern-api/Lantern.Api.Test.Integration --filter-trait "Category=E2E"
 ```
 
+Deleting a Child is finished by a worker in the container, so those E2E tests poll for up to a minute.
+
 CI runs the same tests in its `e2e-docker` job on every PR and push, and the release waits for it, so what passes here
 is what gates the release. They do not run against real UAT.
 

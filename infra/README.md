@@ -37,7 +37,7 @@ az deployment group create  -g rg-lantern-dev -f infra/main.bicep -p infra/param
 Re-run `bootstrap.sh` before the first API release that uses Blob: the API identity needs the new role.
 
 The deploying account needs Contributor only. It creates the storage account `lanternuat` with the tables
-`parents` and `families`, the private `family` blob container (a Class space per Child and Class), the private `ncert` blob container (for `ncert-build`'s output — see
+`parents` and `families`, the private `family` blob container (a Class space per Child and Class; blob soft delete and versioning are off, so a deleted Child's files really go), the private `ncert` blob container (for `ncert-build`'s output — see
 [`tools/ncert-build`](../tools/ncert-build/README.md)), a Log Analytics workspace, and the Container
 Apps environment and app (0 to 1 replica, the identity attached). All names come from
 `environmentName`. The template reads the identity and the Key Vault by name and wires the app's

@@ -18,9 +18,6 @@ internal sealed class RegistrationService(
     ILogger<RegistrationService> logger
 ) : IRegistrationService
 {
-    private const int MinChildAge = 3;
-    private const int MaxChildAge = 18;
-
     public async Task<FamilyView> RegisterAsync(
         Caller caller,
         RegisterBody body,
@@ -67,7 +64,7 @@ internal sealed class RegistrationService(
             var childId = Guid.NewGuid();
             var rowKey = FamilyRepository.ChildRowKey(childId);
             var name = child.Name.Trim();
-            var school = string.IsNullOrWhiteSpace(child.School) ? null : child.School.Trim();
+            var school = ChildRules.CleanSchool(child.School);
 
             records.Add(
                 new ChildRecord(
@@ -125,7 +122,7 @@ internal sealed class RegistrationService(
                 parent.ConsentAt
             ),
             [
-                .. stored.Children.Select(child =>
+                .. stored.Children.Where(child => child.Status == ChildStatus.Active).Select(child =>
                 {
                     var rowKey = FamilyRepository.ChildRowKey(child.ChildId);
 
@@ -152,12 +149,7 @@ internal sealed class RegistrationService(
 
         foreach (var child in body.Children)
         {
-            if (child.BirthYear < currentYear - MaxChildAge || child.BirthYear > currentYear - MinChildAge)
-            {
-                throw new InvalidRegistrationException(
-                    $"A child's birth year must be between {currentYear - MaxChildAge} and {currentYear - MinChildAge}."
-                );
-            }
+            ChildRules.ValidateBirthYear(child.BirthYear, currentYear);
         }
     }
 }

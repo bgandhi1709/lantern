@@ -5,8 +5,6 @@ namespace Lantern.Api.Contracts;
 
 public sealed class RegisterBody
 {
-    private const int MaxChildren = 6;
-
     [Required]
     [StringLength(60, MinimumLength = 1)]
     [RegularExpression(TextRules.NoControlCharacters)]
@@ -21,7 +19,7 @@ public sealed class RegisterBody
 
     [Required]
     [MinLength(1)]
-    [MaxLength(MaxChildren)]
+    [MaxLength(ChildLimits.MaxChildren)]
     public List<ChildBody> Children { get; set; } = [];
 }
 
@@ -35,21 +33,29 @@ public sealed class ConsentBody
     public string NoticeVersion { get; set; } = string.Empty;
 }
 
-public sealed class ChildBody
+public class ChildDetailsBody
 {
     [Required]
     [StringLength(40, MinimumLength = 1)]
     [RegularExpression(TextRules.NoControlCharacters)]
     public string Name { get; set; } = string.Empty;
 
-    [Range(1, 10)]
-    public int ClassLevel { get; set; }
-
     public int BirthYear { get; set; }
 
     [StringLength(120)]
     [RegularExpression(TextRules.NoControlCharactersOrEmpty)]
     public string? School { get; set; }
+}
+
+public class ChildBody : ChildDetailsBody
+{
+    [Range(1, 10)]
+    public int ClassLevel { get; set; }
+}
+
+internal static class ChildLimits
+{
+    public const int MaxChildren = 6;
 }
 
 internal static class TextRules

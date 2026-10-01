@@ -13,6 +13,7 @@ using Lantern.Api.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
@@ -33,6 +34,12 @@ builder
 builder
     .Services.AddOptions<SecurityOptions>()
     .Bind(builder.Configuration.GetSection(SecurityOptions.SectionName))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+
+builder
+    .Services.AddOptions<ChildDeletionOptions>()
+    .Bind(builder.Configuration.GetSection(ChildDeletionOptions.SectionName))
     .ValidateDataAnnotations()
     .ValidateOnStart();
 
@@ -95,7 +102,25 @@ builder.Services.AddSingleton<IClassSpaceStore>(serviceProvider =>
         createContainer: !string.IsNullOrWhiteSpace(options.ConnectionString)
     );
 });
+builder.Services.AddSingleton<IChildDeletionStore>(serviceProvider =>
+{
+    var options = serviceProvider.GetRequiredService<IOptions<StorageOptions>>().Value;
+    var service = serviceProvider.GetRequiredService<TableServiceClient>();
+
+    return new ChildDeletionStore(
+        service.GetTableClient(options.FamiliesTable),
+        createTables: !string.IsNullOrWhiteSpace(options.ConnectionString)
+    );
+});
+builder.Services.AddSingleton<ChildDeletionWorker>();
+builder.Services.AddHostedService(serviceProvider => serviceProvider.GetRequiredService<ChildDeletionWorker>());
 builder.Services.AddScoped<IRegistrationService, RegistrationService>();
+builder.Services.AddScoped<IChildService, ChildService>();
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddChildrenPolicy();
+});
 
 // Google-only sign-in is enforced in the Firebase console. A revoked or disabled user stays valid
 // until their ID token expires (1 hour at most).
@@ -174,6 +199,7 @@ app.UseForwardedHeaders(
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 
 app.MapControllers();
 app.MapHealthChecks("/health/live", new() { Predicate = _ => false }).AllowAnonymous();

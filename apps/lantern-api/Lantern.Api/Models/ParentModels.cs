@@ -32,12 +32,15 @@ public sealed record ChildRecord(
     int BirthYear,
     // Children saved together share a timestamp; Position keeps the order they were entered in.
     int Position,
-    DateTimeOffset CreatedAt
+    DateTimeOffset CreatedAt,
+    ChildStatus Status = ChildStatus.Active
 );
 
 public sealed record FamilyAggregate(
     ParentProfile Parent,
     FamilyRecord Family,
+    // Stamp of the family row when read; an add commits only if nobody else changed the Family since.
+    string FamilyETag,
     IReadOnlyList<ChildRecord> Children
 );
 
@@ -68,4 +71,10 @@ public sealed record ChildView(
 public enum KeyScheme
 {
     KeyVault,
+}
+
+public enum ChildStatus
+{
+    Active,
+    Deleting,
 }

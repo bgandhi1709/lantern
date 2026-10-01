@@ -94,7 +94,9 @@ ncert.nic.in PDFs                                         Mother's phone (Flutte
   layout is [ADR-0001](docs/adr/0001-family-and-parent-in-separate-tables.md). Each Child also has
   a Blob **Class space** per Class under `family/{familyId}/{childId}/{class}/`, started at
   registration and kept for the Child's History
-  ([ADR-0002](docs/adr/0002-class-space-in-blob.md)).
+  ([ADR-0002](docs/adr/0002-class-space-in-blob.md)). Deleting a Child is a hard delete the API
+  records and a background worker finishes; the anonymous Answer library is never touched
+  ([ADR-0003](docs/adr/0003-deleting-a-child.md)).
 
 | Area | Choice |
 | --- | --- |
@@ -115,8 +117,9 @@ ncert.nic.in PDFs                                         Mother's phone (Flutte
 - **Infrastructure.** The UAT environment is deployed from Bicep by one GitHub Actions workflow (`api.yml`), together with each API release; see
   [`infra/README.md`](infra/README.md).
 - **API.** Firebase sign-in, `POST /v1/register` and `GET /v1/me` with per-family encryption are
-  live in UAT. The end-to-end tests run in Docker on every PR and gate the release, and a smoke check follows each UAT deploy. The Family split
-  (#48) is merged and Class spaces (#49) are built. A cache for the Family key (#52) comes next.
+  live in UAT. Add, edit and delete a Child (`/v1/family/children`, #51) are built: delete returns
+  `202` and a worker in the API container finishes it, and the max is six Children. The end-to-end tests run in Docker on every PR and gate the release, and a smoke check follows each UAT deploy. The Family split
+  (#48) is merged and Class spaces (#49) are built; moving a Child to a new Class (#50) and deleting a Family (#53) are next. A cache for the Family key (#52) comes next.
   Under `apps/lantern-api`: `Lantern.Api` is production code only; `Lantern.Api.Tests` holds unit and
   in-process tests; `Lantern.Api.Test.Integration` holds the end-to-end tests, which run unchanged
   against local Docker and UAT; `Lantern.Api.Test.Integration.Host` holds the local stand-ins (Firebase

@@ -1,4 +1,5 @@
 using Azure.Storage.Blobs;
+using Azure.Storage.Blobs.Models;
 using Lantern.Api.Services;
 using Lantern.Api.Tests.Infrastructure;
 
@@ -51,4 +52,72 @@ public sealed class BlobClassSpaceStoreTests(AzuriteFixture azurite)
 
         Assert.Equal(first, (await marker.GetPropertiesAsync()).Value.ETag);
     }
+
+    [Fact]
+    public async Task DeleteChildAsync_RemovesEverySpaceOfThatChildAndNothingElse()
+    {
+        var familyId = Guid.NewGuid();
+        var child = Guid.NewGuid();
+        var sibling = Guid.NewGuid();
+        var otherFamily = Guid.NewGuid();
+        await Store.StartAsync(familyId, child, 5, CancellationToken.None);
+        await Store.StartAsync(familyId, child, 6, CancellationToken.None);
+        await Store.StartAsync(familyId, sibling, 5, CancellationToken.None);
+        await Store.StartAsync(otherFamily, child, 5, CancellationToken.None);
+        await container.GetBlobClient($"{familyId:D}/{child:D}/6/notes/page.txt").UploadAsync(BinaryData.FromString("x"));
+
+        await Store.DeleteChildAsync(familyId, child, CancellationToken.None);
+
+        Assert.Empty(await BlobsUnder($"{familyId:D}/{child:D}/"));
+        Assert.True(await container.GetBlobClient($"{familyId:D}/{sibling:D}/5/class.json").ExistsAsync());
+        Assert.True(await container.GetBlobClient($"{otherFamily:D}/{child:D}/5/class.json").ExistsAsync());
+    }
+
+    [Fact]
+    public async Task DeleteChildAsync_Repeated_Succeeds()
+    {
+        var familyId = Guid.NewGuid();
+        var child = Guid.NewGuid();
+        await Store.StartAsync(familyId, child, 5, CancellationToken.None);
+
+        await Store.DeleteChildAsync(familyId, child, CancellationToken.None);
+        await Store.DeleteChildAsync(familyId, child, CancellationToken.None);
+
+        Assert.Empty(await BlobsUnder($"{familyId:D}/"));
+    }
+
+    [Fact]
+    public async Task DeleteChildAsync_WhenNoSpaceWasEverStarted_Succeeds()
+    {
+        var neverCreated = azurite.CreateBlobClient().GetBlobContainerClient($"family{Guid.NewGuid():N}");
+
+        await new BlobClassSpaceStore(neverCreated, createContainer: false).DeleteChildAsync(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            CancellationToken.None
+        );
+    }
+
+    [Fact]
+    public async Task DeleteChildAsync_WithManyBlobs_RemovesAll()
+    {
+        var familyId = Guid.NewGuid();
+        var child = Guid.NewGuid();
+        await Store.StartAsync(familyId, child, 5, CancellationToken.None);
+        foreach (var n in Enumerable.Range(0, 40))
+        {
+            await container.GetBlobClient($"{familyId:D}/{child:D}/5/f{n}.txt").UploadAsync(BinaryData.FromString("x"));
+        }
+
+        await Store.DeleteChildAsync(familyId, child, CancellationToken.None);
+
+        Assert.Empty(await BlobsUnder($"{familyId:D}/{child:D}/"));
+    }
+
+    private Task<List<string>> BlobsUnder(string prefix) =>
+        container
+            .GetBlobsAsync(BlobTraits.None, BlobStates.None, prefix, CancellationToken.None)
+            .Select(blob => blob.Name)
+            .ToListAsync()
+            .AsTask();
 }

@@ -8,6 +8,10 @@ internal static class ApiClientExtensions
     public static readonly Uri Register = new("/v1/register", UriKind.Relative);
     public static readonly Uri Me = new("/v1/me", UriKind.Relative);
 
+    public static readonly Uri Children = new("/v1/family/children", UriKind.Relative);
+
+    public static Uri Child(Guid childId) => new($"/v1/family/children/{childId}", UriKind.Relative);
+
     public static HttpClient WithBearer(this HttpClient client, string token)
     {
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);

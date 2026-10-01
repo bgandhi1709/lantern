@@ -65,6 +65,17 @@ resource storage 'Microsoft.Storage/storageAccounts@2023-05-01' = {
   resource blobService 'blobServices' = {
     name: 'default'
 
+    properties: {
+      // A deleted Child's files must really go (ADR-0003), so no soft-deleted or versioned copy is kept.
+      deleteRetentionPolicy: {
+        enabled: false
+      }
+      containerDeleteRetentionPolicy: {
+        enabled: false
+      }
+      isVersioningEnabled: false
+    }
+
     // One Class space per Child and Class, as blobs under family/{familyId}/{childId}/{class}/.
     resource familyContainer 'containers' = {
       name: 'family'

@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Protocols;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
@@ -11,7 +13,8 @@ using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 namespace Lantern.Api.Tests.Infrastructure;
 
 // Only the signing-key source is replaced; issuer, audience, lifetime and signature checks are the production settings.
-public sealed class LanternApiFactory(string connectionString) : WebApplicationFactory<Program>
+public sealed class LanternApiFactory(string connectionString, bool runDeletionWorker = false)
+    : WebApplicationFactory<Program>
 {
     public const string SecurityKey = "dGVzdC1rZXktb25seS1mb3ItdGhlLXRlc3Qtc3VpdGUtMDE=";
 
@@ -30,8 +33,16 @@ public sealed class LanternApiFactory(string connectionString) : WebApplicationF
 
         builder.ConfigureLogging(logging => logging.AddProvider(Logs));
 
+        builder.UseSetting("Deletion:PollSeconds", "1");
+
         builder.ConfigureTestServices(services =>
         {
+            // Tests drive the deletion worker themselves unless they ask for the real loop.
+            if (!runDeletionWorker)
+            {
+                services.RemoveAll<IHostedService>();
+            }
+
             services.AddSingleton<IFamilyKeyWrapper, LocalRsaFamilyKeyWrapper>();
             services.PostConfigure<JwtBearerOptions>(
                 JwtBearerDefaults.AuthenticationScheme,

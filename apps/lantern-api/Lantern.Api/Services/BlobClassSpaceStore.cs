@@ -32,4 +32,22 @@ internal sealed class BlobClassSpaceStore(BlobContainerClient container, bool cr
             // Repeated Class: the space already exists.
         }
     }
+
+    public async Task DeleteChildAsync(Guid familyId, Guid childId, CancellationToken cancellationToken)
+    {
+        // The prefix comes from the ids alone, and the slash keeps it from matching a longer path.
+        var prefix = string.Create(CultureInfo.InvariantCulture, $"{familyId:D}/{childId:D}/");
+
+        try
+        {
+            await foreach (var blob in container.GetBlobsAsync(BlobTraits.None, BlobStates.None, prefix, cancellationToken))
+            {
+                await container.DeleteBlobIfExistsAsync(blob.Name, cancellationToken: cancellationToken);
+            }
+        }
+        catch (RequestFailedException ex) when (ex.ErrorCode == BlobErrorCode.ContainerNotFound)
+        {
+            // No Class space was ever started, so there is nothing to remove.
+        }
+    }
 }

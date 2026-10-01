@@ -191,6 +191,108 @@ public sealed class FamilyRepositoryTests(AzuriteFixture azurite)
         Assert.Single((await azureStyle.GetAsync(pk, CancellationToken.None))!.Children);
     }
 
+    [Fact]
+    public async Task AddChildAsync_TenAtOnceAtFive_ExactlyOneWins()
+    {
+        var pk = NewKey();
+        var family = NewFamily();
+        await Repository.RegisterAsync(
+            NewParent(pk, family),
+            family,
+            [.. Enumerable.Range(0, 5).Select(NewChild)],
+            CancellationToken.None
+        );
+        var seen = (await Repository.GetAsync(pk, CancellationToken.None))!.FamilyETag;
+
+        var attempts = Enumerable
+            .Range(0, 10)
+            .Select(async _ =>
+            {
+                try
+                {
+                    await Repository.AddChildAsync(family.FamilyId, NewChild(5), seen, CancellationToken.None);
+                    return true;
+                }
+                catch (FamilyChangedException)
+                {
+                    return false;
+                }
+            });
+
+        Assert.Equal(1, (await Task.WhenAll(attempts)).Count(won => won));
+        Assert.Equal(6, (await Repository.GetAsync(pk, CancellationToken.None))!.Children.Count);
+    }
+
+    [Fact]
+    public async Task AddChildAsync_WithAStaleStamp_Throws()
+    {
+        var pk = NewKey();
+        var family = NewFamily();
+        await Repository.RegisterAsync(NewParent(pk, family), family, [NewChild(0)], CancellationToken.None);
+        var stale = (await Repository.GetAsync(pk, CancellationToken.None))!.FamilyETag;
+        await Repository.AddChildAsync(family.FamilyId, NewChild(1), stale, CancellationToken.None);
+
+        await Assert.ThrowsAsync<FamilyChangedException>(() =>
+            Repository.AddChildAsync(family.FamilyId, NewChild(2), stale, CancellationToken.None)
+        );
+        Assert.Equal(2, (await Repository.GetAsync(pk, CancellationToken.None))!.Children.Count);
+    }
+
+    [Fact]
+    public async Task AddChildAsync_SameChildIdWithFreshStamp_Throws()
+    {
+        var pk = NewKey();
+        var family = NewFamily();
+        var child = NewChild(0);
+        await Repository.RegisterAsync(NewParent(pk, family), family, [child], CancellationToken.None);
+        var stamp = (await Repository.GetAsync(pk, CancellationToken.None))!.FamilyETag;
+
+        await Assert.ThrowsAsync<FamilyChangedException>(() =>
+            Repository.AddChildAsync(family.FamilyId, child, stamp, CancellationToken.None)
+        );
+    }
+
+    [Fact]
+    public async Task UpdateChildAsync_ChangesFieldsAndClearsSchool_KeepsClassAndStatus()
+    {
+        var pk = NewKey();
+        var family = NewFamily();
+        var child = NewChild(0) with { SchoolCipher = "cipher-school", ClassLevel = 6 };
+        await Repository.RegisterAsync(NewParent(pk, family), family, [child], CancellationToken.None);
+
+        await Repository.UpdateChildAsync(family.FamilyId, child.ChildId, "new-name", null, 2019, CancellationToken.None);
+
+        var stored = (await Repository.GetAsync(pk, CancellationToken.None))!.Children.Single();
+        Assert.Equal("new-name", stored.NameCipher);
+        Assert.Null(stored.SchoolCipher);
+        Assert.Equal(2019, stored.BirthYear);
+        Assert.Equal(6, stored.ClassLevel);
+        Assert.Equal(ChildStatus.Active, stored.Status);
+    }
+
+    [Fact]
+    public async Task UpdateChildAsync_MissingOrDeleting_Throws()
+    {
+        var pk = NewKey();
+        var family = NewFamily();
+        var child = NewChild(0);
+        await Repository.RegisterAsync(NewParent(pk, family), family, [child], CancellationToken.None);
+
+        await Assert.ThrowsAsync<ChildNotFoundException>(() =>
+            Repository.UpdateChildAsync(family.FamilyId, Guid.NewGuid(), "n", null, 2019, CancellationToken.None)
+        );
+
+        await new ChildDeletionStore(families, createTables: true).RequestAsync(
+            family.FamilyId,
+            child.ChildId,
+            DateTimeOffset.UtcNow,
+            CancellationToken.None
+        );
+        await Assert.ThrowsAsync<ChildNotFoundException>(() =>
+            Repository.UpdateChildAsync(family.FamilyId, child.ChildId, "n", null, 2019, CancellationToken.None)
+        );
+    }
+
     private static string NewKey() => Guid.NewGuid().ToString("N");
 
     private static FamilyRecord NewFamily() =>

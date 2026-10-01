@@ -18,6 +18,14 @@ _Avoid_: User, Admin, Owner, Mother, Father, caregiver
 A person in a Family who attends school and whose learning the Parent supports. Never signs in; Lantern serves the Parent, not the Child. "Kid" is only the persona used in the docs.
 _Avoid_: Kid, student, learner
 
+**Hard delete**:
+How a Child is removed: the Parent decides, and the Child row, every Class space and the Child's History are erased with nothing kept. Lantern finishes it in the background and the Child disappears from the Parent's view at once. The Answer library is never touched by it.
+_Avoid_: Archive, soft delete, deactivate
+
+**Answer library**:
+The anonymous store of Scrubbed Questions and tagged Answers that agents build up and Lantern reuses across Families, with no link back to any Child, Parent or Family. It is kept when a Child, Parent or Family is deleted.
+_Avoid_: Cache, shared history
+
 **Class**:
 A Child's school year, from 1 to 10 for now (for example "Class 6"), as in CBSE and NCERT. Classes 11 and 12 may come later. Only the Parent changes it; Lantern never moves a Child up on its own.
 _Avoid_: Grade, standard, level

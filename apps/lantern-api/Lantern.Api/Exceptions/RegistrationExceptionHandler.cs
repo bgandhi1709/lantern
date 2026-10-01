@@ -57,6 +57,50 @@ internal sealed class RegistrationExceptionHandler(ILogger<RegistrationException
                 );
                 return true;
 
+            case ChildNotFoundException:
+                await WriteProblemAsync(
+                    httpContext,
+                    HttpStatusCode.NotFound,
+                    "child-not-found",
+                    "Child not found",
+                    "No such child in this family.",
+                    cancellationToken
+                );
+                return true;
+
+            case ChildLimitReachedException:
+                await WriteProblemAsync(
+                    httpContext,
+                    HttpStatusCode.Conflict,
+                    "child-limit-reached",
+                    "Child limit reached",
+                    "A family holds at most six children.",
+                    cancellationToken
+                );
+                return true;
+
+            case ChildDeletingException:
+                await WriteProblemAsync(
+                    httpContext,
+                    HttpStatusCode.Conflict,
+                    "child-deleting",
+                    "Child is being deleted",
+                    "This child is being deleted.",
+                    cancellationToken
+                );
+                return true;
+
+            case FamilyChangedException:
+                await WriteProblemAsync(
+                    httpContext,
+                    HttpStatusCode.Conflict,
+                    "family-changed",
+                    "Family changed",
+                    "The family changed at the same moment; try again.",
+                    cancellationToken
+                );
+                return true;
+
             default:
                 return false;
         }
