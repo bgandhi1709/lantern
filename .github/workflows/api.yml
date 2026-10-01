@@ -5,11 +5,13 @@ on:
   pull_request:
     paths:
       - apps/lantern-api/**
+      - deploy/local/**
       - .github/workflows/api.yml
   push:
     branches: [main]
     paths:
       - apps/lantern-api/**
+      - deploy/local/**
       - .github/workflows/api.yml
   workflow_dispatch:
 
@@ -35,6 +37,14 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 22
+      - name: Guardrails
+        run: |
+          # A script without the executable bit fails on the runner with "Permission denied".
+          bad=$(git ls-files -s 'deploy/*.sh' 'infra/*.sh' | grep -v '^100755' || true)
+          [ -z "$bad" ] || { echo "Not executable (git update-index --chmod=+x):"; echo "$bad"; exit 1; }
+          # Test and dev-only code stays out of the production assembly.
+          hits=$(grep -rnE 'Xunit|Seeder|LocalFamilyKeyWrapper|WebApplicationFactory' apps/lantern-api/Lantern.Api --include='*.cs' --include='*.csproj' || true)
+          [ -z "$hits" ] || { echo "Test or dev-only code in Lantern.Api:"; echo "$hits"; exit 1; }
       - run: npm install -g azurite@3
       - run: dotnet build Lantern.slnx -c Release
       # The E2E tests (Category=E2E) need the Docker stack; they run in the e2e-docker job.

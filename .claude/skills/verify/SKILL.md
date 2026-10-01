@@ -5,7 +5,7 @@ description: Build, run and drive the Lantern API locally over HTTPS at https://
 
 # Verify the Lantern API
 
-The runtime surface is HTTP. Tests are CI's job; do not run them here.
+The runtime surface is HTTP. Run the unit tests in CI. The E2E (`Category=E2E`) runs against this Docker stack; its command and env vars are in `deploy/local/README.md`.
 
 ## Start
 

@@ -1,6 +1,6 @@
 # Coding standards
 
-Read during review. These are judgement calls; anything a linter or CI check can enforce belongs there instead.
+Read during review. These are judgement calls; anything a linter or CI check can enforce belongs there instead. The `Guardrails` step in `.github/workflows/api.yml` already enforces script modes and keeps test and dev-only code out of `Lantern.Api`.
 
 ## C#
 
@@ -19,6 +19,7 @@ Production assemblies contain production code only. A reviewer on PR #61 flagged
 - **No test or dev-only code in `Lantern.Api`.** That includes seeders, local stand-ins for Azure services, repository or interface members that exist only so a test or seed can call them, dev-only options, and `Development` branches in `Program.cs`. Put them in `Lantern.Api.Test.Integration` (E2E tests), `Lantern.Api.Test.Integration.Host` (local-run stand-ins) or `Lantern.Api.Tests` (unit and in-process tests), and reach internals with `InternalsVisibleTo`.
 - **Plug local code in from outside.** Run the API through `WebApplicationFactory` with `ConfigureTestServices`, which applies after the API's own registrations, so the production image never contains the stand-in. A plain ASP.NET hosting startup does not work: it registers before the API, so the API's services win.
 - **A test helper that needs a new production member is a design smell.** Write the rows or call the internals from the helper instead.
+- **Local and UAT run the same API code.** Anything the Docker stack fakes (Auth Emulator, key file, seeded Family) is configured from outside; the API has no `if (local)` branch.
 - **No shared mutable flags for one-time setup** (`volatile bool` check-then-set). `volatile` gives visibility, not atomicity, so two callers can both pass the check. Make the call idempotent and make it every time, or use `Lazy<T>` or a `SemaphoreSlim` when the setup must run once.
 
 ## Security and endpoints
@@ -32,7 +33,11 @@ Every new endpoint follows these. `/security-review` checks them before the PR (
 - **Cancellable.** Every I/O call takes the `CancellationToken`. No unbounded waits.
 - **Crypto ships with its tests.** Code that encrypts, hashes or wraps keys has tests for tamper detection, wrong key, wrong authenticated data, and isolation between Families. Never invent a primitive; use the platform's and Key Vault's.
 
-## Changes that need docs in the same PR
+## Changes that need more than code
+
+An Azure role or resource the API needs (for example Blob access for `id-lantern-uat`) lands and is confirmed before the API release that uses it. The infra workflow cannot grant roles, so the Owner runs the command by hand; the deploy preflight only catches storage roles. Name the command in the PR.
+
+A shell script run by CI or Docker is committed `100755`. Editing on the Windows-mounted drive drops the mode; `git ls-files -s` shows it, and CI checks `deploy/` and `infra/`.
 
 A change to the API, infra or data layout updates the root `README.md` (Status and runtime sections), the decision log, and any README or skill that describes it.
 
