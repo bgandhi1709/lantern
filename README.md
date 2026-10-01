@@ -125,4 +125,7 @@ the work is tracked in [Issues](../../issues) and the project board.
 
 ## License
 
-[Apache License 2.0](LICENSE). The agent skills in `.claude/skills` are third-party and keep their own licenses (MIT, see each skill).
+Lantern is source-available under the [PolyForm Noncommercial License 1.0.0](LICENSE). It is free for
+families, personal use, schools, charities and other non-profits. Selling it or using it commercially
+needs written permission: open an issue to ask. The agent skills in `.claude/skills` are third-party
+and keep their own licenses (MIT, see each skill).
