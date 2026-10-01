@@ -122,3 +122,10 @@ ncert.nic.in PDFs                                         Mother's phone (Flutte
 The decisions so far are in
 [`docs/ideation/decision-log.md`](docs/ideation/decision-log.md) and [`docs/adr`](docs/adr), and
 the work is tracked in [Issues](../../issues) and the project board.
+
+## License
+
+Lantern is source-available under the [PolyForm Noncommercial License 1.0.0](LICENSE). It is free for
+families, personal use, schools, charities and other non-profits. Selling it or using it commercially
+needs written permission: open an issue to ask. The agent skills in `.claude/skills` are third-party
+and keep their own licenses (MIT, see each skill).
