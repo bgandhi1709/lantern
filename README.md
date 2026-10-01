@@ -122,3 +122,7 @@ ncert.nic.in PDFs                                         Mother's phone (Flutte
 The decisions so far are in
 [`docs/ideation/decision-log.md`](docs/ideation/decision-log.md) and [`docs/adr`](docs/adr), and
 the work is tracked in [Issues](../../issues) and the project board.
+
+## License
+
+[Apache License 2.0](LICENSE). The agent skills in `.claude/skills` are third-party and keep their own licenses (MIT, see each skill).
