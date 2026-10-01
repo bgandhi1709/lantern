@@ -18,7 +18,7 @@ namespace Lantern.Api.Controllers.V1;
 // The Family comes only from the verified token: no route or body field names one.
 public sealed class ChildrenController(IChildService children) : ControllerBase
 {
-    internal const int MaxBodyBytes = 2048;
+    const int MaxBodyBytes = 2048;
 
     [HttpPost]
     public async Task<ActionResult<ChildResponse>> Add([FromBody] AddChildBody body, CancellationToken cancellationToken)

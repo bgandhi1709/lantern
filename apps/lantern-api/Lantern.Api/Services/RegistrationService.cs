@@ -5,6 +5,7 @@ using Lantern.Api.Logging;
 using Lantern.Api.Models;
 using Lantern.Api.Repository;
 using Lantern.Api.Services.Interfaces;
+using Lantern.Api.Validation;
 
 namespace Lantern.Api.Services;
 
@@ -14,6 +15,8 @@ internal sealed class RegistrationService(
     IFieldCipher cipher,
     IFamilyKeyService familyKeys,
     IClassSpaceStore classSpaces,
+    IValidator<RegisterBody> validator,
+    IChildTextNormalizer text,
     TimeProvider clock,
     ILogger<RegistrationService> logger
 ) : IRegistrationService
@@ -28,7 +31,7 @@ internal sealed class RegistrationService(
         ArgumentNullException.ThrowIfNull(body);
 
         var now = clock.GetUtcNow();
-        Validate(body, now.Year);
+        validator.Validate(body);
 
         var partitionKey = hasher.Hash(caller.Uid);
 
@@ -63,8 +66,8 @@ internal sealed class RegistrationService(
             var child = body.Children[position];
             var childId = Guid.NewGuid();
             var rowKey = FamilyRepository.ChildRowKey(childId);
-            var name = child.Name.Trim();
-            var school = ChildRules.CleanSchool(child.School);
+            var name = text.Name(child.Name);
+            var school = text.School(child.School);
 
             records.Add(
                 new ChildRecord(
@@ -138,18 +141,5 @@ internal sealed class RegistrationService(
                 }),
             ]
         );
-    }
-
-    private static void Validate(RegisterBody body, int currentYear)
-    {
-        if (!body.Consent.Accepted)
-        {
-            throw new InvalidRegistrationException("Consent must be accepted to register.");
-        }
-
-        foreach (var child in body.Children)
-        {
-            ChildRules.ValidateBirthYear(child.BirthYear, currentYear);
-        }
     }
 }

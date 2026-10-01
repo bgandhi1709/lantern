@@ -5,6 +5,7 @@ using Lantern.Api.Logging;
 using Lantern.Api.Models;
 using Lantern.Api.Repository;
 using Lantern.Api.Services.Interfaces;
+using Lantern.Api.Validation;
 
 namespace Lantern.Api.Services;
 
@@ -17,6 +18,9 @@ internal sealed class ChildService(
     IFieldCipher cipher,
     IFamilyKeyService familyKeys,
     IClassSpaceStore classSpaces,
+    IValidator<AddChildBody> addValidator,
+    IValidator<ChildDetailsBody> editValidator,
+    IChildTextNormalizer text,
     TimeProvider clock,
     ILogger<ChildService> logger
 ) : IChildService
@@ -27,12 +31,7 @@ internal sealed class ChildService(
         ArgumentNullException.ThrowIfNull(body);
 
         var now = clock.GetUtcNow();
-        if (body.ChildId == Guid.Empty)
-        {
-            throw new InvalidRegistrationException("A child id is required.");
-        }
-
-        ChildRules.ValidateBirthYear(body.BirthYear, now.Year);
+        addValidator.Validate(body);
 
         var family = await LoadAsync(caller, cancellationToken);
         var familyPartition = FamilyRepository.FamilyPartition(family.Family.FamilyId);
@@ -51,8 +50,8 @@ internal sealed class ChildService(
         }
 
         var rowKey = FamilyRepository.ChildRowKey(body.ChildId);
-        var name = body.Name.Trim();
-        var school = ChildRules.CleanSchool(body.School);
+        var name = text.Name(body.Name);
+        var school = text.School(body.School);
         var record = new ChildRecord(
             body.ChildId,
             cipher.Protect(dek, name, familyPartition, rowKey, "name"),
@@ -82,15 +81,15 @@ internal sealed class ChildService(
         ArgumentNullException.ThrowIfNull(caller);
         ArgumentNullException.ThrowIfNull(body);
 
-        ChildRules.ValidateBirthYear(body.BirthYear, clock.GetUtcNow().Year);
+        editValidator.Validate(body);
 
         var family = await LoadAsync(caller, cancellationToken);
         var child = FindActive(family, childId);
         var familyPartition = FamilyRepository.FamilyPartition(family.Family.FamilyId);
         var dek = await familyKeys.UnwrapAsync(family.Family.WrappedFieldKey, cancellationToken);
         var rowKey = FamilyRepository.ChildRowKey(childId);
-        var name = body.Name.Trim();
-        var school = ChildRules.CleanSchool(body.School);
+        var name = text.Name(body.Name);
+        var school = text.School(body.School);
 
         await families.UpdateChildAsync(
             family.Family.FamilyId,

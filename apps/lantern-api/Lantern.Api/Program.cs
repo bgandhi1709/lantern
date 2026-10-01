@@ -5,11 +5,13 @@ using Azure.Identity;
 using Azure.Security.KeyVault.Keys;
 using Azure.Storage.Blobs;
 using Lantern.Api.Configuration;
+using Lantern.Api.Contracts;
 using Lantern.Api.Exceptions;
 using Lantern.Api.Logging;
 using Lantern.Api.Repository;
 using Lantern.Api.Services;
 using Lantern.Api.Services.Interfaces;
+using Lantern.Api.Validation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -114,6 +116,10 @@ builder.Services.AddSingleton<IChildDeletionStore>(serviceProvider =>
 });
 builder.Services.AddSingleton<ChildDeletionWorker>();
 builder.Services.AddHostedService(serviceProvider => serviceProvider.GetRequiredService<ChildDeletionWorker>());
+builder.Services.AddSingleton<IValidator<ChildDetailsBody>, ChildValidator>();
+builder.Services.AddSingleton<IValidator<AddChildBody>, AddChildValidator>();
+builder.Services.AddSingleton<IValidator<RegisterBody>, RegistrationValidator>();
+builder.Services.AddSingleton<IChildTextNormalizer, ChildTextNormalizer>();
 builder.Services.AddScoped<IRegistrationService, RegistrationService>();
 builder.Services.AddScoped<IChildService, ChildService>();
 builder.Services.AddRateLimiter(options =>

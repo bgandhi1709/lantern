@@ -11,6 +11,7 @@ Read during review. These are judgement calls; anything a linter or CI check can
 - Names used as cipher context (row keys such as `profile`) stay fixed in code. They are part of the encryption's authenticated data, so never make them configurable.
 - Comments: only a rare one-line why (a security property, a platform quirk, a decision). No banner comments, no XML summaries that restate the code.
 - Do not add checks that the platform already enforces (for example, what JwtBearer validates).
+- Business rules go behind `IValidator<T>` (one implementation per type, in `Validation/`) and are injected, as are other collaborators such as the text normalizer and the clock. No static rule classes.
 
 ## Test and development support
 
