@@ -187,3 +187,6 @@ Only the Child's and Parent's personal fields are encrypted. A Question is scrub
 
 ### D24. A Class space is created at the start of a Class, before the registration commit
 Registration starts one Class space per Child through the same operation a later Class change will use, and does it before the `parents` profile row so a failure leaves the caller unregistered. The marker is an empty `class.json`; the container name `family` is a constant, not a setting. See ADR-0002. Supersedes nothing; it builds the Blob side of D22.
+
+### D25. Security review before the PR, and security rules for every endpoint
+The working cycle gains step 6, `/security-review` on the branch diff before the PR (the later steps renumber). `CODING_STANDARDS.md` gains a "Security and endpoints" section: no cross-family reads, stateless and idempotent, bounded input and output, rate limit per caller, cancellation, and crypto code ships with tamper, wrong-key and isolation tests. Crypto tests are a standing rule, not a one-off audit. Records the user's request of 2026-10-01; changes the cycle recorded in `docs/agents/workflow.md`.
