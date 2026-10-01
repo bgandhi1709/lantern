@@ -112,7 +112,7 @@ ncert.nic.in PDFs                                         Mother's phone (Flutte
 
 - **NCERT layer.** The build tool is working and the pristine layer is being built class by class
   (`tools/ncert-build`).
-- **Infrastructure.** The UAT environment is deployed from Bicep by GitHub Actions; see
+- **Infrastructure.** The UAT environment is deployed from Bicep by one GitHub Actions workflow (`api.yml`), together with each API release; see
   [`infra/README.md`](infra/README.md).
 - **API.** Firebase sign-in, `POST /v1/register` and `GET /v1/me` with per-family encryption are
   live in UAT. The end-to-end tests run in Docker on every PR and gate the release, and a smoke check follows each UAT deploy. The Family split
