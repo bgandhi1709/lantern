@@ -17,6 +17,20 @@ One issue, one pass through these steps. Work inline: no subagents unless the us
 
 Skip `/to-spec` and `/to-tickets` at this scope. Use them only when the work spans several sessions.
 
+## Divergence guard
+
+The established path is whatever is recorded in `GLOSSARY.md`, `docs/adr/`, `docs/ideation/decision-log.md`, the approved plan, or `CODING_STANDARDS.md`.
+
+When an idea, request or edit would depart from it, in ideation or in implementation:
+
+1. Stop. Do not write the code.
+2. Name the established decision and where it is recorded.
+3. Grill: ask why it should change, what the established path fails to do, and what the change costs. At most 3 questions.
+4. Ask the user to rethink: keep the established path, or supersede it deliberately.
+5. Proceed only after an answer. If the decision is superseded, record it first: append a dated decision-log entry, or add an ADR for a hard-to-reverse call. Never rewrite history.
+
+Applies to architecture, data layout, domain terms, the cycle itself and the coding standards. It does not apply to details the record does not cover.
+
 ## Tech routing (step 2)
 
 | Issue touches | Skills |

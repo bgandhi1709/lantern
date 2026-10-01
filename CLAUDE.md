@@ -10,7 +10,7 @@ Default five-label vocabulary (`needs-triage`, `needs-info`, `ready-for-agent`, 
 
 ### Working cycle
 
-Grill, plan, implement, verify, PR, doc sync, review, retro, with a tech-to-skill routing table and token rules. See `docs/agents/workflow.md`.
+Grill, plan, implement, verify, PR, doc sync, review, retro, with a tech-to-skill routing table and token rules. If the user diverges from a recorded architecture or decision, stop and grill them before proceeding (divergence guard). See `docs/agents/workflow.md`.
 
 ### Coding standards
 
