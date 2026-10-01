@@ -6,17 +6,23 @@ on:
     paths:
       - apps/lantern-api/**
       - deploy/local/**
+      - infra/**
       - .github/workflows/api.yml
   push:
     branches: [main]
     paths:
       - apps/lantern-api/**
       - deploy/local/**
+      - infra/**
       - .github/workflows/api.yml
   workflow_dispatch:
 
 permissions:
   contents: read
+
+env:
+  RESOURCE_GROUP: rg-lantern-dev
+  PARAMS: infra/params/lantern.uat.bicepparam
 
 # One release at a time; never cancel one that is running.
 concurrency:
@@ -73,6 +79,26 @@ jobs:
       - if: failure()
         run: docker compose -f deploy/local/docker-compose.yml logs
 
+  # Lint and what-if the Bicep (read-only) so a bad infra edit fails here; the deploy job applies it.
+  infra-check:
+    name: Infra - lint and what-if
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: azure/login@7184910d9eb2b1c5e48f7073824a90609bb9b6d6 # v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - run: az bicep build --file infra/main.bicep --stdout > /dev/null
+      - run: az bicep lint --file infra/main.bicep
+      - run: infra/keep-running-image.sh
+      - run: az deployment group what-if -g "$RESOURCE_GROUP" -f infra/main.bicep -p "$PARAMS"
+
   image:
     name: Build image
     needs: [build-test, e2e-docker]
@@ -101,7 +127,7 @@ jobs:
 
   deploy:
     name: Deploy - uat
-    needs: image
+    needs: [image, infra-check]
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     # Required reviewers on this environment gate the deployment.
@@ -118,22 +144,20 @@ jobs:
       # Roles are granted once by infra/bootstrap.sh and rarely change; fail the release here, with the fix, if one is
       # missing rather than ship an API that returns 500s. Read-only.
       - run: |
-          principal=$(az identity show -g rg-lantern-dev -n id-lantern-uat --query principalId -o tsv)
+          principal=$(az identity show -g "$RESOURCE_GROUP" -n id-lantern-uat --query principalId -o tsv)
           roles=$(az role assignment list --assignee "$principal" --all --query "[].roleDefinitionName" -o tsv)
           for role in "Storage Table Data Contributor" "Storage Blob Data Contributor"; do
             grep -qxF "$role" <<<"$roles" || { echo "::error::id-lantern-uat lacks '$role'. Run infra/bootstrap.sh with an Owner login."; exit 1; }
           done
-      # Only ever swaps the image and port; infra.yml owns every other setting and keeps this
-      # image and port on its own next deploy (keep-running-image.sh). Target port is ingress
-      # config, not a container-update argument, so it's a separate command.
-      - run: |
-          az containerapp update -g rg-lantern-dev -n ca-lantern-uat \
-            --image "ghcr.io/${{ github.repository_owner }}/lantern-api:${{ needs.image.outputs.tag }}"
-          az containerapp ingress update -g rg-lantern-dev -n ca-lantern-uat \
-            --target-port 8080
+      # The release is one Bicep deployment: it applies any infra change and sets the new image and port in the same
+      # revision, so infra and API can never collide.
+      - run: az deployment group create -g "$RESOURCE_GROUP" -f infra/main.bicep -p "$PARAMS" -n "release-${GITHUB_RUN_ID}"
+        env:
+          CONTAINER_IMAGE: ghcr.io/${{ github.repository_owner }}/lantern-api:${{ needs.image.outputs.tag }}
+          CONTAINER_PORT: 8080
       # Smoke check: the app is up and refuses an anonymous caller. No secrets, no Firebase.
       - run: |
-          fqdn=$(az containerapp show -g rg-lantern-dev -n ca-lantern-uat --query properties.configuration.ingress.fqdn -o tsv)
+          fqdn=$(az containerapp show -g "$RESOURCE_GROUP" -n ca-lantern-uat --query properties.configuration.ingress.fqdn -o tsv)
           curl --silent --fail --retry 30 --retry-delay 5 --retry-all-errors "https://${fqdn}/health/live"
           status=$(curl --silent --output /dev/null --write-out '%{http_code}' "https://${fqdn}/v1/me")
           [ "$status" = 401 ] || { echo "::error::GET /v1/me without a token returned $status, expected 401"; exit 1; }

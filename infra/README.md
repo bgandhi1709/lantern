@@ -4,7 +4,7 @@ Base infrastructure for Lantern, environment `uat`, deployed into the existing `
 (Central India). One file, `main.bicep`; the environment is in `params/lantern.uat.bicepparam`.
 It creates the Container App fully wired (Firebase project id, storage table endpoint, the
 `security-key` secret from Key Vault, the `family-field-key` name and vault URI) but on a
-placeholder image; the API release swaps in the real image and port (`.github/workflows/api.yml`),
+placeholder image; the API release sets the real image and port (`.github/workflows/api.yml`),
 nothing else.
 
 ## 1. Bootstrap, once
@@ -48,16 +48,17 @@ name, it never holds the key itself), and `AZURE_CLIENT_ID` (the identity's clie
 `DefaultAzureCredential` can't otherwise tell which user-assigned identity to use). Add tables, never
 rename one.
 
-The API release, not this template, sets the real image and port. Until then the params file uses a
-placeholder image on port 80. Later deployments of this template read the running image and port
-first (`keep-running-image.sh`), so they never put the placeholder back.
+The API release sets the real image and port by deploying this template with them. Until then the params file uses a
+placeholder image on port 80. A release passes the new image and port itself; `infra-check` reads the running ones
+(`keep-running-image.sh`) so its what-if never shows the placeholder coming back.
 
 ## 3. GitHub Actions
 
-`.github/workflows/infra.yml` runs only when `infra/**` changes, so an API release never triggers it.
-Every run builds, lints and runs `what-if`, then the deploy job waits for the reviewer on the `uat`
-environment. Nothing is deployed until you approve, whether the run comes from a pull request, a merge
-to `main` or a manual run. Reject the request to skip a release.
+There is one workflow, `.github/workflows/api.yml`, and it runs when `apps/lantern-api/**` or `infra/**` changes.
+The `infra-check` job lints the Bicep and runs `what-if` (read-only). The `deploy` job waits for the reviewer on
+the `uat` environment, then applies `infra/main.bicep` with the new API image and port in one deployment, so an
+infra change and an API release go out together and never collide. Nothing is deployed until you approve,
+whether the run comes from a merge to `main` or a manual run.
 
 ```bash
 infra/github-setup.sh rg-lantern-dev uat   # once: Entra app with OIDC, Contributor on the group, variables
@@ -70,8 +71,8 @@ No secret is stored for Azure. The variables are `AZURE_CLIENT_ID`, `AZURE_TENAN
 
 The end-to-end tests run in Docker, not against UAT: the `e2e-docker` job in `.github/workflows/api.yml` brings up
 `deploy/local` and runs them on every PR and push, and the release waits for it (decision D28). The gated `deploy`
-job adds two cheap checks of its own. Before it swaps the image, a read-only preflight confirms `id-lantern-uat` still
-has the Storage Table and Blob data roles from `bootstrap.sh`, and fails with the fix if not. After the swap, a smoke
+job adds two cheap checks of its own. Before it deploys, a read-only preflight confirms `id-lantern-uat` still
+has the Storage Table and Blob data roles from `bootstrap.sh`, and fails with the fix if not. After the deploy, a smoke
 check confirms `/health/live` answers 200 and `/v1/me` without a token answers 401.
 
 If you set up the earlier cloud E2E, these are no longer used and can be deleted by hand: the `uat-e2e` GitHub
