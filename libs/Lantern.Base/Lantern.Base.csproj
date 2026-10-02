@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Lantern.Base</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Lantern.Core\Lantern.Core.csproj" />
+    <ProjectReference Include="..\Lantern.Repository\Lantern.Repository.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Lantern.Api.Tests" />
+    <InternalsVisibleTo Include="Lantern.Functions.Tests" />
+  </ItemGroup>
+
+</Project>

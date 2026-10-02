@@ -92,16 +92,18 @@ ncert.nic.in PDFs                                         Mother's phone (Flutte
   settings and their `FamilyId`, and the `families` table holds the Family, its Parents'
   membership and its Children. The terms are defined in [`GLOSSARY.md`](GLOSSARY.md) and the
   layout is [ADR-0001](docs/adr/0001-family-and-parent-in-separate-tables.md). Each Child also has
-  a Blob **Class space** per Class under `family/{familyId}/{childId}/{class}/`, started at
-  registration and kept for the Child's History
-  ([ADR-0002](docs/adr/0002-class-space-in-blob.md)).
+  a Blob **Workspace** under `family/{familyId}/{childId}/`, with a folder per Class, created in the
+  background after registration or an add and kept for the Child's History
+  ([ADR-0002](docs/adr/0002-class-space-in-blob.md)). Deleting a Child is a hard delete the API
+  records and `Lantern.Functions` finishes from a Service Bus queue; the anonymous Answer library is never
+  touched ([ADR-0003](docs/adr/0003-deleting-a-child.md), [ADR-0004](docs/adr/0004-actions-through-service-bus-and-functions.md)).
 
 | Area | Choice |
 | --- | --- |
 | Mobile app | Flutter (Android first) |
 | Sign-in | Firebase Authentication (Google) |
-| Backend | ASP.NET on .NET 10, one modular app in Azure Container Apps |
-| Storage | One Azure Storage account: Blob (raw data, NCERT layer, memory files), Table (indexes, concept vectors, answers), Queue (events) |
+| Backend | ASP.NET on .NET 10, one modular app in Azure Container Apps, plus `Lantern.Functions` (Azure Functions) in a second Container App that handles queued actions from Azure Service Bus (Basic) |
+| Storage | One Azure Storage account: Blob (raw data, NCERT layer, memory files), Table (indexes, concept vectors, answers, the action ledger), Queue (events) |
 | Search | Exact nearest-neighbour over embeddings in memory, no vector database |
 | Live updates | SignalR, running inside the app |
 | AI | Claude through Microsoft Foundry, behind a task-based gateway; model per task in config (D11) |
@@ -115,10 +117,16 @@ ncert.nic.in PDFs                                         Mother's phone (Flutte
 - **Infrastructure.** The UAT environment is deployed from Bicep by one GitHub Actions workflow (`api.yml`), together with each API release; see
   [`infra/README.md`](infra/README.md).
 - **API.** Firebase sign-in, `POST /v1/register` and `GET /v1/me` with per-family encryption are
-  live in UAT. The end-to-end tests run in Docker on every PR and gate the release, and a smoke check follows each UAT deploy. The Family split
-  (#48) is merged and Class spaces (#49) are built. A cache for the Family key (#52) comes next.
-  Under `apps/lantern-api`: `Lantern.Api` is production code only; `Lantern.Api.Tests` holds unit and
-  in-process tests; `Lantern.Api.Test.Integration` holds the end-to-end tests, which run unchanged
+  live in UAT. Add, edit and delete a Child (`/v1/family/children`, #51) are built: delete returns
+  `202` and `Lantern.Functions` finishes it from a Service Bus queue, and the max is six Children. The end-to-end tests run in Docker on every PR and gate the release, and a smoke check follows each UAT deploy. The Family split
+  (#48) is merged and Workspaces (#49, then called Class spaces) are built; moving a Child to a new Class (#50) and deleting a Family (#53) are next. A cache for the Family key (#52) comes next.
+  The code is layered like `wf` ([ADR-0005](docs/adr/0005-layered-like-wf.md)): under `libs`, `Lantern.Core` holds the
+  service models, contracts, generic `ServiceBase<T>`, crypto and the action publisher, `Lantern.Repository` holds the
+  table entities, unit of work and generic `BaseRepository` (it alone encrypts fields), and `Lantern.Base` holds the
+  services. Under `apps/lantern-api`: `Lantern.Api` holds the controllers and the API models (the
+  only shapes the app sees); `Lantern.Functions` is the queue-triggered Functions app with the action handlers (it
+  creates and removes Workspaces from the one `workspace-events` queue). Tests live under `tests/lantern-api`: `Lantern.Api.Tests` and
+  `Lantern.Functions.Tests` hold unit and in-process tests; `Lantern.Api.Test.Integration` holds the end-to-end tests, which run unchanged
   against local Docker and UAT; `Lantern.Api.Test.Integration.Host` holds the local stand-ins (Firebase
   Auth Emulator tokens, a Key Vault stand-in, a seeded dev Family) and is never in the production
   image. Running it locally: [`deploy/local/README.md`](deploy/local/README.md).

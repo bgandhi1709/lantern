@@ -1,13 +1,52 @@
 using '../main.bicep'
 
 param environmentName = 'uat'
-param tables = [
-  'parents'
-  'families'
-]
 
-// Empty placeholder app. The API release sets the real image and port.
+param tables = {
+  parents: 'parents'
+  families: 'families'
+  actions: 'actions'
+}
+
+// The Workspace container keeps its first name: renaming it would leave every existing Workspace behind.
+param containers = {
+  workspaces: 'family'
+  ncert: 'ncert'
+}
+
+param keyVault = {
+  securityKeySecret: 'security-key'
+  familyKey: 'family-field-key'
+}
+
+// A five-minute lock and 288 deliveries: a failing action retries for about a day before it is dead-lettered.
+param actionsQueue = {
+  name: 'workspace-events'
+  lockDuration: 'PT5M'
+  maxDeliveryCount: 288
+  messageTimeToLive: 'P14D'
+}
+
+param apiSize = {
+  cpu: '0.25'
+  memory: '0.5Gi'
+  minReplicas: 0
+  maxReplicas: 1
+}
+
+param functionsSize = {
+  cpu: '0.5'
+  memory: '1Gi'
+  minReplicas: 0
+  maxReplicas: 1
+}
+
+param childrenPerMinute = 30
+param actionResendAfter = '00:05:00'
+
+// Empty placeholder apps. The API release sets the real images and the API's port.
 param containerImage = readEnvironmentVariable('CONTAINER_IMAGE', 'mcr.microsoft.com/k8se/quickstart:latest')
+param functionsImage = readEnvironmentVariable('FUNCTIONS_IMAGE', 'mcr.microsoft.com/k8se/quickstart:latest')
 param containerPort = int(readEnvironmentVariable('CONTAINER_PORT', '80'))
 
 // Not a secret; see main.bicep. The only Firebase project so far, used for uat and local dev too.

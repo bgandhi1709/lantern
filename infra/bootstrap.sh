@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # One-time setup for one environment, run before the first deployment. Safe to run again.
 # Creates what the Bicep only reads: the app identity, its role assignments, the Key Vault and
-# the security-key secret. Needs Owner (or User Access Administrator) on the resource group.
+# the secret and key named in the bicepparam's keyVault. Needs Owner (or User Access Administrator) on the resource group.
 #
 # Usage: infra/bootstrap.sh [resource-group] [environment]
 set -euo pipefail
@@ -10,8 +10,15 @@ RG="${1:-rg-lantern-dev}"
 ENV_NAME="${2:-uat}"
 IDENTITY="id-lantern-${ENV_NAME}"
 VAULT="kv-lantern-${ENV_NAME}"
-SECRET="security-key"
-FAMILY_KEY="family-field-key"
+
+# The secret and key names come from the environment's bicepparam, so the app settings and this script never differ.
+PARAMS_FILE="$(dirname "$0")/params/lantern.${ENV_NAME}.bicepparam"
+key_vault_param() {
+  az bicep build-params --file "$PARAMS_FILE" --stdout \
+    | python3 -c "import json, sys; print(json.loads(json.load(sys.stdin)['parametersJson'])['parameters']['keyVault']['value']['$1'])"
+}
+SECRET=$(key_vault_param securityKeySecret)
+FAMILY_KEY=$(key_vault_param familyKey)
 
 SUB_ID=$(az account show --query id -o tsv)
 RG_ID="/subscriptions/${SUB_ID}/resourceGroups/${RG}"
@@ -28,8 +35,8 @@ if ! az keyvault show -n "$VAULT" -g "$RG" -o none 2>/dev/null; then
 fi
 VAULT_ID=$(az keyvault show -n "$VAULT" -g "$RG" --query id -o tsv)
 
-# One identity, four roles. The Table and Blob roles are on the resource group so they
-# cover the storage account the template creates later. Key Vault Secrets User is on the vault.
+# One identity for the API and the Functions app. The Storage and Service Bus roles are on the resource group so
+# they cover the accounts the template creates later. Key Vault Secrets User is on the vault.
 assign() { # role scope assignee-object-id assignee-type
   az role assignment create --role "$1" --scope "$2" --assignee-object-id "$3" \
     --assignee-principal-type "$4" -o none
@@ -37,6 +44,11 @@ assign() { # role scope assignee-object-id assignee-type
 echo "Roles for ${IDENTITY}"
 assign "Storage Table Data Contributor" "$RG_ID" "$PRINCIPAL_ID" ServicePrincipal
 assign "Storage Blob Data Contributor" "$RG_ID" "$PRINCIPAL_ID" ServicePrincipal
+# The Functions host keeps its own state (leases) in the storage account, which needs Blob Data Owner.
+assign "Storage Blob Data Owner" "$RG_ID" "$PRINCIPAL_ID" ServicePrincipal
+# The API sends actions and the Functions app receives them.
+assign "Azure Service Bus Data Sender" "$RG_ID" "$PRINCIPAL_ID" ServicePrincipal
+assign "Azure Service Bus Data Receiver" "$RG_ID" "$PRINCIPAL_ID" ServicePrincipal
 assign "Key Vault Secrets User" "$VAULT_ID" "$PRINCIPAL_ID" ServicePrincipal
 # Wrap/unwrap only, not manage: the app never needs to create or delete the key itself.
 assign "Key Vault Crypto User" "$VAULT_ID" "$PRINCIPAL_ID" ServicePrincipal

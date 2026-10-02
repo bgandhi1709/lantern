@@ -72,7 +72,8 @@ and are shared across families. Personal context is added only when an answer is
 
 ### D10. Stack
 - Azure: Container Apps with one container (not App Service or AKS), and **one storage account**
-  holding Blob, Table Storage (not Cosmos DB) and Queue.
+  holding Blob, Table Storage (not Cosmos DB) and Queue. (D31: the queue for actions is Azure Service Bus
+  Basic, and a second Container App runs `Lantern.Functions` beside the API.)
 - Key Vault holds a single master key, which encrypts each family's key.
 - Firebase for authentication.
 - A modular **ASP.NET on .NET 10** app in **one repository**, following the conventions of
@@ -97,7 +98,8 @@ test set for trying cheaper models later.
 
 ### D14. First batch flow
 1. The API writes the raw event and puts it on the queue, then returns `202`.
-2. A worker (`BackgroundService`) handles the event with guarded handlers.
+2. A worker (`BackgroundService`) handles the event with guarded handlers. (D31: `Lantern.Functions`
+   handles it, dispatched by message type, and nothing runs on a timer.)
 3. **SignalR** notifies the app.
 
 A notification is only a hint: the app then fetches the state it points to. A status endpoint is
@@ -202,3 +204,29 @@ Supersedes the keyless E2E against UAT after every deploy (from #46). The same `
 
 ### D29. One release workflow: infra and API deploy together (supersedes the separate `infra.yml`)
 The infra workflow and the API workflow ran independently, on different concurrency groups, and collided on `ca-lantern-uat` when one merge touched both (`ContainerAppOperationInProgress`, run 36877313150). `infra.yml` is deleted. `api.yml` now also triggers on `infra/**`, an `infra-check` job lints and runs `what-if` before the release, and the gated `deploy` job applies `infra/main.bicep` with the new image and port in a single deployment instead of `az containerapp update`. The role preflight and the smoke check stay. Decided by the user on 2026-10-01 because two workflows were confusing and the cloud E2E that justified separating them is gone (D28). Cost: an infra-only change now also builds and tests the API and ships a new image.
+
+### D30. Managing Children: hard, asynchronous delete; the Answer library is kept (issue #51)
+A Parent adds, edits (Name, School, BirthYear; never Class) and deletes Children. Add takes a client `childId`, so a repeat returns the existing Child, and an ETag-checked update of the Family row in the same batch holds the limit of 6 under concurrent adds. Delete is a hard delete done asynchronously: the API writes an action-ledger row, marks the Child `deleting`, sends a `child-delete` message and returns `202`, and `Lantern.Functions` finishes the Blob, History and row cleanup, retrying until done (D31 replaced the first version, a `BackgroundService` on a timer). The Answer library (the D23 anonymous store) is never deleted with a Child. Every Child call scopes to the caller's Family from the token; a foreign or unknown id is 404. A Family may end with no Children. See ADR-0003.
+
+### D31. Event-driven actions: Service Bus Basic queue and `Lantern.Functions` (replaces the timer worker of D30; amends D10 and D14)
+The user rejected the `PeriodicTimer` worker in the #51 PR: the architecture should be event driven, not timer driven. The user chose Azure Service Bus on the Basic tier, accepting that it is not free (Basic is queues only; about ₹0.05 a month for 3,000 messages at ₹88 to the dollar), then refined it into a typed-message dispatcher: one queue `lantern-actions`, messages with a `type`, an Azure Functions app `Lantern.Functions` that dispatches by type, and a transactional ledger table in the existing storage account that keeps each action idempotent. The Functions app runs as its own Container App in the existing environment, scaling to zero on a KEDA Service Bus rule (idle cost about ₹0; ₹380 a month if kept warm). Shared code moved into `Lantern.Core`. The user decided to do this inside the #51 PR rather than as a follow-up ticket, because it is an architectural pivot of the delete and not a new feature. D10's "Queue" on the storage account and D14's `BackgroundService` worker are superseded for actions by this: the queue is Service Bus, and the worker is `Lantern.Functions`. Topics (pub-sub) wait for a second consumer of the same event and Standard tier. See ADR-0004.
+
+### D32. The API is layered like wf (amends D10's "modular ASP.NET" and the folder layout of #51)
+The user found the API layer bloated and asked for it to mirror the layered architecture they built before (`wf`), keeping every earlier decision. Four projects: `Lantern.Api` (controllers and the API models, the only shapes the app sees), `Lantern.Core` (service models, contracts, the generic `ServiceBase<T>`, crypto, a generic `ServiceBusService`, the action dispatcher), `Lantern.Repository` (entities, `UnitOfWork<TEntity>`, the generic `BaseRepository<TModel, TEntity>`, field encryption) and `Lantern.Base` (`FamilyService`, `ChildService`, validators, action handlers). Encryption moved from the services into the repository with the stored bytes unchanged. Key Vault sits behind `IKeyVaultClient`, the one thing local runs and tests replace. Registration lives in `FamilyService`; an interactor waits until a service grows too complex. Done inside the #51 PR, as an architectural pivot of the feature in flight. See ADR-0005.
+
+## 2026-10-02: Class spaces start in the Functions app; handlers live there; tests leave apps/
+
+### D33. A Class space is started by `Lantern.Functions`, not inside the request (supersedes D24's ordering)
+The user moved the Blob write out of the request: adding or registering a Child now records a `ClassSpaceStart` action (`class-space-start` on the queue) in the ledger before the Child rows, writes the rows, then sends it; the Functions app writes the marker. The ledger row is the commit point, as for a delete, so a crash after the rows still gets the Child its space, and a message for a Child whose add failed does nothing. The handler reads only the Child's status (no Family key, so the Functions app still needs no Key Vault access), and sweeps the space again if a delete finished while it was writing. "Every Child has a Class space" becomes "every Child gets one shortly after it is added"; anything that later writes into a space must cope with it not existing yet. Registration no longer fails when Blob storage is down. See ADR-0002.
+
+### D34. Action handlers and the dispatcher live in `Lantern.Functions` (amends ADR-0005)
+Finishing an action is the Functions app's job, so `IActionHandler`, `ActionHandler<T>`, the dispatcher and the handlers (`ChildDeleteHandler`, `ClassSpaceStartHandler`) moved from `Lantern.Core`/`Lantern.Base` into `Lantern.Functions/Handler`, registered by `AddLanternFunctions()`. `Lantern.Core` keeps the publish side the API needs (`ActionMessage`, `ActionType`, payloads, `IActionPublisher`); services and repositories stay in `Lantern.Base` and `Lantern.Repository` so both apps reuse them. The queue name is no longer a constant: Bicep passes the queue it creates as `Actions__Queue` to both apps, the publisher reads `ActionOptions`, and the trigger reads `%Actions:Queue%`.
+
+### D35. Test projects live under `tests/`, not `apps/`
+The user wants `apps/` and `libs/` to hold production code only. The four test projects moved to `tests/lantern-api/` (mirroring `apps/lantern-api/`), including `Lantern.Api.Test.Integration.Host`, the local Docker host. This departs from wf, which keeps `*-test` projects beside the apps, on purpose. The CI guardrail now greps all of `apps` and `libs` for test-only code.
+
+### D36. Every environment value is written once, in the bicepparam (supersedes D24's "the container name is a constant")
+The user asked that no environment value be hard-coded. Table names, the Workspace container, the Key Vault secret and key names, the queue (name, lock, deliveries, TTL), each app's CPU, memory and replica range, the children rate limit and the action resend delay now live in `infra/params/lantern.<env>.bicepparam`. Bicep creates each resource from it and passes the name or value to the apps as an env var; `bootstrap.sh` reads the Key Vault names from the same file. The options classes have no defaults and validate on start, so a missing setting stops the app instead of falling back silently; `appsettings.json` holds only empty keys, and local values live in `appsettings.Development.json` and `deploy/local`. GitHub Actions carries only per-run values (images, port) and its own sign-in, because a bicepparam change shows in the PR and in `what-if`. Not configurable, on purpose: storage formats (row keys, cipher context, marker and column names), the wire contract (action names, problem codes, routes) and product rules (six Children, ages 3 to 18); changing any of those is a code change with tests or a migration.
+
+### D37. "Class space" becomes **Workspace**; actions are Workspace events on one `workspace-events` queue
+The user renamed the Child's area: a **Workspace** is a Child's whole area (`family/{familyId}/{childId}/`), with one folder per Class, replacing "Class space" (which named one Class's folder). The two actions are `CreateWorkspace` (`create-workspace`, at registration and add) and `RemoveWorkspace` (`remove-workspace`, the Child delete), handled by `CreateWorkspaceHandler` and `RemoveWorkspaceHandler` with `CreateWorkspacePayload` and `RemoveWorkspacePayload`; the store is `IWorkspaceStore` (`CreateAsync`, `RemoveAsync`). There is still exactly one queue, now `workspace-events`, and the dispatcher picks the handler by the event type. The ledger partitions are the new type names, which is safe only because #51 is not yet in UAT. The Blob container stays `family` so existing Workspaces in UAT are kept. The HTTP API still speaks of Children (`/v1/family/children`).

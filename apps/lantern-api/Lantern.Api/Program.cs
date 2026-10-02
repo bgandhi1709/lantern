@@ -1,15 +1,15 @@
 using System.Text.Json.Serialization;
 using Asp.Versioning;
-using Azure.Data.Tables;
-using Azure.Identity;
-using Azure.Security.KeyVault.Keys;
-using Azure.Storage.Blobs;
+using Lantern.Api.Auth;
 using Lantern.Api.Configuration;
 using Lantern.Api.Exceptions;
 using Lantern.Api.Logging;
-using Lantern.Api.Repository;
+using Lantern.Api.Mapping;
 using Lantern.Api.Services;
-using Lantern.Api.Services.Interfaces;
+using Lantern.Base;
+using Lantern.Core.Configuration;
+using Lantern.Core.Identity;
+using Mapster;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -24,78 +24,28 @@ builder
     .ValidateDataAnnotations()
     .ValidateOnStart();
 
+builder.Services.AddLanternBase(builder.Configuration);
+// The API wraps keys, hashes uids and sends actions, so it refuses to start without those settings.
+builder.Services.AddOptions<KeyVaultOptions>().ValidateOnStart();
+builder.Services.AddOptions<SecurityOptions>().ValidateOnStart();
+builder.Services.AddOptions<ServiceBusOptions>().ValidateOnStart();
+builder.Services.AddOptions<ActionOptions>().ValidateOnStart();
 builder
-    .Services.AddOptions<StorageOptions>()
-    .Bind(builder.Configuration.GetSection(StorageOptions.SectionName))
+    .Services.AddOptions<RateLimitOptions>()
+    .Bind(builder.Configuration.GetSection(RateLimitOptions.SectionName))
     .ValidateDataAnnotations()
     .ValidateOnStart();
 
-builder
-    .Services.AddOptions<SecurityOptions>()
-    .Bind(builder.Configuration.GetSection(SecurityOptions.SectionName))
-    .ValidateDataAnnotations()
-    .ValidateOnStart();
-
-builder
-    .Services.AddOptions<KeyVaultOptions>()
-    .Bind(builder.Configuration.GetSection(KeyVaultOptions.SectionName))
-    .ValidateDataAnnotations()
-    .ValidateOnStart();
-
-builder.Services.AddSingleton(serviceProvider =>
+builder.Services.AddSingleton<IRegister, ApiProfile>();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IIdentityResolver, HttpIdentityResolver>();
+builder.Services.AddSingleton<PendingActionResender>();
+builder.Services.AddHostedService(serviceProvider => serviceProvider.GetRequiredService<PendingActionResender>());
+builder.Services.AddRateLimiter(options =>
 {
-    var options = serviceProvider.GetRequiredService<IOptions<StorageOptions>>().Value;
-    var service = string.IsNullOrWhiteSpace(options.ConnectionString)
-        ? new TableServiceClient(new Uri(options.TableEndpoint), new DefaultAzureCredential())
-        : new TableServiceClient(options.ConnectionString);
-
-    return service;
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddChildrenPolicy();
 });
-
-builder.Services.AddSingleton(serviceProvider =>
-{
-    var options = serviceProvider.GetRequiredService<IOptions<StorageOptions>>().Value;
-
-    return string.IsNullOrWhiteSpace(options.ConnectionString)
-        ? new BlobServiceClient(new Uri(options.BlobEndpoint), new DefaultAzureCredential())
-        : new BlobServiceClient(options.ConnectionString);
-});
-
-builder.Services.AddSingleton<IFamilyKeyWrapper>(serviceProvider =>
-{
-    var options = serviceProvider.GetRequiredService<IOptions<KeyVaultOptions>>().Value;
-    var keyClient = new KeyClient(new Uri(options.VaultUri), new DefaultAzureCredential());
-
-    return new KeyVaultFamilyKeyWrapper(keyClient, options.FamilyKeyName);
-});
-builder.Services.AddSingleton<IFamilyKeyService, FamilyKeyService>();
-
-builder.Services.AddSingleton(TimeProvider.System);
-builder.Services.AddSingleton<KeyMaterial>();
-builder.Services.AddSingleton<IUidHasher>(serviceProvider => serviceProvider.GetRequiredService<KeyMaterial>());
-builder.Services.AddSingleton<IFieldCipher, FieldCipher>();
-builder.Services.AddSingleton<IFamilyRepository>(serviceProvider =>
-{
-    var options = serviceProvider.GetRequiredService<IOptions<StorageOptions>>().Value;
-    var service = serviceProvider.GetRequiredService<TableServiceClient>();
-
-    return new FamilyRepository(
-        service.GetTableClient(options.ParentsTable),
-        service.GetTableClient(options.FamiliesTable),
-        createTables: !string.IsNullOrWhiteSpace(options.ConnectionString)
-    );
-});
-builder.Services.AddSingleton<IClassSpaceStore>(serviceProvider =>
-{
-    var options = serviceProvider.GetRequiredService<IOptions<StorageOptions>>().Value;
-    var service = serviceProvider.GetRequiredService<BlobServiceClient>();
-
-    return new BlobClassSpaceStore(
-        service.GetBlobContainerClient(BlobClassSpaceStore.ContainerName),
-        createContainer: !string.IsNullOrWhiteSpace(options.ConnectionString)
-    );
-});
-builder.Services.AddScoped<IRegistrationService, RegistrationService>();
 
 // Google-only sign-in is enforced in the Firebase console. A revoked or disabled user stays valid
 // until their ID token expires (1 hour at most).
@@ -157,7 +107,7 @@ builder
 
 builder.Services.AddHealthChecks();
 
-builder.Services.AddExceptionHandler<RegistrationExceptionHandler>();
+builder.Services.AddExceptionHandler<ProblemExceptionHandler>();
 builder.Services.AddProblemDetails();
 
 var app = builder.Build();
@@ -174,6 +124,7 @@ app.UseForwardedHeaders(
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 
 app.MapControllers();
 app.MapHealthChecks("/health/live", new() { Predicate = _ => false }).AllowAnonymous();

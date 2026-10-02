@@ -24,3 +24,6 @@ deploy/local/certs/
 
 # IDE
 .idea/
+
+# Claude Code: per-machine permissions
+.claude/settings.local.json

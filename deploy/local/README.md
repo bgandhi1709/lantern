@@ -1,7 +1,7 @@
 # Run the API locally over HTTPS
 
 Serves the API at `https://local.lantern.api` in Docker, with stand-ins beside it for everything that is not local: an Azurite table and blob emulator, the Firebase
-Auth Emulator and a key file in place of Key Vault.
+Auth Emulator, a key file in place of Key Vault, and the Service Bus emulator (with its SQL Server container) with the real `Lantern.Functions` image beside the API.
 Works from WSL and from Windows.
 
 ## Setup (once)
@@ -42,11 +42,11 @@ returns 401, which is correct. The Development settings apply (`Firebase:Project
 
 The Firebase Auth Emulator replaces Google sign-in and a PEM file in the `keys` volume replaces Key Vault
 (same RSA-OAEP-256 wrapping). On start the API also writes a dev Family: two Parents (`dev-parent-1`,
-`dev-parent-2`) and ten Children, one in each Class from 1 to 10, with a Class space for each.
+`dev-parent-2`) and ten Children, one in each Class from 1 to 10, each with a Workspace.
 
-This lives in `apps/lantern-api/Lantern.Api.Test.Integration.Host`, not in the API. `deploy/local/api.Dockerfile` runs the
+This lives in `tests/lantern-api/Lantern.Api.Test.Integration.Host`, not in the API. `deploy/local/api.Dockerfile` runs the
 API through that host (a `WebApplicationFactory` on Kestrel, so the stand-ins replace the API's own registrations); the
-production `Dockerfile` never contains it. The E2E tests are in `apps/lantern-api/Lantern.Api.Test.Integration`.
+production `Dockerfile` never contains it. The E2E tests are in `tests/lantern-api/Lantern.Api.Test.Integration`.
 
 ```sh
 deploy/local/token.sh dev-parent-1                          # an ID token; any uid works, new ones are created
@@ -55,8 +55,10 @@ curl --cacert deploy/local/certs/ca.crt --resolve local.lantern.api:443:127.0.0.
 
 # The whole flow as tests: seeded Family, register, 409, isolation, tokens that must be refused
 E2E_BASE_URL=https://local.lantern.api E2E_AUTH_EMULATOR=http://127.0.0.1:9099 \
-  dotnet test --project apps/lantern-api/Lantern.Api.Test.Integration --filter-trait "Category=E2E"
+  dotnet test --project tests/lantern-api/Lantern.Api.Test.Integration --filter-trait "Category=E2E"
 ```
+
+Deleting a Child goes through the Service Bus emulator to the `functions` container, so those E2E tests poll for up to a minute. The first `up` pulls the SQL Server and emulator images (about 2 GB) and the emulator needs about 1 GB of memory; `servicebus-ready` holds the API and the Functions app back until the queue is up, because an action sent before then is lost until the API next starts.
 
 CI runs the same tests in its `e2e-docker` job on every PR and push, and the release waits for it, so what passes here
 is what gates the release. They do not run against real UAT.

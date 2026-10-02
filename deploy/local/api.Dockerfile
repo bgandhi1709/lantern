@@ -4,14 +4,18 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
 COPY global.json NuGet.config Directory.Build.props Directory.Packages.props ./
+COPY libs/Lantern.Core/Lantern.Core.csproj libs/Lantern.Core/
+COPY libs/Lantern.Repository/Lantern.Repository.csproj libs/Lantern.Repository/
+COPY libs/Lantern.Base/Lantern.Base.csproj libs/Lantern.Base/
 COPY apps/lantern-api/Lantern.Api/Lantern.Api.csproj apps/lantern-api/Lantern.Api/
-COPY apps/lantern-api/Lantern.Api.Test.Integration.Host/Lantern.Api.Test.Integration.Host.csproj apps/lantern-api/Lantern.Api.Test.Integration.Host/
-RUN dotnet restore apps/lantern-api/Lantern.Api.Test.Integration.Host/Lantern.Api.Test.Integration.Host.csproj
+COPY tests/lantern-api/Lantern.Api.Test.Integration.Host/Lantern.Api.Test.Integration.Host.csproj tests/lantern-api/Lantern.Api.Test.Integration.Host/
+RUN dotnet restore tests/lantern-api/Lantern.Api.Test.Integration.Host/Lantern.Api.Test.Integration.Host.csproj
 
 COPY .editorconfig ./
+COPY libs libs
 COPY apps/lantern-api/Lantern.Api apps/lantern-api/Lantern.Api
-COPY apps/lantern-api/Lantern.Api.Test.Integration.Host apps/lantern-api/Lantern.Api.Test.Integration.Host
-RUN dotnet publish apps/lantern-api/Lantern.Api.Test.Integration.Host/Lantern.Api.Test.Integration.Host.csproj -c Release --no-restore -o /out
+COPY tests/lantern-api/Lantern.Api.Test.Integration.Host tests/lantern-api/Lantern.Api.Test.Integration.Host
+RUN dotnet publish tests/lantern-api/Lantern.Api.Test.Integration.Host/Lantern.Api.Test.Integration.Host.csproj -c Release --no-restore -o /out
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app

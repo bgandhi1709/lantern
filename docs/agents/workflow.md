@@ -7,11 +7,11 @@ One issue, one pass through these steps. Work inline: no subagents unless the us
 | 0 | Ticket | File or pick the issue first. Small scope. | Issue with label |
 | 1 | Grill | `/grill-with-docs`, at most 15 questions. Stop early once decisions settle. Terms go to `GLOSSARY.md`, hard-to-reverse calls to an ADR. | Decisions |
 | 2 | Tech pass | Agent lists the areas the issue touches and loads only the matching skills from the routing table. | Skills loaded |
-| 3 | Plan | Plan in chat: behaviours to test, files touched, risks. User approves in one word. | Approved plan |
-| 4 | Implement | `/implement`, driving `/tdd` one red-green slice at a time. Build and run single tests as you go, the full suite once at the end. | Commits on the branch |
-| 5 | Verify | `/verify` against local Docker. Write down every test scenario. | Scenario list |
+| 3 | Plan | Before planning any change to code under `apps/` or `libs/`, read `docs/architecture/recipes.md` and `docs/architecture/code-glossary.md` (the `backend-architecture` skill). Plan in chat: the recipe(s) the change follows, each new class with its glossary suffix, layer and reference class, behaviours to test, files touched, risks. A class with no glossary suffix, or a step against a recipe, is a divergence: ask first. User approves in one word. | Approved plan naming recipes and suffixes |
+| 4 | Implement | Re-read the recipe being followed before its first edit, and follow its steps in order. `/implement`, driving `/tdd` one red-green slice at a time. Build and run single tests as you go, the full suite once at the end. | Commits on the branch |
+| 5 | Verify | `/verify` against local Docker, in the real working tree: a scratch copy proves nothing about what the user builds. Old files a restructure leaves behind move to `~/lantern-stale/` before the build. The full suite includes the architecture tests (`Lantern.Api.Tests/Architecture`). Write down every test scenario. | Scenario list |
 | 6 | Security | `/security-review` on the branch diff, before the PR. Fix findings in the same branch. Check the security rules in `CODING_STANDARDS.md`. | Findings fixed or recorded |
-| 7 | PR | `/pr` with the scenarios and acceptance criteria. | PR |
+| 7 | PR | `/pr` with the scenarios and acceptance criteria. Edit a PR description only after the commit it describes is pushed. | PR |
 | 8 | Doc sync | Root `README.md` (Status and runtime), `docs/ideation/decision-log.md`, ADRs, any README or skill the change touches. | Docs match the code |
 | 9 | Review | User reviews on GitHub. Fix, reply as Claude, resolve the threads. | Resolved threads |
 | 10 | Retro | `/retro` in the same session, before `/clear`. Mechanical misses become checks, judgement calls go to `CODING_STANDARDS.md`. | Environment fixes |
@@ -20,7 +20,7 @@ Skip `/to-spec` and `/to-tickets` at this scope. Use them only when the work spa
 
 ## Divergence guard
 
-The established path is whatever is recorded in `GLOSSARY.md`, `docs/adr/`, `docs/ideation/decision-log.md`, the approved plan, or `CODING_STANDARDS.md`.
+The established path is whatever is recorded in `GLOSSARY.md`, `docs/adr/`, `docs/ideation/decision-log.md`, the approved plan, `CODING_STANDARDS.md`, or `docs/architecture/` (the code glossary and recipes).
 
 When an idea, request or edit would depart from it, in ideation or in implementation:
 
@@ -37,7 +37,7 @@ Applies to architecture, data layout, domain terms, the cycle itself and the cod
 | Issue touches | Skills |
 |---|---|
 | Any code | `ponytail`: reuse and simplify before adding code |
-| Any C# | `uncle-bob-clean-code`, `modern-csharp-coding-standards` |
+| Any C# under `apps/` or `libs/` | `backend-architecture` (which code type, which layer, which recipe), then `uncle-bob-clean-code`, `modern-csharp-coding-standards` |
 | HTTP endpoints, contracts | `minimal-api` |
 | External calls, retries | `resilience`; the API-call guardrails below override its retry advice |
 | Storage, keys, access | `azure-table-storage`, `azure-key-vault`, `azure-rbac`, `lean-azure-infra` |

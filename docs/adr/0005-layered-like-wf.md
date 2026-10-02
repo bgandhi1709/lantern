@@ -1,0 +1,19 @@
+# The API is layered like wf: generic services and repositories over Core, Repository and Base
+
+The first API grew one folder per idea (Contracts, Repository, Services, Services/Interfaces, Validation) and one small class per step (`FieldCipher`, `FamilyKeyService`, `KeyVaultFamilyKeyWrapper`, `KeyMaterial`, `RegistrationService`, `ChildService`, `ChildDeletion`), with names like `*Profile`, `*View`, `*Record` and `*Body` for the same thing at different steps. Services held storage detail: every one encrypted fields itself and had to know the row keys, because they are the cipher's authenticated data. The user had built a layered architecture before (`wf`) that is easy to extend and test without fragmenting, and asked for Lantern to mirror it.
+
+Four projects, each with one job and one registration extension:
+
+- **`Lantern.Api`** owns the HTTP contract and nothing else: controllers, the API models the app sees (`*Model` out, `*SaveModel` and `*UpdateModel` in, `FamilyRegisterRequest`), Mapster config between API and service models, the identity from the token, and the exception-to-problem mapping. What the app can see is decided here alone.
+- **`Lantern.Core`** is the framework and the service models: `Family`, `Parent`, `Child` (plaintext, no storage fields), the contracts `IServiceBase<T>`, `IRepositoryBase<T>`, `IIdentityResolver`, the generic `ServiceBase<T>`, the exceptions a caller can trigger, options, the action types, payloads and publisher, a generic `ServiceBusService` that sends any model to a named queue, and `CryptoService`.
+- **`Lantern.Repository`** is the only project that knows storage: table entities (internal), `UnitOfWork<TEntity>` as the only class that sends table requests, the generic `BaseRepository<TModel, TEntity>`, the Family, Child and action-ledger repositories, the Workspace store, and the field encryption. Entities never leave it.
+- **`Lantern.Base`** holds the services: `FamilyService` (register, `/me`) and `ChildService` (add, edit, delete) and their validators. `Lantern.Functions` and `Lantern.Api` both reference it.
+- **`Lantern.Functions`** owns finishing actions: the dispatcher and one handler per action type, in `Handler/` (D34).
+
+Tests live under `tests/lantern-api/`, so `apps/` and `libs/` hold production code only (D35); wf keeps its test projects beside the apps.
+
+A plain resource needs no code beyond its model, entity and a registration: the generic service scopes every call to the caller's Family (taken from `IIdentityResolver`, never from the request, so a cross-family read cannot be written), and the generic repository maps, encrypts and stores. A type overrides only what differs; `ChildRepository` adds the ETag rules for the limit of six and for edits racing a delete. An interactor is added only when one service grows too complex, not by default.
+
+Encryption happens in the repository, while it maps a service model to an entity and back. The repository owns the partition and row keys, which are the authenticated data, so it is the one place that can bind a value to its row. An entity marks its encrypted columns with `[Encrypted("name")]`, and the column names, row keys and authenticated data are unchanged, so rows written before this change still decrypt. The Family key is unwrapped once per request. `CryptoService` keeps the AES-GCM and HMAC code, and Key Vault sits behind `IKeyVaultClient` (wrap and unwrap only), which local Docker and the tests replace, so the tests always run the real cipher.
+
+Considered and rejected: API models in a shared lib as wf does (the app could then see fields added for another consumer), entities in Core (storage shape would leak to services), encryption in the services (each service must know row keys), and an interactor for registration (once encryption moved to the repository, registration is a short service method).
