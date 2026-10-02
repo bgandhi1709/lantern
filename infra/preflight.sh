@@ -13,7 +13,7 @@ FIX="Run infra/bootstrap.sh ${RG} ${ENV_NAME} with an Owner login."
 failed=0
 
 # Every provider main.bicep deploys a resource from.
-for ns in Microsoft.Storage Microsoft.ServiceBus Microsoft.App Microsoft.OperationalInsights Microsoft.KeyVault Microsoft.ManagedIdentity; do
+for ns in Microsoft.Storage Microsoft.ServiceBus Microsoft.App Microsoft.OperationalInsights Microsoft.Insights Microsoft.KeyVault Microsoft.ManagedIdentity; do
   state=$(az provider show --namespace "$ns" --query registrationState -o tsv 2>/dev/null || echo unknown)
   case "$state" in
     Registered) ;;
