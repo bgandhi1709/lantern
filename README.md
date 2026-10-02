@@ -119,7 +119,7 @@ ncert.nic.in PDFs                                         Mother's phone (Flutte
 - **API.** Firebase sign-in, `POST /v1/register` and `GET /v1/me` with per-family encryption are
   live in UAT. Add, edit and delete a Child (`/v1/family/children`, #51) are built: delete returns
   `202` and `Lantern.Functions` finishes it from a Service Bus queue, and the max is six Children. The end-to-end tests run in Docker on every PR and gate the release, and a smoke check follows each UAT deploy. The Family split
-  (#48) is merged and Workspaces (#49, then called Class spaces) are built; moving a Child to a new Class (#50) and deleting a Family (#53) are next. A cache for the Family key (#52) comes next.
+  (#48) is merged and Workspaces (#49, then called Class spaces) are built; moving a Child to a new Class (#50) and deleting a Family (#53) are next. A cache for the Family key (#52) comes next. One request is one end-to-end trace in Application Insights, through Service Bus into the Functions app (#70, [ADR-0006](docs/adr/0006-one-trace-in-application-insights.md)); the KQL to pull it is in [`infra/README.md`](infra/README.md).
   The code is layered like `wf` ([ADR-0005](docs/adr/0005-layered-like-wf.md)): under `libs`, `Lantern.Core` holds the
   service models, contracts, generic `ServiceBase<T>`, crypto and the action publisher, `Lantern.Repository` holds the
   table entities, unit of work and generic `BaseRepository` (it alone encrypts fields), and `Lantern.Base` holds the

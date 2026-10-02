@@ -41,6 +41,12 @@ param functionsSize = {
   maxReplicas: 1
 }
 
+// 30 days kept; 1 GB a day is far above pilot traffic and stops a runaway from costing more than a few rupees a day.
+param telemetry = {
+  retentionDays: 30
+  dailyCapGb: 1
+}
+
 param childrenPerMinute = 30
 param actionResendAfter = '00:05:00'
 

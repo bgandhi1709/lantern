@@ -13,7 +13,7 @@ FIX="Run infra/bootstrap.sh ${RG} ${ENV_NAME} with an Owner login."
 failed=0
 
 # Every provider main.bicep deploys a resource from.
-for ns in Microsoft.Storage Microsoft.ServiceBus Microsoft.App Microsoft.OperationalInsights Microsoft.KeyVault Microsoft.ManagedIdentity; do
+for ns in Microsoft.Storage Microsoft.ServiceBus Microsoft.App Microsoft.OperationalInsights Microsoft.Insights Microsoft.KeyVault Microsoft.ManagedIdentity; do
   state=$(az provider show --namespace "$ns" --query registrationState -o tsv 2>/dev/null || echo unknown)
   case "$state" in
     Registered) ;;
@@ -25,7 +25,7 @@ done
 principal=$(az identity show -g "$RG" -n "$IDENTITY" --query principalId -o tsv)
 roles=$(az role assignment list --assignee-object-id "$principal" --all --query "[].roleDefinitionName" -o tsv)
 for role in "Storage Table Data Contributor" "Storage Blob Data Contributor" "Storage Blob Data Owner" \
-            "Azure Service Bus Data Sender" "Azure Service Bus Data Receiver" "Key Vault Secrets User" "Key Vault Crypto User"; do
+            "Azure Service Bus Data Sender" "Azure Service Bus Data Receiver" "Monitoring Metrics Publisher" "Key Vault Secrets User" "Key Vault Crypto User"; do
   grep -qxF "$role" <<<"$roles" || { echo "::error::${IDENTITY} lacks '${role}'. ${FIX}"; failed=1; }
 done
 

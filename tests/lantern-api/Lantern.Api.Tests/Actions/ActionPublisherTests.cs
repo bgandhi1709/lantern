@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Lantern.Core.Actions;
 using Lantern.Core.Configuration;
 using Lantern.Core.Repository;
@@ -26,6 +27,24 @@ public sealed class ActionPublisherTests
         Assert.Contains("\"familyId\"", message.Payload, StringComparison.Ordinal);
         ledger.Verify(l => l.RecordAsync(message, clock.GetUtcNow(), It.IsAny<CancellationToken>()), Times.Once);
         serviceBus.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task RecordAsync_WithAnActivityCurrent_StoresItsTraceParentOnTheMessageAndTheLedgerRow()
+    {
+        using var source = new ActivitySource("test");
+        using var listener = new ActivityListener
+        {
+            ShouldListenTo = _ => true,
+            Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllData,
+        };
+        ActivitySource.AddActivityListener(listener);
+        using var activity = source.StartActivity("request");
+
+        var message = await Publisher.RecordAsync(ActionType.RemoveWorkspace, "id", new RemoveWorkspacePayload(Guid.Empty, Guid.Empty), CancellationToken.None);
+
+        Assert.StartsWith($"00-{activity!.TraceId}-{activity.SpanId}", message.TraceParent, StringComparison.Ordinal);
+        ledger.Verify(l => l.RecordAsync(message, It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]

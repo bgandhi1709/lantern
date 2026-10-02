@@ -23,7 +23,7 @@ FAMILY_KEY=$(key_vault_param familyKey)
 SUB_ID=$(az account show --query id -o tsv)
 
 # Every provider main.bicep deploys from. Registration is per subscription, once; the deploy identity cannot do it.
-for ns in Microsoft.Storage Microsoft.ServiceBus Microsoft.App Microsoft.OperationalInsights Microsoft.KeyVault Microsoft.ManagedIdentity; do
+for ns in Microsoft.Storage Microsoft.ServiceBus Microsoft.App Microsoft.OperationalInsights Microsoft.Insights Microsoft.KeyVault Microsoft.ManagedIdentity; do
   echo "Provider ${ns}"
   az provider register --namespace "$ns" --wait -o none
 done
@@ -55,6 +55,8 @@ assign "Storage Blob Data Owner" "$RG_ID" "$PRINCIPAL_ID" ServicePrincipal
 # The API sends actions and the Functions app receives them.
 assign "Azure Service Bus Data Sender" "$RG_ID" "$PRINCIPAL_ID" ServicePrincipal
 assign "Azure Service Bus Data Receiver" "$RG_ID" "$PRINCIPAL_ID" ServicePrincipal
+# Both apps export telemetry to Application Insights with this identity: the resource has no ingestion key.
+assign "Monitoring Metrics Publisher" "$RG_ID" "$PRINCIPAL_ID" ServicePrincipal
 assign "Key Vault Secrets User" "$VAULT_ID" "$PRINCIPAL_ID" ServicePrincipal
 # Wrap/unwrap only, not manage: the app never needs to create or delete the key itself.
 assign "Key Vault Crypto User" "$VAULT_ID" "$PRINCIPAL_ID" ServicePrincipal

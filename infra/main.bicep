@@ -52,6 +52,12 @@ param childrenPerMinute int
 @description('How long an action may go unsent before the API resends it on start, as a .NET TimeSpan (hh:mm:ss).')
 param actionResendAfter string
 
+@description('Telemetry in Log Analytics: days kept, and the most it may ingest in a day (GB), the guardrail on cost.')
+param telemetry {
+  retentionDays: int
+  dailyCapGb: int
+}
+
 @description('Empty placeholder app until the API image exists. The API release sets the image; see keep-running-image.sh.')
 param containerImage string = 'mcr.microsoft.com/k8se/quickstart:latest'
 
@@ -66,6 +72,9 @@ param firebaseProjectId string
 
 var location = resourceGroup().location
 var name = 'lantern-${environmentName}'
+
+// Not a secret (it only names the resource), kept as a secret ref like security-key.
+var insightsSecret = { name: 'appinsights-connection-string', value: insights.properties.ConnectionString }
 
 // Names both apps read, each from the resource that owns it.
 var sharedEnv = [
@@ -92,6 +101,23 @@ resource logs 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
     sku: {
       name: 'PerGB2018'
     }
+    retentionInDays: telemetry.retentionDays
+    workspaceCapping: {
+      dailyQuotaGb: telemetry.dailyCapGb
+    }
+  }
+}
+
+// Workspace-based, so telemetry lands in the one workspace above. Ingestion signs in with the managed identity
+// (Monitoring Metrics Publisher, granted by bootstrap.sh), so no key can send telemetry.
+resource insights 'Microsoft.Insights/components@2020-02-02' = {
+  name: 'appi-${name}'
+  location: location
+  kind: 'web'
+  properties: {
+    Application_Type: 'web'
+    WorkspaceResourceId: logs.id
+    DisableLocalAuth: true
   }
 }
 
@@ -214,6 +240,7 @@ resource app 'Microsoft.App/containerApps@2025-01-01' = {
           keyVaultUrl: '${vault.properties.vaultUri}secrets/${keyVault.securityKeySecret}'
           identity: identity.id
         }
+        insightsSecret
       ]
     }
     template: {
@@ -236,6 +263,8 @@ resource app 'Microsoft.App/containerApps@2025-01-01' = {
             { name: 'KeyVault__FamilyKeyName', value: keyVault.familyKey }
             { name: 'RateLimits__ChildrenPerMinute', value: string(childrenPerMinute) }
             { name: 'Actions__ResendAfter', value: actionResendAfter }
+            { name: 'APPLICATIONINSIGHTS_CONNECTION_STRING', secretRef: insightsSecret.name }
+            { name: 'OTEL_SERVICE_NAME', value: 'lantern-api' }
           ])
           resources: {
             cpu: json(apiSize.cpu)
@@ -265,6 +294,9 @@ resource functionsApp 'Microsoft.App/containerApps@2025-01-01' = {
   }
   properties: {
     managedEnvironmentId: environment.id
+    configuration: {
+      secrets: [insightsSecret]
+    }
     template: {
       containers: [
         {
@@ -283,6 +315,8 @@ resource functionsApp 'Microsoft.App/containerApps@2025-01-01' = {
             { name: 'ServiceBus__credential', value: 'managedidentity' }
             { name: 'ServiceBus__clientId', value: identity.properties.clientId }
             { name: 'Actions__Queue', value: serviceBus::queue.name }
+            { name: 'APPLICATIONINSIGHTS_CONNECTION_STRING', secretRef: insightsSecret.name }
+            { name: 'OTEL_SERVICE_NAME', value: 'lantern-functions' }
           ])
           // The Functions host and the .NET worker are two processes.
           resources: {

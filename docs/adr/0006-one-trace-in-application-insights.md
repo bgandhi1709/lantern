@@ -1,0 +1,15 @@
+# One trace in Application Insights, from the request through the queue into the Functions app
+
+Telemetry is OpenTelemetry exported to one workspace-based Application Insights, `appi-lantern-<env>`, on the existing Log Analytics workspace. The API uses `Azure.Monitor.OpenTelemetry.AspNetCore` (`UseAzureMonitor()`); the Functions app uses the isolated-worker OpenTelemetry package with `Azure.Monitor.OpenTelemetry.Exporter` and `"telemetryMode": "OpenTelemetry"` in `host.json`, so the host and the worker emit one trace. The cloud role names (`lantern-api`, `lantern-functions`) come from `OTEL_SERVICE_NAME`, set by Bicep, so the Application Map shows two nodes.
+
+The Azure SDK records the Service Bus send as a dependency and puts the trace context on the message (`Diagnostic-Id`); the trigger starts `DispatchAction` as its child. That is why one `DELETE /v1/family/children/{id}` is one `operation_Id` across the request, Key Vault, Table Storage, the send, and the Function run with its storage calls and its `FunctionLog` lines.
+
+A resend has no request around it and the original request has finished, so it is not a child of it. `ActionPublisher.RecordAsync` stores the current `traceparent` on the action (`ActionMessage.TraceParent`, the `TraceParent` column of the `actions` row). `PendingActionResender` starts a `ResendAction` activity per message with an `ActivityLink` to that context: its own trace, linked to the original.
+
+Telemetry is exported only when `APPLICATIONINSIGHTS_CONNECTION_STRING` is set. Locally and in the Docker E2E it is unset, both apps start, and no setting is required. Both apps sign in with the one managed identity (Monitoring Metrics Publisher on the resource group, from `bootstrap.sh`), so the Application Insights resource has local auth off and no ingestion key exists; the connection string is not a secret but is kept as a Container App secret ref for consistency. The role must exist before the deploy, or telemetry is dropped silently: `preflight.sh` checks it.
+
+Privacy follows `FunctionLog`: ids and error types only. The distro records no request or response bodies, headers or query strings beyond the route; `/health/live` is filtered out. No uid or email is set as a user id. Exception messages are checked in the first UAT trace (the Firebase sign-in path logs the type only because the message can quote a token); a processor strips them if they are not safe.
+
+The workspace has a retention and a daily ingestion cap, both in the bicepparam. The first 5 GB a month per billing account is free, then about $2.30 a GB (about ₹202 at ₹88 to the dollar; list price, to be confirmed); pilot traffic stays inside the free grant and the cap is the guardrail. There is no sampling, so every trace is whole.
+
+Considered and rejected: the classic Application Insights SDK (the OpenTelemetry distro is the supported path for new work), a fake parent for resends (a resend is a new unit of work, and a link says so honestly), sampling from the start, and an ingestion key in a secret (managed identity needs no secret).
