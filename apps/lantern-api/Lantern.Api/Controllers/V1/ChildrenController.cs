@@ -1,52 +1,50 @@
 using Asp.Versioning;
-using Lantern.Api.Auth;
 using Lantern.Api.Configuration;
-using Lantern.Api.Contracts;
-using Lantern.Api.Services.Interfaces;
+using Lantern.Api.Models;
+using Lantern.Base.Services;
+using Lantern.Core.Models;
 using MapsterMapper;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 
 namespace Lantern.Api.Controllers.V1;
 
-[ApiController]
 [ApiVersion("1.0")]
 [Route("v1/family/children")]
-[Authorize]
 [EnableRateLimiting(RateLimits.Children)]
 [RequestSizeLimit(MaxBodyBytes)]
-// The Family comes only from the verified token: no route or body field names one.
-public sealed class ChildrenController(IChildService children, ICurrentCaller currentCaller, IMapper mapper)
-    : ControllerBase
+public sealed class ChildrenController(IChildService children, IMapper mapper)
+    : ResourceControllerBase<ChildModel, Child>(children, mapper)
 {
-    const int MaxBodyBytes = 2048;
+    private const int MaxBodyBytes = 2048;
 
     [HttpPost]
-    public async Task<ActionResult<ChildResponse>> Add([FromBody] AddChildBody body, CancellationToken cancellationToken)
+    public async Task<ActionResult<ChildModel>> Add([FromBody] ChildAddModel model, CancellationToken cancellationToken)
     {
-        var result = await children.AddAsync(currentCaller.Require(), body, cancellationToken);
-        var response = mapper.Map<ChildResponse>(result.Child);
+        var (child, created) = await children.AddOrGetAsync(Mapper.Map<Child>(model), cancellationToken);
+        var response = ToModel(child);
 
-        return result.Created
-            ? Created(new Uri($"/v1/family/children/{response.ChildId}", UriKind.Relative), response)
-            : Ok(response);
+        return created ? Created(new Uri($"/v1/family/children/{response.ChildId}", UriKind.Relative), response) : Ok(response);
     }
 
     [HttpPut("{childId:guid}")]
-    public async Task<ActionResult<ChildResponse>> Edit(
+    public async Task<ActionResult<ChildModel>> Edit(
         Guid childId,
-        [FromBody] ChildDetailsBody body,
+        [FromBody] ChildUpdateModel model,
         CancellationToken cancellationToken
     )
     {
-        return Ok(mapper.Map<ChildResponse>(await children.EditAsync(currentCaller.Require(), childId, body, cancellationToken)));
+        var child = Mapper.Map<Child>(model);
+        child.ChildId = childId;
+
+        return Ok(ToModel(await Service.UpdateAsync(child, cancellationToken)));
     }
 
+    // 202: the delete finishes in Lantern.Functions (ADR-0003).
     [HttpDelete("{childId:guid}")]
     public async Task<IActionResult> Delete(Guid childId, CancellationToken cancellationToken)
     {
-        await children.DeleteAsync(currentCaller.Require(), childId, cancellationToken);
+        await Service.RemoveAsync(childId, cancellationToken);
 
         return Accepted();
     }

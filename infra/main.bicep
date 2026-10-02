@@ -3,11 +3,60 @@ targetScope = 'resourceGroup'
 @description('Environment name. Every name below is derived from it: uat gives lanternuat, id-lantern-uat and so on.')
 param environmentName string
 
-@description('Table names. The API reads `parents` and `families` by default, so both must be listed. Add only; a renamed table is a new, empty one.')
-param tables array
+@description('Table names, passed to both apps. Add only; a renamed table is a new, empty one.')
+param tables {
+  parents: string
+  families: string
+  actions: string
+}
+
+@description('Blob containers. `workspaces` holds every Child\'s Workspace and is passed to both apps; `ncert` holds the refined corpus.')
+param containers {
+  workspaces: string
+  ncert: string
+}
+
+@description('Key Vault names bootstrap.sh creates: the uid-hash secret and the RSA key that wraps each Family key.')
+param keyVault {
+  securityKeySecret: string
+  familyKey: string
+}
+
+@description('The one queue for every Workspace event; the dispatcher picks the handler by type. The lock is the retry delay; deliveries times lock is how long a failing event retries.')
+param actionsQueue {
+  name: string
+  lockDuration: string
+  maxDeliveryCount: int
+  messageTimeToLive: string
+}
+
+@description('Size and scale of each Container App. cpu is a string because Bicep has no decimals.')
+param apiSize {
+  cpu: string
+  memory: string
+  minReplicas: int
+  maxReplicas: int
+}
+
+@description('See apiSize.')
+param functionsSize {
+  cpu: string
+  memory: string
+  minReplicas: int
+  maxReplicas: int
+}
+
+@description('Children endpoint calls per caller per minute.')
+param childrenPerMinute int
+
+@description('How long an action may go unsent before the API resends it on start, as a .NET TimeSpan (hh:mm:ss).')
+param actionResendAfter string
 
 @description('Empty placeholder app until the API image exists. The API release sets the image; see keep-running-image.sh.')
 param containerImage string = 'mcr.microsoft.com/k8se/quickstart:latest'
+
+@description('Empty placeholder app until the Functions image exists. The API release sets the image; see keep-running-image.sh.')
+param functionsImage string = 'mcr.microsoft.com/k8se/quickstart:latest'
 
 @description('Port the image listens on: 80 for the placeholder, 8080 for the .NET SDK container image.')
 param containerPort int = 80
@@ -18,12 +67,20 @@ param firebaseProjectId string
 var location = resourceGroup().location
 var name = 'lantern-${environmentName}'
 
+// Names both apps read, each from the resource that owns it.
+var sharedEnv = [
+  { name: 'Storage__ParentsTable', value: tables.parents }
+  { name: 'Storage__FamiliesTable', value: tables.families }
+  { name: 'Storage__ActionsTable', value: tables.actions }
+  { name: 'Storage__WorkspaceContainer', value: containers.workspaces }
+]
+
 // Created once by bootstrap.sh with its roles. The template only reads it.
 resource identity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' existing = {
   name: 'id-${name}'
 }
 
-// Created once by bootstrap.sh, which also writes the security-key secret. The template only reads it.
+// Created once by bootstrap.sh, which also writes the secret and the key named in keyVault. The template only reads it.
 resource vault 'Microsoft.KeyVault/vaults@2023-07-01' existing = {
   name: 'kv-${name}'
 }
@@ -55,8 +112,8 @@ resource storage 'Microsoft.Storage/storageAccounts@2023-05-01' = {
   resource tableService 'tableServices' = {
     name: 'default'
 
-    resource table 'tables' = [for table in tables: {
-      name: table
+    resource table 'tables' = [for table in items(tables): {
+      name: table.value
     }]
   }
 
@@ -76,19 +133,47 @@ resource storage 'Microsoft.Storage/storageAccounts@2023-05-01' = {
       isVersioningEnabled: false
     }
 
-    // One Class space per Child and Class, as blobs under family/{familyId}/{childId}/{class}/.
-    resource familyContainer 'containers' = {
-      name: 'family'
+    // One Workspace per Child, with a folder per Class: {familyId}/{childId}/{class}/.
+    resource workspaceContainer 'containers' = {
+      name: containers.workspaces
       properties: {
         publicAccess: 'None'
       }
     }
 
     resource ncertContainer 'containers' = {
-      name: 'ncert'
+      name: containers.ncert
       properties: {
         publicAccess: 'None'
       }
+    }
+  }
+}
+
+// Basic is queues only, which is all the one consumer of each action needs; topics (pub-sub) need Standard (ADR-0004).
+// Callers sign in with a managed identity, so no key or connection string exists.
+resource serviceBus 'Microsoft.ServiceBus/namespaces@2024-01-01' = {
+  name: 'sb-${name}'
+  location: location
+  sku: {
+    name: 'Basic'
+    tier: 'Basic'
+  }
+  properties: {
+    disableLocalAuth: true
+    minimumTlsVersion: '1.2'
+  }
+
+  // One queue for every action type; the message's type picks the handler. A message that is not settled comes back
+  // when its lock expires, so the lock is the retry delay and a failing action is dead-lettered only after
+  // maxDeliveryCount locks.
+  resource queue 'queues' = {
+    name: actionsQueue.name
+    properties: {
+      lockDuration: actionsQueue.lockDuration
+      maxDeliveryCount: actionsQueue.maxDeliveryCount
+      defaultMessageTimeToLive: actionsQueue.messageTimeToLive
+      deadLetteringOnMessageExpiration: true
     }
   }
 }
@@ -126,7 +211,7 @@ resource app 'Microsoft.App/containerApps@2025-01-01' = {
       secrets: [
         {
           name: 'security-key'
-          keyVaultUrl: '${vault.properties.vaultUri}secrets/security-key'
+          keyVaultUrl: '${vault.properties.vaultUri}secrets/${keyVault.securityKeySecret}'
           identity: identity.id
         }
       ]
@@ -136,28 +221,93 @@ resource app 'Microsoft.App/containerApps@2025-01-01' = {
         {
           name: 'lantern-api'
           image: containerImage
-          env: [
+          env: concat(sharedEnv, [
             // The user-assigned identity is ambiguous to DefaultAzureCredential without this.
             { name: 'AZURE_CLIENT_ID', value: identity.properties.clientId }
             { name: 'Firebase__ProjectId', value: firebaseProjectId }
             { name: 'Storage__TableEndpoint', value: storage.properties.primaryEndpoints.table }
             { name: 'Storage__BlobEndpoint', value: storage.properties.primaryEndpoints.blob }
+            { name: 'ServiceBus__FullyQualifiedNamespace', value: '${serviceBus.name}.servicebus.windows.net' }
+            { name: 'Actions__Queue', value: serviceBus::queue.name }
             { name: 'Security__Key', secretRef: 'security-key' }
             // Not a secret: the app only ever calls Key Vault's wrapKey/unwrapKey with this name.
             // The key's own private material never leaves the vault.
             { name: 'KeyVault__VaultUri', value: vault.properties.vaultUri }
-            { name: 'KeyVault__FamilyKeyName', value: 'family-field-key' }
-          ]
+            { name: 'KeyVault__FamilyKeyName', value: keyVault.familyKey }
+            { name: 'RateLimits__ChildrenPerMinute', value: string(childrenPerMinute) }
+            { name: 'Actions__ResendAfter', value: actionResendAfter }
+          ])
           resources: {
-            cpu: json('0.25')
-            memory: '0.5Gi'
+            cpu: json(apiSize.cpu)
+            memory: apiSize.memory
           }
         }
       ]
-      // Zero when idle, so an unused pilot costs nothing. One replica at most.
+      // Zero when idle, so an unused pilot costs nothing.
       scale: {
-        minReplicas: 0
-        maxReplicas: 1
+        minReplicas: apiSize.minReplicas
+        maxReplicas: apiSize.maxReplicas
+      }
+    }
+  }
+}
+
+// Lantern.Functions: finishes the actions the API puts on the queue. No ingress; a message on the queue wakes it, and
+// it goes back to zero when the queue is empty.
+resource functionsApp 'Microsoft.App/containerApps@2025-01-01' = {
+  name: 'ca-${name}-functions'
+  location: location
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${identity.id}': {}
+    }
+  }
+  properties: {
+    managedEnvironmentId: environment.id
+    template: {
+      containers: [
+        {
+          name: 'lantern-functions'
+          image: functionsImage
+          env: concat(sharedEnv, [
+            // The user-assigned identity is ambiguous to DefaultAzureCredential without this.
+            { name: 'AZURE_CLIENT_ID', value: identity.properties.clientId }
+            { name: 'Storage__TableEndpoint', value: storage.properties.primaryEndpoints.table }
+            { name: 'Storage__BlobEndpoint', value: storage.properties.primaryEndpoints.blob }
+            // The Functions host keeps its own state in the storage account.
+            { name: 'AzureWebJobsStorage__accountName', value: storage.name }
+            { name: 'AzureWebJobsStorage__credential', value: 'managedidentity' }
+            { name: 'AzureWebJobsStorage__clientId', value: identity.properties.clientId }
+            { name: 'ServiceBus__fullyQualifiedNamespace', value: '${serviceBus.name}.servicebus.windows.net' }
+            { name: 'ServiceBus__credential', value: 'managedidentity' }
+            { name: 'ServiceBus__clientId', value: identity.properties.clientId }
+            { name: 'Actions__Queue', value: serviceBus::queue.name }
+          ])
+          // The Functions host and the .NET worker are two processes.
+          resources: {
+            cpu: json(functionsSize.cpu)
+            memory: functionsSize.memory
+          }
+        }
+      ]
+      scale: {
+        minReplicas: functionsSize.minReplicas
+        maxReplicas: functionsSize.maxReplicas
+        rules: [
+          {
+            name: 'workspace-events'
+            custom: {
+              type: 'azure-servicebus'
+              metadata: {
+                queueName: serviceBus::queue.name
+                namespace: serviceBus.name
+                messageCount: '1'
+              }
+              identity: identity.id
+            }
+          }
+        ]
       }
     }
   }

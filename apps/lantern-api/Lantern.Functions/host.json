@@ -1,0 +1,17 @@
+{
+  "version": "2.0",
+  "logging": {
+    "logLevel": {
+      "default": "Information",
+      "Azure.Core": "Warning",
+      "Host.Triggers.ServiceBus": "Warning"
+    }
+  },
+  "extensions": {
+    "serviceBus": {
+      "autoCompleteMessages": false,
+      "maxConcurrentCalls": 4,
+      "maxAutoLockRenewalDuration": "00:05:00"
+    }
+  }
+}

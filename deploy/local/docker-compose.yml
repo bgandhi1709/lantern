@@ -15,13 +15,69 @@ services:
     ports:
       - "127.0.0.1:9099:9099"
 
+  # The Service Bus emulator keeps its state in SQL Server. Local only; the password guards nothing outside this stack.
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "Lantern-Local-1!"
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P 'Lantern-Local-1!' -Q 'SELECT 1' || exit 1"]
+      interval: 5s
+      retries: 30
+
+  servicebus:
+    image: mcr.microsoft.com/azure-messaging/servicebus-emulator:latest
+    depends_on:
+      mssql:
+        condition: service_healthy
+    environment:
+      ACCEPT_EULA: "Y"
+      SQL_SERVER: mssql
+      MSSQL_SA_PASSWORD: "Lantern-Local-1!"
+    volumes:
+      - ./servicebus/Config.json:/ServiceBus_Emulator/ConfigFiles/Config.json:ro
+
+  # The emulator image has no shell to health-check from inside, so this waits for its AMQP port. The API and the
+  # Functions app start after it, because an action sent before the queue exists is lost until the API next starts.
+  servicebus-ready:
+    image: busybox:stable
+    depends_on:
+      - servicebus
+    command: ["sh", "-c", "until nc -z servicebus 5672; do sleep 1; done"]
+    restart: "no"
+
+  # The Functions app, as it runs in Azure: it takes each action message and finishes it.
+  functions:
+    build:
+      context: ../..
+      dockerfile: apps/lantern-api/Lantern.Functions/Dockerfile
+    depends_on:
+      azurite:
+        condition: service_started
+      servicebus-ready:
+        condition: service_completed_successfully
+    environment:
+      AzureWebJobsStorage: "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1;"
+      Actions__Queue: workspace-events
+      Storage__ParentsTable: parents
+      Storage__FamiliesTable: families
+      Storage__ActionsTable: actions
+      Storage__WorkspaceContainer: family
+      ServiceBus: "Endpoint=sb://servicebus;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true;"
+      Storage__ConnectionString: "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;TableEndpoint=http://azurite:10002/devstoreaccount1;BlobEndpoint=http://azurite:10000/devstoreaccount1;"
+
   api:
     build:
       context: ../..
       dockerfile: deploy/local/api.Dockerfile
     depends_on:
-      - azurite
-      - auth-emulator
+      azurite:
+        condition: service_started
+      auth-emulator:
+        condition: service_started
+      servicebus-ready:
+        condition: service_completed_successfully
     ports:
       - "${LANTERN_HTTPS_PORT:-443}:8443"
     environment:
@@ -29,6 +85,8 @@ services:
       Kestrel__Certificates__Default__Path: /certs/local.lantern.api.crt
       Kestrel__Certificates__Default__KeyPath: /certs/local.lantern.api.key
       Storage__ConnectionString: "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;TableEndpoint=http://azurite:10002/devstoreaccount1;BlobEndpoint=http://azurite:10000/devstoreaccount1;"
+      Actions__Queue: workspace-events
+      ServiceBus__ConnectionString: "Endpoint=sb://servicebus;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true;"
       # Read by the local host (see api.Dockerfile): the Key Vault stand-in's key file.
       Local__KeyPath: /keys/family-field-key.pem
     volumes:

@@ -1,9 +1,17 @@
 <Solution>
-  <Folder Name="/apps/" />
-  <Folder Name="/apps/lantern-api/">
+  <Folder Name="/apps/">
     <Project Path="apps/lantern-api/Lantern.Api/Lantern.Api.csproj" />
-    <Project Path="apps/lantern-api/Lantern.Api.Test.Integration.Host/Lantern.Api.Test.Integration.Host.csproj" />
-    <Project Path="apps/lantern-api/Lantern.Api.Test.Integration/Lantern.Api.Test.Integration.csproj" />
-    <Project Path="apps/lantern-api/Lantern.Api.Tests/Lantern.Api.Tests.csproj" />
+    <Project Path="apps/lantern-api/Lantern.Functions/Lantern.Functions.csproj" />
+  </Folder>
+  <Folder Name="/libs/">
+    <Project Path="libs/Lantern.Base/Lantern.Base.csproj" />
+    <Project Path="libs/Lantern.Core/Lantern.Core.csproj" />
+    <Project Path="libs/Lantern.Repository/Lantern.Repository.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/lantern-api/Lantern.Api.Test.Integration.Host/Lantern.Api.Test.Integration.Host.csproj" />
+    <Project Path="tests/lantern-api/Lantern.Api.Test.Integration/Lantern.Api.Test.Integration.csproj" />
+    <Project Path="tests/lantern-api/Lantern.Api.Tests/Lantern.Api.Tests.csproj" />
+    <Project Path="tests/lantern-api/Lantern.Functions.Tests/Lantern.Functions.Tests.csproj" />
   </Folder>
 </Solution>

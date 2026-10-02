@@ -35,7 +35,7 @@ Stop with `docker compose -f deploy/local/docker-compose.yml down -v`.
 ## Gotchas
 
 - The stack includes the Firebase Auth Emulator and a seeded dev Family. Run the `Category=E2E` tests in
-  `apps/lantern-api/Lantern.Api.Test.Integration` (command in `deploy/local/README.md`) to drive the whole flow, or `deploy/local/token.sh dev-parent-1` for an ID token to use with curl. Details are in
+  `tests/lantern-api/Lantern.Api.Test.Integration` (command in `deploy/local/README.md`) to drive the whole flow, or `deploy/local/token.sh dev-parent-1` for an ID token to use with curl. Details are in
   `deploy/local/README.md`.
 - Only against UAT does `POST /v1/register` need a real Google-signed Firebase ID token for project
   `lantern-ai-bg1709`; a locally forged token is rejected there.

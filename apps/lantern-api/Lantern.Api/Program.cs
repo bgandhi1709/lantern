@@ -1,24 +1,18 @@
 using System.Text.Json.Serialization;
 using Asp.Versioning;
-using Azure.Data.Tables;
-using Azure.Identity;
-using Azure.Security.KeyVault.Keys;
-using Azure.Storage.Blobs;
 using Lantern.Api.Auth;
 using Lantern.Api.Configuration;
-using Lantern.Api.Contracts;
 using Lantern.Api.Exceptions;
 using Lantern.Api.Logging;
-using Lantern.Api.Repository;
+using Lantern.Api.Mapping;
 using Lantern.Api.Services;
-using Lantern.Api.Services.Interfaces;
-using Lantern.Api.Validation;
+using Lantern.Base;
+using Lantern.Core.Configuration;
+using Lantern.Core.Identity;
 using Mapster;
-using MapsterMapper;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.HttpOverrides;
-using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
@@ -30,108 +24,23 @@ builder
     .ValidateDataAnnotations()
     .ValidateOnStart();
 
+builder.Services.AddLanternBase(builder.Configuration);
+// The API wraps keys, hashes uids and sends actions, so it refuses to start without those settings.
+builder.Services.AddOptions<KeyVaultOptions>().ValidateOnStart();
+builder.Services.AddOptions<SecurityOptions>().ValidateOnStart();
+builder.Services.AddOptions<ServiceBusOptions>().ValidateOnStart();
+builder.Services.AddOptions<ActionOptions>().ValidateOnStart();
 builder
-    .Services.AddOptions<StorageOptions>()
-    .Bind(builder.Configuration.GetSection(StorageOptions.SectionName))
+    .Services.AddOptions<RateLimitOptions>()
+    .Bind(builder.Configuration.GetSection(RateLimitOptions.SectionName))
     .ValidateDataAnnotations()
     .ValidateOnStart();
 
-builder
-    .Services.AddOptions<SecurityOptions>()
-    .Bind(builder.Configuration.GetSection(SecurityOptions.SectionName))
-    .ValidateDataAnnotations()
-    .ValidateOnStart();
-
-builder
-    .Services.AddOptions<ChildDeletionOptions>()
-    .Bind(builder.Configuration.GetSection(ChildDeletionOptions.SectionName))
-    .ValidateDataAnnotations()
-    .ValidateOnStart();
-
-builder
-    .Services.AddOptions<KeyVaultOptions>()
-    .Bind(builder.Configuration.GetSection(KeyVaultOptions.SectionName))
-    .ValidateDataAnnotations()
-    .ValidateOnStart();
-
-builder.Services.AddSingleton(serviceProvider =>
-{
-    var options = serviceProvider.GetRequiredService<IOptions<StorageOptions>>().Value;
-    var service = string.IsNullOrWhiteSpace(options.ConnectionString)
-        ? new TableServiceClient(new Uri(options.TableEndpoint), new DefaultAzureCredential())
-        : new TableServiceClient(options.ConnectionString);
-
-    return service;
-});
-
-builder.Services.AddSingleton(serviceProvider =>
-{
-    var options = serviceProvider.GetRequiredService<IOptions<StorageOptions>>().Value;
-
-    return string.IsNullOrWhiteSpace(options.ConnectionString)
-        ? new BlobServiceClient(new Uri(options.BlobEndpoint), new DefaultAzureCredential())
-        : new BlobServiceClient(options.ConnectionString);
-});
-
-builder.Services.AddSingleton<IFamilyKeyWrapper>(serviceProvider =>
-{
-    var options = serviceProvider.GetRequiredService<IOptions<KeyVaultOptions>>().Value;
-    var keyClient = new KeyClient(new Uri(options.VaultUri), new DefaultAzureCredential());
-
-    return new KeyVaultFamilyKeyWrapper(keyClient, options.FamilyKeyName);
-});
-builder.Services.AddSingleton<IFamilyKeyService, FamilyKeyService>();
-
-builder.Services.AddSingleton(TimeProvider.System);
-builder.Services.AddSingleton<KeyMaterial>();
-builder.Services.AddSingleton<IUidHasher>(serviceProvider => serviceProvider.GetRequiredService<KeyMaterial>());
-builder.Services.AddSingleton<IFieldCipher, FieldCipher>();
-builder.Services.AddSingleton<IRowKeys, RowKeys>();
+builder.Services.AddSingleton<IRegister, ApiProfile>();
 builder.Services.AddHttpContextAccessor();
-builder.Services.AddScoped<ICurrentCaller, CurrentCaller>();
-builder.Services.AddSingleton(new TypeAdapterConfig());
-builder.Services.AddScoped<IMapper, ServiceMapper>();
-builder.Services.AddSingleton<IFamilyRepository>(serviceProvider =>
-{
-    var options = serviceProvider.GetRequiredService<IOptions<StorageOptions>>().Value;
-    var service = serviceProvider.GetRequiredService<TableServiceClient>();
-
-    return new FamilyRepository(
-        service.GetTableClient(options.ParentsTable),
-        service.GetTableClient(options.FamiliesTable),
-        serviceProvider.GetRequiredService<IRowKeys>(),
-        createTables: !string.IsNullOrWhiteSpace(options.ConnectionString)
-    );
-});
-builder.Services.AddSingleton<IClassSpaceStore>(serviceProvider =>
-{
-    var options = serviceProvider.GetRequiredService<IOptions<StorageOptions>>().Value;
-    var service = serviceProvider.GetRequiredService<BlobServiceClient>();
-
-    return new BlobClassSpaceStore(
-        service.GetBlobContainerClient(BlobClassSpaceStore.ContainerName),
-        createContainer: !string.IsNullOrWhiteSpace(options.ConnectionString)
-    );
-});
-builder.Services.AddSingleton<IChildDeletionStore>(serviceProvider =>
-{
-    var options = serviceProvider.GetRequiredService<IOptions<StorageOptions>>().Value;
-    var service = serviceProvider.GetRequiredService<TableServiceClient>();
-
-    return new ChildDeletionStore(
-        service.GetTableClient(options.FamiliesTable),
-        serviceProvider.GetRequiredService<IRowKeys>(),
-        createTables: !string.IsNullOrWhiteSpace(options.ConnectionString)
-    );
-});
-builder.Services.AddSingleton<ChildDeletionWorker>();
-builder.Services.AddHostedService(serviceProvider => serviceProvider.GetRequiredService<ChildDeletionWorker>());
-builder.Services.AddSingleton<IValidator<ChildDetailsBody>, ChildValidator>();
-builder.Services.AddSingleton<IValidator<AddChildBody>, AddChildValidator>();
-builder.Services.AddSingleton<IValidator<RegisterBody>, RegistrationValidator>();
-builder.Services.AddSingleton<IChildTextNormalizer, ChildTextNormalizer>();
-builder.Services.AddScoped<IRegistrationService, RegistrationService>();
-builder.Services.AddScoped<IChildService, ChildService>();
+builder.Services.AddScoped<IIdentityResolver, HttpIdentityResolver>();
+builder.Services.AddSingleton<PendingActionResender>();
+builder.Services.AddHostedService(serviceProvider => serviceProvider.GetRequiredService<PendingActionResender>());
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -198,7 +107,7 @@ builder
 
 builder.Services.AddHealthChecks();
 
-builder.Services.AddExceptionHandler<RegistrationExceptionHandler>();
+builder.Services.AddExceptionHandler<ProblemExceptionHandler>();
 builder.Services.AddProblemDetails();
 
 var app = builder.Build();

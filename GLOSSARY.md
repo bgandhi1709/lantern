@@ -19,7 +19,7 @@ A person in a Family who attends school and whose learning the Parent supports. 
 _Avoid_: Kid, student, learner
 
 **Hard delete**:
-How a Child is removed: the Parent decides, and the Child row, every Class space and the Child's History are erased with nothing kept. Lantern finishes it in the background and the Child disappears from the Parent's view at once. The Answer library is never touched by it.
+How a Child is removed: the Parent decides, and the Child row, the Child's whole Workspace and the Child's History are erased with nothing kept. Lantern finishes it in the background and the Child disappears from the Parent's view at once. The Answer library is never touched by it.
 _Avoid_: Archive, soft delete, deactivate
 
 **Answer library**:
@@ -88,9 +88,9 @@ _Avoid_: Anonymised question, sanitised question
 The lasting record of a Child's Scrubbed Questions, Tests and Class changes, kept across Class changes for as long as the Child is in Lantern. Each entry carries the Class the Child was in at the time.
 _Avoid_: Log, activity, profile
 
-**Class space**:
-One Class's share of a Child's History and files, created when the Child starts that Class, at registration or when the Parent moves the Child to a new Class. Every Parent and agent in the Family sees the same Class spaces.
-_Avoid_: Year folder, term, session
+**Workspace**:
+A Child's own area in Lantern: one folder per Class, each holding that Class's share of the Child's History and files. Created in the background shortly after the Child is registered or added; moving the Child to a new Class adds a folder. Removing a Child removes its whole Workspace. Every Parent and agent in the Family sees the same Workspaces.
+_Avoid_: Class space (its old name), year folder, term, session
 
 **Answer**:
 Lantern's reply to a Question, addressed to the Parent and written for the Child's Class.
