@@ -55,6 +55,8 @@ assign "Storage Blob Data Owner" "$RG_ID" "$PRINCIPAL_ID" ServicePrincipal
 # The API sends actions and the Functions app receives them.
 assign "Azure Service Bus Data Sender" "$RG_ID" "$PRINCIPAL_ID" ServicePrincipal
 assign "Azure Service Bus Data Receiver" "$RG_ID" "$PRINCIPAL_ID" ServicePrincipal
+# Both apps export telemetry to Application Insights with this identity: the resource has no ingestion key.
+assign "Monitoring Metrics Publisher" "$RG_ID" "$PRINCIPAL_ID" ServicePrincipal
 assign "Key Vault Secrets User" "$VAULT_ID" "$PRINCIPAL_ID" ServicePrincipal
 # Wrap/unwrap only, not manage: the app never needs to create or delete the key itself.
 assign "Key Vault Crypto User" "$VAULT_ID" "$PRINCIPAL_ID" ServicePrincipal

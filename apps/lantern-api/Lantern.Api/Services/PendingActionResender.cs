@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Lantern.Api.Logging;
 using Lantern.Core.Actions;
 using Lantern.Core.Configuration;
@@ -16,6 +17,9 @@ internal sealed class PendingActionResender(
     ILogger<PendingActionResender> logger
 ) : BackgroundService
 {
+    public const string ActivitySourceName = "Lantern.Api";
+
+    private static readonly ActivitySource Source = new(ActivitySourceName);
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -34,6 +38,10 @@ internal sealed class PendingActionResender(
     {
         foreach (var message in await ledger.UnsentSinceAsync(clock.GetUtcNow() - options.Value.ResendAfter, cancellationToken))
         {
+            // A new trace per resend, linked to the request that recorded the action: that request is long finished.
+            ActivityLink[] links = ActivityContext.TryParse(message.TraceParent, null, out var original) ? [new ActivityLink(original)] : [];
+            using var activity = Source.StartActivity("ResendAction", ActivityKind.Internal, parentContext: default, links: links);
+
             await publisher.SendAsync(message, cancellationToken);
         }
     }

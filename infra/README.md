@@ -15,7 +15,7 @@ infra/bootstrap.sh rg-lantern-dev uat
 
 Needs Owner or User Access Administrator on the resource group. Safe to run again. It creates the
 identity `id-lantern-uat`, the Key Vault `kv-lantern-uat`, the roles the identity needs (Storage Table
-Data Contributor, Storage Blob Data Contributor, Storage Blob Data Owner (the Functions host's own state), Azure Service Bus Data Sender and Azure Service Bus Data Receiver on the resource group, Key Vault Secrets User and Key Vault Crypto User on the vault),
+Data Contributor, Storage Blob Data Contributor, Storage Blob Data Owner (the Functions host's own state), Azure Service Bus Data Sender and Azure Service Bus Data Receiver and Monitoring Metrics Publisher (telemetry export) on the resource group, Key Vault Secrets User and Key Vault Crypto User on the vault),
 a Storage Blob Data Contributor role on the resource group for whoever runs it (so `ncert-build upload`
 works once the container exists), the secret `security-key`, and the key `family-field-key`, each only
 if missing. Whoever runs it also gets Key Vault Crypto User on the vault, since local development has
@@ -38,7 +38,7 @@ Re-run `bootstrap.sh` before the first release that uses Service Bus or the Func
 
 The deploying account needs Contributor only. It creates the storage account `lanternuat` with the tables
 `parents`, `families` and `actions` (the action ledger), the private `family` blob container (every Child's Workspace, a folder per Class; blob soft delete and versioning are off, so a deleted Child's files really go), the private `ncert` blob container (for `ncert-build`'s output — see
-[`tools/ncert-build`](../tools/ncert-build/README.md)), a Service Bus namespace `sb-lantern-uat` (Basic, no local keys) with the queue `workspace-events` (every Workspace event), a Log Analytics workspace, and the Container
+[`tools/ncert-build`](../tools/ncert-build/README.md)), a Service Bus namespace `sb-lantern-uat` (Basic, no local keys) with the queue `workspace-events` (every Workspace event), a Log Analytics workspace with a retention and a daily ingestion cap from the bicepparam, a workspace-based Application Insights `appi-lantern-uat` (no ingestion key: both apps sign in with the identity; its connection string reaches them as the secret ref `appinsights-connection-string`), and the Container
 Apps environment with two apps (each 0 to 1 replica, the identity attached): the API `ca-lantern-uat`, and `ca-lantern-uat-functions`, which runs `Lantern.Functions` with no ingress and is woken by a KEDA Service Bus rule when a message arrives ([ADR-0004](../docs/adr/0004-actions-through-service-bus-and-functions.md)). All names come from
 `environmentName`. The template reads the identity and the Key Vault by name and wires the app's
 settings: `Firebase__ProjectId` (a param, not a secret), `Storage__TableEndpoint` and `Storage__BlobEndpoint` (read from the
@@ -88,3 +88,16 @@ environment, the `env-uat-e2e` federated credential on the Entra app, its `Stora
 
 Service Bus topics (publish and subscribe need the Standard tier; add when an event gets a second consumer), the API's read access to `ncert` (add with the read-path PR),
 Foundry, a prod environment.
+
+## Tracing one request
+
+[ADR-0006](../docs/adr/0006-one-trace-in-application-insights.md): the API, the Service Bus send and the `DispatchAction` run share one `operation_Id`. In Application Insights, Logs, take the id from Transaction search (or a request's `operation_Id`) and run:
+
+```kusto
+union requests, dependencies, traces, exceptions
+| where operation_Id == "<operation id>"
+| project timestamp, itemType, cloud_RoleName, name, target, resultCode, message, severityLevel
+| order by timestamp asc
+```
+
+A resend after an API start has its own `operation_Id`; its `ResendAction` dependency carries the original request's trace in `customDimensions` (span links). Telemetry is off when `APPLICATIONINSIGHTS_CONNECTION_STRING` is unset, as in `deploy/local`.

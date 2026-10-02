@@ -22,6 +22,7 @@ internal sealed class ActionLedger(IUnitOfWork<ActionEntity> actions) : IActionL
                     PartitionKey = message.Type.ToString(),
                     RowKey = message.Id,
                     Payload = message.Payload,
+                    TraceParent = message.TraceParent,
                     LastSentAt = now,
                 },
                 cancellationToken
@@ -58,7 +59,7 @@ internal sealed class ActionLedger(IUnitOfWork<ActionEntity> actions) : IActionL
         // The ledger only ever holds unfinished actions, so a scan across types stays small.
         var rows = await actions.QueryAsync(TableClient.CreateQueryFilter($"LastSentAt le {cutoff}"), cancellationToken);
 
-        return [.. rows.Select(row => new ActionMessage(row.RowKey, Enum.Parse<ActionType>(row.PartitionKey), row.Payload))];
+        return [.. rows.Select(row => new ActionMessage(row.RowKey, Enum.Parse<ActionType>(row.PartitionKey), row.Payload, row.TraceParent))];
     }
 
     public Task CompleteAsync(ActionType type, string id, CancellationToken cancellationToken) =>

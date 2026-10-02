@@ -5,5 +5,7 @@ internal sealed class ActionEntity : TableEntityBase
 {
     public string Payload { get; set; } = string.Empty;
 
+    public string? TraceParent { get; set; }
+
     public DateTimeOffset LastSentAt { get; set; }
 }

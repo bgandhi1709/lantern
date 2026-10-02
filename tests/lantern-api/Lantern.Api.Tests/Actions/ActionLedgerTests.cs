@@ -30,6 +30,17 @@ public sealed class ActionLedgerTests(AzuriteFixture azurite)
     }
 
     [Fact]
+    public async Task RecordAsync_KeepsTheTraceParent_ForTheResend()
+    {
+        const string traceParent = "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01";
+
+        await Ledger.RecordAsync(Message("t") with { TraceParent = traceParent }, T0, CancellationToken.None);
+
+        var stale = Assert.Single(await Ledger.UnsentSinceAsync(T0, CancellationToken.None));
+        Assert.Equal(traceParent, stale.TraceParent);
+    }
+
+    [Fact]
     public async Task IsPendingAsync_IsTrueFromRecordToComplete_AndCompleteIsRepeatable()
     {
         Assert.False(await Ledger.IsPendingAsync(ActionType.RemoveWorkspace, "x", CancellationToken.None));

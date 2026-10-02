@@ -1,5 +1,7 @@
 using System.Text.Json.Serialization;
 using Asp.Versioning;
+using Azure.Identity;
+using Azure.Monitor.OpenTelemetry.AspNetCore;
 using Lantern.Api.Auth;
 using Lantern.Api.Configuration;
 using Lantern.Api.Exceptions;
@@ -15,6 +17,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using OpenTelemetry.Instrumentation.AspNetCore;
+using OpenTelemetry.Trace;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -104,6 +108,16 @@ builder
         options.ApiVersionReader = new HeaderApiVersionReader("x-api-version");
     })
     .AddMvc();
+
+// Telemetry is off without a connection string, so local runs and the E2E need none. The managed identity signs in; OTEL_SERVICE_NAME is the cloud role name.
+if (!string.IsNullOrWhiteSpace(builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"]))
+{
+    builder.Services.AddOpenTelemetry().UseAzureMonitor(options => options.Credential = new DefaultAzureCredential());
+    builder.Services.ConfigureOpenTelemetryTracerProvider(tracing => tracing.AddSource(PendingActionResender.ActivitySourceName));
+    builder.Services.Configure<AspNetCoreTraceInstrumentationOptions>(options =>
+        options.Filter = context => !context.Request.Path.StartsWithSegments("/health/live", StringComparison.Ordinal)
+    );
+}
 
 builder.Services.AddHealthChecks();
 
