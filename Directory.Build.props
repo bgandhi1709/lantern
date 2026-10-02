@@ -1,14 +1,18 @@
 <Project>
 
   <!--
-    Build output is redirected to dist/<project-relative-path>/ so the repository tree stays
+    Build output is redirected to dist/<os>/<project-relative-path>/ so the repository tree stays
     free of per-project bin/obj folders and a single .gitignore entry covers every artifact.
+    One folder per OS: Rider on Windows and dotnet in WSL share this tree, and a restore by one
+    writes paths the other cannot read.
   -->
   <PropertyGroup>
     <RepositoryRoot>$([MSBuild]::EnsureTrailingSlash('$(MSBuildThisFileDirectory)'))</RepositoryRoot>
     <ProjectRelativePath>$([MSBuild]::MakeRelative('$(RepositoryRoot)', '$(MSBuildProjectDirectory)'))</ProjectRelativePath>
-    <BaseOutputPath>$(RepositoryRoot)dist/$(ProjectRelativePath)/bin/</BaseOutputPath>
-    <BaseIntermediateOutputPath>$(RepositoryRoot)dist/intermediates/$(ProjectRelativePath)/obj/</BaseIntermediateOutputPath>
+    <BuildOs Condition="'$(OS)' == 'Windows_NT'">windows</BuildOs>
+    <BuildOs Condition="'$(OS)' != 'Windows_NT'">unix</BuildOs>
+    <BaseOutputPath>$(RepositoryRoot)dist/$(BuildOs)/$(ProjectRelativePath)/bin/</BaseOutputPath>
+    <BaseIntermediateOutputPath>$(RepositoryRoot)dist/$(BuildOs)/intermediates/$(ProjectRelativePath)/obj/</BaseIntermediateOutputPath>
   </PropertyGroup>
 
   <PropertyGroup>

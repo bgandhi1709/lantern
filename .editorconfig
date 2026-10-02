@@ -16,3 +16,7 @@ indent_size = 2
 # Same choice as the approval API: a call with no x-api-version header gets v1, so curl and the
 # first app builds work without it. Revisit when v2 exists.
 dotnet_diagnostic.AV0016.severity = none
+
+# The namespace mirrors the folder (CODING_STANDARDS.md, Architecture 7).
+dotnet_style_namespace_match_folder = true
+dotnet_diagnostic.IDE0130.severity = error

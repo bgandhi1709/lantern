@@ -3,11 +3,13 @@
 Read before writing code and again during review. The architecture rules below are **hard rules**: a change that breaks
 one is refused in review unless an ADR and a decision-log entry that change the rule land first (the divergence guard
 in `docs/agents/workflow.md`). The layering follows the user's `wf` architecture ([ADR-0005](docs/adr/0005-layered-like-wf.md)).
-Anything a linter or CI check can enforce belongs there instead; the `Guardrails` step in `.github/workflows/api.yml`
-already checks script modes and keeps test code out of `apps/` and `libs/`.
+Anything a linter or CI check can enforce belongs there instead: the `Guardrails` step in `.github/workflows/api.yml`
+checks script modes and keeps test code out of `apps/` and `libs/`, and the architecture tests enforce the mechanical
+rules marked in section 7.
 
 **Consistency beats preference.** Before writing a class, open the nearest existing one of the same kind and copy its
-shape, naming, folder and registration. The reference examples are listed at the end of the Architecture section.
+shape, naming, folder and registration. Each kind's reference class is named in
+[`docs/architecture/code-glossary.md`](docs/architecture/code-glossary.md).
 
 ## Architecture
 
@@ -47,30 +49,19 @@ shape, naming, folder and registration. The reference examples are listed at the
 
 ### 4. Reuse before you write
 
-Use these in order. A pull request that hand-writes what one of them already does is refused.
+The kinds of class and their meanings are in [`docs/architecture/code-glossary.md`](docs/architecture/code-glossary.md),
+and the steps for each kind of change are in [`docs/architecture/recipes.md`](docs/architecture/recipes.md), including
+its "Reuse or create" table. Review a change against the recipe it should have followed:
 
-1. **A new resource in a Family**: a service model in `Core/Models` (implementing `IFamilyModel`), an entity in
-   `Repository/Entities` (deriving `TableEntityBase`), a repository deriving `BaseRepository<TModel, TEntity>` that
-   supplies only `RowKeyPrefix`, `RowKey(id)` and `IdOf(model)`, its interface in `Core/Repository`, and one line in
-   `RepositoryModule`. The open generic `IServiceBase<T>` → `ServiceBase<T>` then serves it with no service code.
-2. **A service with logic beyond scoping**: `I{Model}Service : IServiceBase<{Model}>` and
-   `{Model}Service : ServiceBase<{Model}, I{Model}Repository>`. Override only the operations whose rules differ, and use
-   the base's `Repository`, `Families`, `Identity` and `FamilyIdAsync`; never re-inject what the base already holds.
-3. **A controller**: derive `ResourceControllerBase<TModel, TServiceModel>`, map with `Mapper`/`ToModel`, call one
-   service method, and pick the status code.
-4. **Work that must not run inside a request**: add a value to `ActionType` (kebab-case wire name) and a payload record
-   in `Core/Actions`; the service records it with `IActionPublisher.RecordAsync` **before** its own writes and calls
-   `SendAsync` after them; a handler in `Lantern.Functions/Handler` derives `ActionHandler<TPayload>` and is registered
-   in `FunctionsModule`. Never add a queue, a trigger, a timer or a `BackgroundService` for it: the one
-   `workspace-events` queue and dispatcher carry every event.
-5. **An external resource** (a queue, a vault, a third-party API): one generic service in Core that knows nothing about
-   what it carries, as `IServiceBusService` sends any model to any queue. Domain code wraps it; it never wraps the
-   domain.
-6. **A helper**: search first. If two classes need the same logic, it moves into the base class or a service that
-   both inject, not into a second copy and not into a static helper.
-
-Add an **interactor** (in `Lantern.Base/Interactors`) only when one service has grown too complex, the way wf's
-`ReportInteractor` sits over its Request and Response services, and say why in the PR. Never add one by default.
+- A model with no rule beyond Family scoping has no service class; it uses the open generic `IServiceBase<T>`.
+- A repository supplies only `RowKeyPrefix`, `RowKey` and `IdOf` unless a storage rule differs; a service overrides
+  only the operations whose rules differ, and uses the base's members instead of re-injecting them.
+- A service never injects another model's repository; two or more services in a fixed order make an interactor.
+- Slow or must-finish work is a new `ActionType` and handler on the one `workspace-events` queue: never a new queue,
+  Function, timer or `BackgroundService`.
+- An external resource has one generic gateway in Core that knows nothing of what it carries.
+- Logic two classes share moves into their base class or an injected service, never into a copy or a static helper.
+- An interactor is added only as `recipes.md` describes, never by default.
 
 ### 5. Separation of concerns
 
@@ -101,26 +92,19 @@ Add an **interactor** (in `Lantern.Base/Interactors`) only when one service has 
 
 ### 7. Naming
 
-| Kind | Pattern | Example |
-|---|---|---|
-| Service model | `{Noun}` | `Child`, `Family` |
-| Entity | `{Noun}Entity` | `ChildEntity` |
-| Repository | `I{Noun}Repository` / `{Noun}Repository` | `ChildRepository` |
-| Store (Blob) | `I{Noun}Store` / `{Noun}Store` | `WorkspaceStore` |
-| Service | `I{Noun}Service` / `{Noun}Service` | `ChildService` |
-| Validator | `{Noun}Validator : IValidator<{Noun}>` | `ChildValidator` |
-| API model | response `{Noun}Model`, input `{Noun}AddModel` / `{Noun}UpdateModel` / `{Noun}SaveModel`, a command `{Noun}{Verb}Request` | `ChildAddModel`, `FamilyRegisterRequest` |
-| Controller | `{Nouns}Controller` in `Controllers/V{n}` | `ChildrenController` |
-| Action | `ActionType.{Verb}{Noun}`, wire `{verb}-{noun}`, `{Verb}{Noun}Payload`, `{Verb}{Noun}Handler` | `RemoveWorkspace`, `remove-workspace` |
-| Options | `{Section}Options` with `const string SectionName` | `StorageOptions` |
-| DI module | `{Layer}Module.AddLantern{Layer}()` | `RepositoryModule` |
-| Logging | one `static partial` log class per project with `[LoggerMessage]`; an event id is unique across the solution and logs ids and counts only, never text a Parent entered | `BaseLog`, `FunctionLog` |
-
+- Every class takes a suffix from [`docs/architecture/code-glossary.md`](docs/architecture/code-glossary.md), with that
+  suffix's folder, base class and registration. A new kind of class is added to the glossary in the same PR.
 - Domain words come from `GLOSSARY.md` only: Family, Parent, Child, Class, Workspace. A new domain word goes into the
   glossary in the same PR.
 - No `View`, `Record`, `Body`, `Dto`, `Helper`, `Manager` or `Utils` suffixes, and none of the suffixes CA1711 reserves
   (`Collection`, `Queue` and so on).
 - One type per file, the file named after the type, the namespace matching the folder.
+- Logging: one `static partial` `[LoggerMessage]` class per project; an event id is unique across the solution, and a
+  log carries ids and counts only, never text a Parent entered.
+
+The architecture tests in `tests/lantern-api/Lantern.Api.Tests/Architecture` and the `IDE0130` analyzer enforce the
+mechanical parts of sections 1, 2, 3, 7 and 8 (layer references, Azure client owners, entity visibility, options without
+defaults, suffixes, one type per file, namespaces). Review the rest.
 
 ### 8. Configuration
 
@@ -151,13 +135,6 @@ Add an **interactor** (in `Lantern.Base/Interactors`) only when one service has 
 - Concurrency is ETags and table batches, never locks or in-memory state.
 - No shared mutable flags for one-time setup (`volatile bool` check-then-set): `volatile` gives visibility, not
   atomicity. Make the call idempotent, or use `Lazy<T>` or a `SemaphoreSlim`.
-
-### Reference examples
-
-Copy these when adding the same kind of thing: `ChildService` (service), `ChildRepository` (repository with its own
-storage rules), `FamilyRepository` (multi-table commit), `WorkspaceStore` (Blob store), `ChildrenController`
-(controller), `ChildAddModel` and `ChildModel` (API models), `CreateWorkspaceHandler` (handler), `ChildValidator`
-(validator), `StorageOptions` (options), `RepositoryModule` (DI module).
 
 ## C#
 
