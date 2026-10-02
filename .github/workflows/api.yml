@@ -100,6 +100,8 @@ jobs:
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
       - run: az bicep build --file infra/main.bicep --stdout > /dev/null
       - run: az bicep lint --file infra/main.bicep
+      # What bootstrap.sh sets up once (providers, roles), checked on the PR so a gap never reaches a release.
+      - run: infra/preflight.sh "$RESOURCE_GROUP" uat
       - run: infra/keep-running-image.sh
       - run: az deployment group what-if -g "$RESOURCE_GROUP" -f infra/main.bicep -p "$PARAMS"
 
@@ -150,14 +152,8 @@ jobs:
           client-id: ${{ vars.AZURE_CLIENT_ID }}
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
-      # Roles are granted once by infra/bootstrap.sh and rarely change; fail the release here, with the fix, if one is
-      # missing rather than ship an API that returns 500s. Read-only.
-      - run: |
-          principal=$(az identity show -g "$RESOURCE_GROUP" -n id-lantern-uat --query principalId -o tsv)
-          roles=$(az role assignment list --assignee "$principal" --all --query "[].roleDefinitionName" -o tsv)
-          for role in "Storage Table Data Contributor" "Storage Blob Data Contributor" "Storage Blob Data Owner" "Azure Service Bus Data Sender" "Azure Service Bus Data Receiver"; do
-            grep -qxF "$role" <<<"$roles" || { echo "::error::id-lantern-uat lacks '$role'. Run infra/bootstrap.sh with an Owner login."; exit 1; }
-          done
+      # Checked again here: a role or provider can be removed between the PR and the release. Read-only.
+      - run: infra/preflight.sh "$RESOURCE_GROUP" uat
       # The release is one Bicep deployment: it applies any infra change and sets the new images and the API's port in the
       # same revision, so infra, API and Functions app can never collide.
       - run: az deployment group create -g "$RESOURCE_GROUP" -f infra/main.bicep -p "$PARAMS" -n "release-${GITHUB_RUN_ID}"

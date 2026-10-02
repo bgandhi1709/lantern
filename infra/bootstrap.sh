@@ -21,6 +21,12 @@ SECRET=$(key_vault_param securityKeySecret)
 FAMILY_KEY=$(key_vault_param familyKey)
 
 SUB_ID=$(az account show --query id -o tsv)
+
+# Every provider main.bicep deploys from. Registration is per subscription, once; the deploy identity cannot do it.
+for ns in Microsoft.Storage Microsoft.ServiceBus Microsoft.App Microsoft.OperationalInsights Microsoft.KeyVault Microsoft.ManagedIdentity; do
+  echo "Provider ${ns}"
+  az provider register --namespace "$ns" --wait -o none
+done
 RG_ID="/subscriptions/${SUB_ID}/resourceGroups/${RG}"
 LOCATION=$(az group show -n "$RG" --query location -o tsv)
 
