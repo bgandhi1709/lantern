@@ -56,10 +56,13 @@ placeholder coming back.
 ## 3. GitHub Actions
 
 There is one workflow, `.github/workflows/api.yml`, and it runs when `apps/lantern-api/**` or `infra/**` changes.
-The `infra-check` job lints the Bicep and runs `what-if` (read-only). The `deploy` job waits for the reviewer on
-the `uat` environment, then applies `infra/main.bicep` with the new API and Functions images and the API's port in one deployment, so an
-infra change and an API release go out together and never collide. Nothing is deployed until you approve,
-whether the run comes from a merge to `main` or a manual run.
+The `infra-check` job lints the Bicep, runs `infra/preflight.sh` (providers registered, identity roles present) and
+`what-if`, all read-only, on every PR. The `deploy` job waits for the reviewer on the `uat` environment, then applies
+`infra/main.bicep` with the new API and Functions images and the API's port in one deployment, so an infra change and
+an API release go out together and never collide. A release runs on a merge to `main`, a manual run on `main`, or a
+PR labelled `deploy-uat` (to test a PR in UAT before merging); nothing is deployed until you approve. UAT is one
+environment, so the last approved release wins. A manual run on any other branch cannot sign in to Azure: the app
+registration trusts only the `pull_request`, `main` and `environment:uat` subjects (`github-setup.sh`).
 
 ```bash
 infra/github-setup.sh rg-lantern-dev uat   # once: Entra app with OIDC, Contributor on the group, variables

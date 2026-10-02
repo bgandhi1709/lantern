@@ -3,6 +3,8 @@ name: API - Build, Test and Release
 # Runs only when the API changes, so an infra-only change never triggers it.
 on:
   pull_request:
+    # labeled: adding deploy-uat to an open PR starts its UAT deploy.
+    types: [opened, synchronize, reopened, labeled]
     paths:
       - apps/lantern-api/**
       - libs/**
@@ -26,6 +28,10 @@ permissions:
 
 env:
   RESOURCE_GROUP: rg-lantern-dev
+  # A push to main, a manual run on main, or a PR labelled deploy-uat releases to uat (still behind the uat approval).
+  # Azure trusts only the pull_request, main and environment:uat token subjects, so a manual run on another branch
+  # cannot sign in; label the PR instead.
+  RELEASE: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'deploy-uat') }}
   PARAMS: infra/params/lantern.uat.bicepparam
 
 # One release at a time; never cancel one that is running.
@@ -100,6 +106,8 @@ jobs:
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
       - run: az bicep build --file infra/main.bicep --stdout > /dev/null
       - run: az bicep lint --file infra/main.bicep
+      # What bootstrap.sh sets up once (providers, roles), checked on the PR so a gap never reaches a release.
+      - run: infra/preflight.sh "$RESOURCE_GROUP" uat
       - run: infra/keep-running-image.sh
       - run: az deployment group what-if -g "$RESOURCE_GROUP" -f infra/main.bicep -p "$PARAMS"
 
@@ -118,16 +126,15 @@ jobs:
         run: echo "value=sha-${GITHUB_SHA::12}" >> "$GITHUB_OUTPUT"
       - run: docker build -f apps/lantern-api/Dockerfile -t "ghcr.io/${{ github.repository_owner }}/lantern-api:${{ steps.tag.outputs.value }}" .
       - run: docker build -f apps/lantern-api/Lantern.Functions/Dockerfile -t "ghcr.io/${{ github.repository_owner }}/lantern-functions:${{ steps.tag.outputs.value }}" .
-      # A push to main publishes automatically; workflow_dispatch lets a branch be deployed to
-      # uat manually for testing before its PR merges. GHCR inherits the repository's (public)
-      # visibility on first push, so the Container App needs no pull credential.
-      - if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+      # Pushed only for a release (see RELEASE). GHCR inherits the repository's (public) visibility on first push,
+      # so the Container App needs no pull credential.
+      - if: env.RELEASE == 'true'
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+      - if: env.RELEASE == 'true'
         run: |
           docker push "ghcr.io/${{ github.repository_owner }}/lantern-api:${{ steps.tag.outputs.value }}"
           docker push "ghcr.io/${{ github.repository_owner }}/lantern-functions:${{ steps.tag.outputs.value }}"
@@ -135,7 +142,7 @@ jobs:
   deploy:
     name: Deploy - uat
     needs: [image, infra-check]
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'deploy-uat')
     runs-on: ubuntu-latest
     # Required reviewers on this environment gate the deployment.
     environment: uat
@@ -150,14 +157,8 @@ jobs:
           client-id: ${{ vars.AZURE_CLIENT_ID }}
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
-      # Roles are granted once by infra/bootstrap.sh and rarely change; fail the release here, with the fix, if one is
-      # missing rather than ship an API that returns 500s. Read-only.
-      - run: |
-          principal=$(az identity show -g "$RESOURCE_GROUP" -n id-lantern-uat --query principalId -o tsv)
-          roles=$(az role assignment list --assignee "$principal" --all --query "[].roleDefinitionName" -o tsv)
-          for role in "Storage Table Data Contributor" "Storage Blob Data Contributor" "Storage Blob Data Owner" "Azure Service Bus Data Sender" "Azure Service Bus Data Receiver"; do
-            grep -qxF "$role" <<<"$roles" || { echo "::error::id-lantern-uat lacks '$role'. Run infra/bootstrap.sh with an Owner login."; exit 1; }
-          done
+      # Checked again here: a role or provider can be removed between the PR and the release. Read-only.
+      - run: infra/preflight.sh "$RESOURCE_GROUP" uat
       # The release is one Bicep deployment: it applies any infra change and sets the new images and the API's port in the
       # same revision, so infra, API and Functions app can never collide.
       - run: az deployment group create -g "$RESOURCE_GROUP" -f infra/main.bicep -p "$PARAMS" -n "release-${GITHUB_RUN_ID}"
