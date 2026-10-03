@@ -12,6 +12,8 @@ internal sealed class WorkspaceStore(BlobContainerClient container, bool createC
 {
     private const string MarkerName = "class.json";
 
+    private const int MaxParallelDeletes = 16;
+
     public async Task CreateAsync(Guid familyId, Guid childId, int classLevel, CancellationToken cancellationToken)
     {
         if (createContainer)
@@ -32,17 +34,22 @@ internal sealed class WorkspaceStore(BlobContainerClient container, bool createC
         }
     }
 
-    public async Task RemoveAsync(Guid familyId, Guid childId, CancellationToken cancellationToken)
-    {
-        // The prefix comes from the ids alone, and the slash keeps it from matching a longer path.
-        var prefix = string.Create(CultureInfo.InvariantCulture, $"{familyId:D}/{childId:D}/");
+    // The prefix comes from the ids alone, and the slash keeps it from matching a longer path.
+    public Task RemoveAsync(Guid familyId, Guid childId, CancellationToken cancellationToken) =>
+        RemovePrefixAsync(string.Create(CultureInfo.InvariantCulture, $"{familyId:D}/{childId:D}/"), cancellationToken);
 
+    public Task RemoveFamilyAsync(Guid familyId, CancellationToken cancellationToken) =>
+        RemovePrefixAsync(string.Create(CultureInfo.InvariantCulture, $"{familyId:D}/"), cancellationToken);
+
+    private async Task RemovePrefixAsync(string prefix, CancellationToken cancellationToken)
+    {
         try
         {
-            await foreach (var blob in container.GetBlobsAsync(BlobTraits.None, BlobStates.None, prefix, cancellationToken))
-            {
-                await container.DeleteBlobIfExistsAsync(blob.Name, cancellationToken: cancellationToken);
-            }
+            await Parallel.ForEachAsync(
+                container.GetBlobsAsync(BlobTraits.None, BlobStates.None, prefix, cancellationToken),
+                new ParallelOptions { MaxDegreeOfParallelism = MaxParallelDeletes, CancellationToken = cancellationToken },
+                async (blob, token) => await container.DeleteBlobIfExistsAsync(blob.Name, cancellationToken: token)
+            );
         }
         catch (RequestFailedException ex) when (ex.ErrorCode == BlobErrorCode.ContainerNotFound)
         {

@@ -97,6 +97,8 @@ ncert.nic.in PDFs                                         Mother's phone (Flutte
   ([ADR-0002](docs/adr/0002-class-space-in-blob.md)). Deleting a Child is a hard delete the API
   records and `Lantern.Functions` finishes from a Service Bus queue; the anonymous Answer library is never
   touched ([ADR-0003](docs/adr/0003-deleting-a-child.md), [ADR-0004](docs/adr/0004-actions-through-service-bus-and-functions.md)).
+  Deleting a Family removes its Parents' profiles at once, so they are signed out of it, and
+  `Lantern.Functions` then shreds the Family key and erases its rows and Workspaces (D40).
 
 | Area | Choice |
 | --- | --- |
@@ -119,7 +121,7 @@ ncert.nic.in PDFs                                         Mother's phone (Flutte
 - **API.** Firebase sign-in, `POST /v1/register` and `GET /v1/me` with per-family encryption are
   live in UAT. Add, edit and delete a Child (`/v1/family/children`, #51) are built: delete returns
   `202` and `Lantern.Functions` finishes it from a Service Bus queue, and the max is six Children. The end-to-end tests run in Docker on every PR and gate the release, and a smoke check follows each UAT deploy. The Family split
-  (#48) is merged and Workspaces (#49, then called Class spaces) are built; moving a Child to a new Class (#50) and deleting a Family (#53) are next. A cache for the Family key (#52) comes next. One request is one end-to-end trace in Application Insights, through Service Bus into the Functions app (#70, [ADR-0006](docs/adr/0006-one-trace-in-application-insights.md)); the KQL to pull it is in [`infra/README.md`](infra/README.md).
+  (#48) is merged and Workspaces (#49, then called Class spaces) are built. Deleting a Family (`DELETE /v1/family`, #53) is built: it returns `204` with the caller already unregistered, and `Lantern.Functions` erases the rest. Moving a Child to a new Class (#50) is next, in the Family management milestone. The Family key is unwrapped once per request with no cache (#52 dropped, D40). One request is one end-to-end trace in Application Insights, through Service Bus into the Functions app (#70, [ADR-0006](docs/adr/0006-one-trace-in-application-insights.md)); the KQL to pull it is in [`infra/README.md`](infra/README.md).
   The code is layered like `wf` ([ADR-0005](docs/adr/0005-layered-like-wf.md)): under `libs`, `Lantern.Core` holds the
   service models, contracts, generic `ServiceBase<T>`, crypto and the action publisher, `Lantern.Repository` holds the
   table entities, unit of work and generic `BaseRepository` (it alone encrypts fields), and `Lantern.Base` holds the

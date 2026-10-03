@@ -1,7 +1,13 @@
+extern alias Functions;
+
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 using Azure;
 using Azure.Data.Tables;
+using Azure.Storage.Blobs;
+using Azure.Storage.Blobs.Models;
+using Functions::Lantern.Functions.Handler;
 using Lantern.Api.Models;
 using Lantern.Api.Tests.Infrastructure;
 using Lantern.Core.Actions;
@@ -13,9 +19,19 @@ using Moq;
 namespace Lantern.Api.Tests.Controllers;
 
 [Collection(ApiCollection.Name)]
-public sealed class RegistrationTests(AzuriteFixture azurite) : IDisposable
+public sealed class FamilyTests(AzuriteFixture azurite) : IDisposable
 {
     private readonly LanternApiFactory factory = new(azurite.ConnectionString);
+
+    private BlobContainerClient Blobs => azurite.CreateBlobClient().GetBlobContainerClient("family");
+
+    private TableClient Families => azurite.CreateClient().GetTableClient("families");
+
+    private TableClient Parents => azurite.CreateClient().GetTableClient("parents");
+
+    private TableClient Actions => azurite.CreateClient().GetTableClient("actions");
+
+    private IReadOnlyList<ActionMessage> Erasures => [.. factory.Sender.Sent.Where(m => m.Type == ActionType.RemoveFamily)];
 
     [Fact]
     public async Task Register_Valid_Returns201AndMeReturnsTheSameFamily()
@@ -273,8 +289,147 @@ public sealed class RegistrationTests(AzuriteFixture azurite) : IDisposable
         }
     }
 
+    // ---- delete ----
+
+    [Fact]
+    public async Task Delete_Returns204_LocksTheCallerOutAtOnce_AndTheHandlerErasesEverythingOfItAndNothingElse()
+    {
+        using var client = await RegisteredAsync();
+        using var other = await RegisteredAsync();
+        var me = await client.GetFromJsonAsync<FamilyModel>(ApiClientExtensions.Me);
+        var theirs = await other.GetFromJsonAsync<FamilyModel>(ApiClientExtensions.Me);
+
+        var response = await client.DeleteAsync(ApiClientExtensions.Family);
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        Assert.Equal("not-registered", await (await client.GetAsync(ApiClientExtensions.Me)).ProblemCodeAsync());
+        Assert.Equal("not-registered", await (await client.DeleteAsync(ApiClientExtensions.Child(me!.Children[0].ChildId))).ProblemCodeAsync());
+        Assert.Empty(await ProfilesAsync(me.FamilyId));
+        Assert.Single(Erasures);
+        Assert.Single(await LedgerAsync(me.FamilyId));
+
+        await factory.DeliverAsync();
+
+        Assert.Empty(await RowsAsync(me.FamilyId));
+        Assert.Empty(await BlobNamesAsync($"{me.FamilyId:D}/"));
+        Assert.Empty(await LedgerAsync(me.FamilyId));
+        Assert.Equal(2, (await other.GetFromJsonAsync<FamilyModel>(ApiClientExtensions.Me))!.Children.Count);
+        Assert.NotEmpty(await BlobNamesAsync($"{theirs!.FamilyId:D}/"));
+    }
+
+    [Fact]
+    public async Task Delete_ThenRegisterBeforeTheHandlerRuns_StartsANewFamily_ThatTheErasureLeavesAlone()
+    {
+        using var client = await RegisteredAsync();
+        var old = await client.GetFromJsonAsync<FamilyModel>(ApiClientExtensions.Me);
+
+        await client.DeleteAsync(ApiClientExtensions.Family);
+        var again = await client.RegisterAsync(ValidBody());
+        await factory.DeliverAsync();
+
+        Assert.Equal(HttpStatusCode.Created, again.StatusCode);
+        var now = await client.GetFromJsonAsync<FamilyModel>(ApiClientExtensions.Me);
+        Assert.NotEqual(old!.FamilyId, now!.FamilyId);
+        Assert.Equal(2, now.Children.Count);
+        Assert.Empty(await RowsAsync(old.FamilyId));
+    }
+
+    [Fact]
+    public async Task Delete_Repeated_UnregisteredCaller_AndNoToken_AreRefused()
+    {
+        using var client = await RegisteredAsync();
+        using var anonymous = factory.CreateClient();
+
+        await client.DeleteAsync(ApiClientExtensions.Family);
+
+        Assert.Equal("not-registered", await (await client.DeleteAsync(ApiClientExtensions.Family)).ProblemCodeAsync());
+        Assert.Equal(HttpStatusCode.Unauthorized, (await anonymous.DeleteAsync(ApiClientExtensions.Family)).StatusCode);
+        Assert.Single(Erasures);
+    }
+
+    [Fact]
+    public async Task Handler_WhenTheBlobStepFails_KeepsTheLedger_AndFinishesWhenTheMessageIsDeliveredAgain()
+    {
+        using var client = await RegisteredAsync();
+        var me = await client.GetFromJsonAsync<FamilyModel>(ApiClientExtensions.Me);
+        await client.DeleteAsync(ApiClientExtensions.Family);
+        var failing = new Mock<IWorkspaceStore>();
+        failing
+            .Setup(s => s.RemoveFamilyAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new RequestFailedException(503, "blob down"));
+        using var broken = factory.WithWebHostBuilder(b => b.ConfigureTestServices(s => s.AddSingleton(failing.Object)));
+
+        await Assert.ThrowsAsync<RequestFailedException>(() =>
+            broken.Services.GetRequiredService<IActionDispatcher>().DispatchAsync(Erasures[0], CancellationToken.None)
+        );
+
+        Assert.Single(await LedgerAsync(me!.FamilyId));
+        Assert.NotEmpty(await BlobNamesAsync($"{me.FamilyId:D}/"));
+
+        await factory.DeliverAsync();
+
+        Assert.Empty(await LedgerAsync(me.FamilyId));
+        Assert.Empty(await BlobNamesAsync($"{me.FamilyId:D}/"));
+        Assert.Empty(await RowsAsync(me.FamilyId));
+    }
+
+    [Fact]
+    public async Task Handler_TheSameMessageTwiceAtOnce_FinishesWithoutError()
+    {
+        using var client = await RegisteredAsync();
+        var me = await client.GetFromJsonAsync<FamilyModel>(ApiClientExtensions.Me);
+        await client.DeleteAsync(ApiClientExtensions.Family);
+        var dispatcher = factory.Services.GetRequiredService<IActionDispatcher>();
+
+        await Task.WhenAll(
+            dispatcher.DispatchAsync(Erasures[0], CancellationToken.None),
+            dispatcher.DispatchAsync(Erasures[0], CancellationToken.None)
+        );
+
+        Assert.Empty(await LedgerAsync(me!.FamilyId));
+        Assert.Empty(await RowsAsync(me.FamilyId));
+    }
+
+    [Fact]
+    public async Task Handler_AMessageWithNoLedgerRow_TouchesNothing()
+    {
+        using var client = await RegisteredAsync();
+        var me = await client.GetFromJsonAsync<FamilyModel>(ApiClientExtensions.Me);
+        var stray = new ActionMessage(
+            "stray",
+            ActionType.RemoveFamily,
+            JsonSerializer.Serialize(new RemoveFamilyPayload(me!.FamilyId), JsonSerializerOptions.Web)
+        );
+
+        await factory.Services.GetRequiredService<IActionDispatcher>().DispatchAsync(stray, CancellationToken.None);
+
+        Assert.Equal(2, (await client.GetFromJsonAsync<FamilyModel>(ApiClientExtensions.Me))!.Children.Count);
+        Assert.NotEmpty(await BlobNamesAsync($"{me.FamilyId:D}/"));
+    }
+
     private HttpClient Client(string uid, string? name = null, string? email = null) =>
         factory.CreateClient().WithBearer(TestTokens.Create(uid, name, email));
+
+    private async Task<HttpClient> RegisteredAsync()
+    {
+        var client = Client(NewUid());
+        Assert.Equal(HttpStatusCode.Created, (await client.RegisterAsync(ValidBody())).StatusCode);
+        await factory.DeliverAsync();
+
+        return client;
+    }
+
+    private async Task<List<TableEntity>> RowsAsync(Guid familyId) =>
+        await Families.QueryAsync<TableEntity>(row => row.PartitionKey == familyId.ToString()).ToListAsync();
+
+    private async Task<List<TableEntity>> ProfilesAsync(Guid familyId) =>
+        await Parents.QueryAsync<TableEntity>(row => row.GetGuid("FamilyId") == familyId).ToListAsync();
+
+    private async Task<List<TableEntity>> LedgerAsync(Guid familyId) =>
+        await Actions.QueryAsync<TableEntity>(row => row.PartitionKey == nameof(ActionType.RemoveFamily) && row.RowKey == familyId.ToString("N")).ToListAsync();
+
+    private async Task<List<string>> BlobNamesAsync(string prefix) =>
+        await Blobs.GetBlobsAsync(BlobTraits.None, BlobStates.None, prefix, CancellationToken.None).Select(blob => blob.Name).ToListAsync();
 
     private static string NewUid() => $"uid-{Guid.NewGuid():N}";
 

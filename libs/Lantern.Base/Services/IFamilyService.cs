@@ -13,4 +13,11 @@ public interface IFamilyService : IServiceBase<Family>
     /// <summary>The caller's Family, with the caller's own profile and the Children that are not being deleted.</summary>
     /// <exception cref="Core.Exceptions.NotRegisteredException">The caller has no Family.</exception>
     Task<Family> MeAsync(CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Deletes the caller's Family: its Parents are no longer registered when this returns, and the rest of its data is
+    /// erased in Lantern.Functions.
+    /// </summary>
+    /// <exception cref="Core.Exceptions.NotRegisteredException">The caller has no Family.</exception>
+    Task EraseAsync(CancellationToken cancellationToken);
 }

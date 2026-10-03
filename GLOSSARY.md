@@ -22,6 +22,10 @@ _Avoid_: Kid, student, learner
 How a Child is removed: the Parent decides, and the Child row, the Child's whole Workspace and the Child's History are erased with nothing kept. Lantern finishes it in the background and the Child disappears from the Parent's view at once. The Answer library is never touched by it.
 _Avoid_: Archive, soft delete, deactivate
 
+**Family delete**:
+How a Family is erased at a Parent's request: its Parents stop being registered at once, then its key, rows, Children and Workspaces are erased with nothing kept. A Parent may register again straight away, as a new Family. The Answer library is never touched by it.
+_Avoid_: Close account, deactivate
+
 **Answer library**:
 The anonymous store of Scrubbed Questions and tagged Answers that agents build up and Lantern reuses across Families, with no link back to any Child, Parent or Family. It is kept when a Child, Parent or Family is deleted.
 _Avoid_: Cache, shared history

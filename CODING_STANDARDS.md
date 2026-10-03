@@ -135,6 +135,10 @@ defaults, suffixes, one type per file, namespaces). Review the rest.
 - Concurrency is ETags and table batches, never locks or in-memory state.
 - No shared mutable flags for one-time setup (`volatile bool` check-then-set): `volatile` gives visibility, not
   atomicity. Make the call idempotent, or use `Lazy<T>` or a `SemaphoreSlim`.
+- No `foreach` that awaits one I/O call per item. Rows in one partition go in table batches (at most 100 actions
+  each, `Chunk`); calls to different partitions or tables run together with `Task.WhenAll` over a small, known set;
+  a set that grows with the data (blobs under a prefix) streams through `Parallel.ForEachAsync` with a fixed
+  `MaxDegreeOfParallelism`. Reference: `FamilyRepository.EraseAsync`, `WorkspaceStore`.
 
 ## C#
 

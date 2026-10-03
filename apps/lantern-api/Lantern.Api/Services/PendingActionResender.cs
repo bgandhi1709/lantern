@@ -19,6 +19,8 @@ internal sealed class PendingActionResender(
 {
     public const string ActivitySourceName = "Lantern.Api";
 
+    private const int MaxParallelSends = 8;
+
     private static readonly ActivitySource Source = new(ActivitySourceName);
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -36,13 +38,17 @@ internal sealed class PendingActionResender(
 
     internal async Task RunOnceAsync(CancellationToken cancellationToken)
     {
-        foreach (var message in await ledger.UnsentSinceAsync(clock.GetUtcNow() - options.Value.ResendAfter, cancellationToken))
-        {
-            // A new trace per resend, linked to the request that recorded the action: that request is long finished.
-            ActivityLink[] links = ActivityContext.TryParse(message.TraceParent, null, out var original) ? [new ActivityLink(original)] : [];
-            using var activity = Source.StartActivity("ResendAction", ActivityKind.Internal, parentContext: default, links: links);
+        await Parallel.ForEachAsync(
+            await ledger.UnsentSinceAsync(clock.GetUtcNow() - options.Value.ResendAfter, cancellationToken),
+            new ParallelOptions { MaxDegreeOfParallelism = MaxParallelSends, CancellationToken = cancellationToken },
+            async (message, token) =>
+            {
+                // A new trace per resend, linked to the request that recorded the action: that request is long finished.
+                ActivityLink[] links = ActivityContext.TryParse(message.TraceParent, null, out var original) ? [new ActivityLink(original)] : [];
+                using var activity = Source.StartActivity("ResendAction", ActivityKind.Internal, parentContext: default, links: links);
 
-            await publisher.SendAsync(message, cancellationToken);
-        }
+                await publisher.SendAsync(message, token);
+            }
+        );
     }
 }

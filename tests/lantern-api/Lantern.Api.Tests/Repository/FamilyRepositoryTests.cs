@@ -233,6 +233,59 @@ public sealed class FamilyRepositoryTests(AzuriteFixture azurite) : IDisposable
         Assert.NotNull(await azureStyle.FamilyRepository().FindParentAsync(uid, CancellationToken.None));
     }
 
+    [Fact]
+    public async Task RemoveParentsAsync_RemovesTheFamilysProfiles_AndKeepsItsRowsAndOtherFamilies()
+    {
+        var (uid, family) = await RegisteredAsync();
+        var (otherUid, _) = await RegisteredAsync();
+
+        await harness.FamilyRepository().RemoveParentsAsync(family.FamilyId, CancellationToken.None);
+
+        Assert.Null(await harness.FamilyRepository().FindParentAsync(uid, CancellationToken.None));
+        Assert.NotNull(await harness.FamilyRepository().FindParentAsync(otherUid, CancellationToken.None));
+        Assert.NotEmpty(await PartitionAsync(family));
+    }
+
+    [Fact]
+    public async Task EraseAsync_RemovesEveryRowOfTheFamily_IsSafeToRepeat_AndKeepsOtherFamilies()
+    {
+        var (uid, family) = await RegisteredAsync();
+        var (otherUid, other) = await RegisteredAsync();
+
+        await harness.FamilyRepository().EraseAsync(family.FamilyId, CancellationToken.None);
+        await harness.FamilyRepository().EraseAsync(family.FamilyId, CancellationToken.None);
+
+        Assert.Empty(await PartitionAsync(family));
+        Assert.Null(await harness.FamilyRepository().FindParentAsync(uid, CancellationToken.None));
+        Assert.NotEmpty(await PartitionAsync(other));
+        Assert.NotNull(await harness.FamilyRepository().FindParentAsync(otherUid, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task EraseAsync_LeavesAProfileThatNowBelongsToAnotherFamily()
+    {
+        var (uid, family) = await RegisteredAsync();
+        await harness.FamilyRepository().RemoveParentsAsync(family.FamilyId, CancellationToken.None);
+        var again = NewFamily();
+        await harness.FamilyRepository().RegisterAsync(uid, again, NewParent(again), [NewChild(again, 0)], CancellationToken.None);
+
+        await harness.FamilyRepository().EraseAsync(family.FamilyId, CancellationToken.None);
+
+        Assert.Equal(again.FamilyId, (await harness.FamilyRepository().FindParentAsync(uid, CancellationToken.None))!.FamilyId);
+    }
+
+    private async Task<(string Uid, Family Family)> RegisteredAsync()
+    {
+        var uid = NewUid();
+        var family = NewFamily();
+        await harness.FamilyRepository().RegisterAsync(uid, family, NewParent(family), [NewChild(family, 0)], CancellationToken.None);
+
+        return (uid, family);
+    }
+
+    private async Task<List<TableEntity>> PartitionAsync(Family family) =>
+        await harness.Families.QueryAsync<TableEntity>(row => row.PartitionKey == family.FamilyId.ToString("D")).ToListAsync();
+
     private static string HarnessChildRow(Child child) => RepositoryHarness.KeyService.ChildRowKey(child.ChildId);
 
     private static string NewUid() => $"uid-{Guid.NewGuid():N}";

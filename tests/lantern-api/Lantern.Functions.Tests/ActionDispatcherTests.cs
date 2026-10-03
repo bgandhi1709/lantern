@@ -31,13 +31,16 @@ public sealed class ActionDispatcherTests
         );
 
     // The queue carries the wire name, so a message stays readable if the enum member is ever renamed.
-    [Fact]
-    public void ActionMessage_OnTheWire_NamesTheTypeInKebabCase()
+    [Theory]
+    [InlineData(ActionType.RemoveWorkspace, "remove-workspace")]
+    [InlineData(ActionType.CreateWorkspace, "create-workspace")]
+    [InlineData(ActionType.RemoveFamily, "remove-family")]
+    public void ActionMessage_OnTheWire_NamesTheTypeInKebabCase(ActionType type, string wireName)
     {
-        var json = JsonSerializer.Serialize(new ActionMessage("id", ActionType.RemoveWorkspace, "{}"), JsonSerializerOptions.Web);
+        var json = JsonSerializer.Serialize(new ActionMessage("id", type, "{}"), JsonSerializerOptions.Web);
 
-        Assert.Contains("\"type\":\"remove-workspace\"", json, StringComparison.Ordinal);
-        Assert.Equal(ActionType.RemoveWorkspace, JsonSerializer.Deserialize<ActionMessage>(json, JsonSerializerOptions.Web)!.Type);
+        Assert.Contains($"\"type\":\"{wireName}\"", json, StringComparison.Ordinal);
+        Assert.Equal(type, JsonSerializer.Deserialize<ActionMessage>(json, JsonSerializerOptions.Web)!.Type);
     }
 
     private static Mock<IActionHandler> Handler(ActionType type)
