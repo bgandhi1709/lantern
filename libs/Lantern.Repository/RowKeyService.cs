@@ -10,9 +10,11 @@ internal sealed class RowKeyService : IRowKeyService
 
     public string ChildRowPrefix => "child_";
 
+    public string MembershipRowPrefix => "parent_";
+
     public string FamilyPartition(Guid familyId) => familyId.ToString("D", CultureInfo.InvariantCulture);
 
     public string ChildRowKey(Guid childId) => ChildRowPrefix + childId.ToString("N", CultureInfo.InvariantCulture);
 
-    public string MembershipRowKey(string uidHash) => "parent_" + uidHash;
+    public string MembershipRowKey(string uidHash) => MembershipRowPrefix + uidHash;
 }

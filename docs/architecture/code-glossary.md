@@ -28,7 +28,7 @@ HTTP ─▶ Controller ─▶ (Interactor) ─▶ Service ─▶ Repository / St
   interactor) method, maps the result back and picks the status code.
 - Base: `ResourceControllerBase<TModel, TServiceModel>` (wf: `ResourceControllerBase<TSaveModel, TModel, TServiceModel>`).
 - Never: business rules, `try`/`catch`, storage, a Family id read from the request.
-- Example: `ChildrenController`.
+- Example: `ChildrenController`. A resource the caller has exactly one of is singular: `FamilyController`.
 
 **Model** (`Models/`) **(tested: only in `Lantern.Api.Models`)**
 - Meaning: the shape the app sees or sends. Every API model lives here and nowhere else.

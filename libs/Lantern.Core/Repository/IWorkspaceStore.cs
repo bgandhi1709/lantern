@@ -7,4 +7,7 @@ public interface IWorkspaceStore
 
     /// <summary>Removes the Child's whole Workspace, every Class in it. Safe to repeat.</summary>
     Task RemoveAsync(Guid familyId, Guid childId, CancellationToken cancellationToken);
+
+    /// <summary>Removes the Workspace of every Child of the Family. Safe to repeat.</summary>
+    Task RemoveFamilyAsync(Guid familyId, CancellationToken cancellationToken);
 }

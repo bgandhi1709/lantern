@@ -8,6 +8,9 @@ internal static partial class BaseLog
     [LoggerMessage(EventId = 1000, Level = LogLevel.Information, Message = "Registered family {FamilyId} with {ChildCount} child(ren)")]
     internal static partial void FamilyRegistered(ILogger logger, Guid familyId, int childCount);
 
+    [LoggerMessage(EventId = 1001, Level = LogLevel.Information, Message = "Delete requested for family {FamilyId}")]
+    internal static partial void FamilyDeleteRequested(ILogger logger, Guid familyId);
+
     [LoggerMessage(EventId = 1010, Level = LogLevel.Information, Message = "Added child {ChildId} to family {FamilyId}")]
     internal static partial void ChildAdded(ILogger logger, Guid familyId, Guid childId);
 

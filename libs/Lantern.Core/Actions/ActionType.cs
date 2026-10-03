@@ -10,4 +10,7 @@ public enum ActionType
 
     [JsonStringEnumMemberName("create-workspace")]
     CreateWorkspace,
+
+    [JsonStringEnumMemberName("remove-family")]
+    RemoveFamily,
 }

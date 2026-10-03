@@ -21,4 +21,7 @@ internal static partial class FunctionLog
 
     [LoggerMessage(EventId = 2010, Level = LogLevel.Information, Message = "Created the class {ClassLevel} workspace of child {ChildId} of family {FamilyId}")]
     internal static partial void WorkspaceCreated(ILogger logger, Guid familyId, Guid childId, int classLevel);
+
+    [LoggerMessage(EventId = 2020, Level = LogLevel.Information, Message = "Erased family {FamilyId}")]
+    internal static partial void FamilyErased(ILogger logger, Guid familyId);
 }

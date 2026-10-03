@@ -12,6 +12,7 @@ public static class FunctionsModule
         services.TryAddScoped<IActionDispatcher, ActionDispatcher>();
         services.TryAddEnumerable(ServiceDescriptor.Scoped<IActionHandler, RemoveWorkspaceHandler>());
         services.TryAddEnumerable(ServiceDescriptor.Scoped<IActionHandler, CreateWorkspaceHandler>());
+        services.TryAddEnumerable(ServiceDescriptor.Scoped<IActionHandler, RemoveFamilyHandler>());
 
         return services;
     }

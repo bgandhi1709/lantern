@@ -23,6 +23,9 @@ internal sealed class FamilyRepository(
     IRowKeyService keyService
 ) : BaseRepository<Family, FamilyEntity>(unitOfWork, keyRing, protector, mapper, keyService), IFamilyRepository
 {
+    // Table Storage's limit on actions in one transaction.
+    private const int MaxBatch = 100;
+
     protected override string RowKeyPrefix => KeyService.FamilyRowKey;
 
     protected override string RowKey(Guid id) => KeyService.FamilyRowKey;
@@ -112,6 +115,75 @@ internal sealed class FamilyRepository(
             );
 
             throw new AlreadyRegisteredException();
+        }
+    }
+
+    public async Task RemoveParentsAsync(Guid familyId, CancellationToken cancellationToken)
+    {
+        var memberships = await UnitOfWork.PartitionAsync(
+            KeyService.FamilyPartition(familyId),
+            KeyService.MembershipRowPrefix,
+            cancellationToken
+        );
+
+        // Each profile is its own partition in the parents table, so they cannot share a batch.
+        await Task.WhenAll(
+            memberships.Select(membership =>
+                RemoveProfileAsync(familyId, membership.RowKey[KeyService.MembershipRowPrefix.Length..], cancellationToken)
+            )
+        );
+    }
+
+    public async Task EraseAsync(Guid familyId, CancellationToken cancellationToken)
+    {
+        await RemoveParentsAsync(familyId, cancellationToken);
+
+        var partition = KeyService.FamilyPartition(familyId);
+        try
+        {
+            // Crypto-shredding first: whatever survives a failed sweep can no longer be decrypted.
+            await UnitOfWork.UpdateAsync(
+                new TableEntity(partition, KeyService.FamilyRowKey) { [nameof(FamilyEntity.WrappedFieldKey)] = string.Empty },
+                ETag.All,
+                TableUpdateMode.Merge,
+                cancellationToken
+            );
+        }
+        catch (RequestFailedException ex) when (ex.Status == 404)
+        {
+            // A previous attempt already deleted the family row.
+        }
+
+        var filter = TableClient.CreateQueryFilter($"PartitionKey eq {partition}");
+        IReadOnlyList<FamilyEntity> rows;
+        while ((rows = await UnitOfWork.QueryAsync(filter, cancellationToken)).Count > 0)
+        {
+            try
+            {
+                await Task.WhenAll(
+                    rows.Chunk(MaxBatch)
+                        .Select(batch =>
+                            UnitOfWork.SubmitAsync(
+                                batch.Select(row => new TableTransactionAction(TableTransactionActionType.Delete, row, ETag.All)),
+                                cancellationToken
+                            )
+                        )
+                );
+            }
+            catch (TableTransactionFailedException ex) when (ex.Status == 404)
+            {
+                // A concurrent delivery deleted some of these rows; read what is left.
+            }
+        }
+    }
+
+    private async Task RemoveProfileAsync(Guid familyId, string uidHash, CancellationToken cancellationToken)
+    {
+        // The Parent may have registered again since: that profile belongs to the new Family.
+        if (await parents.SingleOrNullAsync(uidHash, KeyService.ProfileRowKey, cancellationToken) is { } profile
+            && profile.FamilyId == familyId)
+        {
+            await parents.DeleteAsync(uidHash, KeyService.ProfileRowKey, cancellationToken);
         }
     }
 }

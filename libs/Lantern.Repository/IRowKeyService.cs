@@ -9,6 +9,8 @@ internal interface IRowKeyService
 
     string ChildRowPrefix { get; }
 
+    string MembershipRowPrefix { get; }
+
     string FamilyPartition(Guid familyId);
 
     string ChildRowKey(Guid childId);
