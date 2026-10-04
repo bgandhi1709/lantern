@@ -8,7 +8,7 @@ import logging
 import os
 import sys
 
-from . import catalog, draft, gpu, pipeline, refine_check, render, review, upload
+from . import catalog, draft, gpu, guidance, pipeline, refine_check, render, review, split, upload
 from .config import CORE_SUBJECTS, Settings
 from .ollama import Ollama
 
@@ -43,7 +43,7 @@ def _check(layout: pipeline.Layout, chapter_ids: list[str]) -> int:
     books = {b.book_id: b for b in catalog.load(layout.catalog)}
     failed = 0
     for chapter_id in chapter_ids:
-        book = books.get(chapter_id[:-2])
+        book = books.get(catalog.book_id_of(chapter_id))
         if book is None:
             print(f"{chapter_id}: unknown book")
             failed += 1
@@ -83,9 +83,15 @@ def main(argv: list[str] | None = None) -> int:
 
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="ncert-build", description=__doc__)
+    parser.add_argument(
+        "--board",
+        choices=["cbse", "ssc"],
+        default=os.environ.get("LANTERN_BOARD", "cbse"),
+        help="whose Books (default: LANTERN_BOARD or cbse); ssc builds in ../lantern-data-ssc",
+    )
     stages = parser.add_subparsers(dest="stage", required=True)
 
-    stages.add_parser("catalog", help="fetch NCERT's book list into catalog.json")
+    stages.add_parser("catalog", help="fetch the Board's book list into catalog.json")
     uploading = stages.add_parser("upload", help="copy the build output to the private `ncert` blob container")
     uploading.add_argument(
         "--account",
@@ -94,12 +100,14 @@ def _parser() -> argparse.ArgumentParser:
     )
     for name, text in [
         ("list", "show the books the filters select"),
-        ("download", "download chapter PDFs (and each book's front matter)"),
+        ("download", "download chapter PDFs (and each book's front matter); SSC: whole-Book PDFs"),
+        ("split", "SSC: split each Book into Chapter PDFs from its contents page (local models)"),
+        ("guidance", "SSC: copy out each Book's notes for teachers and parents (local model)"),
         ("extract", "extract page text and quality flags"),
         ("segment", "clean text and split chapters into sections"),
         ("draft", "draft concepts and kid questions with the local model"),
         ("pictures", "describe picture pages (low text) with the local vision model"),
-        ("run", "download, extract, segment, draft and describe pictures in one go"),
+        ("run", "download, (split,) extract, segment, draft and describe pictures in one go"),
         ("bundle", "write the compact per-chapter input for Claude refinement"),
         ("check", "validate refined chapters (pass chapter ids, or use the filters)"),
         ("review", "write the picture review sheet and the agreement report (no model)"),
@@ -130,12 +138,12 @@ def _parser() -> argparse.ArgumentParser:
 def _run(args: argparse.Namespace) -> int:
     logging.getLogger("pypdf").setLevel(logging.ERROR)  # font-encoding warnings are noise here
 
-    settings = Settings.from_env()
+    settings = Settings.from_env(args.board)
     settings.ensure_outside_repo()
     layout = pipeline.Layout(settings.data_dir)
 
     if args.stage == "catalog":
-        books = pipeline.refresh_catalog(layout)
+        books = pipeline.refresh_catalog(layout, args.board)
         print(f"{len(books)} books written to {layout.catalog}")
         return 0
 
@@ -186,17 +194,47 @@ def _run(args: argparse.Namespace) -> int:
     client = None
     model = args.model or settings.draft_model
     vision_model = args.vision_model or settings.vision_model
-    if args.stage in ("draft", "pictures", "run"):
+    splits = args.stage == "split" or (args.stage == "run" and args.board == "ssc")
+    if args.stage == "guidance":
+        client = Ollama.connect(settings.ollama_host)
+        client.require(model)
+        print(f"Copying Book guidance with {model} at {client.host}")
+        report = pipeline.guidance_books(
+            layout,
+            books,
+            lambda system, user, schema: client.chat_json(model, system, user, schema, guidance.NUM_CTX),
+            model,
+            args.force,
+            verbose,
+        )
+        print(report.line())
+        return 1 if report.failed else 0
+
+    if args.stage in ("draft", "pictures", "run", "split"):
         # Checked first so a run fails fast instead of after an hour of downloads.
         client = Ollama.connect(settings.ollama_host)
-        if args.stage in ("draft", "run"):
+        if args.stage in ("draft", "run", "split"):
             client.require(model)
-        if args.stage in ("pictures", "run"):
+        if args.stage in ("pictures", "run", "split"):
             client.require(vision_model)
 
     reports = []
     if args.stage in ("download", "run"):
-        reports.append(pipeline.download(layout, settings, books, verbose))
+        if args.board == "ssc":
+            reports.append(pipeline.download_books(layout, settings, books, verbose))
+        else:
+            reports.append(pipeline.download(layout, settings, books, verbose))
+    if splits:
+        print(f"Splitting with {model} (contents) and {vision_model} (image contents) at {client.host}")
+
+        def read_contents(system: str, user: str, schema: dict) -> dict:
+            return client.chat_json(model, system, user, schema, split.NUM_CTX)
+
+        def read_contents_image(prompt: str, image: bytes, schema: dict) -> dict:
+            return client.read_image(vision_model, prompt, image, schema, 0.0, render.NUM_CTX)
+
+        reports.append(pipeline.split_books(layout, books, read_contents, read_contents_image, model, args.force, verbose))
+        books = _selected(args, layout)  # the split filled in each Book's Chapters
     if args.stage in ("extract", "run"):
         reports.append(pipeline.extract_text(layout, books, args.force, verbose))
     if args.stage in ("segment", "run"):

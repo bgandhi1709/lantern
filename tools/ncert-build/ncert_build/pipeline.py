@@ -2,8 +2,12 @@
 
 Layout under the data directory (outside the repository):
 
-    catalog.json                         every book NCERT lists
-    pdf/<book_id>/<chapter_id>.pdf       downloads, plus <book_id>ps.pdf (front matter, contents)
+    board.json                           the Board profile (SSC): how its Books are built
+    catalog.json                         every book the Board lists
+    pdf/<book_id>/<chapter_id>.pdf       downloads, plus <book_id>ps.pdf (front matter, contents);
+                                         for SSC the whole Book <book_id>.pdf, split into Chapters
+    toc/<book_id>.json                   SSC: the Book's Chapters and their page ranges (split)
+    guidance/<book_id>.json              SSC: Book guidance, the notes for teachers and parents
     text/<book_id>/<chapter_id>.json     page text and quality flags
     chapters/<book_id>/<chapter_id>.json cleaned sections
     drafts/<book_id>/<chapter_id>.json   local-model concepts and kid questions
@@ -21,11 +25,13 @@ from __future__ import annotations
 import json
 import time
 import traceback
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from pathlib import Path
 from typing import Callable
 
-from . import bundle, catalog, draft, extract, http, refine_check, render, segment
+from pypdf import PdfReader
+
+from . import bundle, catalog, draft, extract, guidance, http, refine_check, render, segment, split, ssc
 from .catalog import Book
 from .config import NCERT_BASE, Settings
 
@@ -37,6 +43,19 @@ class Layout:
     @property
     def catalog(self) -> Path:
         return self.root / "catalog.json"
+
+    @property
+    def board_profile(self) -> Path:
+        return self.root / "board.json"
+
+    def book_pdf(self, book_id: str) -> Path:
+        return self.root / "pdf" / book_id / f"{book_id}.pdf"
+
+    def toc(self, book_id: str) -> Path:
+        return self.root / "toc" / f"{book_id}.json"
+
+    def guidance(self, book_id: str) -> Path:
+        return self.root / "guidance" / f"{book_id}.json"
 
     def pdf(self, book_id: str, file_id: str) -> Path:
         return self.root / "pdf" / book_id / f"{file_id}.pdf"
@@ -110,11 +129,69 @@ def _for_each_chapter(stage: str, books: list[Book], work: Callable[[Book, str],
     return report
 
 
-def refresh_catalog(layout: Layout) -> list[Book]:
-    html = http.fetch(f"{NCERT_BASE}/textbook.php").decode("utf-8", errors="replace")
-    books = catalog.parse_textbook_page(html)
+def refresh_catalog(layout: Layout, board: str) -> list[Book]:
+    if board == "ssc":
+        books = ssc.fetch_catalog()
+        layout.board_profile.parent.mkdir(parents=True, exist_ok=True)
+        layout.board_profile.write_text(json.dumps(ssc.PROFILE, indent=2, ensure_ascii=False), encoding="utf-8")
+    else:
+        html = http.fetch(f"{NCERT_BASE}/textbook.php").decode("utf-8", errors="replace")
+        books = catalog.parse_textbook_page(html)
     catalog.save(books, layout.catalog)
     return books
+
+
+def download_books(layout: Layout, settings: Settings, books: list[Book], verbose: bool) -> Report:
+    """Whole-Book PDFs (SSC); the split stage makes the Chapter PDFs."""
+    report = Report("download")
+    for book in books:
+        try:
+            if http.download(book.pdf_url, layout.book_pdf(book.book_id)):
+                report.done += 1
+                time.sleep(settings.request_delay_seconds)
+                if verbose:
+                    print(f"  download {book.book_id}")
+            else:
+                report.skipped += 1
+        except Exception as error:
+            report.failed.append(book.book_id)
+            print(f"  ! download {book.book_id}: {error}")
+    return report
+
+
+def split_books(
+    layout: Layout, books: list[Book], chat: split.ChatFn, ask: split.AskFn, model: str, force: bool, verbose: bool
+) -> Report:
+    """Splits each whole-Book PDF into Chapter PDFs and records the Chapters in the catalogue."""
+    report = Report("split")
+    profile = json.loads(layout.board_profile.read_text(encoding="utf-8"))
+    every_book = {b.book_id: b for b in catalog.load(layout.catalog)}
+    for book in books:
+        source, target = layout.book_pdf(book.book_id), layout.toc(book.book_id)
+        try:
+            if not source.exists():
+                report.missing.append(book.book_id)
+                continue
+            if target.exists() and not force:
+                report.skipped += 1
+                continue
+            unit = profile["chapter_unit"].get(book.subject, "lesson")
+            toc = split.split_book(source, book, unit, chat, ask, model)
+            split.write_chapters(source, toc, lambda chapter_id: layout.pdf(book.book_id, chapter_id))
+            split.write_toc(toc, target)
+            every_book[book.book_id] = replace(
+                book, last_chapter=len(toc["chapters"]), source_sha256=toc["source_sha256"]
+            )
+            report.done += 1
+            if verbose:
+                print(f"  split {book.book_id}: {len(toc['chapters'])} chapters")
+        except Exception as error:  # one bad Book must not stop the run
+            report.failed.append(book.book_id)
+            print(f"  ! split {book.book_id}: {error}")
+            if verbose:
+                traceback.print_exc()
+    catalog.save(sorted(every_book.values(), key=lambda b: (b.grade, b.subject, b.book_id)), layout.catalog)
+    return report
 
 
 def download(layout: Layout, settings: Settings, books: list[Book], verbose: bool) -> Report:
@@ -133,6 +210,35 @@ def download(layout: Layout, settings: Settings, books: list[Book], verbose: boo
                     time.sleep(settings.request_delay_seconds)
             except http.NotFound:
                 pass  # front matter is a nice-to-have (the contents page); chapters are what count
+    return report
+
+
+def guidance_books(
+    layout: Layout, books: list[Book], chat: guidance.ChatFn, model: str, force: bool, verbose: bool
+) -> Report:
+    """One Book guidance file per split Book; a note not found on its page is reported, not kept."""
+    report = Report("guidance")
+    for book in books:
+        source, toc_path, target = layout.book_pdf(book.book_id), layout.toc(book.book_id), layout.guidance(book.book_id)
+        try:
+            if not source.exists() or not toc_path.exists():
+                report.missing.append(book.book_id)
+                continue
+            if target.exists() and not force:
+                report.skipped += 1
+                continue
+            texts = [page.extract_text() or "" for page in PdfReader(source).pages]
+            toc = json.loads(toc_path.read_text(encoding="utf-8"))
+            document, rejected = guidance.extract(book.book_id, book.title, texts, toc, chat, model)
+            guidance.write(document, target)
+            report.done += 1
+            for line in rejected:
+                print(f"  ~ guidance {book.book_id} rejected {line}")
+            if verbose:
+                print(f"  guidance {book.book_id}: {len(document['book_notes'])} book, {len(document['chapter_notes'])} chapter notes")
+        except Exception as error:
+            report.failed.append(book.book_id)
+            print(f"  ! guidance {book.book_id}: {error}")
     return report
 
 

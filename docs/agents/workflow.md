@@ -4,7 +4,7 @@ One issue, one pass through these steps. Work inline: no subagents unless the us
 
 | # | Step | How | Output |
 |---|---|---|---|
-| 0 | Ticket | File or pick the issue first. Small scope. | Issue with label |
+| 0 | Ticket | Pick the issue first. A new idea goes through `/ideate` (grill, milestone, diagram, spec, stories) before it reaches here. Small scope. | Issue with label |
 | 1 | Grill | `/grill-with-docs`, at most 15 questions. Stop early once decisions settle. Terms go to `GLOSSARY.md`, hard-to-reverse calls to an ADR. | Decisions |
 | 2 | Tech pass | Agent lists the areas the issue touches and loads only the matching skills from the routing table. | Skills loaded |
 | 3 | Plan | Before planning any change to code under `apps/` or `libs/`, read `docs/architecture/recipes.md` and `docs/architecture/code-glossary.md` (the `backend-architecture` skill). Plan in chat: the recipe(s) the change follows, each new class with its glossary suffix, layer and reference class, behaviours to test, files touched, risks. A class with no glossary suffix, or a step against a recipe, is a divergence: ask first. User approves in one word. | Approved plan naming recipes and suffixes |
@@ -61,9 +61,14 @@ Load a skill only when the issue touches its area. Each loaded skill costs conte
 - **Output:** short chat replies, normal prose in files and commits.
 - **Tests:** single test files while iterating, the full suite once at the end.
 - **Direct Anthropic API calls** (scripts, runtime features):
-  - one attempt per call, no retries;
+  - one attempt per call, no retries; runtime agent calls may retry only on 429 and 529, at most twice with backoff (D48);
   - a hard budget ceiling checked from the API's real `usage` field before each call;
   - the cheapest adequate model by default (Haiku 4.5 for mechanical work);
   - send only the field or page that is wrong plus the rule it broke;
-  - cache stable system prompts;
   - never let an empty reply overwrite existing content.
+- **AI cost comes first** (D50). AI is about 95% of Lantern's running cost at scale, so every story and plan that touches a model call states its cost per call and how it gets the most from each one:
+  - reuse before calling: a stored result, a matching pre-written Q&A or a cached Answer costs nothing;
+  - share the cache across Families: a stable prefix (tools, system prompt, then the Chapter) identical for every Family on that Chapter, with per-Family data after the last breakpoint, and nothing volatile (timestamps, ids) in the prefix;
+  - keep outputs short and structured, since output tokens cost five times input on Haiku;
+  - offline work goes through the Batch API;
+  - log input, cached and output tokens per call, and check `cache_read_input_tokens` is not zero.

@@ -245,3 +245,58 @@ The user wants one request to be one trace. Both apps export OpenTelemetry to a 
 
 ### D40. A Family delete unregisters its Parents in the request and erases the rest in Functions; no Family key cache (supersedes #52 in D23)
 `DELETE /v1/family` records a `RemoveFamily` action in the ledger (the commit point, as in ADR-0003), deletes the profile of every Parent of the Family and returns `204`. With no profile, every later call finds the caller not registered, so the Family needs no status column and no request pays an extra read to check one. The user chose this over a `deleting` status for that reason. `RemoveFamilyHandler` removes any profile left behind, clears the wrapped Family key first (crypto-shredding, so anything a failed sweep leaves is unreadable), deletes every row of the partition, then sweeps `family/{familyId}/`. A profile that already points at a new Family (the Parent registered again before the handler ran) is kept. The controller that serves the Family, `/v1/register` and `/v1/me` is now `FamilyController` (singular: a caller has one Family). The Family key cache (#52) was dropped: one Key Vault unwrap per request is cheap at pilot scale, #47 moves the key to the device after the pilot, and a cache would keep a deleted Family's key alive on other instances.
+
+## 2026-10-03: Plan, Ask, Check (ideation, spec #79)
+
+### D41. Lantern's value is the Plan → Ask → Check loop
+The founder reframed Lantern around how a Parent actually teaches: plan a Session for one Chapter, answer the Child's unplanned questions, then check whether the teaching landed. Each Check feeds the next Plan, so the Parent can focus on weak areas. The flow guides the Parent rather than asking her to describe anything (D1's Mother): pick a Child, a Subject, a Chapter, read the Chapter summary, tap Plan (D7, navigation is context). New terms are in the glossary: Plan, Chapter summary, Recall, Check, Weak Concept, General question. Test keeps its meaning (preparing for a school test).
+
+### D42. One Plan per Chapter; Recall after each Concept; a scored Check per Chapter
+A Plan covers one Chapter, with its Concepts in book order and progress kept per Concept, so it can span several sittings. One or two unscored Recall questions follow each Concept to keep the Child engaged. The Check comes at the end of the Chapter, with questions from across its Concepts; the Parent asks them aloud and marks each right or wrong, so the Child never signs in and nothing is graded by AI. Each question keeps its Concept, giving a score per Chapter and per Concept. A Chapter can be checked again; every Check is kept, and the Chapter list sorts weakest first with plain sorting.
+
+### D43. Ask is bounded by the open Chapter; General questions wait for real data
+The open Chapter is the context, like a Claude Code session with its project loaded. Asks are kept against the Chapter like notes. A question outside the Chapter is a General question: logged and not answered in the pilot, until real-world data shows what Parents ask.
+
+### D44. English for the pilot; a language Subject in its own language
+Plans, Recall, Checks and Answers are in simple English, served from the refined corpus. A language Subject (Hindi, French, Sanskrit…) is always answered in that Subject's language. The Parent's chosen Language waits for a later iteration.
+
+### D45. Pilot on 2026-12-03, Android and web from one Expo codebase, in UAT
+The D12 pilot with a few Families launches on 2026-12-03 (milestone #7). The parent app is React Native with Expo: Android through Play internal testing and the web build; no iOS store build, but the code stays iOS-compatible (ADR-0007). The pilot runs in the UAT environment; a separate prod environment is revisited before the pilot widens.
+
+### D46. Plan, Ask and Check agents write with a model, grounded in the Chapter (supersedes D15's Opus at question time for Chapter Ask)
+A fixed Plan would go stale, so a Plan agent writes each Plan from the Chapter's data, the Child's Class, Weak Concepts, past Asks and an optional scrubbed note from the Parent (at most 300 characters, treated as context, never as instructions). A Plan is made on first open, on New plan and after a Check; otherwise the stored one is reused. The Check agent builds the Check paper from the Plan as taught, the Asks and the Concepts' Q&A; scoring stays the Parent's taps. All agents use Claude Haiku 4.5 with the Chapter as a cached prompt, and cite Concept and Q&A ids so every item traces back to the book. Chapter summaries are written once, offline, with the Batch API.
+
+### D47. A Node.js agent service with a targeted, run-scoped API; direct Anthropic API (amends D10, supersedes D11's Foundry)
+The agents run in their own Container App, `lantern-agents`, in Node.js with TypeScript, so the founder can review the agent layer (no meaningful performance gain from Python or .NET for I/O-bound orchestration, and it shares the Expo app's language). It has a read-only identity and internal ingress; `Lantern.Api` does every write. Callers authenticate with their managed identity and pass only a run id; the run (Family, Child, Chapter, kind, state, expiry) fixes the scope, and the model never sees or chooses an id. MCP was judged too broad; a hosted MCP server, a forwarded Parent token and a shared privileged token were rejected. It calls the Anthropic API directly through the SDK's Tool Runner; the Claude Agent SDK (built-in file and shell tools) and Managed Agents (beta, per-session containers) were rejected for now. A sidecar in the API's app was rejected because managed identity is per app. See ADR-0008.
+
+### D48. Plan generation is a job, with run states and bounded retries (amends the API-call guardrails)
+`POST …/plan` writes a pending run, queues it and returns `202`; a `Lantern.Functions` worker with a concurrency cap calls the agent service, stores the Plan and marks the run; the app polls. This gives backpressure under evening load and survives a dropped mobile request. Run states are pending, running, succeeded, grounding_failed and failed; a stuck run is marked failed by the next `GET` (no timer, per D31). A repeated `POST` returns the existing run or Plan. Runtime agent calls retry only on 429 and 529, at most twice with backoff, with the budget checked before each; scripts keep zero retries. Every Plan stores `promptVersion`, `contentVersion` and `model`.
+
+### D49. A Session allowance per Family
+Each Family has a monthly Plan count and a daily Ask cap, set in the bicepparam with no defaults; a failed Plan doesn't count. One allowance for every pilot Family; Tiers and sponsor reports wait for pilot data. D1 (non-commercial, sponsor-funded) is unchanged.
+
+### D50. AI cost comes first in every design
+At 3,000 Families (about 60,000 Sessions a month) AI is roughly 95% of running cost, about ₹2.6 lakh of ₹2.65 lakh a month (₹88 to the dollar, list prices); compute, logs and storage are the rest. The founder made lowering it a standing rule: every story and decision that touches a model call states its cost per call and extracts the most from each one: reuse before calling (stored results, pre-written Q&A, the Answer cache), a prompt cache shared across Families (stable prefix, per-Family data after the breakpoint), short structured outputs, the Batch API for offline work, and tokens logged per call. The rule lives in `docs/agents/workflow.md` under token management.
+
+## 2026-10-04: SSC Board (ideation, spec #93)
+
+### D51. Lantern is content-neutral; Book content comes only from its rights holder ([ADR-0009](../adr/0009-content-only-from-rights-holders.md))
+After the promoters asked for ICSE, the only bulk source found (studiestoday) showed commercial publishers' books (Selina, Frank, Morning Star…) with no licence. Lantern is a technology that ingests and explains Books it does not own; each source is taken from its rights holder (NCERT, ebalbharati) or from a school that states it holds the rights. Mirrors are never a source. ICSE waits for a school bringing its own material.
+
+### D52. The school-funded model is a direction for after the pilot
+Investors and supporters suggested private schools (Podar and smaller ones) pay, and Lantern stays free for State Board families on that money. The pilot on 2026-12-03 stays as planned (D45); a School space for a school's students comes after the first demo. D1's non-commercial, sponsor-funded stance is unchanged until that is designed.
+
+### D53. SSC Board: English medium, Classes 1–5, core Books from ebalbharati, in the pilot
+The second Board is the Maharashtra State Board (SSC), English medium, Std 1–5, 2026 editions: English Balbharati and Maths for Std 1–5, EVS Parts 1 and 2 for Std 3–5 (16 Books). Std 3 EVS Part 1 is printed per district; the Mumbai edition is used. Language, art, PE and work-education Books are out. Older Children are more independent, so SSC targets young Children first. SSC is in the pilot with at least one SSC Family, in its own milestone (#8) due with the pilot.
+
+### D54. Board is a Family setting, fixed for the pilot (ADR-0009)
+One Family follows one Board, picked at registration; existing Families are CBSE. It cannot change in the pilot; a wrong pick is a Family delete and registering again. An SSC Family's Children are in Class 1–5.
+
+### D55. Local models for everything before refine; Haiku 4.5 Batch for refine
+Download, split, extract, segment, draft, pictures, bundle and Book guidance run on local Ollama (`qwen3:8b`, `qwen3-vl:8b-instruct`), so Claude spend goes only to refine and Chapter summaries. Refine uses Claude Haiku 4.5 through the Batch API after a 5-Chapter quality gate, capped at ₹1,250 ($3 left plus a $10 top-up, at ₹96 to the dollar). `qwen2.5:7b-instruct` was removed from the WSL Ollama as unused.
+
+### D56. Each Board keeps its own structure; agents route prompts by Board
+The founder does not want SSC forced into NCERT's shape. A Board profile per Board records how its Books are built, and Plan, Ask and Check prompts are selected by Board. The shared minimum is Chapter → Concept → Q&A with ids, so Plan, Recall, Check and grounding by Concept id work everywhere. The cached prefix is per Board and still shared across every Family on that Board (D50). For English Balbharati the Chapter is the Unit (about 20 pages, lessons as sections), not each one-page lesson.
+
+### D57. Book guidance is extracted and given to the agents
+Balbharati Books carry the publisher's notes for teachers and parents, in the front matter and in boxes beside lessons. They are cut out by the local model, verified word for word against their page, and stored as one file per Book linked to the Book and Chapter, for the agents to read as context, never as instructions. The same for NCERT is a later follow-up.

@@ -22,15 +22,16 @@ CORE_SUBJECTS = (
 )
 
 
-def _default_data_dir() -> Path:
-    # A sibling of the repository, never inside it: NCERT text is copyrighted and the repository
+def _default_data_dir(board: str) -> Path:
+    # A sibling of the repository, never inside it: Book text is copyrighted and the repository
     # is public. tools/ncert-build/ncert_build/config.py -> repo root is three levels up.
     repo_root = Path(__file__).resolve().parents[3]
-    return repo_root.parent / "lantern-data"
+    return repo_root.parent / ("lantern-data" if board == "cbse" else f"lantern-data-{board}")
 
 
 @dataclass(frozen=True)
 class Settings:
+    board: str
     data_dir: Path
     ollama_host: str | None
     draft_model: str
@@ -38,9 +39,10 @@ class Settings:
     request_delay_seconds: float
 
     @staticmethod
-    def from_env() -> "Settings":
+    def from_env(board: str = "cbse") -> "Settings":
         return Settings(
-            data_dir=Path(os.environ.get("LANTERN_DATA_DIR") or _default_data_dir()),
+            board=board,
+            data_dir=Path(os.environ.get("LANTERN_DATA_DIR") or _default_data_dir(board)),
             ollama_host=os.environ.get("OLLAMA_HOST") or None,
             draft_model=os.environ.get("LANTERN_DRAFT_MODEL", "qwen3:8b"),
             vision_model=os.environ.get("LANTERN_VISION_MODEL", "qwen3-vl:8b-instruct"),
