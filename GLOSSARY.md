@@ -7,7 +7,7 @@ Lantern is a non-commercial tool that helps parents support their children's sch
 ### Family and registration
 
 **Family**:
-The overarching group that holds Parents and Children, like a resource group in Azure. Its one setting is Region; personal settings belong to each Parent.
+The overarching group that holds Parents and Children, like a resource group in Azure. Its settings are Region and Board; personal settings belong to each Parent.
 _Avoid_: Household, account, user
 
 **Parent**:
@@ -31,8 +31,12 @@ The anonymous store of Scrubbed Questions and tagged Answers that agents build u
 _Avoid_: Cache, shared history
 
 **Class**:
-A Child's school year, from 1 to 10 for now (for example "Class 6"), as in CBSE and NCERT. Classes 11 and 12 may come later. Only the Parent changes it; Lantern never moves a Child up on its own.
+A Child's school year (for example "Class 6"): 1 to 10 for a CBSE Family, 1 to 5 for an SSC Family for now. Classes 11 and 12 may come later. Only the Parent changes it; Lantern never moves a Child up on its own.
 _Avoid_: Grade, standard, level
+
+**Board**:
+The school board whose syllabus and Books a Family follows: CBSE (NCERT Books) or SSC, the Maharashtra State Board (Balbharati Books, English medium). A setting of the Family, picked at registration and fixed for the pilot; every Child in the Family follows it. A wrong pick is fixed by a Family delete and registering again.
+_Avoid_: Curriculum, syllabus, medium
 
 **Region**:
 The Family's city and state, entered as free text. The country is always India.
@@ -54,22 +58,30 @@ _Avoid_: Locale, medium
 The name of the school a Child attends, optional free text. It may later become a grouping of Children across Families, with strict separation between Parents.
 _Avoid_: Institution, board
 
-### NCERT content
+### Book content
 
 **Subject**:
 A field of study a Child learns in a Class, such as Maths or English.
 _Avoid_: Course, topic
 
 **Book**:
-The NCERT textbook for one Subject in one Class.
+The textbook a Board prescribes for one Subject in one Class: NCERT for CBSE, Balbharati (English medium) for SSC.
 _Avoid_: Textbook, volume
+
+**Book guidance**:
+The rights holder's own notes for teachers and parents in a Book: in its front matter and in boxes beside its lessons. Lantern's agents read it as context for a Plan or an Answer, never as instructions.
+_Avoid_: Teacher notes, preface, instructions
+
+**Board profile**:
+How a Board's Books are built: what a Chapter is (an English Balbharati Unit, an NCERT chapter), how lessons nest, where Book guidance sits. Agents pick their prompt by Board using it. Internal term.
+_Avoid_: Schema, template
 
 **Chapter**:
 A numbered unit of a Book, and the unit a Concept belongs to.
 _Avoid_: Lesson, unit
 
 **Concept**:
-One idea taught in one Chapter of an NCERT book, with a summary, how the book teaches it, its prerequisites and a set of Q&A. The same idea in another Chapter is a separate Concept; linking them is a later layer.
+One idea taught in one Chapter of a Book, with a summary, how the book teaches it, its prerequisites and a set of Q&A. The same idea in another Chapter is a separate Concept; linking them is a later layer.
 _Avoid_: Topic, skill, node
 
 **Prerequisite**:
@@ -89,7 +101,7 @@ A Question with all personal information removed, such as names, School, Region 
 _Avoid_: Anonymised question, sanitised question
 
 **History**:
-The lasting record of a Child's Scrubbed Questions, Tests and Class changes, kept across Class changes for as long as the Child is in Lantern. Each entry carries the Class the Child was in at the time.
+The lasting record of a Child's Scrubbed Questions, Plan progress, Checks, Tests and Class changes, kept across Class changes for as long as the Child is in Lantern. Each entry carries the Class the Child was in at the time.
 _Avoid_: Log, activity, profile
 
 **Workspace**:
@@ -104,8 +116,34 @@ _Avoid_: Response, result
 A band of Classes from NCF-2023: 1–2, 3–5, 6–8 or 9–10. Internal term, never shown to Parents; it decides which stored Answers a Child can be given.
 _Avoid_: Level, band, grade band
 
+### Teaching a Chapter
+
+**Plan**:
+Lantern's guide for teaching one Chapter, built from the Chapter's Concepts in book order: for each Concept, its summary, how the book teaches it, a home activity and a Recall. Ends with a Check. Progress is kept per Concept, so a Parent can stop and resume.
+_Avoid_: Lesson plan, session plan, schedule
+
+**Chapter summary**:
+A few plain lines on what a Chapter is about, shown before the Parent opens its Plan. Written once, offline, for every Chapter.
+_Avoid_: Overview, abstract
+
+**Recall**:
+One or two quick questions the Parent asks right after a Concept, on what was just taught, to keep the Child engaged. Not scored.
+_Avoid_: Quiz, mini quiz, Check
+
+**Check**:
+The Parent's assessment, at the end of a Chapter, of whether the teaching landed. Questions are drawn from across the Chapter's Concepts, never repeating a Recall; the Parent asks each aloud and marks it right or wrong. Each question keeps its Concept, so a Check scores the Chapter and each Concept. A Chapter can be checked again; every Check is kept.
+_Avoid_: Test, quiz, exam, assessment
+
+**Weak Concept**:
+A Concept the Child got wrong in the Chapter's latest Check.
+_Avoid_: Gap, weakness
+
+**General question**:
+A Question about something outside the open Chapter. Logged and not yet answered.
+_Avoid_: Off-topic question, unbounded question
+
 ### Preparing for school tests
 
 **Test**:
-A small school test a Child is preparing for. The Parent names the Chapters of a Subject the test covers, and Lantern helps prepare the Child from them. It replaces photographing book pages and asking a general chatbot.
-_Avoid_: Exam, quiz, assessment
+A small school test a Child is preparing for. The Parent names the Chapters of a Subject the test covers, and Lantern helps prepare the Child from them. It replaces photographing book pages and asking a general chatbot. Not the Check, which Lantern sets after a Plan.
+_Avoid_: Exam, quiz, assessment, Check

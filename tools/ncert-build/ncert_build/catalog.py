@@ -42,9 +42,17 @@ class Book:
     first_chapter: int
     last_chapter: int
     has_front_matter: bool
+    board: str = "cbse"
+    source_item_id: str | None = None  # the publisher's id where it differs from book_id
+    part: int | None = None
+    edition: str | None = None
+    pdf_url: str | None = None  # a whole-Book PDF, split into Chapters by the split stage
+    source_sha256: str | None = None
 
     def chapter_ids(self) -> list[str]:
-        return [f"{self.book_id}{n:02d}" for n in range(self.first_chapter, self.last_chapter + 1)]
+        # SSC ids are readable (ssc3-maths-04), so the number needs a separator.
+        separator = "-" if self.board == "ssc" else ""
+        return [f"{self.book_id}{separator}{n:02d}" for n in range(self.first_chapter, self.last_chapter + 1)]
 
     @property
     def front_matter_id(self) -> str:
@@ -102,6 +110,10 @@ def parse_textbook_page(html: str) -> list[Book]:
             ),
         )
     return sorted(books.values(), key=lambda b: (b.grade, b.subject, b.book_id))
+
+
+def book_id_of(chapter_id: str) -> str:
+    return chapter_id.rsplit("-", 1)[0] if chapter_id.startswith("ssc") else chapter_id[:-2]
 
 
 def select(

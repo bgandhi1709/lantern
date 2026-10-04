@@ -46,19 +46,20 @@ python3 -m venv .venv && .venv/bin/pip install -e ".[dev]"
 
 ### Local model (for `draft`)
 
-Ollama runs on the Windows host, where it has the GPU and all the RAM, not WSL's share.
+Ollama runs inside WSL as the native Linux install, which uses the RTX 3060 through WSL's CUDA
+passthrough. The snap package can't reach CUDA and runs on the CPU only, so it is stopped and
+disabled (`snap stop --disable ollama`).
 
-1. Install Ollama for Windows from ollama.com.
-2. WSL2 in NAT mode can't reach Windows' `localhost`. So Ollama must listen on all interfaces: in
-   Windows *Environment Variables*, add a user variable `OLLAMA_HOST` = `0.0.0.0`, then quit
-   Ollama from the tray and start it again. Allow it through Windows Firewall when asked.
-3. Pull the models in a Windows terminal: `ollama pull qwen3:8b` for drafts and
-   `ollama pull qwen3-vl:8b-instruct` for figures. Each is about 5–6 GB and fits an RTX 3060 (12 GB)
-   with room for an 8k context; Ollama swaps them, one at a time.
+1. Install with the official script (`curl -fsSL https://ollama.com/install.sh | sh`); it reports
+   "Nvidia GPU detected" and adds a systemd service on `127.0.0.1:11434`.
+2. Pull the models: `ollama pull qwen3:8b` for drafts and contents pages, and
+   `ollama pull qwen3-vl:8b-instruct` for figures and image contents pages. Each is about 5–6 GB and
+   fits the 12 GB card with room for an 8k context; Ollama swaps them, one at a time.
+3. `ollama ps` should show `100% GPU` while a stage runs.
 
-The tool finds Ollama through `OLLAMA_HOST` if set, otherwise `localhost`, then the WSL gateway (the
+A Windows-host Ollama (listening on `0.0.0.0`) works too. The tool finds Ollama through `OLLAMA_HOST` if set, otherwise `localhost`, then the WSL gateway (the
 Windows host). Pick other models with `--model` / `LANTERN_DRAFT_MODEL` and `--vision-model` /
-`LANTERN_VISION_MODEL`. A second Ollama inside WSL with no models (a snap install) is skipped.
+`LANTERN_VISION_MODEL`. An Ollama with none of the models is skipped.
 
 ## Usage
 
@@ -75,6 +76,28 @@ The default selection is English-medium books in the core subjects (English, Mat
 The World Around Us, Science, Social Science). That is 44 books and 465 chapters for Classes 1–10.
 Add `--all-subjects` for arts, PE and vocational books, and `--medium Gujarati` (or another
 language) for regional editions.
+
+## SSC Board (#93, D53–D57)
+
+`--board ssc` builds the Maharashtra State Board's Balbharati Books (English medium, Std 1–5:
+English Balbharati, Maths, EVS) into `../lantern-data-ssc`, the source for the private `ssc`
+container. Only ebalbharati's own PDFs are used (ADR-0009).
+
+```bash
+$ncert --board ssc catalog        # board.json (the Board profile) and the 16 Books
+$ncert --board ssc download       # one whole-Book PDF each
+$ncert --board ssc split          # contents page → toc/<book>.json and per-Chapter PDFs
+$ncert --board ssc run            # download, split, then the usual stages
+```
+
+Two things differ from NCERT. ebalbharati has no API: `catalog` replays the site's ASP.NET filter
+postback (Text Books, Standard, English medium, 2026). And it serves one PDF per Book, so `split`
+finds the contents page by its shape, has `qwen3:8b` list the Chapters (`qwen3-vl` when the page is
+an image), and then checks everything in Python: every title must be on the contents page, the
+printed-to-PDF page offset is voted from the page numbers themselves, and each Chapter's title must
+be on the page it starts at. A Book that fails any check is reported and not split. English
+Balbharati Chapters are Units with their lessons listed; Maths and EVS Chapters are lessons. Ids are
+readable: `ssc3-maths`, `ssc3-maths-04`. After `split`, the remaining stages run unchanged.
 
 ## Super context (#41, D17–D20)
 
