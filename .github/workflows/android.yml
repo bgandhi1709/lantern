@@ -87,9 +87,11 @@ jobs:
           echo "ANDROID_KEYSTORE_FILE=$RUNNER_TEMP/release.keystore" >> "$GITHUB_ENV"
       - name: Give Gradle 4 GB of heap
         # The generated gradle.properties asks for 2 GB; the runner has 16 GB. The last value of a repeated key wins.
+        # The file has no final newline, so start with one: without it the value is glued onto the last property
+        # and Expo's autolinking fails to parse it.
         working-directory: client/lantern-android/android
         run: |
-          echo "org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g" >> gradle.properties
+          printf '\norg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g\n' >> gradle.properties
           grep '^org.gradle.jvmargs' gradle.properties
       - name: Build the release APK
         working-directory: client/lantern-android/android
