@@ -16,7 +16,7 @@
       "predictiveBackGestureEnabled": false,
       "package": "com.lantern.app"
     },
-    "plugins": ["expo-router"],
+    "plugins": ["expo-router", "./plugins/withReleaseSigning"],
     "scheme": "lantern"
   }
 }

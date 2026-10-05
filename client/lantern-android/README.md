@@ -1,6 +1,6 @@
 # lantern-android
 
-The Parent app: Expo, React Native and TypeScript (strict), with expo-router. It is one codebase, so it uses only libraries that support Android, iOS and web ([ADR-0007](../../docs/adr/0007-parent-app-in-expo.md)); the POC targets Android only. Right now it is a scaffold: one placeholder screen with the Lantern wordmark.
+The Parent app: Expo, React Native and TypeScript (strict), with expo-router. It is one codebase, so it uses only libraries that support Android, iOS and web ([ADR-0007](../../docs/adr/0007-parent-app-in-expo.md)); the POC targets Android only. Right now it is a scaffold: a placeholder screen with the Lantern wordmark and one line saying whether the API answered (`GET /health/live`), which is the first proof a phone can reach UAT. It is built and signed by GitHub Actions, so it can be installed on a real phone.
 
 ## Prerequisites
 
@@ -29,12 +29,39 @@ npm run android
 
 This starts the Metro bundler, installs Expo Go on the emulator if it is missing, and opens the app. The placeholder screen shows "Lantern". After editing `.env`, restart with `npx expo start --clear`.
 
+## Build an APK for a real phone
+
+The `Android - Check and Build` workflow ([`android.yml`](../../.github/workflows/android.yml)) checks every pull request that touches `client/**` (typecheck, lint, format, `expo-doctor`, and a bundle export). A manual run also builds a signed release APK.
+
+**One-time setup** (the wizard writes everything to the `uat` environment of the repository; it needs Docker, `az` and `gh` signed in):
+
+```sh
+client/lantern-android/ci/setup-signing.sh
+```
+
+It creates one release key in `~/lantern-secrets/` (outside the repo), reads UAT's address from the deployed Container App, sets the five `uat` secrets, and prints the key's SHA-1 for the Firebase registration in the sign-in story. **Back up `~/lantern-secrets/`.** A lost key means a new SHA-1 and a new Firebase registration.
+
+**Each build:**
+
+1. GitHub → Actions → **Android - Check and Build** → Run workflow (any branch).
+2. Approve the `uat` deployment when GitHub asks.
+3. When it finishes, download the `lantern-android-<n>` artifact from the run page (a zip with `app-release.apk`).
+4. Put the APK on the phone (USB or any file transfer), open it, and allow "Install unknown apps" for the app you opened it from. Or with USB debugging on: `adb install app-release.apk`.
+5. Open Lantern. The screen should say "Lantern is reachable". The first call after UAT has been idle takes up to about 30 seconds, and the screen says it is waking Lantern up meanwhile.
+
+**What this exposes.** The repository is public and any signed-in GitHub user can download its artifacts, so:
+
+- The UAT address is a secret on the `uat` environment, never in the repo, and masked in the logs. It is baked into the APK, so anyone who downloads the APK can read it. It is not a credential: the API needs a Firebase sign-in on every call.
+- The artifact is deleted after one day.
+- The signing key never leaves the secrets and your backup.
+- A release build refuses an `http://` address, and the release manifest has no cleartext traffic (the workflow checks it).
+
 ## Checks
 
-| Command | What it does |
-| --- | --- |
-| `npm run typecheck` | `tsc` in strict mode |
-| `npm run lint` | ESLint with `eslint-config-expo` |
+| Command                | What it does                            |
+| ---------------------- | --------------------------------------- |
+| `npm run typecheck`    | `tsc` in strict mode                    |
+| `npm run lint`         | ESLint with `eslint-config-expo`        |
 | `npm run format:check` | Prettier check (`npm run format` fixes) |
 
 ## Notes
