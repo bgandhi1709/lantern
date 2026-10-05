@@ -300,3 +300,14 @@ The founder does not want SSC forced into NCERT's shape. A Board profile per Boa
 
 ### D57. Book guidance is extracted and given to the agents
 Balbharati Books carry the publisher's notes for teachers and parents, in the front matter and in boxes beside lessons. They are cut out by the local model, verified word for word against their page, and stored as one file per Book linked to the Book and Chapter, for the agents to read as context, never as instructions. The same for NCERT is a later follow-up.
+
+## 2026-10-05: Android app POC (spec #103, issue #104)
+
+### D58. The POC app is Android only; the web build waits (amends D45 and ADR-0007)
+The Android app POC (milestone #9) is demoed from the emulator and then a real phone, so the Expo web build is deferred. It is still one Expo codebase in `client/lantern-android` that uses only libraries supporting Android, iOS and web, so the web and iOS targets stay a build target away. The pilot's Android Play internal testing track is unchanged; D45's web build is no longer a pilot commitment until it is brought back.
+
+### D59. One button: Continue with Google
+The Start screen has a single "Continue with Google". There is no Register and no separate Log in: the first sign-in that finds no Family (`404 not-registered` from `GET /v1/me`) starts registration, and the account is created by `POST /v1/register` at the end of it.
+
+### D60. A Parent stays signed in until Sign out
+Firebase keeps the sign-in on the device and renews the short-lived ID token itself; the app asks for the current token before every API call. The session ends only on Sign out or when Firebase revokes the account. When Lantern cannot be reached the Parent stays signed in and sees "Can't reach Lantern" with Try again; only Firebase saying "not signed in" returns to Start. The unreachable behaviour is a proposed default, waiting for the founder to confirm.
