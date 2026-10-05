@@ -37,6 +37,7 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
       - run: npm run format:check
+      - run: npm test
       - run: npx --yes expo-doctor@1.20.4
       # The bundle needs some address to compile; this one is not real.
       - run: npx expo export --platform android
@@ -94,6 +95,9 @@ jobs:
           if grep -q 'usesCleartextTraffic="true"' android/app/src/main/AndroidManifest.xml; then
             echo "::error::The release manifest allows cleartext traffic"; exit 1
           fi
+          # Cloud backup must stay off: nothing the app stores may leave the phone that way.
+          grep -q 'android:allowBackup="false"' android/app/src/main/AndroidManifest.xml \
+            || { echo "::error::The manifest allows Android backup"; exit 1; }
           apk=android/app/build/outputs/apk/release/app-release.apk
           apksigner=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)/apksigner
           certs=$("$apksigner" verify --print-certs "$apk")

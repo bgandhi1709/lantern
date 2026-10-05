@@ -58,11 +58,23 @@ It creates one release key in `~/lantern-secrets/` (outside the repo), reads UAT
 
 ## Checks
 
-| Command                | What it does                            |
-| ---------------------- | --------------------------------------- |
-| `npm run typecheck`    | `tsc` in strict mode                    |
-| `npm run lint`         | ESLint with `eslint-config-expo`        |
-| `npm run format:check` | Prettier check (`npm run format` fixes) |
+Run these from `client/lantern-android`. CI (`android.yml`) runs the same four on every pull request that touches `client/**`.
+
+| Command                | What it does                                                                                              |
+| ---------------------- | --------------------------------------------------------------------------------------------------------- |
+| `npm run typecheck`    | `tsc` in strict mode                                                                                      |
+| `npm run lint`         | ESLint: `eslint-config-expo` plus the rules below                                                         |
+| `npm run format:check` | Prettier check (`npm run format` fixes)                                                                   |
+| `npm test`             | Jest (`jest-expo`) with React Native Testing Library; one file while iterating: `npx jest src/shared/api` |
+
+Lint fails on `any`, a `!` assertion, `console.*`, and an AsyncStorage or SecureStore import outside `src/shared/storage`. A feature folder (`src/auth`, `src/family`, `src/catalog`) may import another feature only through its `index.ts`. `src/test/lint.test.ts` proves each rule.
+
+## Shared code
+
+- `src/shared/storage`: the only code that touches the device store. Keys are `lantern.v1.<name>`, each with a schema and a default that a missing, corrupt or old-version value falls back to. `clearAll()` wipes the plain and secure stores. Android backup is off (`android.allowBackup` is `false`, and the release build checks the manifest).
+- `src/shared/api`: the one API client. It times out, throws `ApiError` with the problem `code`, never retries, and parses every response with a zod schema. A hook supplies the Firebase ID token once the sign-in story wires it.
+- `src/shared/config.ts`: the only reader of `EXPO_PUBLIC_*` and the API timeout.
+- Tests fake the API (`src/test/fakeApi.ts`) and the device stores (`jest.setup.ts`, `src/test/fakeSecureStore.ts`).
 
 ## Notes
 

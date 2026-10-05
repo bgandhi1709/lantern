@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import { config } from './config';
+import { config } from './shared/config';
 
 export type ApiStatus = 'checking' | 'waking' | 'reachable' | 'unreachable';
 
