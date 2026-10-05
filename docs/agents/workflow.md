@@ -2,6 +2,8 @@
 
 One issue, one pass through these steps. Work inline: no subagents unless the user asks for one by name.
 
+Work under `client/` (the Expo app) follows `docs/agents/app-workflow.md` instead.
+
 | # | Step | How | Output |
 |---|---|---|---|
 | 0 | Ticket | Pick the issue first. A new idea goes through `/ideate` (grill, milestone, diagram, spec, stories) before it reaches here. Small scope. | Issue with label |

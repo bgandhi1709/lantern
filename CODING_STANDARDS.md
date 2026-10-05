@@ -150,6 +150,10 @@ defaults, suffixes, one type per file, namespaces). Review the rest.
   summaries that restate the code.
 - Do not add checks that the platform already enforces (for example, what JwtBearer validates).
 
+## TypeScript app (`client/`)
+
+The rules are in `.claude/skills/expo-app-standards/SKILL.md` (the cycle is `docs/agents/app-workflow.md`) and review applies every one of them: structure, clean code, the API boundary and local storage. The ones that decide a review: no `any`, no `!`, no personal data on the device, one storage module, storage wiped on sign out, Android backup off.
+
 ## Tests
 
 - Tests live under `tests/<app>/`: `Lantern.Api.Tests` and `Lantern.Functions.Tests` for unit and in-process tests,
