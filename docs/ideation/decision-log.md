@@ -300,3 +300,17 @@ The founder does not want SSC forced into NCERT's shape. A Board profile per Boa
 
 ### D57. Book guidance is extracted and given to the agents
 Balbharati Books carry the publisher's notes for teachers and parents, in the front matter and in boxes beside lessons. They are cut out by the local model, verified word for word against their page, and stored as one file per Book linked to the Book and Chapter, for the agents to read as context, never as instructions. The same for NCERT is a later follow-up.
+
+## 2026-10-05: Android app POC (spec #103, issue #104)
+
+### D58. The POC app is Android only; the web build waits (amends D45 and ADR-0007)
+The Android app POC (milestone #9) is demoed from the emulator and then a real phone, so the Expo web build is deferred. It is still one Expo codebase in `client/lantern-android` that uses only libraries supporting Android, iOS and web, so the web and iOS targets stay a build target away. The pilot's Android Play internal testing track is unchanged; D45's web build is no longer a pilot commitment until it is brought back.
+
+### D59. One button: Continue with Google
+The Start screen has a single "Continue with Google". There is no Register and no separate Log in: the first sign-in that finds no Family (`404 not-registered` from `GET /v1/me`) starts registration, and the account is created by `POST /v1/register` at the end of it.
+
+### D60. A Parent stays signed in until Sign out
+Firebase keeps the sign-in on the device and renews the short-lived ID token itself; the app asks for the current token before every API call. The session ends only on Sign out or when Firebase revokes the account. When Lantern cannot be reached the Parent stays signed in and sees "Can't reach Lantern" with Try again; only Firebase saying "not signed in" returns to Start. The unreachable behaviour is a proposed default, waiting for the founder to confirm.
+
+### D61. The scaffold ships as a signed APK from GitHub Actions; the UAT address is a secret (issue #104)
+Even an empty app must be deployable, so the scaffold story includes the pipeline. `android.yml` checks every PR that touches `client/**` and, on a manual run behind the `uat` environment's approval, builds a release APK signed with one stable key (so the SHA-1 Firebase sign-in needs never changes) and uploads it as an artifact that expires after one day. The repo is public and any signed-in GitHub user can download its artifacts, so the UAT address is a secret on the `uat` environment (masked in logs, set by `ci/setup-signing.sh` from the deployed Container App), not a variable and not in code. It is baked into the APK, so it is readable by whoever holds the APK; it is not a credential, because every call still needs a Firebase sign-in. A private Blob container was rejected for now: it needs new Azure resources and a role for something that guards no credential. The placeholder screen calls `GET /health/live` to prove a phone reaches UAT, with a 45 s timeout for UAT's scale-to-zero cold start (about 25 s measured), and a release build refuses a non-HTTPS address. Container Apps cannot host an Android app, which is an APK on the phone; only a future web build could be hosted, as static files. The `minReplicas: 1` option for demos stays a bicepparam choice for later.

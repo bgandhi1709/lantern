@@ -46,7 +46,7 @@ serves every question from Azure.
 ```
 BUILD TIME (workstation, never serves mothers)            RUNTIME (Azure, Central India)
 
-ncert.nic.in PDFs                                         Mother's phone (Flutter, text Q&A)
+ncert.nic.in PDFs                                         Mother's phone (Expo, text Q&A)
   └► ncert-build: catalog → download → extract → segment     │ Firebase sign-in, HTTPS + JWT
        └► local models (Ollama, RTX 3060, ₹0)                 ▼
             drafts: concepts + kid questions              Ask API (ASP.NET, .NET 10, Container App)
@@ -102,7 +102,7 @@ ncert.nic.in PDFs                                         Mother's phone (Flutte
 
 | Area | Choice |
 | --- | --- |
-| Mobile app | Flutter (Android first) |
+| Mobile app | Expo (React Native, TypeScript), Android first ([ADR-0007](docs/adr/0007-parent-app-in-expo.md)) |
 | Sign-in | Firebase Authentication (Google) |
 | Backend | ASP.NET on .NET 10, one modular app in Azure Container Apps, plus `Lantern.Functions` (Azure Functions) in a second Container App that handles queued actions from Azure Service Bus (Basic) |
 | Storage | One Azure Storage account: Blob (raw data, NCERT layer, memory files), Table (indexes, concept vectors, answers, the action ledger), Queue (events) |
@@ -132,6 +132,7 @@ ncert.nic.in PDFs                                         Mother's phone (Flutte
   against local Docker and UAT; `Lantern.Api.Test.Integration.Host` holds the local stand-ins (Firebase
   Auth Emulator tokens, a Key Vault stand-in, a seeded dev Family) and is never in the production
   image. Running it locally: [`deploy/local/README.md`](deploy/local/README.md).
+- **Parent app.** `client/lantern-android` is an Expo scaffold (#104): a placeholder screen with the Lantern wordmark and a line saying whether UAT answered, the API base URL from `EXPO_PUBLIC_API_BASE_URL`, no sign-in yet. GitHub Actions (`android.yml`) checks every PR and, on a manual run, builds a signed APK that expires after a day; the UAT address is a secret on the `uat` environment, not in the repo. Run and build steps are in [`client/lantern-android/README.md`](client/lantern-android/README.md).
 - **Next.** The Ask API, to be designed, and, before production, a Family key held on the device (#47).
 
 How we work in this repo (cycle, skills, standards) is in
