@@ -5,3 +5,5 @@ The parent app is built with React Native and Expo, mobile-first, from one codeb
 iOS is not shipped for the pilot: an Apple Developer account is $99 a year (about ₹8,300 at ₹84 to the dollar) and needs a Mac or a paid build service. The code stays iOS-compatible as a rule: only libraries that support Android, iOS and web, nothing Android-only, so adding iOS later is a build target, not a rewrite. The Play Console registration is a one-time $25 (about ₹2,100).
 
 Considered and rejected: a web-only PWA (weaker sign-in and notifications on low-end Android, and less of an app to a Parent), native Kotlin (a new stack, Android only, nothing reused from React), and Flutter (no reuse of the React skills already in the routing table).
+
+**Amended 2026-10-05 (D67):** the Expo web build is dropped. Android is the pilot target and iOS stays a later build target. The rule becomes: only libraries that support Android and iOS, nothing Android-only. Native modules such as Bluetooth or the camera are allowed. The text above is kept as it was decided.

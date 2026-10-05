@@ -11,8 +11,16 @@ The overarching group that holds Parents and Children, like a resource group in 
 _Avoid_: Household, account, user
 
 **Parent**:
-A guardian who belongs to a Family and signs in, with their own settings (Language, Consent). A Parent maintains the Family's Children. The POC allows exactly one Parent per Family; later a father or other guardian can join. "Mother" is only the persona used in the docs, not a role in the model.
+A guardian who belongs to a Family and signs in, with their own settings (Language, Consent). A Parent maintains the Family's Children. The POC allows exactly one Parent per Family; later a second Parent (at most two) can join and shares the Family's Passphrase. "Mother" is only the persona used in the docs, not a role in the model.
 _Avoid_: User, Admin, Owner, Mother, Father, caregiver
+
+**Passphrase**:
+The secret a Parent chooses once for the Family, before any Child is saved. The phone uses it to lock the Parent's and Children's personal details, so Lantern holds no key and cannot read them. It belongs to the Family, not to one Parent, and it can never be changed or reset: keeping it is the Parent's responsibility, and the app says so. Class, Board and Region are not locked.
+_Avoid_: Password, PIN, key
+
+**Recovery code**:
+A one-time code shown right after the Passphrase is set, the only other way back in if the Passphrase is forgotten. The Parent saves it themselves (Lantern never emails it). A Family that loses both starts again as a new Family.
+_Avoid_: Backup key, reset code
 
 **Child**:
 A person in a Family who attends school and whose learning the Parent supports. Never signs in; Lantern serves the Parent, not the Child. "Kid" is only the persona used in the docs.

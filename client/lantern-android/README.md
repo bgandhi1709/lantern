@@ -1,6 +1,6 @@
 # lantern-android
 
-The Parent app: Expo, React Native and TypeScript (strict), with expo-router. It is one codebase, so it uses only libraries that support Android, iOS and web ([ADR-0007](../../docs/adr/0007-parent-app-in-expo.md)); the POC targets Android only. Right now it is a scaffold: a placeholder screen with the Lantern wordmark and one line saying whether the API answered (`GET /health/live`), which is the first proof a phone can reach UAT. It is built and signed by GitHub Actions, so it can be installed on a real phone.
+The Parent app: Expo, React Native and TypeScript (strict), with expo-router. It is one codebase, so it uses only libraries that support Android and iOS ([ADR-0007](../../docs/adr/0007-parent-app-in-expo.md), web dropped by D67); the POC targets Android only. Right now it is a scaffold: a placeholder screen with the Lantern wordmark and one line saying whether the API answered (`GET /health/live`), which is the first proof a phone can reach UAT. It is built and signed by GitHub Actions, so it can be installed on a real phone.
 
 ## Prerequisites
 

@@ -251,7 +251,8 @@ command -v az >/dev/null 2>&1 || { warn "az is needed to read the deployed app's
 fqdn=$(az containerapp show -g "$RESOURCE_GROUP" -n "$APP" --query properties.configuration.ingress.fqdn -o tsv)
 [[ -n "$fqdn" ]] || { warn "could not read the address of $APP"; exit 1; }
 LANTERN_API_URL="https://$fqdn"
-say "Read the address of $APP (${fqdn:0:12}…, not shown in full)."
+say "Read the address of $APP from Azure (${fqdn:0:12}…, not shown in full). Nothing to type."
+pause
 
 stage "GitHub uat environment secrets"
 say "Writes 5 secrets on the uat environment of this repository: the key, its password and alias, and the UAT address."
