@@ -14,9 +14,10 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.lantern.app"
+      "package": "com.lantern.app",
+      "allowBackup": false
     },
-    "plugins": ["expo-router", "./plugins/withReleaseSigning"],
+    "plugins": ["expo-router", "./plugins/withReleaseSigning", "expo-secure-store"],
     "scheme": "lantern"
   }
 }
