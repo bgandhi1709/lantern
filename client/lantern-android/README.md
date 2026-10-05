@@ -45,9 +45,10 @@ It creates one release key in `~/lantern-secrets/` (outside the repo), reads UAT
 
 1. GitHub → Actions → **Android - Check and Build** → Run workflow (any branch).
 2. Approve the `uat` deployment when GitHub asks.
-3. When it finishes, download the `lantern-android-<n>` artifact from the run page (a zip with `app-release.apk`).
-4. Put the APK on the phone (USB or any file transfer), open it, and allow "Install unknown apps" for the app you opened it from. Or with USB debugging on: `adb install app-release.apk`.
-5. Open Lantern. The screen should say "Lantern is reachable". The first call after UAT has been idle takes up to about 30 seconds, and the screen says it is waking Lantern up meanwhile.
+3. The build is lean: arm64-v8a only (so the APK installs on nearly every phone since about 2017 but not on an x86 emulator or an old 32-bit phone; use `npm run android` for the emulator), Gradle's downloads and unchanged tasks are cached between runs, and Gradle gets 4 GB of heap. The first run on a branch is slower than the ones after it.
+4. When it finishes, download the `lantern-android-<n>` artifact from the run page (a zip with `app-release.apk`).
+5. Put the APK on the phone (USB or any file transfer), open it, and allow "Install unknown apps" for the app you opened it from. Or with USB debugging on: `adb install app-release.apk`.
+6. Open Lantern. The screen should say "Lantern is reachable". The first call after UAT has been idle takes up to about 30 seconds, and the screen says it is waking Lantern up meanwhile.
 
 **What this exposes.** The repository is public and any signed-in GitHub user can download its artifacts, so:
 

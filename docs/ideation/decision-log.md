@@ -348,3 +348,15 @@ An ADR is written when the work is picked up: hard to reverse, with real alterna
 
 ### D67. The web build is dropped; the app is Android and iOS only
 Supersedes the web part of ADR-0007 (the Expo web build for PC and any phone without the Android app, and "every library must support web"). The founder is sticking to Android and iOS. Pilot is Android; iOS stays a later build target, and the rule "nothing Android-only" stays. ADR-0007 carries an amendment pointing here, and the dependency rule in `app-workflow.md` and `expo-app-standards` now reads Android and iOS.
+
+### D68. The app collects anonymous usage and performance numbers with Firebase Analytics, only after the Parent agrees
+The founder wants to learn from the first release how easy the app is to use: how long a Parent spends on each screen and section, how many taps a step takes, where they stop, plus the phone model and performance (app start, slow calls). Nothing personal. The rules:
+
+- **Events carry names, never people.** Screen viewed (with time on screen), button tapped (the button's name), registration step reached or finished, and Firebase Performance Monitoring's app-start and network timings. No name, email, Child detail, Class, Board, Region, text a Parent typed, or user ID is ever sent, as an event value or a user property.
+- **No advertising.** The advertising ID and ad personalisation are off in the app. Analytics is not used for ads.
+- **Consent first.** Collection is off in the app from install and starts only after the Parent ticks the privacy notice on About you; the notice lists what is collected. The opening screens collect nothing.
+- **What Google adds on its own.** Analytics records the phone model and Android version, and the approximate place the connection comes from (city level, from the network address, not GPS). The phone model needs the property's "granular location and device data collection" setting on, which also allows the city; the founder accepts that. The privacy notice says so.
+- **Not in scope.** Crash reporting (Crashlytics) is a separate choice and is not enabled. This is separate from the server's telemetry (D39, ADR-0006).
+- **Effect on #113.** Analytics and Performance Monitoring are native Firebase modules, so the Firebase SDK choice in #113 is expected to be `@react-native-firebase` with a development build. The decision is still made there.
+
+Considered and rejected: collecting from the first launch (the opening screens would send data before any Consent), and Analytics with the advertising ID left on (nothing needs it).
