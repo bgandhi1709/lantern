@@ -4,7 +4,8 @@ Balbharati Books print them in the front matter ("Instructions for Teachers", "F
 Parents") and in boxes beside lessons ("For Teachers : …"). Pages that carry one are found by their
 heading; the local model copies each note out, because a box's edges are lost in the text layer.
 A note is kept only if its words are on the page in the same order, so the model can trim a note
-but never add to one.
+but never add to one. Beside a lesson it must also start right after a guidance heading: copied
+verbatim is not enough, as the model also copies exercises from the same page.
 """
 
 from __future__ import annotations
@@ -17,6 +18,7 @@ from typing import Callable
 PROMPT_VERSION = "guidance-v1"
 NUM_CTX = 8192
 _MIN_CHARS = 40  # shorter is a stray heading, not a note
+_HEADING_GAP = 25  # compact characters allowed between a heading and its note (":", "Note -")
 
 ChatFn = Callable[[str, str, dict], dict]
 
@@ -60,6 +62,13 @@ def on_page(note: str, page: str) -> bool:
     return len(compact) >= _MIN_CHARS and compact in _compact(page)
 
 
+def follows_heading(note: str, page: str) -> bool:
+    start = _compact(page).find(_compact(note)[:_MIN_CHARS])
+    return start >= 0 and any(
+        0 <= start - len(_compact(page[: heading.end()])) <= _HEADING_GAP for heading in HEADING.finditer(page)
+    )
+
+
 def chapter_at(pdf_page: int, toc: dict) -> str | None:
     for chapter in toc["chapters"]:
         first, last = chapter["pdf_pages"]
@@ -78,7 +87,7 @@ def extract(book_id: str, book_title: str, texts: list[str], toc: dict, chat: Ch
         chapter_id = chapter_at(page, toc)
         for note in chat(PROMPT, text, SCHEMA)["notes"]:
             body = " ".join(note["text"].split())
-            if not on_page(body, text):
+            if not on_page(body, text) or (chapter_id and not follows_heading(body, text)):
                 rejected.append(f"p{page}: {body[:60]!r}")
                 continue
             heading = " ".join(note["heading"].split()) or "For Teachers"
