@@ -17,6 +17,7 @@ catalog ─► download ─► extract ─► segment ─► draft, pictures (lo
 | `pictures` | Finds every figure on every page (OpenCV), and a local vision model reads each: its kind, labels, one line, and counts checked against the pixels | `pictures/<book>/<chapter>.json`, `pictures/<book>/<chapter>/pN-i.png` |
 | `bundle` | One compact Markdown input per chapter for Claude refinement, picture descriptions inline | `bundles/<book>/<chapter>.md` |
 | `check` | Validates a refined chapter against the refine-v1 contract | (prints one line per chapter) |
+| summaries | A few plain lines per Chapter for the Parent, written in a Claude Code session from the refined Chapter and saved by `scripts/write_summaries.py` (D71) | `summaries/<book>/<chapter>.json` |
 | `review` | The GPU's agreement per class and figure kind, and a sheet to mark readings right or wrong by hand | `review/report-*.txt`, `review/sheet-*.html`, `review/score.txt` |
 | `upload` | Copies all of the above, except the PDFs, to the Board's private blob container (`ncert`, `ssc`) | Azure Storage |
 
