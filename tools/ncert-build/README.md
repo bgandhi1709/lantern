@@ -18,7 +18,7 @@ catalog ─► download ─► extract ─► segment ─► draft, pictures (lo
 | `bundle` | One compact Markdown input per chapter for Claude refinement, picture descriptions inline | `bundles/<book>/<chapter>.md` |
 | `check` | Validates a refined chapter against the refine-v1 contract | (prints one line per chapter) |
 | `review` | The GPU's agreement per class and figure kind, and a sheet to mark readings right or wrong by hand | `review/report-*.txt`, `review/sheet-*.html`, `review/score.txt` |
-| `upload` | Copies all of the above to the private `ncert` blob container | Azure Storage |
+| `upload` | Copies all of the above, except the PDFs, to the Board's private blob container (`ncert`, `ssc`) | Azure Storage |
 
 Each stage skips chapters it has already done (`--force` redoes them), so an interrupted run resumes.
 A failing chapter is reported and the run carries on.
@@ -30,9 +30,11 @@ default `../lantern-data` next to the repository. The tool refuses to write insi
 
 ## Cloud copy
 
-The data directory is the working copy; the `ncert` container in the Lantern storage account is
-where the output is kept (the account is in `infra/`, deployed by #19). Sign in with `az login`,
-then run `ncert-build upload --account <storage account>`. Your account needs Storage Blob Data
+The data directory is the working copy; the Board's container in the Lantern storage account
+(`ncert`, or `ssc` with `--board ssc`) is where the output is kept (the account is in `infra/`,
+deployed by #19). Sign in with `az login`, then run `ncert-build [--board ssc] upload --account
+<storage account>`. Every stage folder is overwritten; the publisher's PDFs stay local, since they
+can be downloaded again and nothing reads them from Azure. Your account needs Storage Blob Data
 Contributor, which the deployment grants to `DATA_UPLOADER_OBJECT_ID`
 (`az ad signed-in-user show --query id -o tsv` prints yours).
 
