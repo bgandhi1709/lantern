@@ -53,6 +53,37 @@ describe('npm run lint', () => {
     );
   });
 
+  it.each(['@react-native-firebase/app', '@react-native-firebase/auth'])(
+    'fails on importing %s outside src/shared/session',
+    async (name) => {
+      const code = `import * as firebase from '${name}';\nexport { firebase };\n`;
+
+      expect(await rulesBroken(code)).toContain('no-restricted-imports');
+      expect(await rulesBroken(code, 'src/auth/example.ts')).toContain('no-restricted-imports');
+    },
+  );
+
+  it('allows the Firebase import inside src/shared/session', async () => {
+    const code = "import * as auth from '@react-native-firebase/auth';\nexport { auth };\n";
+
+    expect(await rulesBroken(code, 'src/shared/session/session.ts')).not.toContain(
+      'no-restricted-imports',
+    );
+  });
+
+  it('fails on the Google sign-in import outside src/auth, and allows it inside', async () => {
+    const code =
+      "import { GoogleSignin } from '@react-native-google-signin/google-signin';\nexport { GoogleSignin };\n";
+
+    expect(await rulesBroken(code, 'src/shared/session/session.ts')).toContain(
+      'no-restricted-imports',
+    );
+    expect(await rulesBroken(code, 'src/family/example.ts')).toContain('no-restricted-imports');
+    expect(await rulesBroken(code, 'src/auth/googleSignIn.ts')).not.toContain(
+      'no-restricted-imports',
+    );
+  });
+
   it("fails when a feature imports another feature's internals", async () => {
     const code = "import { secret } from '../family/internal';\nexport { secret };\n";
 

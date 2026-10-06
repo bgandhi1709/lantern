@@ -24,8 +24,8 @@ The script:
 2. maps `local.lantern.api` to `127.0.0.1` in the hosts file;
 3. trusts the local CA (Windows: Local Machine root store; Linux: `update-ca-certificates`).
 
-The CA can only sign for `local.lantern.api`, and its private key is discarded after the
-certificate is issued, so trusting it does not weaken TLS for any other site. The certificate lasts
+The CA can only sign for `local.lantern.api` and `10.0.2.2` (the Android emulator's name for this computer, used by [`client/lantern-android`](../../client/lantern-android/README.md#debug-against-local-docker)), and its private key is discarded after the
+certificate is issued, so trusting it does not weaken TLS for any other site. Certificates made before `10.0.2.2` was added need `--force` once. The certificate lasts
 365 days; run the script with `--force` / `-Force` to renew it.
 
 ## Run

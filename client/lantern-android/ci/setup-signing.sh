@@ -241,7 +241,7 @@ warn "Back up $KEYSTORE and $ENV_FILE (a password manager is fine). Nothing else
 pause
 
 stage "Signing SHA-1 for Firebase"
-say "Register these fingerprints with the Android app in Firebase when you do the sign-in story (#105):"
+say "Register these fingerprints with the Android app in Firebase (Project settings, your Android app, Add fingerprint), then download google-services.json to client/lantern-android/:"
 keytool_docker -list -v -keystore "/keys/$(basename "$KEYSTORE")" -alias "$KEY_ALIAS" -storepass:env STOREPASS \
   | grep -E 'SHA(1|256):' | sed 's/^ */  /'
 pause
@@ -255,7 +255,7 @@ say "Read the address of $APP from Azure (${fqdn:0:12}…, not shown in full). N
 pause
 
 stage "GitHub uat environment secrets"
-say "Writes 5 secrets on the uat environment of this repository: the key, its password and alias, and the UAT address."
+say "Writes 6 secrets on the uat environment of this repository: the key, its password and alias, the UAT address and google-services.json."
 confirm "Set them now?" || { warn "stopped before writing secrets"; exit 1; }
 command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1 || { warn "gh is not signed in"; exit 1; }
 set_env_secret ANDROID_KEYSTORE_BASE64 "$(base64 -w0 "$KEYSTORE")"
@@ -263,6 +263,13 @@ set_env_secret ANDROID_KEYSTORE_PASSWORD "$STOREPASS"
 set_env_secret ANDROID_KEY_ALIAS "$KEY_ALIAS"
 set_env_secret ANDROID_KEY_PASSWORD "$STOREPASS"
 set_env_secret LANTERN_API_URL "$LANTERN_API_URL"
+GOOGLE_SERVICES="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/google-services.json"
+if [[ -f "$GOOGLE_SERVICES" ]]; then
+  set_env_secret GOOGLE_SERVICES_JSON_BASE64 "$(base64 -w0 "$GOOGLE_SERVICES")"
+else
+  SKIPPED+=("uat secret GOOGLE_SERVICES_JSON_BASE64 (download google-services.json from Firebase to client/lantern-android/, then re-run)")
+  warn "no google-services.json found; the release build needs it for sign-in"
+fi
 
 finish
 note "Next: GitHub → Actions → Android - Check and Build → Run workflow, approve the uat deployment, then download the APK."

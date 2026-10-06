@@ -5,19 +5,21 @@ set -eu
 HOST=${HOST:-local.lantern.api}
 OUT=${OUT:-/certs}
 DAYS=${DAYS:-365}
+# The Android emulator reaches the host machine at this address, and cannot resolve $HOST.
+EMULATOR_IP=${EMULATOR_IP:-10.0.2.2}
 
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
 mkdir -p "$OUT"
 
-# The CA may only sign for $HOST, and its key never leaves $work, so a leaked leaf key or a
-# trusted ca.crt cannot be used against any other site.
+# The CA may only sign for $HOST and the emulator's host alias, and its key never leaves $work, so a leaked
+# leaf key or a trusted ca.crt cannot be used against any other site.
 openssl req -x509 -newkey rsa:2048 -nodes -days "$DAYS" \
   -keyout "$work/ca.key" -out "$OUT/ca.crt" \
   -subj "/CN=Lantern Local CA" \
   -addext "basicConstraints=critical,CA:TRUE,pathlen:0" \
   -addext "keyUsage=critical,keyCertSign,cRLSign" \
-  -addext "nameConstraints=critical,permitted;DNS:$HOST"
+  -addext "nameConstraints=critical,permitted;DNS:$HOST,permitted;IP:$EMULATOR_IP/255.255.255.255"
 
 openssl req -newkey rsa:2048 -nodes \
   -keyout "$OUT/$HOST.key" -out "$work/leaf.csr" -subj "/CN=$HOST"
@@ -26,7 +28,7 @@ cat > "$work/leaf.ext" <<EXT
 basicConstraints=critical,CA:FALSE
 keyUsage=critical,digitalSignature,keyEncipherment
 extendedKeyUsage=serverAuth
-subjectAltName=DNS:$HOST
+subjectAltName=DNS:$HOST,IP:$EMULATOR_IP
 subjectKeyIdentifier=hash
 authorityKeyIdentifier=keyid
 EXT

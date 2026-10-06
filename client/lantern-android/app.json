@@ -17,7 +17,25 @@
       "package": "com.lantern.app",
       "allowBackup": false
     },
-    "plugins": ["expo-router", "./plugins/withReleaseSigning", "expo-secure-store"],
+    "plugins": [
+      "expo-router",
+      "./plugins/withReleaseSigning",
+      "./plugins/withLocalApiTrust",
+      "expo-secure-store",
+      "@react-native-firebase/app",
+      "@react-native-firebase/auth",
+      "@react-native-google-signin/google-signin",
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./assets/fonts/Inter_500Medium.ttf",
+            "./assets/fonts/Inter_600SemiBold.ttf",
+            "./assets/fonts/Inter_700Bold.ttf"
+          ]
+        }
+      ]
+    ],
     "scheme": "lantern"
   }
 }

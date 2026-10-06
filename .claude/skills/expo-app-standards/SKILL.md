@@ -51,7 +51,7 @@ Everything on a phone can be read by whoever holds an unlocked phone, a backup, 
 
 | Data | Where | Rule |
 |---|---|---|
-| Sign-in session (tokens) | The Firebase SDK's own persistence; if it needs a store, `expo-secure-store` (Android Keystore) | Never in AsyncStorage, files or `localStorage` |
+| Sign-in session (tokens) | The native Firebase SDK's own store (D69); the app never writes a token itself | Never in AsyncStorage, files or `localStorage` |
 | Preferences that are not personal (welcome banner dismissed, active Child id) | AsyncStorage through the storage wrapper | The Child is stored as its opaque id, never its name |
 | The Family key (derived from the Passphrase, D66) | `expo-secure-store` (Android Keystore) | Founder-approved. It lets the phone lock and unlock personal details without asking for the Passphrase on every start. Cleared by `clearAll()`; the Passphrase itself is never stored |
 | Child names, birth year, School, Region, email, Subjects, Chapters, answers | Nowhere on the device | Fetched from the API each time and unlocked with the Family key; held in memory only |
@@ -75,4 +75,4 @@ Everything on a phone can be read by whoever holds an unlocked phone, a backup, 
 
 ## Enforced by tools
 
-Where a rule can be a lint rule, make it one instead of trusting this page: `no-explicit-any`, `no-non-null-assertion`, `no-console`, `no-restricted-imports` for AsyncStorage and SecureStore outside `src/shared/storage`, and import-boundary rules between features. A rule a review caught twice becomes a check.
+Where a rule can be a lint rule, make it one instead of trusting this page: `no-explicit-any`, `no-non-null-assertion`, `no-console`, `no-restricted-imports` for AsyncStorage and SecureStore outside `src/shared/storage`, for `@react-native-firebase/*` outside `src/shared/session`, and for the Google sign-in module outside `src/auth`, and import-boundary rules between features. A rule a review caught twice becomes a check.
