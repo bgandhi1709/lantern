@@ -10,12 +10,28 @@ import re
 
 SCHEMA_VERSION = "refine-v1"
 CONCEPTS = (2, 8)
+UNIT_CONCEPTS = (2, 15)  # an SSC English Unit holds ten to thirteen lessons
+LONG_CHAPTER = (12, (2, 12))  # over 12 pages, a chapter teaches more ideas
+SHORT_CHAPTER = (2, (1, 8))  # a one- or two-page chapter can teach a single idea
 QA_PER_CONCEPT = (5, 8)
 WORDS = {"summary": 40, "how_taught": 40, "q": 25, "a": 60, "try": 25}
+# Markdown-shaped only: bold, emphasis, code, a heading. A fill-in blank ("drink ___") or a symbol the
+# book itself uses ("place 1, 2 and #") is content.
+MARKDOWN = re.compile(r"\*\*|__[^\W_]|`|^#{1,6}\s|(?<![\w*])\*[^*\s][^*]*\*(?!\*)|(?<![\w_])_[^_\s][^_]*_(?![\w_])", re.M)
 
 
 def _words(text: str) -> int:
     return len(text.split())
+
+
+def _concept_range(unit: bool, page_count: int) -> tuple[int, int]:
+    if unit:
+        return UNIT_CONCEPTS
+    if page_count > LONG_CHAPTER[0]:
+        return LONG_CHAPTER[1]
+    if page_count <= SHORT_CHAPTER[0]:
+        return SHORT_CHAPTER[1]
+    return CONCEPTS
 
 
 def check(refined: dict, chapter_id: str, page_count: int) -> list[str]:
@@ -33,7 +49,9 @@ def check(refined: dict, chapter_id: str, page_count: int) -> list[str]:
     concepts = refined.get("concepts")
     if not isinstance(concepts, list):
         return errors + ["concepts must be a list"]
-    need(CONCEPTS[0] <= len(concepts) <= CONCEPTS[1], f"{len(concepts)} concepts; expected {CONCEPTS[0]}–{CONCEPTS[1]}")
+    lessons = {str(lesson.get("number")) for lesson in refined.get("lessons") or []}
+    low, high = _concept_range(bool(lessons), page_count)
+    need(low <= len(concepts) <= high, f"{len(concepts)} concepts; expected {low}–{high}")
 
     names = [str(c.get("name", "")).strip().lower() for c in concepts]
     need(len(set(names)) == len(names), "concept names must be unique")
@@ -42,6 +60,8 @@ def check(refined: dict, chapter_id: str, page_count: int) -> list[str]:
         where = f"concept {index}"
         need(concept.get("id") == f"{chapter_id}-c{index}", f"{where}: id must be {chapter_id}-c{index}")
         need(0 < len(str(concept.get("name", ""))) <= 60, f"{where}: name must be 1–60 characters")
+        if lessons:
+            need(str(concept.get("lesson")) in lessons, f"{where}: lesson must be one of the Unit's lessons")
         for field in ("summary", "how_taught"):
             text = str(concept.get(field, ""))
             need(bool(text.strip()), f"{where}: {field} is empty")
@@ -66,7 +86,7 @@ def check(refined: dict, chapter_id: str, page_count: int) -> list[str]:
             if "try" in pair:
                 need(bool(str(pair["try"] or "").strip()), f"{where} qa {number}: leave out try instead of leaving it empty")
                 need(_words(str(pair["try"] or "")) <= WORDS["try"], f"{where} qa {number}: try over {WORDS['try']} words")
-            need(not re.search(r"[*_#`]", pair.get("a", "")), f"{where} qa {number}: no markdown in answers")
+            need(not MARKDOWN.search(pair.get("a", "")), f"{where} qa {number}: no markdown in answers")
     return errors
 
 

@@ -99,6 +99,22 @@ be on the page it starts at. A Book that fails any check is reported and not spl
 Balbharati Chapters are Units with their lessons listed; Maths and EVS Chapters are lessons. Ids are
 readable: `ssc3-maths`, `ssc3-maths-04`. After `split`, the remaining stages run unchanged.
 
+### Refining SSC through the Batch API (#97, D69)
+
+```bash
+source ~/.lantern_api.env
+.venv/bin/python scripts/refine_batch.py submit --chapters ssc3-maths-04 … --efforts medium --budget-usd 10
+.venv/bin/python scripts/refine_batch.py collect <batch id> --out refined      # or "refined-gate/{model}-{effort}"
+.venv/bin/python scripts/fix_flagged.py --board ssc --budget-usd 1             # per-field fixes for `check`
+```
+
+One request per Chapter to Claude Sonnet 5.5 at half price: the rules as the system prompt, the
+Chapter (text, picture readings, an English Unit's lessons) without the local draft, and a JSON
+schema; ids, model and versions are filled in by code. `submit` refuses a batch whose worst case
+passes the budget; `collect` waits, writes each Chapter, runs `check` and prints the real cost from
+`usage`. Nothing retries; a truncated or failed request writes nothing. Medium effort cost $0.024
+per Chapter across the 207.
+
 ## Super context (#41, D17–D20)
 
 `bundle` (v1) gives Claude no view of a book's earlier chapters, so `prerequisites` in refine-v1

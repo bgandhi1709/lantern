@@ -375,12 +375,16 @@ def check_refined(layout: Layout, book: Book, chapter_id: str) -> list[str]:
         refined = json.loads(target.read_text(encoding="utf-8"))
     except ValueError as error:
         return [f"not valid JSON: {error}"]
-    chapter = json.loads(layout.chapter(book.book_id, chapter_id).read_text(encoding="utf-8"))
+    return refine_check.check(refined, chapter_id, chapter_page_count(layout, book.book_id, chapter_id))
+
+
+def chapter_page_count(layout: Layout, book_id: str, chapter_id: str) -> int:
+    chapter = json.loads(layout.chapter(book_id, chapter_id).read_text(encoding="utf-8"))
     page_count = max((n for s in chapter["sections"] for n in s["pages"]), default=0)
-    text_path = layout.text(book.book_id, chapter_id)
+    text_path = layout.text(book_id, chapter_id)
     if text_path.exists():  # a picture page with no text has no section but can still be cited
         page_count = max(page_count, len(json.loads(text_path.read_text(encoding="utf-8"))["pages"]))
-    return refine_check.check(refined, chapter_id, page_count)
+    return page_count
 
 
 def status(layout: Layout, books: list[Book]) -> list[tuple[str, int, int, int, int, int, int]]:
