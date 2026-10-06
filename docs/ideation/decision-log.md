@@ -368,3 +368,8 @@ D55 chose Haiku 4.5. A comparison on five Chapters (Claude Code subagents, no AP
 
 ### D70. `check` flags only markdown-shaped text in answers
 The rule rejected any `*`, `_`, `#` or backtick, so fill-in blanks ("My name is ___") and symbols a book uses ("place 1, 2 and #") failed, and asking a model to remove them destroyed the blank. It now flags bold, emphasis, code and headings only. This also clears the four NCERT Chapters that had failed on it (`aemr108`, `cesa106`, `fepr105`, `iebe102`); NCERT now passes 470 of 471, the last (`jesc103`) a summary two words over its limit.
+
+## 2026-10-06: Chapter summaries for SSC (issue #99)
+
+### D71. Chapter summaries are written in a Claude Code session, not through the Batch API
+D27 planned Chapter summaries as one offline Batch API run, and #82 as a Haiku script in `lantern-agents`. The 471 NCERT summaries were in fact written in Claude Code (their `model` is `claude-opus-5-5`), and the founder asked for the same for SSC. A summary needs only the refined Chapter (its title and Concepts), not the book text, so all 207 SSC Chapters fit in one session: about 80k tokens read and 207 summaries of 43 words on average, at no API spend. `scripts/write_summaries.py` takes the written text as a JSON map and writes `summaries/<book>/<chapter>.json` (`summary-v1`) only when a summary has 20–70 plain words and its Chapter has a refined file; an empty or failing one is reported and never written, and an existing one is kept unless `--force`. The API route stays the fallback for a corpus too large for a session.
