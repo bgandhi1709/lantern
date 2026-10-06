@@ -10,10 +10,11 @@ param tables {
   actions: string
 }
 
-@description('Blob containers. `workspaces` holds every Child\'s Workspace and is passed to both apps; `ncert` holds the refined corpus.')
+@description('Blob containers. `workspaces` holds every Child\'s Workspace and is passed to both apps; `ncert` and `ssc` hold each Board\'s refined corpus.')
 param containers {
   workspaces: string
   ncert: string
+  ssc: string
 }
 
 @description('Key Vault names bootstrap.sh creates: the uid-hash secret and the RSA key that wraps each Family key.')
@@ -143,8 +144,8 @@ resource storage 'Microsoft.Storage/storageAccounts@2023-05-01' = {
     }]
   }
 
-  // Private container for the refined NCERT corpus (ncert-build's output). Read by nothing yet —
-  // the API's read path is a later PR; this one only receives the upload.
+  // Private containers for each Board's refined corpus (ncert-build's output). Read by nothing yet;
+  // the API's read path is a later PR. Access comes from the resource-group roles in bootstrap.sh.
   resource blobService 'blobServices' = {
     name: 'default'
 
@@ -169,6 +170,13 @@ resource storage 'Microsoft.Storage/storageAccounts@2023-05-01' = {
 
     resource ncertContainer 'containers' = {
       name: containers.ncert
+      properties: {
+        publicAccess: 'None'
+      }
+    }
+
+    resource sscContainer 'containers' = {
+      name: containers.ssc
       properties: {
         publicAccess: 'None'
       }

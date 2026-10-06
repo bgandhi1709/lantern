@@ -12,6 +12,7 @@ param tables = {
 param containers = {
   workspaces: 'family'
   ncert: 'ncert'
+  ssc: 'ssc'
 }
 
 param keyVault = {

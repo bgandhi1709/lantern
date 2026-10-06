@@ -67,7 +67,8 @@ ncert.nic.in PDFs                                         Mother's phone (Expo, 
 - **Opus thinks once, at build time.** Every answer after that is mostly a lookup.
 - **Resumable.** Every stage skips done work, so the long runs survive reboots.
 - **Data stays out of this repo.** NCERT text is copyrighted and the repo is public; the output
-  lives in `../lantern-data` and the private `ncert` blob container. See
+  lives in `../lantern-data` (`../lantern-data-ssc` for the SSC Board) and the private `ncert`
+  and `ssc` blob containers. See
   [`tools/ncert-build`](tools/ncert-build/README.md).
 
 ### Runtime: one question (D15)
