@@ -99,6 +99,14 @@ be on the page it starts at. A Book that fails any check is reported and not spl
 Balbharati Chapters are Units with their lessons listed; Maths and EVS Chapters are lessons. Ids are
 readable: `ssc3-maths`, `ssc3-maths-04`. After `split`, the remaining stages run unchanged.
 
+`$ncert --board ssc guidance` writes `guidance/<book>.json`, the Book guidance (D57): the publisher's
+notes for teachers and parents. Pages carrying a heading such as "Instructions for Teachers" or
+"For Teachers :" go to `qwen3:8b`, which copies each note out. Python keeps a note only if it is on
+the page word for word and, beside a lesson, starts right after such a heading; the model otherwise
+also copies the lesson's exercises. Front-matter notes belong to the Book, notes inside a Chapter's
+pages to that Chapter. Rejected notes are printed with their page. A contents page that is an image
+(Std 5 Maths) keeps its "To the Teacher" box unread: guidance reads the text layer only.
+
 ## Super context (#41, D17–D20)
 
 `bundle` (v1) gives Claude no view of a book's earlier chapters, so `prerequisites` in refine-v1
