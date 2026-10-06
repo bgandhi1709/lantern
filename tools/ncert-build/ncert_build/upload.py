@@ -30,7 +30,7 @@ FILES = ["catalog.json", "board.json"]
 
 
 def commands(data_dir: Path, account: str, container: str) -> list[list[str]]:
-    common = ["--account-name", account, "--auth-mode", "login", "--only-show-errors"]
+    common = ["--account-name", account, "--auth-mode", "login", "--only-show-errors", "--output", "none"]
     batches = [
         [
             "az", "storage", "blob", "upload-batch",
@@ -63,5 +63,5 @@ def run(data_dir: Path, account: str, container: str) -> None:
     if shutil.which("az") is None:
         raise SystemExit("The Azure CLI (az) isn't installed; it's needed for upload.")
     for command in commands(data_dir, account, container):
-        print("  " + " ".join(command[3:7]))
+        print("  " + " ".join(command[3:8]))
         subprocess.run(command, check=True)
