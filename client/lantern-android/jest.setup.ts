@@ -1,3 +1,5 @@
+import { AccessibilityInfo } from 'react-native';
+
 import { resetFakeAuth } from './src/test/fakeFirebaseAuth';
 import { resetFakeGoogleSignIn } from './src/test/fakeGoogleSignIn';
 import { resetSecureStore } from './src/test/fakeSecureStore';
@@ -20,6 +22,8 @@ jest.mock('./src/shared/config', () => ({
 }));
 
 beforeEach(() => {
+  // Screens appear at once in tests; the Opening tests turn the intro animation back on.
+  jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(true);
   resetSecureStore();
   resetFakeAuth();
   resetFakeGoogleSignIn();

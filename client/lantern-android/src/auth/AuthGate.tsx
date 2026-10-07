@@ -1,14 +1,16 @@
 import type { ReactNode } from 'react';
-import { View } from 'react-native';
 
-import { colors } from '../shared/ui/theme';
+import { FadeIn } from '../shared/ui/FadeIn';
 import { useSessionState } from './AuthProvider';
+import { OpeningScreen } from './OpeningScreen';
 import { StartScreen } from './StartScreen';
+import { useIntro } from './useIntro';
 
-// While the saved sign-in is restored it shows an empty page; the Opening screen replaces that.
+// The Opening screen stays until the saved sign-in is restored and the intro has played.
 export function AuthGate({ signedIn }: { signedIn: ReactNode }) {
   const state = useSessionState();
+  const intro = useIntro();
 
-  if (state === 'restoring') return <View style={{ flex: 1, backgroundColor: colors.ground }} />;
-  return state === 'signedIn' ? signedIn : <StartScreen />;
+  if (state === 'restoring' || !intro.done) return <OpeningScreen intro={intro} />;
+  return <FadeIn still={intro.still}>{state === 'signedIn' ? signedIn : <StartScreen />}</FadeIn>;
 }
