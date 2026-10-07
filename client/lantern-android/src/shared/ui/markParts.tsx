@@ -18,7 +18,7 @@ export const Mother = () => (
     />
     <Path d="M38 38 L46 41 L47 47 L39 47 Z" fill={c.face} />
     <Path
-      d="M22 100 C20 80 24 62 33 53 C37 49 43 47 48 48.5 C54 50.5 58 56 60 64 L57 100 Z"
+      d="M22 92 C20 80 24 62 33 53 C37 49 43 47 48 48.5 C54 50.5 58 56 60 64 L57 92 L22 92 Z"
       fill={c.motherClothes}
     />
     <Path
