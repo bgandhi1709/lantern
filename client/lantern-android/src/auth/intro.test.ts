@@ -21,10 +21,11 @@ describe('introTimeline', () => {
     expect(parts).toEqual(['book', 'mother', 'child', 'hands', 'light', 'arch', 'star', 'word']);
   });
 
-  it('lasts under three seconds in full, about half a second short, and nothing still', () => {
+  it('lasts under three seconds in full, about a second short, and nothing still', () => {
     expect(introLength('full')).toBeGreaterThan(2000);
     expect(introLength('full')).toBeLessThan(3000);
-    expect(introLength('short')).toBeLessThanOrEqual(600);
+    expect(introLength('short')).toBeGreaterThanOrEqual(900);
+    expect(introLength('short')).toBeLessThanOrEqual(1100);
     expect(introLength('still')).toBe(0);
   });
 });
