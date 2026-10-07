@@ -74,3 +74,14 @@ describe('clearAll', () => {
     expect(await AsyncStorage.getAllKeys()).toEqual([]);
   });
 });
+
+describe('introSeen', () => {
+  it('starts false, so a new install plays the full intro, and clearAll forgets it', async () => {
+    expect(await readValue('introSeen')).toBe(false);
+    await writeValue('introSeen', true);
+
+    await clearAll();
+
+    expect(await readValue('introSeen')).toBe(false);
+  });
+});

@@ -76,6 +76,14 @@ jobs:
           host=$(sed -E 's#^https://([^/]+).*#\1#' <<< "$LANTERN_API_URL")
           echo "::add-mask::$host"
       - run: npm ci
+      - name: Decode the Firebase file
+        # Prebuild reads it twice: the Firebase plugin copies it, and app.config.js takes the Google web client from it.
+        env:
+          GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
+        run: |
+          [[ -n "$GOOGLE_SERVICES_JSON_BASE64" ]] || { echo "::error::GOOGLE_SERVICES_JSON_BASE64 is missing"; exit 1; }
+          base64 -d <<< "$GOOGLE_SERVICES_JSON_BASE64" > "$RUNNER_TEMP/google-services.json"
+          echo "GOOGLE_SERVICES_JSON=$RUNNER_TEMP/google-services.json" >> "$GITHUB_ENV"
       - run: npx expo prebuild --platform android --no-install
         env:
           CI: 1
@@ -87,9 +95,11 @@ jobs:
           echo "ANDROID_KEYSTORE_FILE=$RUNNER_TEMP/release.keystore" >> "$GITHUB_ENV"
       - name: Give Gradle 4 GB of heap
         # The generated gradle.properties asks for 2 GB; the runner has 16 GB. The last value of a repeated key wins.
+        # The file has no final newline, so start with one: without it the value is glued onto the last property
+        # and Expo's autolinking fails to parse it.
         working-directory: client/lantern-android/android
         run: |
-          echo "org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g" >> gradle.properties
+          printf '\norg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g\n' >> gradle.properties
           grep '^org.gradle.jvmargs' gradle.properties
       - name: Build the release APK
         working-directory: client/lantern-android/android
@@ -128,6 +138,6 @@ jobs:
           path: client/lantern-android/android/app/build/outputs/apk/release/app-release.apk
           retention-days: 1
           if-no-files-found: error
-      - name: Remove the signing key
+      - name: Remove the signing key and the Firebase file
         if: always()
-        run: rm -f "$RUNNER_TEMP/release.keystore"
+        run: rm -f "$RUNNER_TEMP/release.keystore" "$RUNNER_TEMP/google-services.json"

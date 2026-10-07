@@ -8,7 +8,7 @@
     "userInterfaceStyle": "light",
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#FFFFFF",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -17,7 +17,35 @@
       "package": "com.lantern.app",
       "allowBackup": false
     },
-    "plugins": ["expo-router", "./plugins/withReleaseSigning", "expo-secure-store"],
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#F2FAF9"
+        }
+      ],
+      "./plugins/withReleaseSigning",
+      "./plugins/withDebugSigning",
+      "./plugins/withLocalApiTrust",
+      "expo-secure-store",
+      "@react-native-firebase/app",
+      "@react-native-firebase/auth",
+      "@react-native-google-signin/google-signin",
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./assets/fonts/Inter_500Medium.ttf",
+            "./assets/fonts/Inter_600SemiBold.ttf",
+            "./assets/fonts/Inter_700Bold.ttf"
+          ]
+        }
+      ]
+    ],
     "scheme": "lantern"
   }
 }

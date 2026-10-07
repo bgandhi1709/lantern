@@ -53,6 +53,37 @@ describe('npm run lint', () => {
     );
   });
 
+  it.each(['@react-native-firebase/app', '@react-native-firebase/auth'])(
+    'fails on importing %s outside src/shared/session',
+    async (name) => {
+      const code = `import * as firebase from '${name}';\nexport { firebase };\n`;
+
+      expect(await rulesBroken(code)).toContain('no-restricted-imports');
+      expect(await rulesBroken(code, 'src/auth/example.ts')).toContain('no-restricted-imports');
+    },
+  );
+
+  it('allows the Firebase import inside src/shared/session', async () => {
+    const code = "import * as auth from '@react-native-firebase/auth';\nexport { auth };\n";
+
+    expect(await rulesBroken(code, 'src/shared/session/session.ts')).not.toContain(
+      'no-restricted-imports',
+    );
+  });
+
+  it('fails on the Google sign-in import outside src/auth, and allows it inside', async () => {
+    const code =
+      "import { GoogleSignin } from '@react-native-google-signin/google-signin';\nexport { GoogleSignin };\n";
+
+    expect(await rulesBroken(code, 'src/shared/session/session.ts')).toContain(
+      'no-restricted-imports',
+    );
+    expect(await rulesBroken(code, 'src/family/example.ts')).toContain('no-restricted-imports');
+    expect(await rulesBroken(code, 'src/auth/googleSignIn.ts')).not.toContain(
+      'no-restricted-imports',
+    );
+  });
+
   it("fails when a feature imports another feature's internals", async () => {
     const code = "import { secret } from '../family/internal';\nexport { secret };\n";
 
@@ -63,5 +94,24 @@ describe('npm run lint', () => {
     const code = "import { Family } from '../family';\nexport { Family };\n";
 
     expect(await rulesBroken(code, 'src/auth/session.ts')).not.toContain('no-restricted-imports');
+  });
+
+  it.each([
+    ['text inside JSX', 'export const A = () => <Text>Hello</Text>;\n'],
+    ['a text label prop', 'export const A = () => <Button label="Sign out" />;\n'],
+    ['an accessibility label', 'export const A = () => <View accessibilityLabel="A mark" />;\n'],
+    [
+      'text chosen in JSX',
+      "export const A = ({ busy }: { busy: boolean }) => <Text>{busy ? 'Wait' : 'Go'}</Text>;\n",
+    ],
+  ])('fails on %s written in the code instead of src/shared/i18n', async (_, code) => {
+    expect(await rulesBroken(code, 'src/auth/Example.tsx')).toContain('no-restricted-syntax');
+  });
+
+  it('allows app text that comes from the dictionary', async () => {
+    const code =
+      'export const A = ({ s }: { s: { hi: string } }) => <Text accessibilityLabel={s.hi}>{s.hi}</Text>;\n';
+
+    expect(await rulesBroken(code, 'src/auth/Example.tsx')).not.toContain('no-restricted-syntax');
   });
 });

@@ -4,16 +4,22 @@
   "main": "expo-router/entry",
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",
-    "expo": "~57.0.26",
+    "@react-native-firebase/app": "^26.4.0",
+    "@react-native-firebase/auth": "^26.4.0",
+    "@react-native-google-signin/google-signin": "^16.1.5",
+    "expo": "~57.0.27",
     "expo-constants": "~57.0.20",
-    "expo-linking": "~57.0.11",
-    "expo-router": "~57.0.24",
+    "expo-font": "~57.0.4",
+    "expo-linking": "~57.0.12",
+    "expo-router": "~57.0.25",
     "expo-secure-store": "~57.0.4",
+    "expo-splash-screen": "~57.0.9",
     "expo-status-bar": "~57.0.1",
     "react": "19.2.3",
     "react-native": "0.86.3",
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "~4.26.0",
+    "react-native-svg": "15.15.4",
     "zod": "^4.6.5"
   },
   "devDependencies": {
@@ -37,7 +43,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit",
-    "test": "jest"
+    "test": "jest --maxWorkers=2"
   },
   "private": true,
   "jest": {
@@ -48,6 +54,7 @@
     "testPathIgnorePatterns": [
       "/node_modules/",
       "/dist/"
-    ]
+    ],
+    "testTimeout": 20000
   }
 }

@@ -5,7 +5,6 @@ import { ApiError } from './ApiError';
 export type ApiClientOptions = {
   baseUrl: string;
   timeoutMs: number;
-  // Wired to the Firebase session in the sign-in story; no session means no header.
   getIdToken?: () => Promise<string | null>;
   fetchImpl?: typeof fetch;
 };

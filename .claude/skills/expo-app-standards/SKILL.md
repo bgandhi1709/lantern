@@ -31,6 +31,7 @@ Load the `expo` plugin skills that match the task (`expo-router` for routes, `ex
 - Failure is an exception or a typed error, not a `boolean` or a magic `null`. The API client throws `ApiError` with the problem code; one place turns codes into messages for the Parent.
 - Short functions, one job each. Early return over nested `if`. Names say what, not how.
 - Comments: only a rare one-line why (a platform quirk, a security property). No comment that restates the code.
+- No hard-coded app text. Every word the Parent sees lives in `src/shared/i18n/en.ts` and is read with `useStrings()`; a new language is a copy of that file typed as `Strings`, so a missing key fails the build. Accessibility labels count as text.
 - No hard-coded environment value (URLs, keys, timeouts). Read it from `src/shared/config.ts`, which reads `EXPO_PUBLIC_*` and refuses to start when one is missing.
 - Remove unused imports and dead code in every file you touch. No `console.log` in committed code.
 - Reuse before writing: Expo SDK module first, then a small well-known package, then your own code. Install with `npx expo install` so versions match the SDK. Every library must support Android and iOS (ADR-0007, web dropped by D67).
@@ -51,8 +52,9 @@ Everything on a phone can be read by whoever holds an unlocked phone, a backup, 
 
 | Data | Where | Rule |
 |---|---|---|
-| Sign-in session (tokens) | The Firebase SDK's own persistence; if it needs a store, `expo-secure-store` (Android Keystore) | Never in AsyncStorage, files or `localStorage` |
+| Sign-in session (tokens) | The native Firebase SDK's own store (D72); the app never writes a token itself | Never in AsyncStorage, files or `localStorage` |
 | Preferences that are not personal (welcome banner dismissed, active Child id) | AsyncStorage through the storage wrapper | The Child is stored as its opaque id, never its name |
+| Intro seen (`introSeen`, D75) | AsyncStorage through the storage wrapper | A boolean so later launches play the short intro; cleared by `clearAll()` on sign out |
 | The Family key (derived from the Passphrase, D66) | `expo-secure-store` (Android Keystore) | Founder-approved. It lets the phone lock and unlock personal details without asking for the Passphrase on every start. Cleared by `clearAll()`; the Passphrase itself is never stored |
 | Child names, birth year, School, Region, email, Subjects, Chapters, answers | Nowhere on the device | Fetched from the API each time and unlocked with the Family key; held in memory only |
 | Secrets, API keys, the UAT address as a credential | Nowhere | The UAT address is baked in at build time (D61); there are no other secrets in the app |
@@ -75,4 +77,4 @@ Everything on a phone can be read by whoever holds an unlocked phone, a backup, 
 
 ## Enforced by tools
 
-Where a rule can be a lint rule, make it one instead of trusting this page: `no-explicit-any`, `no-non-null-assertion`, `no-console`, `no-restricted-imports` for AsyncStorage and SecureStore outside `src/shared/storage`, and import-boundary rules between features. A rule a review caught twice becomes a check.
+Where a rule can be a lint rule, make it one instead of trusting this page: `no-explicit-any`, `no-non-null-assertion`, `no-console`, `no-restricted-imports` for AsyncStorage and SecureStore outside `src/shared/storage`, for `@react-native-firebase/*` outside `src/shared/session`, and for the Google sign-in module outside `src/auth`, import-boundary rules between features, and `no-restricted-syntax` for app text written in JSX or label props instead of `src/shared/i18n`. A rule a review caught twice becomes a check.

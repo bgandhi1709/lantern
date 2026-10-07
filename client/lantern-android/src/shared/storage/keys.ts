@@ -6,6 +6,7 @@ export const KEY_PREFIX = 'lantern.';
 
 type Values = {
   welcomeDismissed: boolean;
+  introSeen: boolean;
   activeChildId: string | null;
   familyKey: string | null;
 };
@@ -17,6 +18,7 @@ export type StoredValue<N extends StoredName> = Values[N];
 
 export const storedValues: { [N in StoredName]: Definition<Values[N]> } = {
   welcomeDismissed: { schema: z.boolean(), fallback: false, secure: false },
+  introSeen: { schema: z.boolean(), fallback: false, secure: false },
   activeChildId: { schema: z.string().nullable(), fallback: null, secure: false },
   familyKey: { schema: z.string().nullable(), fallback: null, secure: true },
 };

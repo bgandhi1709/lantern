@@ -10,6 +10,24 @@ const storagePaths = [
   { name: 'expo-secure-store', message: 'Only src/shared/storage touches the device store.' },
 ];
 
+const firebasePaths = [
+  {
+    name: '@react-native-firebase/app',
+    message: 'Only src/shared/session touches the Firebase session.',
+  },
+  {
+    name: '@react-native-firebase/auth',
+    message: 'Only src/shared/session touches the Firebase session.',
+  },
+];
+
+const googlePaths = [
+  {
+    name: '@react-native-google-signin/google-signin',
+    message: 'Only src/auth talks to the Google account sheet.',
+  },
+];
+
 const otherFeaturesInternals = (own) =>
   features
     .filter((feature) => feature !== own)
@@ -31,7 +49,10 @@ module.exports = [
   {
     rules: {
       'no-console': 'error',
-      'no-restricted-imports': ['error', { paths: storagePaths }],
+      'no-restricted-imports': [
+        'error',
+        { paths: [...storagePaths, ...firebasePaths, ...googlePaths] },
+      ],
     },
   },
   ...features.map((feature) => ({
@@ -39,10 +60,41 @@ module.exports = [
     rules: {
       'no-restricted-imports': [
         'error',
-        { paths: storagePaths, patterns: otherFeaturesInternals(feature) },
+        {
+          paths: [...storagePaths, ...firebasePaths, ...(feature === 'auth' ? [] : googlePaths)],
+          patterns: otherFeaturesInternals(feature),
+        },
       ],
     },
   })),
+  {
+    files: ['src/shared/session/**'],
+    rules: {
+      'no-restricted-imports': ['error', { paths: [...storagePaths, ...googlePaths] }],
+    },
+  },
+  {
+    // App text lives in src/shared/i18n so every language is a dictionary, not a code change.
+    files: ['src/**/*.tsx', 'app/**/*.tsx'],
+    ignores: ['**/*.test.tsx'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        ...[
+          'JSXText[value=/[A-Za-z]/]',
+          'JSXAttribute[name.name=/^(label|title|placeholder|accessibilityLabel|accessibilityHint)$/] > Literal',
+          'JSXElement > JSXExpressionContainer > ConditionalExpression > Literal[value=/[A-Za-z]/]',
+        ].map((selector) => ({
+          selector,
+          message: 'Put app text in src/shared/i18n/en.ts and read it with useStrings().',
+        })),
+      ],
+    },
+  },
+  {
+    files: ['app.config.js', 'plugins/*.js'],
+    languageOptions: { globals: { __dirname: 'readonly' } },
+  },
   {
     files: ['src/shared/storage/**', 'src/test/**', 'jest.setup.ts'],
     rules: { 'no-restricted-imports': 'off' },
