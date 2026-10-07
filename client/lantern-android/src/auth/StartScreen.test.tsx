@@ -69,7 +69,9 @@ describe('the Start screen', () => {
     await renderApp();
 
     await user.press(googleButton());
-    expect(await screen.findByText("Couldn't sign in. Try again.")).toBeOnTheScreen();
+    const failure = await screen.findByText("Couldn't sign in. Try again.");
+    expect(failure).toBeOnTheScreen();
+    expect(failure).toHaveProp('accessibilityLiveRegion', 'polite');
 
     setGoogleOutcome({ type: 'success', data: { idToken: 'google-id-token' } });
     await user.press(googleButton());

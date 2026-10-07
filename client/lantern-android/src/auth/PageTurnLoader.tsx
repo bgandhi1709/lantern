@@ -11,9 +11,7 @@ const RIGHT_PAGE = 'M24 9 Q34 5 44 8 V28 Q34 25 24 29 Z';
 const TURNING_PAGE = 'M0 9 Q10 5 20 8 V28 Q10 25 0 29 Z';
 const SPARK = 'M24 0 L25 2.6 L27.6 3.6 L25 4.6 L24 7.2 L23 4.6 L20.4 3.6 L23 2.6 Z';
 
-const Page = ({ d, fill }: { d: string; fill: string }) => (
-  <Path d={d} fill={fill} stroke={colors.primary} strokeWidth={1.6} strokeLinejoin="round" />
-);
+const pageOutline = { stroke: colors.primary, strokeWidth: 1.6, strokeLinejoin: 'round' } as const;
 
 // An open book whose right page keeps turning over to the left, shown while Lantern is still opening.
 export function PageTurnLoader({ still }: { still: boolean }) {
@@ -45,13 +43,13 @@ export function PageTurnLoader({ still }: { still: boolean }) {
   return (
     <View style={styles.book}>
       <Svg width={WIDTH} height={HEIGHT} viewBox="0 0 48 32" style={StyleSheet.absoluteFill}>
-        <Page d={LEFT_PAGE} fill={colors.iconTile} />
-        <Page d={RIGHT_PAGE} fill={colors.iconTile} />
+        <Path d={LEFT_PAGE} fill={colors.iconTile} {...pageOutline} />
+        <Path d={RIGHT_PAGE} fill={colors.iconTile} {...pageOutline} />
         <Path d={SPARK} fill={markColors.light} />
       </Svg>
       <Animated.View style={[styles.turningPage, { opacity, transform: [{ scaleX }] }]}>
         <Svg width={WIDTH / 2} height={HEIGHT} viewBox="0 0 24 32">
-          <Page d={TURNING_PAGE} fill={colors.card} />
+          <Path d={TURNING_PAGE} fill={colors.card} {...pageOutline} />
         </Svg>
       </Animated.View>
     </View>
