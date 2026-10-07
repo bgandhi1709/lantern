@@ -20,6 +20,8 @@ import urllib.request
 from dataclasses import dataclass
 
 API_URL = "https://api.anthropic.com/v1/messages"
+BATCH_URL = "https://api.anthropic.com/v1/messages/batches"
+BATCH_DISCOUNT = 0.5
 API_VERSION = "2023-06-01"
 
 # $ per million tokens, (input, output). Update if Anthropic's pricing changes.
@@ -33,11 +35,28 @@ PRICES = {
 @dataclass(frozen=True)
 class Usage:
     input_tokens: int
-    output_tokens: int
+    output_tokens: int  # includes thinking tokens
+    cache_write_tokens: int = 0
+    cache_read_tokens: int = 0
 
-    def cost_usd(self, model: str) -> float:
+    @staticmethod
+    def from_api(usage: dict) -> "Usage":
+        return Usage(
+            input_tokens=usage["input_tokens"],
+            output_tokens=usage["output_tokens"],
+            cache_write_tokens=usage.get("cache_creation_input_tokens") or 0,
+            cache_read_tokens=usage.get("cache_read_input_tokens") or 0,
+        )
+
+    def cost_usd(self, model: str, batch: bool = False) -> float:
         price_in, price_out = PRICES.get(model, (0.0, 0.0))
-        return (self.input_tokens * price_in + self.output_tokens * price_out) / 1_000_000
+        cost = (
+            self.input_tokens * price_in
+            + self.cache_write_tokens * price_in * 1.25
+            + self.cache_read_tokens * price_in * 0.1
+            + self.output_tokens * price_out
+        ) / 1_000_000
+        return cost * BATCH_DISCOUNT if batch else cost
 
 
 class Claude:
@@ -92,5 +111,27 @@ class Claude:
         except urllib.error.HTTPError as error:
             raise RuntimeError(json.loads(error.read())["error"]["message"]) from error
         text = "".join(block["text"] for block in reply["content"] if block["type"] == "text")
-        usage = Usage(input_tokens=reply["usage"]["input_tokens"], output_tokens=reply["usage"]["output_tokens"])
-        return text.strip(), usage
+        return text.strip(), Usage.from_api(reply["usage"])
+
+    def _call(self, url: str, body: dict | None = None) -> bytes:
+        request = urllib.request.Request(
+            url,
+            data=json.dumps(body).encode() if body is not None else None,
+            headers={"x-api-key": self.api_key, "anthropic-version": API_VERSION, "content-type": "application/json"},
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=120) as response:
+                return response.read()
+        except urllib.error.HTTPError as error:
+            raise RuntimeError(json.loads(error.read())["error"]["message"]) from error
+
+    def create_batch(self, requests: list[dict]) -> dict:
+        """Submits ``[{"custom_id": ..., "params": <Messages API body>}, ...]``; half price, results within 24 h."""
+        return json.loads(self._call(BATCH_URL, {"requests": requests}))
+
+    def get_batch(self, batch_id: str) -> dict:
+        return json.loads(self._call(f"{BATCH_URL}/{batch_id}"))
+
+    def batch_results(self, batch: dict) -> list[dict]:
+        """One entry per request, in any order: key them by ``custom_id``."""
+        return [json.loads(line) for line in self._call(batch["results_url"]).splitlines() if line.strip()]

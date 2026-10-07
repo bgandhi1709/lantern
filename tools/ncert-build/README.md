@@ -17,8 +17,9 @@ catalog ─► download ─► extract ─► segment ─► draft, pictures (lo
 | `pictures` | Finds every figure on every page (OpenCV), and a local vision model reads each: its kind, labels, one line, and counts checked against the pixels | `pictures/<book>/<chapter>.json`, `pictures/<book>/<chapter>/pN-i.png` |
 | `bundle` | One compact Markdown input per chapter for Claude refinement, picture descriptions inline | `bundles/<book>/<chapter>.md` |
 | `check` | Validates a refined chapter against the refine-v1 contract | (prints one line per chapter) |
+| summaries | A few plain lines per Chapter for the Parent, written in a Claude Code session from the refined Chapter and saved by `scripts/write_summaries.py` (D71) | `summaries/<book>/<chapter>.json` |
 | `review` | The GPU's agreement per class and figure kind, and a sheet to mark readings right or wrong by hand | `review/report-*.txt`, `review/sheet-*.html`, `review/score.txt` |
-| `upload` | Copies all of the above to the private `ncert` blob container | Azure Storage |
+| `upload` | Copies all of the above, except the PDFs, to the Board's private blob container (`ncert`, `ssc`) | Azure Storage |
 
 Each stage skips chapters it has already done (`--force` redoes them), so an interrupted run resumes.
 A failing chapter is reported and the run carries on.
@@ -30,9 +31,11 @@ default `../lantern-data` next to the repository. The tool refuses to write insi
 
 ## Cloud copy
 
-The data directory is the working copy; the `ncert` container in the Lantern storage account is
-where the output is kept (the account is in `infra/`, deployed by #19). Sign in with `az login`,
-then run `ncert-build upload --account <storage account>`. Your account needs Storage Blob Data
+The data directory is the working copy; the Board's container in the Lantern storage account
+(`ncert`, or `ssc` with `--board ssc`) is where the output is kept (the account is in `infra/`,
+deployed by #19). Sign in with `az login`, then run `ncert-build [--board ssc] upload --account
+<storage account>`. Every stage folder is overwritten; the publisher's PDFs stay local, since they
+can be downloaded again and nothing reads them from Azure. Your account needs Storage Blob Data
 Contributor, which the deployment grants to `DATA_UPLOADER_OBJECT_ID`
 (`az ad signed-in-user show --query id -o tsv` prints yours).
 
@@ -98,6 +101,22 @@ printed-to-PDF page offset is voted from the page numbers themselves, and each C
 be on the page it starts at. A Book that fails any check is reported and not split. English
 Balbharati Chapters are Units with their lessons listed; Maths and EVS Chapters are lessons. Ids are
 readable: `ssc3-maths`, `ssc3-maths-04`. After `split`, the remaining stages run unchanged.
+
+### Refining SSC through the Batch API (#97, D69)
+
+```bash
+source ~/.lantern_api.env
+.venv/bin/python scripts/refine_batch.py submit --chapters ssc3-maths-04 … --efforts medium --budget-usd 10
+.venv/bin/python scripts/refine_batch.py collect <batch id> --out refined      # or "refined-gate/{model}-{effort}"
+.venv/bin/python scripts/fix_flagged.py --board ssc --budget-usd 1             # per-field fixes for `check`
+```
+
+One request per Chapter to Claude Sonnet 5.5 at half price: the rules as the system prompt, the
+Chapter (text, picture readings, an English Unit's lessons) without the local draft, and a JSON
+schema; ids, model and versions are filled in by code. `submit` refuses a batch whose worst case
+passes the budget; `collect` waits, writes each Chapter, runs `check` and prints the real cost from
+`usage`. Nothing retries; a truncated or failed request writes nothing. Medium effort cost $0.024
+per Chapter across the 207.
 
 ## Super context (#41, D17–D20)
 

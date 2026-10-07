@@ -67,7 +67,8 @@ ncert.nic.in PDFs                                         Mother's phone (Expo, 
 - **Opus thinks once, at build time.** Every answer after that is mostly a lookup.
 - **Resumable.** Every stage skips done work, so the long runs survive reboots.
 - **Data stays out of this repo.** NCERT text is copyrighted and the repo is public; the output
-  lives in `../lantern-data` and the private `ncert` blob container. See
+  lives in `../lantern-data` (`../lantern-data-ssc` for the SSC Board) and the private `ncert`
+  and `ssc` blob containers. See
   [`tools/ncert-build`](tools/ncert-build/README.md).
 
 ### Runtime: one question (D15)
@@ -132,7 +133,7 @@ ncert.nic.in PDFs                                         Mother's phone (Expo, 
   against local Docker and UAT; `Lantern.Api.Test.Integration.Host` holds the local stand-ins (Firebase
   Auth Emulator tokens, a Key Vault stand-in, a seeded dev Family) and is never in the production
   image. Running it locally: [`deploy/local/README.md`](deploy/local/README.md).
-- **Parent app.** `client/lantern-android` is the Expo app. It opens with an animated intro of the mother-and-child mark and has the Start screen (#113, teal look, D71 to D73): **Continue with Google** through native Firebase, a session the SDK keeps and renews on the device, and a placeholder for signed-in Parents that asks UAT `GET /v1/me` and has Sign out, until the registration and Home stories replace it. It has the guardrails for every later screen (#110): lint rules, one storage module (nothing personal on the device, Android backup off), one API client that sends the Firebase ID token, a Jest setup, and every word the Parent sees in one typed dictionary (`src/shared/i18n`), ready for Gujarati and Hindi. GitHub Actions (`android.yml`) checks every PR and, on a manual run, builds a signed APK that expires after a day; the UAT address and `google-services.json` are secrets on the `uat` environment, not in the repo. A debug build can instead point at the local Docker stack. Run and build steps are in [`client/lantern-android/README.md`](client/lantern-android/README.md).
+- **Parent app.** `client/lantern-android` is the Expo app. It opens with an animated intro of the mother-and-child mark and has the Start screen (#113, teal look, D74 to D76): **Continue with Google** through native Firebase, a session the SDK keeps and renews on the device, and a placeholder for signed-in Parents that asks UAT `GET /v1/me` and has Sign out, until the registration and Home stories replace it. It has the guardrails for every later screen (#110): lint rules, one storage module (nothing personal on the device, Android backup off), one API client that sends the Firebase ID token, a Jest setup, and every word the Parent sees in one typed dictionary (`src/shared/i18n`), ready for Gujarati and Hindi. GitHub Actions (`android.yml`) checks every PR and, on a manual run, builds a signed APK that expires after a day; the UAT address and `google-services.json` are secrets on the `uat` environment, not in the repo. A debug build can instead point at the local Docker stack. Run and build steps are in [`client/lantern-android/README.md`](client/lantern-android/README.md).
 - **Next.** The Ask API, to be designed, and, before production, a Family key held on the device (#47).
 
 How we work in this repo (cycle, skills, standards) is in

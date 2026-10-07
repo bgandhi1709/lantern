@@ -92,12 +92,13 @@ def _parser() -> argparse.ArgumentParser:
     stages = parser.add_subparsers(dest="stage", required=True)
 
     stages.add_parser("catalog", help="fetch the Board's book list into catalog.json")
-    uploading = stages.add_parser("upload", help="copy the build output to the private `ncert` blob container")
+    uploading = stages.add_parser("upload", help="copy the build output to the Board's private blob container")
     uploading.add_argument(
         "--account",
         default=os.environ.get("LANTERN_STORAGE_ACCOUNT"),
         help="storage account name (default: LANTERN_STORAGE_ACCOUNT)",
     )
+    uploading.add_argument("--container", help="blob container (default: ncert for cbse, ssc for ssc)")
     for name, text in [
         ("list", "show the books the filters select"),
         ("download", "download chapter PDFs (and each book's front matter); SSC: whole-Book PDFs"),
@@ -150,7 +151,7 @@ def _run(args: argparse.Namespace) -> int:
     if args.stage == "upload":
         if not args.account:
             raise SystemExit("Pass --account or set LANTERN_STORAGE_ACCOUNT (the deployment prints it).")
-        upload.run(settings.data_dir, args.account)
+        upload.run(settings.data_dir, args.account, args.container or upload.CONTAINERS[settings.board])
         return 0
 
     if args.stage == "check" and args.chapters:

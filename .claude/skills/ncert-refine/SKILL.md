@@ -49,7 +49,9 @@ One chapter in, one JSON file out. Everything needed is in the bundle and this p
   hint list and can be wrong; where they disagree, the text wins. Use the numbers and objects a
   picture description gives, not invented examples.
 - **Concepts:** 2–8, one per idea. Merge draft items that are the same idea taught through
-  different activities. Ids run `<id>-c1`, `-c2`, … in order.
+  different activities. Ids run `<id>-c1`, `-c2`, … in order. `check` allows 1–8 for a chapter of
+  one or two pages, 2–12 for one over 12 pages, and 2–15 for an SSC English Unit, where each
+  Concept names its lesson by number (D69).
 - **pages:** chapter page numbers from the `[pN]` markers, picture blocks included.
 - **how_taught:** the book's own method, so the mother teaches it the same way. At most 40 words.
 - **prerequisites:** what the child learned before this chapter, as plain names. Use an empty list

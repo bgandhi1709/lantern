@@ -34,3 +34,15 @@ def test_a_note_the_model_rewrote_is_rejected():
 
 def test_chapter_at_maps_pdf_pages():
     assert chapter_at(4, TOC) == "ssc3-maths-01" and chapter_at(9, TOC) is None
+
+
+def test_an_exercise_copied_from_a_lesson_page_is_not_a_note():
+    page = LESSON + "\n(2) Take paper cut-outs of the shapes of a circle, a square and a triangle, fold each shape."
+    reply = {
+        "notes": [
+            {"heading": "For Teachers", "text": "Using pictures, videos, the internet, or other media, show students 3D shapes found in the surroundings."},
+            {"heading": "For Teachers", "text": "Take paper cut-outs of the shapes of a circle, a square and a triangle, fold each shape."},
+        ]
+    }
+    document, rejected = extract("ssc3-maths", "Maths 3", ["cover", "front", page], TOC, lambda s, u, schema: reply, "qwen3:8b")
+    assert [n["text"][:5] for n in document["chapter_notes"]] == ["Using"] and len(rejected) == 1

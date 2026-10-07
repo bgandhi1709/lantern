@@ -26,7 +26,8 @@ MODEL = "claude-sonnet-5-5"
 
 NAME_RE = re.compile(r"^concept (\d+): name must be 1–(\d+) characters$")
 WORD_RE = re.compile(r"^concept (\d+): (summary|how_taught) over (\d+) words$")
-QA_WORD_RE = re.compile(r"^concept (\d+) qa (\d+): (try) over (\d+) words$")
+QA_WORD_RE = re.compile(r"^concept (\d+) qa (\d+): (q|try) over (\d+) words$")
+EMPTY_TRY_RE = re.compile(r"^concept (\d+) qa (\d+): leave out try instead of leaving it empty$")
 MARKDOWN_RE = re.compile(r"^concept (\d+) qa (\d+): no markdown in answers$")
 
 
@@ -73,9 +74,10 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--budget-usd", type=float, default=5.0)
     parser.add_argument("--dry-run", action="store_true", help="show planned fixes, call nothing")
+    parser.add_argument("--board", choices=["cbse", "ssc"], default="cbse")
     args = parser.parse_args()
 
-    settings = Settings.from_env()
+    settings = Settings.from_env(args.board)
     layout = pipeline.Layout(settings.data_dir)
     books = {b.book_id: b for b in catalog.load(layout.catalog)}
     client = None if args.dry_run else Claude()
@@ -95,6 +97,12 @@ def main() -> None:
             concepts = refined["concepts"]
             changed = False
             for error in errors:
+                if m := EMPTY_TRY_RE.match(error):
+                    concepts[int(m.group(1)) - 1]["qa"][int(m.group(2)) - 1].pop("try", None)
+                    changed = True
+                    fixed += 1
+                    print(f"{chapter_id}: dropped an empty try")
+                    continue
                 plan = plan_fix(error, concepts)
                 if plan is None:
                     print(f"{chapter_id}: unrecognised error, skipping: {error}")
