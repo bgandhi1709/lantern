@@ -95,8 +95,9 @@ Lint fails on `any`, a `!` assertion, `console.*`, an AsyncStorage or SecureStor
 - `src/shared/storage`: the only code that touches the device store. Keys are `lantern.v1.<name>`, each with a schema and a default that a missing, corrupt or old-version value falls back to. `clearAll()` wipes the plain and secure stores. Android backup is off (`android.allowBackup` is `false`, and the release build checks the manifest).
 - `src/shared/api`: the one API client. It times out, throws `ApiError` with the problem `code`, never retries, and parses every response with a zod schema. It asks `src/shared/session` for the current Firebase ID token before every call, so the header renews with the session.
 - `src/shared/session`: the only code that imports `@react-native-firebase/*`. The SDK keeps the session on the device in its own store and renews the ID token; the app stores no token itself. `endSession()` signs out and calls `clearAll()`.
-- `src/auth`: the Start screen, the Google account sheet (the only code that imports `@react-native-google-signin`), `AuthProvider` (`restoring`, `signedOut`, `signedIn`) and `AuthGate`.
-- `src/shared/ui`: the colours and Inter fonts from the canvas, the mascot and icons (SVG).
+- `src/shared/i18n`: every word the Parent sees, in `en.ts`, read with `useStrings()`. A new language is a copy of `en.ts` typed as `Strings`; lint rejects text written in JSX or label props.
+- `src/auth`: the Opening intro (`useIntro`, `IntroMark`, `PageTurnLoader`: full on a new install, short after, still when the phone asks for less motion), the Start screen, the Google account sheet (the only code that imports `@react-native-google-signin`), `AuthProvider` (`restoring`, `signedOut`, `signedIn`) and `AuthGate`.
+- `src/shared/ui`: the teal colours and Inter fonts from the canvas, the mother-and-child mark (`markParts`, shared with the intro and the launcher icon) and icons (SVG).
 - `src/shared/config.ts`: the only reader of `EXPO_PUBLIC_*`, the Google web client (taken from `google-services.json` by `app.config.js`) and the API timeout.
 - Tests fake the API (`src/test/fakeApi.ts`), the device stores (`jest.setup.ts`, `src/test/fakeSecureStore.ts`), the Firebase session (`src/test/fakeFirebaseAuth.ts`) and Google sign-in (`src/test/fakeGoogleSignIn.ts`). Google sign-in itself is checked by hand.
 
