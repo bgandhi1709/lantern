@@ -11,8 +11,11 @@ export class SignInError extends Error {
   }
 }
 
+// The native module must be configured in every app run, including one that starts already signed in.
+const configureGoogle = () => GoogleSignin.configure({ webClientId: config.googleWebClientId });
+
 async function chooseGoogleAccount() {
-  GoogleSignin.configure({ webClientId: config.googleWebClientId });
+  configureGoogle();
   try {
     return await GoogleSignin.signIn();
   } catch {
@@ -31,11 +34,14 @@ export async function signInWithGoogle() {
   }
 }
 
-// Google keeps the chosen account, so forget it too; otherwise the next sign-in skips the account sheet.
+// Ending the Lantern session is what signs the Parent out. Forgetting the Google account as well
+// makes the next sign-in show the account sheet; if Google cannot, the Parent is still signed out.
 export async function signOutOfLantern() {
   try {
+    configureGoogle();
     await GoogleSignin.signOut();
-  } finally {
-    await endSession();
+  } catch {
+    // Best effort: the account sheet may be skipped next time.
   }
+  await endSession();
 }
