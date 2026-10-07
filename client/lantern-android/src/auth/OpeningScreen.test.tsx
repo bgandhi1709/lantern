@@ -51,7 +51,7 @@ describe('the Opening screen', () => {
     await writeValue('introSeen', true);
     await renderApp();
 
-    await wait(500);
+    await wait(1500);
     expect(startHeading()).not.toBeOnTheScreen();
 
     await wait(700);

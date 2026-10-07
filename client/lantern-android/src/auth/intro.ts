@@ -17,8 +17,8 @@ const FULL: IntroStep[] = [
   { part: 'word', delay: 2250, duration: 500 },
 ];
 
-// Later launches: the same intro at about a second, so it still feels like a welcome.
-const SHORT_SCALE = 0.36;
+// Later launches: the same intro, slowed evenly to about two seconds, so it still feels like a welcome.
+const SHORT_SCALE = 0.73;
 
 export function introKind({ seen, reduceMotion }: { seen: boolean; reduceMotion: boolean }) {
   if (reduceMotion) return 'still';
