@@ -1,31 +1,26 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { useStrings } from '../shared/i18n';
 import { colors, fonts, MIN_TOUCH_TARGET } from '../shared/ui/theme';
 import { signOutOfLantern } from './googleSignIn';
 import { type MeStatus, useMeStatus } from './useMeStatus';
 
-const messages: Record<MeStatus, string> = {
-  checking: 'Reaching Lantern…',
-  waking: 'Waking Lantern up, this can take up to a minute…',
-  registered: 'Signed in. Lantern knows your Family.',
-  notRegistered: 'Signed in. You have not registered a Family yet.',
-  unreachable: "Can't reach Lantern",
-};
-
 // Stands in for Home until the registration and Home stories replace it.
 export function SignedInPlaceholder() {
   const { status, retry } = useMeStatus();
+  const s = useStrings();
+  const message: Record<MeStatus, string> = s.signedIn;
 
   return (
     <View style={styles.screen}>
       <Text accessibilityRole="header" style={styles.wordmark}>
-        Lantern
+        {s.appName}
       </Text>
       <Text accessibilityLiveRegion="polite" style={styles.status}>
-        {messages[status]}
+        {message[status]}
       </Text>
-      <Button label="Check again" onPress={retry} />
-      <Button label="Sign out" onPress={signOutOfLantern} />
+      <Button label={s.signedIn.checkAgain} onPress={retry} />
+      <Button label={s.signedIn.signOut} onPress={signOutOfLantern} />
     </View>
   );
 }

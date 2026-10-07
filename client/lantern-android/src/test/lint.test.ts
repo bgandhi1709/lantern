@@ -95,4 +95,23 @@ describe('npm run lint', () => {
 
     expect(await rulesBroken(code, 'src/auth/session.ts')).not.toContain('no-restricted-imports');
   });
+
+  it.each([
+    ['text inside JSX', 'export const A = () => <Text>Hello</Text>;\n'],
+    ['a text label prop', 'export const A = () => <Button label="Sign out" />;\n'],
+    ['an accessibility label', 'export const A = () => <View accessibilityLabel="A mark" />;\n'],
+    [
+      'text chosen in JSX',
+      "export const A = ({ busy }: { busy: boolean }) => <Text>{busy ? 'Wait' : 'Go'}</Text>;\n",
+    ],
+  ])('fails on %s written in the code instead of src/shared/i18n', async (_, code) => {
+    expect(await rulesBroken(code, 'src/auth/Example.tsx')).toContain('no-restricted-syntax');
+  });
+
+  it('allows app text that comes from the dictionary', async () => {
+    const code =
+      'export const A = ({ s }: { s: { hi: string } }) => <Text accessibilityLabel={s.hi}>{s.hi}</Text>;\n';
+
+    expect(await rulesBroken(code, 'src/auth/Example.tsx')).not.toContain('no-restricted-syntax');
+  });
 });

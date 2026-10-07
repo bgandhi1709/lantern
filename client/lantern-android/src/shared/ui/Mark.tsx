@@ -1,13 +1,14 @@
 import { View } from 'react-native';
 import Svg from 'react-native-svg';
 
+import { useStrings } from '../i18n';
 import { Arch, Book, Child, Hands, Light, Mother, Star } from './markParts';
 
-export const MARK_LABEL = 'A mother teaching her child from an open book';
-
 export function Mark({ size = 120 }: { size?: number }) {
+  const label = useStrings().mark.label;
+
   return (
-    <View accessible accessibilityRole="image" accessibilityLabel={MARK_LABEL}>
+    <View accessible accessibilityRole="image" accessibilityLabel={label}>
       <Svg width={size} height={size} viewBox="0 0 120 120">
         <Arch />
         <Mother />

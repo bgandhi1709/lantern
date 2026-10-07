@@ -74,6 +74,24 @@ module.exports = [
     },
   },
   {
+    // App text lives in src/shared/i18n so every language is a dictionary, not a code change.
+    files: ['src/**/*.tsx', 'app/**/*.tsx'],
+    ignores: ['**/*.test.tsx'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        ...[
+          'JSXText[value=/[A-Za-z]/]',
+          'JSXAttribute[name.name=/^(label|title|placeholder|accessibilityLabel|accessibilityHint)$/] > Literal',
+          'JSXElement > JSXExpressionContainer > ConditionalExpression > Literal[value=/[A-Za-z]/]',
+        ].map((selector) => ({
+          selector,
+          message: 'Put app text in src/shared/i18n/en.ts and read it with useStrings().',
+        })),
+      ],
+    },
+  },
+  {
     files: ['app.config.js', 'plugins/*.js'],
     languageOptions: { globals: { __dirname: 'readonly' } },
   },

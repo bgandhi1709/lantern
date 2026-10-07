@@ -1,36 +1,32 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { useStrings } from '../shared/i18n';
+import type { Strings } from '../shared/i18n';
 import { CheckCircleIcon, ChatIcon, ListIcon } from '../shared/ui/icons';
 import { colors, fonts } from '../shared/ui/theme';
 
-const features: { icon: ReactNode; title: string; text: string }[] = [
-  {
-    icon: <ListIcon />,
-    title: 'Teach a chapter',
-    text: 'A ready plan for each chapter: what to teach, and how.',
-  },
-  {
-    icon: <ChatIcon />,
-    title: 'Answer their questions',
-    text: 'Answers from their own book, ready when they ask.',
-  },
-  {
-    icon: <CheckCircleIcon />,
-    title: 'See their progress',
-    text: 'Know what stuck, and where to help next.',
-  },
-];
+type Feature = keyof Strings['start']['features'];
+
+const order: Feature[] = ['teach', 'answer', 'progress'];
+
+const icons: Record<Feature, ReactNode> = {
+  teach: <ListIcon />,
+  answer: <ChatIcon />,
+  progress: <CheckCircleIcon />,
+};
 
 export function FeatureList() {
+  const features = useStrings().start.features;
+
   return (
     <View style={styles.card}>
-      {features.map(({ icon, title, text }) => (
-        <View key={title} style={styles.row}>
-          <View style={styles.iconTile}>{icon}</View>
+      {order.map((feature) => (
+        <View key={feature} style={styles.row}>
+          <View style={styles.iconTile}>{icons[feature]}</View>
           <View style={styles.copy}>
-            <Text style={styles.title}>{title}</Text>
-            <Text style={styles.text}>{text}</Text>
+            <Text style={styles.title}>{features[feature].title}</Text>
+            <Text style={styles.text}>{features[feature].text}</Text>
           </View>
         </View>
       ))}

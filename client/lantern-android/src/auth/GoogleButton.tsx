@@ -1,11 +1,14 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { useStrings } from '../shared/i18n';
 import { GoogleG } from '../shared/ui/icons';
 import { colors, fonts } from '../shared/ui/theme';
 
 type Props = { busy: boolean; onPress: () => void };
 
 export function GoogleButton({ busy, onPress }: Props) {
+  const s = useStrings().start;
+
   return (
     <Pressable
       accessibilityRole="button"
@@ -17,7 +20,7 @@ export function GoogleButton({ busy, onPress }: Props) {
       <View style={styles.logoTile}>
         <GoogleG />
       </View>
-      <Text style={styles.label}>{busy ? 'Signing in…' : 'Continue with Google'}</Text>
+      <Text style={styles.label}>{busy ? s.signingIn : s.continueWithGoogle}</Text>
     </Pressable>
   );
 }
