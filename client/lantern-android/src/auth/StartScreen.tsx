@@ -1,7 +1,7 @@
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Mascot } from '../shared/ui/Mascot';
+import { Mark } from '../shared/ui/Mark';
 import { colors, fonts } from '../shared/ui/theme';
 import { FeatureList } from './FeatureList';
 import { GoogleButton } from './GoogleButton';
@@ -14,15 +14,15 @@ export function StartScreen() {
     <SafeAreaView style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.wordmark}>Lantern</Text>
-        <View style={styles.mascot}>
-          <Mascot />
+        <View style={styles.mark}>
+          <Mark />
         </View>
         <Text accessibilityRole="header" style={styles.heading}>
-          Help your child learn from their own school books.
+          Teach your child with confidence.
         </Text>
         <Text style={styles.subheading}>
-          Lantern is a non-commercial tool that helps parents support their child&apos;s school
-          learning.
+          Lantern does the preparation from your child&apos;s own school books, so your time goes
+          into teaching.
         </Text>
         <FeatureList />
       </ScrollView>
@@ -31,6 +31,7 @@ export function StartScreen() {
           {status === 'failed' ? "Couldn't sign in. Try again." : ''}
         </Text>
         <GoogleButton busy={status === 'signingIn'} onPress={signIn} />
+        <Text style={styles.note}>Free and non-commercial.</Text>
       </View>
     </SafeAreaView>
   );
@@ -46,7 +47,7 @@ const styles = StyleSheet.create({
     lineHeight: 36,
     color: colors.primary,
   },
-  mascot: { alignItems: 'center' },
+  mark: { alignItems: 'center' },
   heading: {
     textAlign: 'center',
     fontFamily: fonts.bold,
@@ -62,6 +63,13 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   footer: { paddingHorizontal: 24, paddingBottom: 24, gap: 8 },
+  note: {
+    textAlign: 'center',
+    fontFamily: fonts.medium,
+    fontSize: 13,
+    lineHeight: 18,
+    color: colors.textSecondary,
+  },
   error: {
     textAlign: 'center',
     fontFamily: fonts.semiBold,

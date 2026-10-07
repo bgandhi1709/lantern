@@ -7,18 +7,18 @@ import { colors, fonts } from '../shared/ui/theme';
 const features: { icon: ReactNode; title: string; text: string }[] = [
   {
     icon: <ListIcon />,
-    title: 'Plan',
-    text: 'A step-by-step way to teach one chapter at home.',
+    title: 'Teach a chapter',
+    text: 'A ready plan for each chapter: what to teach, and how.',
   },
   {
     icon: <ChatIcon />,
-    title: 'Ask',
-    text: "Answers to your child's questions, taken from their own book.",
+    title: 'Answer their questions',
+    text: 'Answers from their own book, ready when they ask.',
   },
   {
     icon: <CheckCircleIcon />,
-    title: 'Check',
-    text: 'See what stuck, so you know where to focus next.',
+    title: 'See their progress',
+    text: 'Know what stuck, and where to help next.',
   },
 ];
 

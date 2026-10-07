@@ -16,13 +16,19 @@ const renderApp = () =>
 const googleButton = () => screen.getByRole('button', { name: 'Continue with Google' });
 
 describe('the Start screen', () => {
-  it('offers one Continue with Google button and says what Lantern is for', async () => {
+  it('speaks to the Parent and offers one Continue with Google button', async () => {
     await renderApp();
 
-    expect(screen.getByRole('header', { name: /Help your child learn/ })).toBeOnTheScreen();
-    expect(screen.getByText('Plan')).toBeOnTheScreen();
-    expect(screen.getByText('Ask')).toBeOnTheScreen();
-    expect(screen.getByText('Check')).toBeOnTheScreen();
+    expect(
+      screen.getByRole('header', { name: 'Teach your child with confidence.' }),
+    ).toBeOnTheScreen();
+    expect(screen.getByText('Teach a chapter')).toBeOnTheScreen();
+    expect(screen.getByText('Answer their questions')).toBeOnTheScreen();
+    expect(screen.getByText('See their progress')).toBeOnTheScreen();
+    expect(screen.getByText('Free and non-commercial.')).toBeOnTheScreen();
+    expect(
+      screen.getByRole('image', { name: 'A mother teaching her child from an open book' }),
+    ).toBeOnTheScreen();
     expect(googleButton()).toBeEnabled();
   });
 
