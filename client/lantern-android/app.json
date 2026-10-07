@@ -20,6 +20,7 @@
     "plugins": [
       "expo-router",
       "./plugins/withReleaseSigning",
+      "./plugins/withDebugSigning",
       "./plugins/withLocalApiTrust",
       "expo-secure-store",
       "@react-native-firebase/app",
