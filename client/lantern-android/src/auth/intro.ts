@@ -1,4 +1,6 @@
-export type IntroPart = 'book' | 'mother' | 'child' | 'hands' | 'light' | 'arch' | 'star' | 'word';
+import type { MarkPart } from '../shared/ui/markParts';
+
+export type IntroPart = MarkPart | 'word';
 export type IntroKind = 'full' | 'short' | 'still';
 export type IntroStep = { part: IntroPart; delay: number; duration: number };
 

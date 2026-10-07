@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
-import { AccessibilityInfo, Animated, Easing } from 'react-native';
+import { AccessibilityInfo, Animated } from 'react-native';
 
 import { readValue, writeValue } from '../shared/storage';
+import { motion } from '../shared/ui/theme';
 import { type IntroKind, type IntroPart, introKind, introTimeline } from './intro';
 
-const EASE_OUT = Easing.bezier(0.23, 1, 0.32, 1);
-
 export type IntroValues = Record<IntroPart, Animated.Value>;
+export type Intro = { values: IntroValues; done: boolean; still: boolean };
 
 const makeValues = (): IntroValues => ({
   book: new Animated.Value(0),
@@ -29,7 +29,7 @@ async function chooseKind(): Promise<IntroKind> {
 
 // Plays the Opening intro once per mount, on the native driver so it keeps running while the app
 // restores the session. done turns true when the last part is in place.
-export function useIntro() {
+export function useIntro(): Intro {
   const [values] = useState(makeValues);
   const [kind, setKind] = useState<IntroKind | null>(null);
   const [done, setDone] = useState(false);
@@ -59,7 +59,7 @@ export function useIntro() {
           toValue: 1,
           delay,
           duration,
-          easing: EASE_OUT,
+          easing: motion.easeOut,
           useNativeDriver: true,
         }),
       ),

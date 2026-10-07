@@ -10,27 +10,27 @@ import { useGoogleSignIn } from './useGoogleSignIn';
 
 export function StartScreen() {
   const { status, signIn } = useGoogleSignIn();
-  const s = useStrings();
+  const strings = useStrings();
 
   return (
     <SafeAreaView style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.wordmark}>{s.appName}</Text>
+        <Text style={styles.wordmark}>{strings.appName}</Text>
         <View style={styles.mark}>
           <Mark />
         </View>
         <Text accessibilityRole="header" style={styles.heading}>
-          {s.start.heading}
+          {strings.start.heading}
         </Text>
-        <Text style={styles.subheading}>{s.start.subheading}</Text>
+        <Text style={styles.subheading}>{strings.start.subheading}</Text>
         <FeatureList />
       </ScrollView>
       <View style={styles.footer}>
         <Text accessibilityLiveRegion="polite" style={styles.error}>
-          {status === 'failed' ? s.start.signInFailed : null}
+          {status === 'failed' ? strings.start.signInFailed : null}
         </Text>
         <GoogleButton busy={status === 'signingIn'} onPress={signIn} />
-        <Text style={styles.note}>{s.start.note}</Text>
+        <Text style={styles.note}>{strings.start.note}</Text>
       </View>
     </SafeAreaView>
   );

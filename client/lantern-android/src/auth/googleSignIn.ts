@@ -3,8 +3,10 @@ import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { config } from '../shared/config';
 import { endSession, startSession } from '../shared/session';
 
+export type SignInFailure = 'cancelled' | 'failed';
+
 export class SignInError extends Error {
-  constructor(readonly reason: 'cancelled' | 'failed') {
+  constructor(readonly reason: SignInFailure) {
     super(reason);
   }
 }

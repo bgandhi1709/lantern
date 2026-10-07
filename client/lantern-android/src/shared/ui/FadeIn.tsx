@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
-import { Animated, Easing } from 'react-native';
+import { Animated } from 'react-native';
+
+import { motion } from './theme';
 
 // The screen after the Opening intro settles in: a 300 ms fade and a small rise, or nothing when
 // the phone asks for less motion.
@@ -9,12 +11,14 @@ export function FadeIn({ still, children }: { still: boolean; children: ReactNod
 
   useEffect(() => {
     if (still) return;
-    Animated.timing(shown, {
+    const animation = Animated.timing(shown, {
       toValue: 1,
       duration: 300,
-      easing: Easing.bezier(0.23, 1, 0.32, 1),
+      easing: motion.easeOut,
       useNativeDriver: true,
-    }).start();
+    });
+    animation.start();
+    return () => animation.stop();
   }, [still, shown]);
 
   const rise = shown.interpolate({ inputRange: [0, 1], outputRange: [12, 0] });

@@ -1,3 +1,5 @@
+import { Easing } from 'react-native';
+
 export const colors = {
   primary: '#0F766E',
   primaryDeep: '#115E59',
@@ -19,7 +21,6 @@ export const markColors = {
   childHair: colors.primaryDeep,
   childClothes: '#2DD4BF',
   arch: '#99F6E4',
-  page: '#FFFFFF',
   light: '#F59E0B',
   glow: '#FDE68A',
 };
@@ -31,3 +32,6 @@ export const fonts = {
 };
 
 export const MIN_TOUCH_TARGET = 48;
+
+// Strong ease-out for anything entering the screen.
+export const motion = { easeOut: Easing.bezier(0.23, 1, 0.32, 1) };

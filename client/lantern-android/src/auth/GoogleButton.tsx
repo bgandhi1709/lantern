@@ -7,7 +7,7 @@ import { colors, fonts } from '../shared/ui/theme';
 type Props = { busy: boolean; onPress: () => void };
 
 export function GoogleButton({ busy, onPress }: Props) {
-  const s = useStrings().start;
+  const strings = useStrings().start;
 
   return (
     <Pressable
@@ -20,7 +20,7 @@ export function GoogleButton({ busy, onPress }: Props) {
       <View style={styles.logoTile}>
         <GoogleG />
       </View>
-      <Text style={styles.label}>{busy ? s.signingIn : s.continueWithGoogle}</Text>
+      <Text style={styles.label}>{busy ? strings.signingIn : strings.continueWithGoogle}</Text>
     </Pressable>
   );
 }
