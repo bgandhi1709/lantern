@@ -1,6 +1,6 @@
 import { failTokenRefresh, fakeRestoredSession } from '../../test/fakeFirebaseAuth';
 import { readValue, writeValue } from '../storage';
-import { endSession, getIdToken, onSessionChange, startSession } from './session';
+import { endSession, getIdToken, getParent, onSessionChange, startSession } from './session';
 
 const flush = () => new Promise<void>((resolve) => setImmediate(resolve));
 
@@ -77,5 +77,19 @@ describe('session', () => {
     await expect(getIdToken()).rejects.toThrow();
 
     expect(seen).toEqual([true]);
+  });
+
+  it('names the Parent from the Google account', () => {
+    fakeRestoredSession('abc', { displayName: 'Asha Verma', email: 'asha.verma@gmail.com' });
+
+    expect(getParent()).toEqual({ name: 'Asha Verma', email: 'asha.verma@gmail.com' });
+  });
+
+  it('uses the email as the name when Google gives none, and has nothing when signed out', () => {
+    fakeRestoredSession('abc', { displayName: null, email: 'asha.verma@gmail.com' });
+    expect(getParent().name).toBe('asha.verma@gmail.com');
+
+    fakeRestoredSession('abc', { displayName: '', email: 'asha.verma@gmail.com' });
+    expect(getParent().name).toBe('asha.verma@gmail.com');
   });
 });

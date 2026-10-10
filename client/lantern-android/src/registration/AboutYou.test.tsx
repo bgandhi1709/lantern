@@ -4,6 +4,7 @@ import { BackHandler, Text } from 'react-native';
 
 import { ApiError, api } from '../shared/api';
 import { fakeRestoredSession } from '../test/fakeFirebaseAuth';
+import { GoogleSignin } from '../test/fakeGoogleSignIn';
 import { AuthGate, AuthProvider } from '../auth';
 import { RegistrationFlow } from '.';
 
@@ -164,5 +165,38 @@ describe('moving between the steps', () => {
     expect(screen.getByRole('header', { name: 'A little about you' })).toBeOnTheScreen();
     expect(regionField()).toHaveDisplayValue('Pune, Maharashtra');
     expect(handlers).toHaveLength(0);
+  });
+});
+
+describe('leaving registration', () => {
+  it('signs the Parent out and shows Start when they tap Back on step 1', async () => {
+    const user = userEvent.setup();
+    await renderNotRegistered();
+
+    await user.press(backButton());
+
+    expect(await screen.findByRole('button', { name: 'Continue with Google' })).toBeOnTheScreen();
+    expect(GoogleSignin.signOut).toHaveBeenCalled();
+    expect(screen.queryByRole('header', { name: 'A little about you' })).not.toBeOnTheScreen();
+  });
+
+  it('drops what was typed, so the next sign-in starts with an empty draft', async () => {
+    const user = userEvent.setup();
+    await renderNotRegistered();
+    await fillIn(user);
+
+    await user.press(backButton());
+    await user.press(await screen.findByRole('button', { name: 'Continue with Google' }));
+
+    expect(await screen.findByLabelText('Where do you live?')).toHaveDisplayValue('');
+    expect(agreeBox()).not.toBeChecked();
+    expect(continueButton()).toBeDisabled();
+  });
+
+  it('shows the email in place of a name when Google has none', async () => {
+    await renderNotRegistered({ displayName: null, email: 'asha.verma@gmail.com' });
+
+    expect(await screen.findAllByText('asha.verma@gmail.com')).toHaveLength(2);
+    expect(screen.queryByText('Asha Verma')).not.toBeOnTheScreen();
   });
 });
