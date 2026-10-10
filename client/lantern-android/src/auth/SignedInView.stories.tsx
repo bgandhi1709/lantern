@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-native';
+import type { ComponentProps } from 'react';
 import { Text } from 'react-native';
 import { fn } from 'storybook/test';
 
@@ -7,17 +8,30 @@ import { fixedIntro } from '../test/fixedIntro';
 import { SignedInPlaceholder } from './SignedInPlaceholder';
 import { SignedInView } from './SignedInView';
 
+// Home and registration are nodes, and Storybook's args must stay plain data (it walks into a node's
+// internals and fails on React Navigation's context), so the story fixes them. Auth never imports the
+// registration flow, so a heading stands in for it.
+function SignedInViewWithScreens(
+  props: Omit<ComponentProps<typeof SignedInView>, 'home' | 'registration'>,
+) {
+  return (
+    <SignedInView
+      {...props}
+      home={<SignedInPlaceholder />}
+      registration={<Text>{en.registration.about.heading}</Text>}
+    />
+  );
+}
+
 const meta = {
   title: 'Auth/SignedInView',
-  component: SignedInView,
+  component: SignedInViewWithScreens,
   args: {
     status: 'checking',
     intro: fixedIntro({ done: true, still: true }),
-    home: <SignedInPlaceholder />,
-    registration: <Text>{en.registration.about.heading}</Text>,
     onTryAgain: fn(),
   },
-} satisfies Meta<typeof SignedInView>;
+} satisfies Meta<typeof SignedInViewWithScreens>;
 
 export default meta;
 

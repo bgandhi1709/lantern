@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-native';
+import type { ComponentProps } from 'react';
 import { fn } from 'storybook/test';
 
 import { en } from '../i18n/en';
@@ -7,19 +8,23 @@ import { TextField } from './TextField';
 
 const about = en.registration.about;
 
+// The icon is a node, and Storybook's args must stay plain data, so the story fixes it.
+function RegionField(props: Omit<ComponentProps<typeof TextField>, 'icon'>) {
+  return <TextField {...props} icon={<PinIcon />} />;
+}
+
 const meta = {
   title: 'Shared/TextField',
-  component: TextField,
+  component: RegionField,
   args: {
     label: about.regionLabel,
     hint: about.regionHint,
     placeholder: about.regionPlaceholder,
     value: '',
     onChangeText: fn(),
-    icon: <PinIcon />,
     maxLength: 60,
   },
-} satisfies Meta<typeof TextField>;
+} satisfies Meta<typeof RegionField>;
 
 export default meta;
 
