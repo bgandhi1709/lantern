@@ -402,3 +402,9 @@ Carries out D66 in the API. `POST /v1/register`, `POST /v1/family/children` and 
 
 ### D78. One exception type, every enum in `Constants`, nullable reference types off (PR #135 review)
 Founder review of #123. (1) Every caller-facing failure is one `LanternException` carrying a `LanternErrorCode`; the ten exception classes are gone, and a new condition is a new code (supersedes the "one exception per condition" entry in the code glossary). (2) Every enum is a constant and lives in `Lantern.Core.Constants`, including `ActionType` and `ChildStatus`. (3) `Nullable` is off for every project, so models carry no `= string.Empty` defaults and no `string?`; a missing value is checked where it is used, and the API's `[Required]` attributes are explicit. (4) The locked fields keep their plain names. (5) `BoardType` starts at 1 so an unset Board is never CBSE, and a Child's School is never null (the phone locks an empty one). (6) A pre-commit hook (Husky) builds, checks formatting and unused usings, and runs the unit tests, so CI failures show up before a push.
+
+## 2026-10-10: Styling (issue #138)
+
+### D80. The app is styled with NativeWind v5 class names and one token file (issue #138)
+Screens use Tailwind class names through NativeWind 5.0.0-rc.0 (pinned exactly), with every colour, font, radius and text size defined once in `client/lantern-android/global.css`; `StyleSheet.create` and style objects are lint errors except for `Animated` values and SVG. v5 was chosen because v4's Tailwind 3 chain has five high advisories; `lightningcss` (MPL-2.0, build-time, already in the lockfile through Expo) was accepted by the founder; the library needs `react-native-reanimated` and `react-native-worklets` (the SDK 57 versions). Also new: every new library is vetted for high or critical advisories and for its licence before use (D79's report lists it). Written up in ADR-0011.
+

@@ -1,10 +1,9 @@
 import type { ReactNode } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { useStrings } from '../shared/i18n';
 import type { Strings } from '../shared/i18n';
 import { CheckCircleIcon, ChatIcon, ListIcon } from '../shared/ui/icons';
-import { colors, fonts } from '../shared/ui/theme';
 
 type Feature = keyof Strings['start']['features'];
 
@@ -20,44 +19,20 @@ export function FeatureList() {
   const features = useStrings().start.features;
 
   return (
-    <View style={styles.card}>
+    <View className="gap-4 rounded-card border border-line bg-card p-4">
       {order.map((feature) => (
-        <View key={feature} style={styles.row}>
-          <View style={styles.iconTile}>{icons[feature]}</View>
-          <View style={styles.copy}>
-            <Text style={styles.title}>{features[feature].title}</Text>
-            <Text style={styles.text}>{features[feature].text}</Text>
+        <View key={feature} className="flex-row items-start gap-3">
+          <View className="size-11 items-center justify-center rounded-control bg-tile">
+            {icons[feature]}
+          </View>
+          <View className="flex-1">
+            <Text className="font-inter-bold text-lead text-ink">{features[feature].title}</Text>
+            <Text className="font-inter-medium text-small text-muted">
+              {features[feature].text}
+            </Text>
           </View>
         </View>
       ))}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  card: {
-    gap: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 16,
-    backgroundColor: colors.card,
-  },
-  row: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
-  iconTile: {
-    width: 44,
-    height: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 12,
-    backgroundColor: colors.iconTile,
-  },
-  copy: { flex: 1 },
-  title: { fontFamily: fonts.bold, fontSize: 17, lineHeight: 22, color: colors.text },
-  text: {
-    fontFamily: fonts.medium,
-    fontSize: 15,
-    lineHeight: 21,
-    color: colors.textSecondary,
-  },
-});

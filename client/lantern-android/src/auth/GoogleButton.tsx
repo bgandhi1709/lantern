@@ -1,8 +1,7 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { useStrings } from '../shared/i18n';
 import { GoogleG } from '../shared/ui/icons';
-import { colors, fonts } from '../shared/ui/theme';
 
 type Props = { busy: boolean; onPress: () => void };
 
@@ -15,34 +14,14 @@ export function GoogleButton({ busy, onPress }: Props) {
       accessibilityState={{ disabled: busy, busy }}
       disabled={busy}
       onPress={onPress}
-      style={({ pressed }) => [styles.button, (pressed || busy) && styles.dimmed]}
+      className={`h-14 flex-row items-center justify-center gap-3 rounded-control bg-primary active:opacity-70 ${busy ? 'opacity-70' : ''}`}
     >
-      <View style={styles.logoTile}>
+      <View className="size-7.5 items-center justify-center rounded-tile bg-card">
         <GoogleG />
       </View>
-      <Text style={styles.label}>{busy ? strings.signingIn : strings.continueWithGoogle}</Text>
+      <Text className="font-inter-bold text-body text-on-primary">
+        {busy ? strings.signingIn : strings.continueWithGoogle}
+      </Text>
     </Pressable>
   );
 }
-
-const styles = StyleSheet.create({
-  button: {
-    height: 56,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 12,
-    borderRadius: 12,
-    backgroundColor: colors.primary,
-  },
-  dimmed: { opacity: 0.7 },
-  logoTile: {
-    width: 30,
-    height: 30,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 8,
-    backgroundColor: colors.card,
-  },
-  label: { fontFamily: fonts.bold, fontSize: 16, color: colors.onPrimary },
-});

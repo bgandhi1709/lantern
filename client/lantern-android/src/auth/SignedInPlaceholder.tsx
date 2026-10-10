@@ -1,8 +1,7 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { useStrings } from '../shared/i18n';
 import { PrimaryButton } from '../shared/ui/PrimaryButton';
-import { colors, fonts } from '../shared/ui/theme';
 import { signOutOfLantern } from './googleSignIn';
 import { type MeStatus, useMeStatus } from './useMeStatus';
 
@@ -13,11 +12,14 @@ export function SignedInPlaceholder() {
   const message: Record<MeStatus, string> = strings.signedIn;
 
   return (
-    <View style={styles.screen}>
-      <Text accessibilityRole="header" style={styles.wordmark}>
+    <View className="flex-1 items-center justify-center gap-4 bg-ground p-6">
+      <Text accessibilityRole="header" className="font-inter-bold text-[36px] text-primary">
         {strings.appName}
       </Text>
-      <Text accessibilityLiveRegion="polite" style={styles.status}>
+      <Text
+        accessibilityLiveRegion="polite"
+        className="text-center font-inter-medium text-[16px] text-muted"
+      >
         {message[status]}
       </Text>
       <PrimaryButton label={strings.signedIn.checkAgain} onPress={retry} />
@@ -25,21 +27,3 @@ export function SignedInPlaceholder() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 16,
-    padding: 24,
-    backgroundColor: colors.ground,
-  },
-  wordmark: { fontFamily: fonts.bold, fontSize: 36, color: colors.primary },
-  status: {
-    textAlign: 'center',
-    fontFamily: fonts.medium,
-    fontSize: 16,
-    color: colors.textSecondary,
-  },
-});

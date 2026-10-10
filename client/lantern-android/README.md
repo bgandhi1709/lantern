@@ -88,7 +88,7 @@ Run these from `client/lantern-android`. CI (`android.yml`) runs the same four o
 | `npm run format:check` | Prettier check (`npm run format` fixes)                                                                   |
 | `npm test`             | Jest (`jest-expo`) with React Native Testing Library; one file while iterating: `npx jest src/shared/api` |
 
-Lint fails on `any`, a `!` assertion, `console.*`, an AsyncStorage or SecureStore import outside `src/shared/storage`, a `@react-native-firebase` import outside `src/shared/session`, and a Google sign-in import outside `src/auth`. A feature folder (`src/auth`, `src/family`, `src/catalog`) may import another feature only through its `index.ts`. `src/test/lint.test.ts` proves each rule.
+Lint fails on `any`, a `!` assertion, `console.*`, an AsyncStorage or SecureStore import outside `src/shared/storage`, a `@react-native-firebase` import outside `src/shared/session`, and a Google sign-in import outside `src/auth`, `StyleSheet.create` and `style={{…}}` objects anywhere except on `Animated` and SVG elements (use class names). A feature folder (`src/auth`, `src/family`, `src/catalog`) may import another feature only through its `index.ts`. `src/test/lint.test.ts` proves each rule.
 
 ## Shared code
 
@@ -97,6 +97,7 @@ Lint fails on `any`, a `!` assertion, `console.*`, an AsyncStorage or SecureStor
 - `src/shared/session`: the only code that imports `@react-native-firebase/*`. The SDK keeps the session on the device in its own store and renews the ID token; the app stores no token itself. `endSession()` signs out and calls `clearAll()`.
 - `src/shared/i18n`: every word the Parent sees, in `en.ts`, read with `useStrings()`. A new language is a copy of `en.ts` typed as `Strings`; lint rejects text written in JSX or label props.
 - `src/auth`: the Opening intro (`useIntro`, `IntroMark`, `PageTurnLoader`: full on a new install, short after, still when the phone asks for less motion), the Start screen, the Google account sheet (the only code that imports `@react-native-google-signin`), `AuthProvider` (`restoring`, `signedOut`, `signedIn`) and `AuthGate`.
+- `global.css`: the one definition of how Lantern looks (ADR-0011). Its `@theme` block holds the colours, Inter fonts, radii and text sizes as tokens, which screens use as NativeWind class names (`bg-ground`, `text-muted`, `font-inter-bold`, `text-heading`, `rounded-card`); one spacing step is 4 px. To change the look, change a token there; `src/shared/ui/theme.ts` keeps only the colours that SVG needs, and a test fails if the two differ. Metro (`metro.config.js`) and PostCSS (`postcss.config.mjs`) compile it, and a change to them needs `npx expo start --clear`.
 - `src/shared/ui`: the teal colours and Inter fonts from the canvas, the mother-and-child mark (`markParts`, shared with the intro and the launcher icon) and icons (SVG).
 - `src/shared/config.ts`: the only reader of `EXPO_PUBLIC_*`, the Google web client (taken from `google-services.json` by `app.config.js`) and the API timeout.
 - Tests fake the API (`src/test/fakeApi.ts`), the device stores (`jest.setup.ts`, `src/test/fakeSecureStore.ts`), the Firebase session (`src/test/fakeFirebaseAuth.ts`) and Google sign-in (`src/test/fakeGoogleSignIn.ts`). Google sign-in itself is checked by hand.

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Animated, Easing, StyleSheet, View } from 'react-native';
+import { Animated, Easing, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
 import { colors, markColors } from '../shared/ui/theme';
@@ -41,22 +41,21 @@ export function PageTurnLoader({ still }: { still: boolean }) {
   });
 
   return (
-    <View style={styles.book}>
-      <Svg width={WIDTH} height={HEIGHT} viewBox="0 0 48 32" style={StyleSheet.absoluteFill}>
-        <Path d={LEFT_PAGE} fill={colors.iconTile} {...pageOutline} />
-        <Path d={RIGHT_PAGE} fill={colors.iconTile} {...pageOutline} />
-        <Path d={SPARK} fill={markColors.light} />
-      </Svg>
-      <Animated.View style={[styles.turningPage, { opacity, transform: [{ scaleX }] }]}>
-        <Svg width={WIDTH / 2} height={HEIGHT} viewBox="0 0 24 32">
-          <Path d={TURNING_PAGE} fill={colors.card} {...pageOutline} />
+    <View className="h-12 w-18">
+      <View className="absolute inset-0">
+        <Svg width={WIDTH} height={HEIGHT} viewBox="0 0 48 32">
+          <Path d={LEFT_PAGE} fill={colors.iconTile} {...pageOutline} />
+          <Path d={RIGHT_PAGE} fill={colors.iconTile} {...pageOutline} />
+          <Path d={SPARK} fill={markColors.light} />
         </Svg>
-      </Animated.View>
+      </View>
+      <View className="absolute left-9 top-0">
+        <Animated.View style={{ opacity, transform: [{ scaleX }], transformOrigin: 'left' }}>
+          <Svg width={WIDTH / 2} height={HEIGHT} viewBox="0 0 24 32">
+            <Path d={TURNING_PAGE} fill={colors.card} {...pageOutline} />
+          </Svg>
+        </Animated.View>
+      </View>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  book: { width: WIDTH, height: HEIGHT },
-  turningPage: { position: 'absolute', left: WIDTH / 2, top: 0, transformOrigin: 'left' },
-});

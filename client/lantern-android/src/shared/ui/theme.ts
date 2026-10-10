@@ -1,5 +1,7 @@
 import { Easing } from 'react-native';
 
+// Colours that code needs as values (the SVG parts). Everything else is a class name from global.css,
+// which holds the same colours; theme.test.ts keeps the two in step.
 export const colors = {
   primary: '#0F766E',
   primaryDeep: '#115E59',
@@ -24,14 +26,6 @@ export const markColors = {
   light: '#F59E0B',
   glow: '#FDE68A',
 };
-
-export const fonts = {
-  medium: 'Inter_500Medium',
-  semiBold: 'Inter_600SemiBold',
-  bold: 'Inter_700Bold',
-};
-
-export const MIN_TOUCH_TARGET = 48;
 
 // Strong ease-out for anything entering the screen.
 export const motion = { easeOut: Easing.bezier(0.23, 1, 0.32, 1) };
