@@ -2,11 +2,18 @@
 // translated; its type is Strings, so a missing or extra key fails the build.
 export const en = {
   appName: 'Lantern',
+  common: {
+    signOut: 'Sign out',
+  },
   mark: {
     label: 'A mother teaching her child from an open book',
   },
   opening: {
     status: 'Opening Lantern',
+    waking: 'Waking Lantern up, this can take up to a minute…',
+    unreachable: "Can't reach Lantern",
+    tryAgain: 'Try again',
+    notRegistered: 'Registration comes next',
   },
   start: {
     heading: 'Teach your child with confidence.',
@@ -32,13 +39,7 @@ export const en = {
     },
   },
   signedIn: {
-    checking: 'Reaching Lantern…',
-    waking: 'Waking Lantern up, this can take up to a minute…',
-    registered: 'Signed in. Lantern knows your Family.',
-    notRegistered: 'Signed in. You have not registered a Family yet.',
-    unreachable: "Can't reach Lantern",
-    checkAgain: 'Check again',
-    signOut: 'Sign out',
+    message: 'Signed in. Lantern knows your Family.',
   },
 };
 

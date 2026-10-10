@@ -28,6 +28,7 @@ Load the `expo` plugin skills that match the task (`expo-router` for routes, `ex
 
 - TypeScript strict. No `any`, no `!` non-null assertion, no `as` cast except in the one place a boundary parses data. Use `unknown` and narrow.
 - A fixed set of values is a string-literal union (`type Board = 'cbse' | 'ssc'`) or an `as const` object, never loose strings and never the `enum` keyword.
+- A single value is `const NAME = …` in SCREAMING_CASE, declared in the one file that uses it, with the unit in the name (`WAKING_AFTER_MS`) and a name that says what it is for (`MARK_SIZE`, not `SIZE`). Export it only when a second file needs it, and then import it; never copy it. A map from a fixed set to something else is a `Record<Union, T>`, so a new value without an entry fails the build.
 - Failure is an exception or a typed error, not a `boolean` or a magic `null`. The API client throws `ApiError` with the problem code; one place turns codes into messages for the Parent.
 - Short functions, one job each. Early return over nested `if`. Names say what, not how.
 - Comments: only a rare one-line why (a platform quirk, a security property). No comment that restates the code.

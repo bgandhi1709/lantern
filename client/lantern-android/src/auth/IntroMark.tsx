@@ -6,11 +6,11 @@ import { IntroLayer } from './IntroLayer';
 import type { IntroValues } from './useIntro';
 
 // 200 px, the same as the size-50 class below.
-const SIZE = 200;
+const INTRO_MARK_SIZE = 200;
 
 export function IntroMark({ values }: { values: IntroValues }) {
   const label = useStrings().mark.label;
-  const unit = SIZE / MARK_GRID;
+  const unit = INTRO_MARK_SIZE / MARK_GRID;
 
   return (
     <View accessible accessibilityRole="image" accessibilityLabel={label} className="size-50">

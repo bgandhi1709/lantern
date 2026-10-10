@@ -403,6 +403,11 @@ Carries out D66 in the API. `POST /v1/register`, `POST /v1/family/children` and 
 ### D78. One exception type, every enum in `Constants`, nullable reference types off (PR #135 review)
 Founder review of #123. (1) Every caller-facing failure is one `LanternException` carrying a `LanternErrorCode`; the ten exception classes are gone, and a new condition is a new code (supersedes the "one exception per condition" entry in the code glossary). (2) Every enum is a constant and lives in `Lantern.Core.Constants`, including `ActionType` and `ChildStatus`. (3) `Nullable` is off for every project, so models carry no `= string.Empty` defaults and no `string?`; a missing value is checked where it is used, and the API's `[Required]` attributes are explicit. (4) The locked fields keep their plain names. (5) `BoardType` starts at 1 so an unset Board is never CBSE, and a Child's School is never null (the phone locks an empty one). (6) A pre-commit hook (Husky) builds, checks formatting and unused usings, and runs the unit tests, so CI failures show up before a push.
 
+## 2026-10-10: App working cycle
+
+### D79. Every app feature ends with a Verification report and a code review (issue #114)
+Step 5b of `docs/agents/app-workflow.md`: after the checks, the agent runs the scenarios on the emulator against local Docker, writes a table of each scenario with its result, and maps every acceptance criterion of the ticket to the scenarios that prove it, so the founder sees what was proven and what is left for a device. Step 8b runs `/code-review` before the founder's review. Why: #114 could not be tried on UAT (no registered Family), and the local run found a real flaw (a stale sign-in stuck on "Can't reach Lantern") that the Jest tests did not. Step 5b also has the agent re-read its own tests after the real run and check each assumption against it; on #114 this found that a revoked sign-in (`auth/invalid-refresh`) was wrongly treated as "can't reach", and that the fakes never failed a token refresh.
+
 ## 2026-10-10: Styling (issue #138)
 
 ### D80. The app is styled with NativeWind v5 class names and one token file (issue #138)

@@ -1,4 +1,4 @@
-import { fakeRestoredSession } from '../../test/fakeFirebaseAuth';
+import { failTokenRefresh, fakeRestoredSession } from '../../test/fakeFirebaseAuth';
 import { readValue, writeValue } from '../storage';
 import { endSession, getIdToken, onSessionChange, startSession } from './session';
 
@@ -45,5 +45,37 @@ describe('session', () => {
     expect(await getIdToken()).toBeNull();
     expect(await readValue('welcomeDismissed')).toBe(false);
     expect(await readValue('familyKey')).toBeNull();
+  });
+
+  it.each([
+    'auth/invalid-refresh',
+    'auth/user-token-expired',
+    'auth/invalid-user-token',
+    'auth/user-not-found',
+    'auth/user-disabled',
+  ])('ends the session when Firebase says the sign-in is no longer valid (%s)', async (code) => {
+    fakeRestoredSession();
+    failTokenRefresh(code);
+    await writeValue('welcomeDismissed', true);
+    const seen: boolean[] = [];
+    onSessionChange((signedIn) => seen.push(signedIn));
+    await flush();
+
+    await expect(getIdToken()).rejects.toThrow();
+
+    expect(seen).toEqual([true, false]);
+    expect(await readValue('welcomeDismissed')).toBe(false);
+  });
+
+  it('keeps the session when the token cannot be refreshed only because of the network', async () => {
+    fakeRestoredSession();
+    failTokenRefresh('auth/network-request-failed');
+    const seen: boolean[] = [];
+    onSessionChange((signedIn) => seen.push(signedIn));
+    await flush();
+
+    await expect(getIdToken()).rejects.toThrow();
+
+    expect(seen).toEqual([true]);
   });
 });

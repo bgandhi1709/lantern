@@ -42,6 +42,13 @@ export function fakeRestoredSession(token = 'restored-id-token') {
   user = userWithToken(token);
 }
 
+// Makes the restored user's token refresh fail, like Firebase does for a revoked sign-in.
+export function failTokenRefresh(code: string) {
+  user?.getIdToken.mockRejectedValue(
+    Object.assign(new Error(`[${code}] The sign-in failed.`), { code }),
+  );
+}
+
 export function resetFakeAuth() {
   user = null;
   listeners.clear();
