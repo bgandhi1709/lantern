@@ -16,8 +16,6 @@ internal sealed class ChildService(
     IFamilyRepository families,
     IIdentityResolver identityResolver,
     IActionPublisher actions,
-    IValidator<Child> validator,
-    IChildTextNormalizer text,
     TimeProvider clock,
     ILogger<ChildService> logger
 ) : ServiceBase<Child, IChildRepository>(children, identityResolver, families), IChildService
@@ -34,13 +32,17 @@ internal sealed class ChildService(
             throw new InvalidRequestException("A child id is required.");
         }
 
-        validator.Validate(child);
-
         var familyId = await FamilyIdAsync(cancellationToken);
+        var board = (await Families.SingleOrNullAsync(familyId, familyId, cancellationToken))?.Board ?? throw new NotFoundException("family");
         var family = await Repository.CollectionAsync(familyId, cancellationToken);
         if (family.FirstOrDefault(stored => stored.ChildId == child.ChildId) is { } existing)
         {
             return existing.Status == ChildStatus.Deleting ? throw new ChildDeletingException() : (existing, false);
+        }
+
+        if (!Child.IsClassAvailable(board, child.ClassLevel))
+        {
+            throw new ClassNotAvailableException();
         }
 
         // Checked here too so a full Family records no action; the repository holds the limit under a race.
@@ -50,8 +52,6 @@ internal sealed class ChildService(
         }
 
         child.FamilyId = familyId;
-        child.Name = text.Name(child.Name);
-        child.School = text.School(child.School);
         child.CreatedAt = clock.GetUtcNow();
 
         // Recorded before the row, so a crash after it still gets the Child its Workspace (D33).
@@ -68,11 +68,6 @@ internal sealed class ChildService(
     public override async Task<Child> UpdateAsync(Child instance, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(instance);
-
-        validator.Validate(instance);
-
-        instance.Name = text.Name(instance.Name);
-        instance.School = text.School(instance.School);
 
         var updated = await base.UpdateAsync(instance, cancellationToken);
 

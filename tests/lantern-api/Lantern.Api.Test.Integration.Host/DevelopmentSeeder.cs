@@ -5,19 +5,17 @@ using Lantern.Core.Repository;
 using Lantern.Core.Security;
 using Lantern.Repository;
 using Lantern.Repository.Entities;
-using Lantern.Repository.Security;
 using Microsoft.Extensions.Options;
 
 namespace Lantern.Api.Test.Integration.Host;
 
 // One Family with two Parents and ten Children, one per Class, for the two Auth Emulator users with these uids.
-// Registration limits (six Children, one Parent) do not apply: the repository is called directly, and the second
+// Personal fields are stored as the phone would send them: locked. The seed holds readable stand-ins, because the
+// API never reads them. Registration limits (six Children, one Parent) do not apply: the repository is called directly, and the second
 // Parent is written straight to the tables.
 internal sealed class DevelopmentSeeder(
     IFamilyRepository families,
     IWorkspaceStore workspaces,
-    IFamilyKeyRing keyRing,
-    IFieldProtector protector,
     IRowKeyService keyService,
     ICryptoService crypto,
     TableServiceClient tables,
@@ -42,13 +40,23 @@ internal sealed class DevelopmentSeeder(
     private async Task<Parent> RegisterFirstAsync(CancellationToken cancellationToken)
     {
         var now = clock.GetUtcNow();
-        var family = new Family { FamilyId = Guid.NewGuid(), Region = "Gujarat", CreatedAt = now };
+        var family = new Family
+        {
+            FamilyId = Guid.NewGuid(),
+            Region = "Gujarat",
+            Board = BoardType.Cbse,
+            PassphraseWrappedKey = "dev-passphrase-wrapped-key",
+            PassphraseSalt = "dev-passphrase-salt",
+            RecoveryWrappedKey = "dev-recovery-wrapped-key",
+            RecoverySalt = "dev-recovery-salt",
+            CreatedAt = now,
+        };
         var parent = new Parent
         {
             ParentId = Guid.NewGuid(),
             FamilyId = family.FamilyId,
-            Name = "Dev Parent One",
-            Email = "dev-parent-1@lantern.local",
+            NameLocked = "locked:Dev Parent One",
+            EmailLocked = "locked:dev-parent-1@lantern.local",
             Language = "en",
             ConsentVersion = "dev",
             ConsentAt = now,
@@ -62,10 +70,10 @@ internal sealed class DevelopmentSeeder(
                 {
                     FamilyId = family.FamilyId,
                     ChildId = Guid.NewGuid(),
-                    Name = $"Dev Child {level}",
-                    School = "Lantern Dev School",
+                    NameLocked = $"locked:Dev Child {level}",
+                    SchoolLocked = "locked:Lantern Dev School",
                     ClassLevel = level,
-                    BirthYear = now.Year - (level + 5),
+                    BirthYearLocked = $"locked:{now.Year - (level + 5)}",
                     Position = level - 1,
                     CreatedAt = now,
                     Status = ChildStatus.Active,
@@ -100,15 +108,13 @@ internal sealed class DevelopmentSeeder(
             RowKey = keyService.ProfileRowKey,
             ParentId = parentId,
             FamilyId = familyId,
-            NameCipher = "Dev Parent Two",
-            EmailCipher = "dev-parent-2@lantern.local",
+            NameLocked = "locked:Dev Parent Two",
+            EmailLocked = "locked:dev-parent-2@lantern.local",
             Language = "gu",
             ConsentVersion = "dev",
             ConsentAt = now,
             CreatedAt = now,
         };
-        protector.Protect(profile, await keyRing.GetAsync(familyId, cancellationToken));
-
         // Same order as registration: the Parent's profile row is the commit point.
         await tables.GetTableClient(storage.Value.FamiliesTable).AddEntityAsync(membership, cancellationToken);
         await tables.GetTableClient(storage.Value.ParentsTable).AddEntityAsync(profile, cancellationToken);

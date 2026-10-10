@@ -25,7 +25,7 @@ done
 principal=$(az identity show -g "$RG" -n "$IDENTITY" --query principalId -o tsv)
 roles=$(az role assignment list --assignee-object-id "$principal" --all --query "[].roleDefinitionName" -o tsv)
 for role in "Storage Table Data Contributor" "Storage Blob Data Contributor" "Storage Blob Data Owner" \
-            "Azure Service Bus Data Sender" "Azure Service Bus Data Receiver" "Monitoring Metrics Publisher" "Key Vault Secrets User" "Key Vault Crypto User"; do
+            "Azure Service Bus Data Sender" "Azure Service Bus Data Receiver" "Monitoring Metrics Publisher" "Key Vault Secrets User"; do
   grep -qxF "$role" <<<"$roles" || { echo "::error::${IDENTITY} lacks '${role}'. ${FIX}"; failed=1; }
 done
 

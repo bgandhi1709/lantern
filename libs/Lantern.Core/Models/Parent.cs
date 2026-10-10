@@ -6,9 +6,10 @@ public sealed class Parent : IFamilyModel
 
     public Guid FamilyId { get; set; }
 
-    public string Name { get; set; } = string.Empty;
+    // Locked on the phone with the Family key (D66).
+    public string NameLocked { get; set; } = string.Empty;
 
-    public string Email { get; set; } = string.Empty;
+    public string EmailLocked { get; set; } = string.Empty;
 
     public string Language { get; set; } = string.Empty;
 

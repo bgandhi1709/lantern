@@ -59,7 +59,7 @@ jobs:
           bad=$(git ls-files -s 'deploy/*.sh' 'infra/*.sh' | grep -v '^100755' || true)
           [ -z "$bad" ] || { echo "Not executable (git update-index --chmod=+x):"; echo "$bad"; exit 1; }
           # apps/ and libs/ are production code only; tests and local stand-ins live under tests/.
-          hits=$(grep -rnE 'Xunit|Seeder|LocalKeyVaultClient|WebApplicationFactory' apps libs --include='*.cs' --include='*.csproj' || true)
+          hits=$(grep -rnE 'Xunit|Seeder|WebApplicationFactory' apps libs --include='*.cs' --include='*.csproj' || true)
           [ -z "$hits" ] || { echo "Test or dev-only code in a production project:"; echo "$hits"; exit 1; }
       - run: npm install -g azurite@3
       - run: dotnet build Lantern.slnx -c Release
@@ -67,7 +67,7 @@ jobs:
       - run: dotnet test --solution Lantern.slnx -c Release --no-build --filter-not-trait "Category=E2E"
 
   # The same E2E tests the cloud used to run, against the Docker stack in deploy/local: Azurite, the Firebase Auth
-  # Emulator, a key file for Key Vault and a seeded dev Family. It gates the release.
+  # Emulator and a seeded dev Family. It gates the release.
   e2e-docker:
     name: E2E - docker
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository

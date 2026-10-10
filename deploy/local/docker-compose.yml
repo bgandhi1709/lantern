@@ -87,10 +87,7 @@ services:
       Storage__ConnectionString: "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;TableEndpoint=http://azurite:10002/devstoreaccount1;BlobEndpoint=http://azurite:10000/devstoreaccount1;"
       Actions__Queue: workspace-events
       ServiceBus__ConnectionString: "Endpoint=sb://servicebus;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true;"
-      # Read by the local host (see api.Dockerfile): the Key Vault stand-in's key file.
-      Local__KeyPath: /keys/family-field-key.pem
     volumes:
-      - keys:/keys
       - ./certs:/certs:ro
     networks:
       default:
@@ -99,4 +96,3 @@ services:
 
 volumes:
   azurite-data:
-  keys:

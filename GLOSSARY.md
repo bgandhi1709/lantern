@@ -18,6 +18,10 @@ _Avoid_: User, Admin, Owner, Mother, Father, caregiver
 The secret a Parent chooses once for the Family, before any Child is saved. The phone uses it to lock the Parent's and Children's personal details, so Lantern holds no key and cannot read them. It belongs to the Family, not to one Parent, and it can never be changed or reset: keeping it is the Parent's responsibility, and the app says so. Class, Board and Region are not locked.
 _Avoid_: Password, PIN, key
 
+**Locked value**:
+A personal detail the phone has locked with the Family key before sending it, so Lantern stores and returns it without being able to read it. The Parent's name and email and each Child's name, birth year and School are locked values; the API names them with a `Locked` suffix.
+_Avoid_: Encrypted field (the server does not encrypt), ciphertext
+
 **Recovery code**:
 A one-time code shown right after the Passphrase is set, the only other way back in if the Passphrase is forgotten. The Parent saves it themselves (Lantern never emails it). A Family that loses both starts again as a new Family.
 _Avoid_: Backup key, reset code

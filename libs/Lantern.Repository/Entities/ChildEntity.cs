@@ -5,15 +5,14 @@ internal sealed class ChildEntity : TableEntityBase
 {
     public Guid ChildId { get; set; }
 
-    [Encrypted("name")]
-    public string NameCipher { get; set; } = string.Empty;
+    // Locked on the phone (D66); stored as sent.
+    public string NameLocked { get; set; } = string.Empty;
 
-    [Encrypted("school")]
-    public string? SchoolCipher { get; set; }
+    public string? SchoolLocked { get; set; }
 
     public int ClassLevel { get; set; }
 
-    public int BirthYear { get; set; }
+    public string BirthYearLocked { get; set; } = string.Empty;
 
     public int Position { get; set; }
 

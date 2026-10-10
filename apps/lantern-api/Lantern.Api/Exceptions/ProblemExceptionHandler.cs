@@ -32,6 +32,8 @@ internal sealed class ProblemExceptionHandler(ILogger<ProblemExceptionHandler> l
             ),
             ChildLimitReachedException => (HttpStatusCode.Conflict, "child-limit-reached", "Child limit reached", "A family holds at most six children."),
             ChildDeletingException => (HttpStatusCode.Conflict, "child-deleting", "Child is being deleted", "This child is being deleted."),
+            FamilyIdTakenException => (HttpStatusCode.Conflict, "family-id-taken", "Family id taken", "A family with this id already exists."),
+            ClassNotAvailableException => (HttpStatusCode.BadRequest, "class-not-available", "Class not available", "Lantern does not have books for this Class on the Family's Board yet."),
             FamilyChangedException => (HttpStatusCode.Conflict, "family-changed", "Family changed", "The family changed at the same moment; try again."),
             _ => null,
         };

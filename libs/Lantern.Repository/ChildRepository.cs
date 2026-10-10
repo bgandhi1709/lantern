@@ -4,7 +4,6 @@ using Lantern.Core.Exceptions;
 using Lantern.Core.Models;
 using Lantern.Core.Repository;
 using Lantern.Repository.Entities;
-using Lantern.Repository.Security;
 using Lantern.Repository.UnitOfWork;
 using MapsterMapper;
 
@@ -13,11 +12,9 @@ namespace Lantern.Repository;
 internal sealed class ChildRepository(
     IUnitOfWork<ChildEntity> unitOfWork,
     IUnitOfWork<FamilyEntity> families,
-    IFamilyKeyRing keyRing,
-    IFieldProtector protector,
     IMapper mapper,
     IRowKeyService keyService
-) : BaseRepository<Child, ChildEntity>(unitOfWork, keyRing, protector, mapper, keyService), IChildRepository
+) : BaseRepository<Child, ChildEntity>(unitOfWork, mapper, keyService), IChildRepository
 {
     private const int MaxEditAttempts = 3;
 
@@ -53,7 +50,7 @@ internal sealed class ChildRepository(
         {
             await UnitOfWork.SubmitAsync(
                 [
-                    new(TableTransactionActionType.Add, await ToEntityAsync(instance, cancellationToken)),
+                    new(TableTransactionActionType.Add, ToEntity(instance)),
                     new(TableTransactionActionType.UpdateMerge, new TableEntity(partition, KeyService.FamilyRowKey)
                     {
                         [nameof(FamilyEntity.ChildrenChangedAt)] = instance.CreatedAt,
@@ -74,7 +71,7 @@ internal sealed class ChildRepository(
     {
         ArgumentNullException.ThrowIfNull(instance);
 
-        var changed = await ToEntityAsync(instance, cancellationToken);
+        var changed = ToEntity(instance);
 
         // The row's own ETag keeps an edit from writing a stale Status over a delete that just marked it.
         for (var attempt = 0; attempt < MaxEditAttempts; attempt++)
@@ -85,9 +82,9 @@ internal sealed class ChildRepository(
                 throw new NotFoundException("child");
             }
 
-            row.NameCipher = changed.NameCipher;
-            row.SchoolCipher = changed.SchoolCipher;
-            row.BirthYear = changed.BirthYear;
+            row.NameLocked = changed.NameLocked;
+            row.SchoolLocked = changed.SchoolLocked;
+            row.BirthYearLocked = changed.BirthYearLocked;
 
             try
             {

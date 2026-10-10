@@ -20,9 +20,9 @@ shape, naming, folder and registration. Each kind's reference class is named in
 | `apps/lantern-api/Lantern.Api` | Controllers, API models, `ApiProfile` (API ↔ service mapping), `HttpIdentityResolver`, `ProblemExceptionHandler`, rate limits, the host's `Program.cs` | Business rules, storage, Azure SDK clients, service models built by hand |
 | `apps/lantern-api/Lantern.Functions` | Triggers, `Handler/` (dispatcher, `ActionHandler<T>`, one handler per `ActionType`), `FunctionsModule` | HTTP, business rules a service owns |
 | `libs/Lantern.Base` | Services (`I{Model}Service`), validators, normalizers, `BaseModule` | Azure SDK types, row keys, ciphertext, HTTP types, handlers |
-| `libs/Lantern.Core` | Service models, every contract (`IServiceBase<T>`, `IRepositoryBase<T>`, `I{Model}Repository`, `I{Thing}Store`, `IActionLedger`), `ServiceBase<T>`, exceptions, `{Section}Options`, `IIdentityResolver`, crypto, generic external services (`IServiceBusService`, `IKeyVaultClient`), action types, payloads and publisher, `CoreModule` | Implementations of storage contracts, entities, anything app-specific |
-| `libs/Lantern.Repository` | Entities (internal), `UnitOfWork<TEntity>`, `BaseRepository<TModel, TEntity>`, repositories, stores, field encryption, `RepositoryProfile`, `RepositoryModule` | Business rules, HTTP, service orchestration |
-| `tests/<app>/` | Every test project and every local stand-in (Key Vault stand-in, seeder, Docker host) | Production code |
+| `libs/Lantern.Core` | Service models, every contract (`IServiceBase<T>`, `IRepositoryBase<T>`, `I{Model}Repository`, `I{Thing}Store`, `IActionLedger`), `ServiceBase<T>`, exceptions, `{Section}Options`, `IIdentityResolver`, crypto, generic external services (`IServiceBusService`), action types, payloads and publisher, `CoreModule` | Implementations of storage contracts, entities, anything app-specific |
+| `libs/Lantern.Repository` | Entities (internal), `UnitOfWork<TEntity>`, `BaseRepository<TModel, TEntity>`, repositories, stores, `RepositoryModule` | Business rules, HTTP, service orchestration |
+| `tests/<app>/` | Every test project and every local stand-in (seeder, Docker host) | Production code |
 
 `apps/` and `libs/` hold production code only. Test projects mirror the app they test (`tests/lantern-api/` ↔
 `apps/lantern-api/`), and their folders mirror the production folders.
@@ -43,8 +43,8 @@ shape, naming, folder and registration. Each kind's reference class is named in
   `IFamilyModel` when they belong to a Family and carry no storage detail: no partition or row key, no ETag, no
   ciphertext.
 - **Entities** (`Lantern.Repository/Entities`) are `internal` and never returned from a repository.
-- Mapping is Mapster only, through one `IRegister` per boundary: `ApiProfile` (API ↔ service) and `RepositoryProfile`
-  (service ↔ entity), merged into the one `IMapper`. Never write `ToX`/`FromX` mapping methods or copy properties by
+- Mapping is Mapster only, through one `IRegister` per boundary: `ApiProfile` (API ↔ service); service ↔ entity maps by name, so the
+  repository layer needs none. It is merged into the one `IMapper`. Never write `ToX`/`FromX` mapping methods or copy properties by
   hand. `*Profile` is reserved for these Mapster classes.
 
 ### 4. Reuse before you write
@@ -76,16 +76,15 @@ its "Reuse or create" table. Review a change against the recipe it should have f
   the ledger and completes it; a handler never touches the ledger itself.
 - **Family scope** comes only from `IIdentityResolver` through `ServiceBase.FamilyIdAsync`, and a model's `FamilyId`
   is overwritten from it on every write.
-- **Encryption** happens only in the repository, by marking entity columns `[Encrypted("column")]`. Crypto primitives
-  live only in `CryptoService`, and Key Vault is reached only through `IKeyVaultClient`.
+- **Locked values** are stored and returned as sent. The server never encrypts or decrypts a personal field and holds no
+  Family key (ADR-0010). The only crypto is the uid hash in `CryptoService`.
 
 ### 6. Registration (DI)
 
 - Each project registers its own types in one `{Layer}Module.AddLantern{Layer}()` extension. Hosts call
   `AddLanternBase()` (plus `AddLanternFunctions()` in Functions) and add only host concerns in `Program.cs`.
 - Library registrations use `TryAdd*`, so a host or test can replace one.
-- Lifetimes: repositories, services, the dispatcher, handlers and `FamilyKeyRing` are scoped (`FamilyKeyRing` so a
-  Family key is unwrapped at most once per request); units of work, the ledger, stores, the publisher and Azure clients
+- Lifetimes: repositories, services, the dispatcher, handlers are scoped; units of work, the ledger, stores, the publisher and Azure clients
   are singletons.
 - Constructor injection with primary constructors. No service locator outside DI factory lambdas and the rate-limit
   policy.
@@ -160,7 +159,7 @@ The rules are in `.claude/skills/expo-app-standards/SKILL.md` (the cycle is `doc
   `Lantern.Api.Test.Integration` for E2E, and `Lantern.Api.Test.Integration.Host` for the local Docker host and its
   stand-ins. Reach internals with `InternalsVisibleTo`.
 - Storage behaviour is tested against real Azurite. Fakes are allowed only at the external seams: `IServiceBusService`
-  (`RecordingServiceBus`) and `IKeyVaultClient` (a local RSA key). In-process tests deliver the messages the API sent to
+  (`RecordingServiceBus`). In-process tests deliver the messages the API sent to
   the real dispatcher from `Lantern.Functions`.
 - Every service override, repository override and handler has tests, and every wire name (action type, problem code)
   has a test that pins it.
@@ -181,7 +180,7 @@ Every new endpoint follows these. `/security-review` checks them before the PR (
 - **Bounded.** Set a maximum body size, maximum lengths and counts on every input, and page every list response.
 - **Rate limited per caller**, keyed by the caller's uid hash, never by raw uid or IP alone.
 - **Cancellable.** Every I/O call takes the `CancellationToken`. No unbounded waits.
-- **Crypto ships with its tests.** Code that encrypts, hashes or wraps keys has tests for tamper detection, wrong key, wrong authenticated data, and isolation between Families. Never invent a primitive; use the platform's and Key Vault's.
+- **Crypto ships with its tests.** Code that hashes or handles keys has tests for stability, a different key giving a different result, and isolation between Families; a locked value is tested as stored exactly as sent. Never invent a primitive; use the platform's.
 
 ## Changes that need more than code
 

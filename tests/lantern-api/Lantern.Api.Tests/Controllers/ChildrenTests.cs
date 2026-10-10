@@ -11,6 +11,7 @@ using Lantern.Api.Models;
 using Lantern.Api.Services;
 using Functions::Lantern.Functions.Handler;
 using Lantern.Core.Actions;
+using Lantern.Core.Models;
 using Lantern.Core.Repository;
 using Lantern.Repository;
 using Lantern.Api.Tests.Infrastructure;
@@ -53,9 +54,9 @@ public sealed class ChildrenTests(AzuriteFixture azurite) : IDisposable
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         Assert.Equal(ApiClientExtensions.Child(id), response.Headers.Location);
         var created = await response.Content.ReadFromJsonAsync<ChildModel>();
-        Assert.Equal((id, "Kavya", "Green School", 4), (created!.ChildId, created.Name, created.School, created.ClassLevel));
+        Assert.Equal((id, "Kavya", "Green School", 4), (created!.ChildId, created.NameLocked, created.SchoolLocked, created.ClassLevel));
         var after = await MeAsync(client);
-        Assert.Equal(["Aarav", "Diya", "Kavya"], after.Children.Select(c => c.Name));
+        Assert.Equal(["Aarav", "Diya", "Kavya"], after.Children.Select(c => c.NameLocked));
         Assert.False(await Blobs.GetBlobClient($"{me.FamilyId:D}/{id:D}/4/class.json").ExistsAsync());
 
         await factory.DeliverAsync();
@@ -83,7 +84,7 @@ public sealed class ChildrenTests(AzuriteFixture azurite) : IDisposable
 
         await client.PostAsJsonAsync(ApiClientExtensions.Children, NewChild(Guid.NewGuid(), "Aarav"));
 
-        Assert.Equal(["Aarav", "Diya", "Aarav"], (await MeAsync(client)).Children.Select(c => c.Name));
+        Assert.Equal(["Aarav", "Diya", "Aarav"], (await MeAsync(client)).Children.Select(c => c.NameLocked));
     }
 
     [Fact]
@@ -127,13 +128,10 @@ public sealed class ChildrenTests(AzuriteFixture azurite) : IDisposable
     [Theory]
     [InlineData("class-zero")]
     [InlineData("class-eleven")]
-    [InlineData("born-too-long-ago")]
-    [InlineData("born-too-recently")]
     [InlineData("empty-name")]
     [InlineData("overlong-name")]
-    [InlineData("control-character-in-name")]
+    [InlineData("empty-birth-year")]
     [InlineData("overlong-school")]
-    [InlineData("control-character-in-school")]
     [InlineData("empty-child-id")]
     public async Task Add_InvalidBody_Returns400AndStoresNothing(string scenario)
     {
@@ -143,13 +141,10 @@ public sealed class ChildrenTests(AzuriteFixture azurite) : IDisposable
         {
             case "class-zero": body.ClassLevel = 0; break;
             case "class-eleven": body.ClassLevel = 11; break;
-            case "born-too-long-ago": body.BirthYear = Year - 19; break;
-            case "born-too-recently": body.BirthYear = Year - 2; break;
-            case "empty-name": body.Name = " "; break;
-            case "overlong-name": body.Name = new string('x', 41); break;
-            case "control-character-in-name": body.Name = "Kav\u0007ya"; break;
-            case "overlong-school": body.School = new string('x', 121); break;
-            case "control-character-in-school": body.School = "Gre\nen"; break;
+            case "empty-name": body.NameLocked = ""; break;
+            case "overlong-name": body.NameLocked = new string('x', 401); break;
+            case "empty-birth-year": body.BirthYearLocked = ""; break;
+            case "overlong-school": body.SchoolLocked = new string('x', 401); break;
             case "empty-child-id": body.ChildId = Guid.Empty; break;
         }
 
@@ -211,21 +206,36 @@ public sealed class ChildrenTests(AzuriteFixture azurite) : IDisposable
     }
 
     [Fact]
-    public async Task Add_StoredRow_HoldsNoPlaintext()
+    public async Task Add_StoredRow_HoldsExactlyTheLockedValuesTheClientSent()
     {
         using var client = await RegisteredAsync();
-        var name = $"Secret-{Guid.NewGuid():N}";
-        var school = $"School-{Guid.NewGuid():N}";
-        var id = Guid.NewGuid();
+        var body = NewChild(Guid.NewGuid(), $"locked-name-{Guid.NewGuid():N}", 3, $"locked-school-{Guid.NewGuid():N}");
 
-        await client.PostAsJsonAsync(ApiClientExtensions.Children, NewChild(id, name, 3, school));
+        await client.PostAsJsonAsync(ApiClientExtensions.Children, body);
 
         var row = await Families.GetEntityAsync<TableEntity>(
             KeyService.FamilyPartition((await MeAsync(client)).FamilyId),
-            KeyService.ChildRowKey(id)
+            KeyService.ChildRowKey(body.ChildId)
         );
-        Assert.DoesNotContain(name, Flat(row.Value), StringComparison.Ordinal);
-        Assert.DoesNotContain(school, Flat(row.Value), StringComparison.Ordinal);
+        Assert.Equal(body.NameLocked, row.Value.GetString("NameLocked"));
+        Assert.Equal(body.SchoolLocked, row.Value.GetString("SchoolLocked"));
+        Assert.Equal(body.BirthYearLocked, row.Value.GetString("BirthYearLocked"));
+    }
+
+    [Fact]
+    public async Task Add_AnSscFamilysChild_AboveClassFive_Returns400ClassNotAvailable_AndStartsNoWorkspace()
+    {
+        using var client = await RegisteredAsync(BoardType.Ssc);
+        var id = Guid.NewGuid();
+
+        var six = await client.PostAsJsonAsync(ApiClientExtensions.Children, NewChild(id, "Kavya", 6));
+        var five = await client.PostAsJsonAsync(ApiClientExtensions.Children, NewChild(Guid.NewGuid(), "Kavya", 5));
+
+        Assert.Equal(HttpStatusCode.BadRequest, six.StatusCode);
+        Assert.Equal("class-not-available", await six.ProblemCodeAsync());
+        Assert.Equal(HttpStatusCode.Created, five.StatusCode);
+        Assert.Equal(3, (await MeAsync(client)).Children.Count);
+        Assert.DoesNotContain(factory.Sender.Sent, m => m.Payload.Contains(id.ToString(), StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
@@ -254,7 +264,7 @@ public sealed class ChildrenTests(AzuriteFixture azurite) : IDisposable
         var response = await client.PostAsJsonAsync(ApiClientExtensions.Children, NewChild(Guid.NewGuid(), "Fresh"));
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
-        Assert.Equal("Fresh", (await MeAsync(client)).Children[^1].Name);
+        Assert.Equal("Fresh", (await MeAsync(client)).Children[^1].NameLocked);
     }
 
     // ---- edit ----
@@ -267,28 +277,28 @@ public sealed class ChildrenTests(AzuriteFixture azurite) : IDisposable
 
         var response = await client.PutAsJsonAsync(
             ApiClientExtensions.Child(child.ChildId),
-            new { Name = "Aarav K", School = "New School", BirthYear = Year - 7, ClassLevel = 9 }
+            new { NameLocked = "Aarav K", SchoolLocked = "New School", BirthYearLocked = "locked-7", ClassLevel = 9 }
         );
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var now = (await MeAsync(client)).Children[0];
-        Assert.Equal(("Aarav K", "New School", Year - 7, child.ClassLevel), (now.Name, now.School, now.BirthYear, now.ClassLevel));
+        Assert.Equal(("Aarav K", "New School", "locked-7", child.ClassLevel), (now.NameLocked, now.SchoolLocked, now.BirthYearLocked, now.ClassLevel));
     }
 
     [Fact]
-    public async Task Edit_WithNoSchool_ClearsIt_AndStoresNoPlaintext()
+    public async Task Edit_WithNoSchool_ClearsIt_AndStoresTheLockedValuesAsSent()
     {
         using var client = await RegisteredAsync();
         var me = await MeAsync(client);
         var child = me.Children[0];
-        var name = $"Renamed-{Guid.NewGuid():N}";
+        var name = $"renamed-{Guid.NewGuid():N}";
 
-        await client.PutAsJsonAsync(ApiClientExtensions.Child(child.ChildId), new { Name = name, School = "  ", BirthYear = child.BirthYear });
+        await client.PutAsJsonAsync(ApiClientExtensions.Child(child.ChildId), new { NameLocked = name, SchoolLocked = (string?)null, BirthYearLocked = child.BirthYearLocked });
 
-        Assert.Null((await MeAsync(client)).Children[0].School);
+        Assert.Null((await MeAsync(client)).Children[0].SchoolLocked);
         var row = await Families.GetEntityAsync<TableEntity>(KeyService.FamilyPartition(me.FamilyId), KeyService.ChildRowKey(child.ChildId));
-        Assert.False(row.Value.ContainsKey("SchoolCipher"));
-        Assert.DoesNotContain(name, Flat(row.Value), StringComparison.Ordinal);
+        Assert.False(row.Value.ContainsKey("SchoolLocked"));
+        Assert.Equal(name, row.Value.GetString("NameLocked"));
     }
 
     [Fact]
@@ -300,12 +310,12 @@ public sealed class ChildrenTests(AzuriteFixture azurite) : IDisposable
 
         var response = await mine.PutAsJsonAsync(
             ApiClientExtensions.Child(theirChild.ChildId),
-            new { Name = "Hijacked", BirthYear = theirChild.BirthYear }
+            new { NameLocked = "Hijacked", BirthYearLocked = theirChild.BirthYearLocked }
         );
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         Assert.Equal("child-not-found", await response.ProblemCodeAsync());
-        Assert.Equal("Aarav", (await MeAsync(theirs)).Children[0].Name);
+        Assert.Equal("Aarav", (await MeAsync(theirs)).Children[0].NameLocked);
     }
 
     [Fact]
@@ -315,16 +325,16 @@ public sealed class ChildrenTests(AzuriteFixture azurite) : IDisposable
         var children = (await MeAsync(client)).Children;
         await client.DeleteAsync(ApiClientExtensions.Child(children[1].ChildId));
 
-        var unknown = await client.PutAsJsonAsync(ApiClientExtensions.Child(Guid.NewGuid()), new { Name = "X", BirthYear = Year - 6 });
-        var deleting = await client.PutAsJsonAsync(ApiClientExtensions.Child(children[1].ChildId), new { Name = "X", BirthYear = Year - 6 });
-        var badYear = await client.PutAsJsonAsync(ApiClientExtensions.Child(children[0].ChildId), new { Name = "X", BirthYear = Year - 30 });
-        var badName = await client.PutAsJsonAsync(ApiClientExtensions.Child(children[0].ChildId), new { Name = " ", BirthYear = Year - 6 });
+        var unknown = await client.PutAsJsonAsync(ApiClientExtensions.Child(Guid.NewGuid()), new { NameLocked = "X", BirthYearLocked = "y" });
+        var deleting = await client.PutAsJsonAsync(ApiClientExtensions.Child(children[1].ChildId), new { NameLocked = "X", BirthYearLocked = "y" });
+        var badYear = await client.PutAsJsonAsync(ApiClientExtensions.Child(children[0].ChildId), new { NameLocked = "X", BirthYearLocked = "" });
+        var badName = await client.PutAsJsonAsync(ApiClientExtensions.Child(children[0].ChildId), new { NameLocked = "", BirthYearLocked = "y" });
 
         Assert.Equal(HttpStatusCode.NotFound, unknown.StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, deleting.StatusCode);
         Assert.Equal(HttpStatusCode.BadRequest, badYear.StatusCode);
         Assert.Equal(HttpStatusCode.BadRequest, badName.StatusCode);
-        Assert.Equal("Aarav", (await MeAsync(client)).Children[0].Name);
+        Assert.Equal("Aarav", (await MeAsync(client)).Children[0].NameLocked);
     }
 
     [Fact]
@@ -332,7 +342,7 @@ public sealed class ChildrenTests(AzuriteFixture azurite) : IDisposable
     {
         using var anonymous = factory.CreateClient();
         using var unregistered = factory.CreateClient().WithBearer(TestTokens.Create(NewUid()));
-        var body = new { Name = "X", BirthYear = Year - 6 };
+        var body = new { NameLocked = "X", BirthYearLocked = "y" };
 
         Assert.Equal(HttpStatusCode.Unauthorized, (await anonymous.PutAsJsonAsync(ApiClientExtensions.Child(Guid.NewGuid()), body)).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, (await unregistered.PutAsJsonAsync(ApiClientExtensions.Child(Guid.NewGuid()), body)).StatusCode);
@@ -587,7 +597,7 @@ public sealed class ChildrenTests(AzuriteFixture azurite) : IDisposable
     }
 
     [Fact]
-    public async Task Requests_NeverLogChildNamesOrSchools()
+    public async Task Requests_NeverLogLockedChildValues()
     {
         using var client = await RegisteredAsync();
         var name = $"Child-{Guid.NewGuid():N}";
@@ -595,7 +605,7 @@ public sealed class ChildrenTests(AzuriteFixture azurite) : IDisposable
         var id = Guid.NewGuid();
 
         await client.PostAsJsonAsync(ApiClientExtensions.Children, NewChild(id, name, 2, school));
-        await client.PutAsJsonAsync(ApiClientExtensions.Child(id), new { Name = name + "x", School = school + "x", BirthYear = Year - 6 });
+        await client.PutAsJsonAsync(ApiClientExtensions.Child(id), new { NameLocked = name + "x", SchoolLocked = school + "x", BirthYearLocked = "y" });
         await client.DeleteAsync(ApiClientExtensions.Child(id));
         await factory.DeliverAsync();
 
@@ -605,10 +615,10 @@ public sealed class ChildrenTests(AzuriteFixture azurite) : IDisposable
 
     // ---- helpers ----
 
-    private async Task<HttpClient> RegisteredAsync()
+    private async Task<HttpClient> RegisteredAsync(BoardType board = BoardType.Cbse)
     {
         var client = factory.CreateClient().WithBearer(TestTokens.Create(NewUid()));
-        Assert.Equal(HttpStatusCode.Created, (await client.RegisterAsync(RegisterBody())).StatusCode);
+        Assert.Equal(HttpStatusCode.Created, (await client.RegisterAsync(RegisterBody(board))).StatusCode);
         await factory.DeliverAsync();
 
         return client;
@@ -617,13 +627,11 @@ public sealed class ChildrenTests(AzuriteFixture azurite) : IDisposable
     private static async Task<FamilyModel> MeAsync(HttpClient client) =>
         (await client.GetFromJsonAsync<FamilyModel>(ApiClientExtensions.Me))!;
 
-    private static string Flat(TableEntity row) => string.Join('|', ((IDictionary<string, object>)row).Values);
-
     private async Task<List<string>> BlobNamesAsync(string prefix) =>
-        await Blobs
-            .GetBlobsAsync(BlobTraits.None, BlobStates.None, prefix, CancellationToken.None)
-            .Select(blob => blob.Name)
-            .ToListAsync();
+    await Blobs
+        .GetBlobsAsync(BlobTraits.None, BlobStates.None, prefix, CancellationToken.None)
+        .Select(blob => blob.Name)
+        .ToListAsync();
 
     private async Task<List<TableEntity>> LedgerAsync(Guid familyId) =>
         await Actions
@@ -640,18 +648,27 @@ public sealed class ChildrenTests(AzuriteFixture azurite) : IDisposable
     }
 
     private static ChildAddModel NewChild(Guid id, string name, int classLevel = 1, string? school = null) =>
-        new() { ChildId = id, Name = name, ClassLevel = classLevel, BirthYear = Year - 8, School = school };
+        new() { ChildId = id, NameLocked = name, ClassLevel = classLevel, BirthYearLocked = $"locked-{Year - 8}", SchoolLocked = school };
 
-    private static FamilyRegisterRequest RegisterBody() =>
+    // The server never reads locked values, so the tests send short opaque strings.
+    private static FamilyRegisterRequest RegisterBody(BoardType board) =>
         new()
         {
+            FamilyId = Guid.NewGuid(),
             Region = "Gujarat",
+            Board = board,
             Language = "gu",
+            ParentNameLocked = "locked-parent-name",
+            ParentEmailLocked = "locked-parent-email",
+            PassphraseWrappedKey = "locked-passphrase-key",
+            PassphraseSalt = "salt-1",
+            RecoveryWrappedKey = "locked-recovery-key",
+            RecoverySalt = "salt-2",
             Consent = new ConsentModel { Accepted = true, NoticeVersion = "2026-09" },
             Children =
             [
-                new ChildSaveModel { Name = "Aarav", ClassLevel = 5, BirthYear = Year - 10 },
-                new ChildSaveModel { Name = "Diya", ClassLevel = 3, BirthYear = Year - 8 },
+                new ChildSaveModel { NameLocked = "Aarav", ClassLevel = 5, BirthYearLocked = $"locked-{Year - 10}" },
+                new ChildSaveModel { NameLocked = "Diya", ClassLevel = 3, BirthYearLocked = $"locked-{Year - 8}" },
             ],
         };
 

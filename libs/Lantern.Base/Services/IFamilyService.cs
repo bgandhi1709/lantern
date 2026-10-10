@@ -7,6 +7,8 @@ public interface IFamilyService : IServiceBase<Family>
 {
     /// <summary>Registers the caller as the first Parent of a new Family with its Children.</summary>
     /// <exception cref="Core.Exceptions.AlreadyRegisteredException">The caller already has a Family.</exception>
+    /// <exception cref="Core.Exceptions.FamilyIdTakenException">A Family with the phone's chosen id already exists.</exception>
+    /// <exception cref="Core.Exceptions.ClassNotAvailableException">A Child's Class has no Books for the Board.</exception>
     /// <exception cref="Core.Exceptions.InvalidRequestException">A rule the API model can't express is broken.</exception>
     Task<Family> RegisterAsync(Registration registration, CancellationToken cancellationToken);
 

@@ -3,18 +3,15 @@ using Azure.Data.Tables;
 using Lantern.Core.Exceptions;
 using Lantern.Core.Models;
 using Lantern.Core.Repository;
-using Lantern.Repository.Security;
 using Lantern.Repository.UnitOfWork;
 using MapsterMapper;
 
 namespace Lantern.Repository;
 
-// Maps a service model to its entity and back, encrypting the entity's [Encrypted] columns with the Family key on the
-// way. A model type needs only its row key; it overrides the rest only where its storage rules differ.
+// Maps a service model to its entity and back. Locked fields pass through untouched (D66). A model type needs only
+// its row key; it overrides the rest only where its storage rules differ.
 internal abstract class BaseRepository<TModel, TEntity>(
     IUnitOfWork<TEntity> unitOfWork,
-    IFamilyKeyRing keyRing,
-    IFieldProtector protector,
     IMapper mapper,
     IRowKeyService keyService
 ) : IRepositoryBase<TModel>
@@ -24,10 +21,6 @@ internal abstract class BaseRepository<TModel, TEntity>(
     protected IUnitOfWork<TEntity> UnitOfWork => unitOfWork;
 
     protected IRowKeyService KeyService => keyService;
-
-    protected IFamilyKeyRing KeyRing => keyRing;
-
-    protected IFieldProtector Protector => protector;
 
     protected IMapper Mapper => mapper;
 
@@ -42,7 +35,7 @@ internal abstract class BaseRepository<TModel, TEntity>(
     {
         var entity = await unitOfWork.SingleOrNullAsync(keyService.FamilyPartition(familyId), RowKey(id), cancellationToken);
 
-        return entity is null ? null : await ToModelAsync(familyId, entity, cancellationToken);
+        return entity is null ? null : ToModel(familyId, entity);
     }
 
     public virtual async Task<TModel> SingleAsync(Guid familyId, Guid id, CancellationToken cancellationToken) =>
@@ -54,7 +47,7 @@ internal abstract class BaseRepository<TModel, TEntity>(
         var models = new List<TModel>();
         foreach (var entity in await unitOfWork.PartitionAsync(keyService.FamilyPartition(familyId), RowKeyPrefix, cancellationToken))
         {
-            models.Add(await ToModelAsync(familyId, entity, cancellationToken));
+            models.Add(ToModel(familyId, entity));
         }
 
         return models;
@@ -62,7 +55,7 @@ internal abstract class BaseRepository<TModel, TEntity>(
 
     public virtual async Task<TModel> AddAsync(TModel instance, CancellationToken cancellationToken)
     {
-        await unitOfWork.AddAsync(await ToEntityAsync(instance, cancellationToken), cancellationToken);
+        await unitOfWork.AddAsync(ToEntity(instance), cancellationToken);
 
         return instance;
     }
@@ -70,7 +63,7 @@ internal abstract class BaseRepository<TModel, TEntity>(
     public virtual async Task<TModel> UpdateAsync(TModel instance, CancellationToken cancellationToken)
     {
         await unitOfWork.UpdateAsync(
-            await ToEntityAsync(instance, cancellationToken),
+            ToEntity(instance),
             ETag.All,
             TableUpdateMode.Replace,
             cancellationToken
@@ -82,37 +75,22 @@ internal abstract class BaseRepository<TModel, TEntity>(
     public virtual Task RemoveAsync(Guid familyId, Guid id, CancellationToken cancellationToken) =>
         unitOfWork.DeleteAsync(keyService.FamilyPartition(familyId), RowKey(id), cancellationToken);
 
-    protected async Task<TEntity> ToEntityAsync(TModel model, CancellationToken cancellationToken)
+    protected TEntity ToEntity(TModel model)
     {
         ArgumentNullException.ThrowIfNull(model);
 
         var entity = mapper.Map<TEntity>(model);
         entity.PartitionKey = keyService.FamilyPartition(model.FamilyId);
         entity.RowKey = RowKey(IdOf(model));
-        await ProtectAsync(model.FamilyId, entity, cancellationToken);
 
         return entity;
     }
 
-    protected async Task<TModel> ToModelAsync(Guid familyId, TEntity entity, CancellationToken cancellationToken)
+    protected TModel ToModel(Guid familyId, TEntity entity)
     {
-        if (protector.HasEncryptedColumns<TEntity>())
-        {
-            protector.Unprotect(entity, await keyRing.GetAsync(familyId, cancellationToken));
-        }
-
         var model = mapper.Map<TModel>(entity);
         model.FamilyId = familyId;
 
         return model;
-    }
-
-    protected async Task ProtectAsync<T>(Guid familyId, T entity, CancellationToken cancellationToken)
-        where T : ITableEntity
-    {
-        if (protector.HasEncryptedColumns<T>())
-        {
-            protector.Protect(entity, await keyRing.GetAsync(familyId, cancellationToken));
-        }
     }
 }

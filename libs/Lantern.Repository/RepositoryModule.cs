@@ -4,9 +4,7 @@ using Azure.Storage.Blobs;
 using Lantern.Core.Configuration;
 using Lantern.Core.Repository;
 using Lantern.Repository.Entities;
-using Lantern.Repository.Security;
 using Lantern.Repository.UnitOfWork;
-using Mapster;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -16,7 +14,7 @@ namespace Lantern.Repository;
 
 public static class RepositoryModule
 {
-    /// <summary>The storage account, a unit of work per entity, the repositories and the field encryption.</summary>
+    /// <summary>The storage account, a unit of work per entity, the repositories and the stores.</summary>
     public static IServiceCollection AddLanternRepository(this IServiceCollection services, IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(configuration);
@@ -50,8 +48,6 @@ public static class RepositoryModule
         AddUnitOfWork<ActionEntity>(services, options => options.ActionsTable);
 
         services.TryAddSingleton<IRowKeyService, RowKeyService>();
-        services.TryAddSingleton<IFieldProtector, FieldProtector>();
-        services.TryAddScoped<IFamilyKeyRing, FamilyKeyRing>();
         services.TryAddScoped<IFamilyRepository, FamilyRepository>();
         services.TryAddScoped<IChildRepository, ChildRepository>();
         services.TryAddScoped<IRepositoryBase<Core.Models.Child>>(serviceProvider => serviceProvider.GetRequiredService<IChildRepository>());
@@ -61,7 +57,6 @@ public static class RepositoryModule
             serviceProvider.GetRequiredService<BlobServiceClient>().GetBlobContainerClient(Storage(serviceProvider).WorkspaceContainer),
             createContainer: !string.IsNullOrWhiteSpace(Storage(serviceProvider).ConnectionString)
         ));
-        services.AddSingleton<IRegister, RepositoryProfile>();
 
         return services;
     }

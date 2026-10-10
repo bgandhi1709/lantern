@@ -28,7 +28,7 @@ public sealed class LocalStackE2ETests
         var family = await MeAsync("dev-parent-1");
 
         Assert.Equal(Enumerable.Range(1, 10), family.Children.Select(child => child.ClassLevel));
-        Assert.All(family.Children, child => Assert.False(string.IsNullOrWhiteSpace(child.Name)));
+        Assert.All(family.Children, child => Assert.False(string.IsNullOrWhiteSpace(child.NameLocked)));
     }
 
     [Fact]

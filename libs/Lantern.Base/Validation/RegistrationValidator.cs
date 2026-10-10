@@ -4,7 +4,7 @@ using Lantern.Core.Service;
 
 namespace Lantern.Base.Validation;
 
-internal sealed class RegistrationValidator(IValidator<Child> child) : IValidator<Registration>
+internal sealed class RegistrationValidator : IValidator<Registration>
 {
     public void Validate(Registration instance)
     {
@@ -15,9 +15,14 @@ internal sealed class RegistrationValidator(IValidator<Child> child) : IValidato
             throw new InvalidRequestException("Consent must be accepted to register.");
         }
 
-        foreach (var entry in instance.Children)
+        if (instance.FamilyId == Guid.Empty)
         {
-            child.Validate(entry);
+            throw new InvalidRequestException("A family id is required.");
+        }
+
+        if (instance.Children.Any(child => !Child.IsClassAvailable(instance.Board, child.ClassLevel)))
+        {
+            throw new ClassNotAvailableException();
         }
     }
 }

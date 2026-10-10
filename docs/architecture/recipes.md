@@ -54,7 +54,7 @@ model's `IServiceBase<T>` or `I{Noun}Service`, or it is time for an interactor.
 
 1. **Service model.** `Lantern.Core/Models/{Noun}.cs`, implementing `IFamilyModel`, plaintext, no storage fields.
 2. **Entity.** `Lantern.Repository/Entities/{Noun}Entity.cs`, `internal sealed`, deriving `TableEntityBase`. Mark
-   personal text `[Encrypted("column")]` on a `{Field}Cipher` property, and add the renames to `RepositoryProfile`.
+   personal text as a `{Field}Locked` string the phone has already locked; the server stores it as sent.
 3. **Keys.** Add `{Noun}RowPrefix` and `{Noun}RowKey(id)` to `IRowKeyService` and `RowKeyService`. They are cipher
    context: once released, never changed.
 4. **Repository.** `I{Noun}Repository : IRepositoryBase<{Noun}>` in `Core/Repository`, and
@@ -129,11 +129,11 @@ Storage formats, wire names and product rules are never settings ([D36](../ideat
 ## External dependency
 
 1. A contract in Core (`I{Resource}Service` or `I{Resource}Client`) that knows nothing of the domain: it takes and returns
-   general types (`SendAsync<T>(queue, message)`, `WrapKeyAsync(bytes)`).
+   general types (`SendAsync<T>(queue, message)`).
 2. The implementation in Core holds the SDK client, created lazily from its options; it is the only holder of that
    client type (add a row to `LayerTests.ClientOwners`).
 3. Domain code wraps it in the layer that needs it (`ActionPublisher` over `ServiceBusService`).
-4. Tests replace it at this seam only (`RecordingServiceBus`, a local RSA `IKeyVaultClient`).
+4. Tests replace it at this seam only (`RecordingServiceBus`).
 
 ## Done
 

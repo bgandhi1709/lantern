@@ -16,7 +16,6 @@ internal sealed class FamilyService(
     IActionPublisher actions,
     IIdentityResolver identityResolver,
     IValidator<Registration> validator,
-    IChildTextNormalizer text,
     TimeProvider clock,
     ILogger<FamilyService> logger
 ) : ServiceBase<Family, IFamilyRepository>(families, identityResolver, families), IFamilyService
@@ -34,19 +33,30 @@ internal sealed class FamilyService(
             throw new AlreadyRegisteredException();
         }
 
+        // The phone picks the Family id (the first Child is locked with a key tied to it), so refuse one in use.
+        if (await Families.SingleOrNullAsync(registration.FamilyId, registration.FamilyId, cancellationToken) is not null)
+        {
+            throw new FamilyIdTakenException();
+        }
+
         var now = clock.GetUtcNow();
         var family = new Family
         {
-            FamilyId = Guid.NewGuid(),
+            FamilyId = registration.FamilyId,
             Region = registration.Region.Trim(),
+            Board = registration.Board,
+            PassphraseWrappedKey = registration.PassphraseWrappedKey,
+            PassphraseSalt = registration.PassphraseSalt,
+            RecoveryWrappedKey = registration.RecoveryWrappedKey,
+            RecoverySalt = registration.RecoverySalt,
             CreatedAt = now,
         };
         var parent = new Parent
         {
             ParentId = Guid.NewGuid(),
             FamilyId = family.FamilyId,
-            Name = identity.Name,
-            Email = identity.Email,
+            NameLocked = registration.ParentNameLocked,
+            EmailLocked = registration.ParentEmailLocked,
             Language = registration.Language,
             ConsentVersion = registration.ConsentNoticeVersion.Trim(),
             ConsentAt = now,
@@ -60,10 +70,10 @@ internal sealed class FamilyService(
                     {
                         FamilyId = family.FamilyId,
                         ChildId = Guid.NewGuid(),
-                        Name = text.Name(child.Name),
-                        School = text.School(child.School),
+                        NameLocked = child.NameLocked,
+                        SchoolLocked = child.SchoolLocked,
                         ClassLevel = child.ClassLevel,
-                        BirthYear = child.BirthYear,
+                        BirthYearLocked = child.BirthYearLocked,
                         Position = position,
                         CreatedAt = now,
                         Status = ChildStatus.Active,

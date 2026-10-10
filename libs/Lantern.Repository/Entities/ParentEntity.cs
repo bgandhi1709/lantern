@@ -7,11 +7,10 @@ internal sealed class ParentEntity : TableEntityBase
 
     public Guid FamilyId { get; set; }
 
-    [Encrypted("name")]
-    public string NameCipher { get; set; } = string.Empty;
+    // Locked on the phone (D66); stored as sent.
+    public string NameLocked { get; set; } = string.Empty;
 
-    [Encrypted("email")]
-    public string EmailCipher { get; set; } = string.Empty;
+    public string EmailLocked { get; set; } = string.Empty;
 
     public string Language { get; set; } = string.Empty;
 

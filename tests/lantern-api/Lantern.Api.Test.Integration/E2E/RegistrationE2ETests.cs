@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using Lantern.Api.Models;
+using Lantern.Core.Models;
 
 namespace Lantern.Api.Test.Integration.E2E;
 
@@ -19,6 +20,8 @@ public sealed class RegistrationE2ETests(RegisteredFamilyFixture fixture) : ICla
         Assert.NotEqual(Guid.Empty, fixture.Family.FamilyId);
         Assert.Equal("Gujarat", fixture.Family.Region);
         Assert.Single(fixture.Family.Children);
+        Assert.Equal(BoardType.Cbse, fixture.Family.Board);
+        Assert.Equal("e2e-passphrase-wrapped-key", fixture.Family.PassphraseWrappedKey);
     }
 
     [Fact]

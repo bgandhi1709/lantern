@@ -17,9 +17,7 @@ public static class BaseModule
     {
         services.AddLanternCore(configuration).AddLanternRepository(configuration);
 
-        services.TryAddSingleton<IValidator<Child>, ChildValidator>();
         services.TryAddSingleton<IValidator<Registration>, RegistrationValidator>();
-        services.TryAddSingleton<IChildTextNormalizer, ChildTextNormalizer>();
         services.TryAddScoped<IFamilyService, FamilyService>();
         services.TryAddScoped<IChildService, ChildService>();
 

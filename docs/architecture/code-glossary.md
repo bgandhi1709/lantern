@@ -130,8 +130,8 @@ HTTP ─▶ Controller ─▶ (Interactor) ─▶ Service ─▶ Repository / St
 
 **Generic external service** (`I{Resource}Service` / `{Resource}Service`, or `I{Resource}Client`)
 - Meaning: the one gateway to an external resource, knowing nothing of what it carries (wf: `IBusService<T>`, the
-  `*Client` libraries). `ServiceBusService` sends any model to any queue; `KeyVaultClient` wraps and unwraps;
-  `CryptoService` holds the AES-GCM and HMAC code. **(tested: each Azure client has one owner)**
+  `*Client` libraries). `ServiceBusService` sends any model to any queue;
+  `CryptoService` holds the uid hash (Lantern holds no Family key, ADR-0010). **(tested: each Azure client has one owner)**
 
 **Resolver contract** (`IIdentityResolver`): the caller, resolved per request by the host.
 
@@ -152,7 +152,7 @@ HTTP ─▶ Controller ─▶ (Interactor) ─▶ Service ─▶ Repository / St
 ## Repository layer: `libs/Lantern.Repository` (storage only)
 
 **Repository** (`{Noun}Repository`, the root folder) **(tested: named after its model and entity)**
-- Meaning: stores one service model. Maps it to its entity and back, encrypts and decrypts, and applies the storage rules
+- Meaning: stores one service model. Maps it to its entity and back (locked values pass through untouched), and applies the storage rules
   that need atomicity (ETags, batches).
 - Base: `BaseRepository<{Noun}, {Noun}Entity>`; supply `RowKeyPrefix`, `RowKey(id)` and `IdOf(model)`, and override
   only operations whose storage rules differ.
@@ -160,8 +160,7 @@ HTTP ─▶ Controller ─▶ (Interactor) ─▶ Service ─▶ Repository / St
 - Example: `ChildRepository` (the limit of six under the Family row's ETag), `FamilyRepository` (a multi-table commit).
 
 **Entity** (`{Noun}Entity`, `Entities/`) **(tested: internal)**
-- Meaning: the stored row shape. Derives `TableEntityBase`; encrypted columns are marked `[Encrypted("column")]` and named
-  `{Field}Cipher`. Internal, never returned.
+- Meaning: the stored row shape. Derives `TableEntityBase`; personal text is a `{Field}Locked` string the phone locked. Internal, never returned.
 
 **UnitOfWork** (`UnitOfWork<TEntity>`, `UnitOfWork/`) **(tested: the only `TableClient` holder)**
 - Meaning: the only class that sends table requests (wf: `UnitOfWork`, `GenericUnitOfWork`). One per entity type,
@@ -174,15 +173,10 @@ HTTP ─▶ Controller ─▶ (Interactor) ─▶ Service ─▶ Repository / St
 
 **RowKeyService** (`IRowKeyService`): every partition and row key. Keys are cipher context, so they are fixed in code.
 
-**Protector, KeyRing** (`Security/`): `FieldProtector` encrypts `[Encrypted]` columns with the row's keys as authenticated
-data; `FamilyKeyRing` unwraps each Family key at most once per request.
-
-**Profile** (`RepositoryProfile`): the one Mapster `IRegister` for service model ⇄ entity (the `*Cipher` renames).
-
 **Attribute** (`{Meaning}Attribute`)
 - Meaning: declarative metadata a framework class reads by reflection, so the rule sits on the thing it describes
-  (wf: `RoleAccessAttribute` on endpoints, `TranslationAttribute` and `AuditAttribute` on models). Lantern:
-  `EncryptedAttribute` on entity columns. A new attribute lives beside the code that reads it.
+  (wf: `RoleAccessAttribute` on endpoints, `TranslationAttribute` and `AuditAttribute` on models). Lantern has none
+  today. A new attribute lives beside the code that reads it.
 
 ## Kinds wf has that Lantern does not use
 

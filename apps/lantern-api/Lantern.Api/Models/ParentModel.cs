@@ -4,9 +4,9 @@ public sealed class ParentModel
 {
     public Guid ParentId { get; set; }
 
-    public string Name { get; set; } = string.Empty;
+    public string NameLocked { get; set; } = string.Empty;
 
-    public string Email { get; set; } = string.Empty;
+    public string EmailLocked { get; set; } = string.Empty;
 
     public string Language { get; set; } = string.Empty;
 

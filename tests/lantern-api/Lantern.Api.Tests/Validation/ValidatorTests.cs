@@ -6,52 +6,49 @@ namespace Lantern.Api.Tests.Validation;
 
 public sealed class ValidatorTests
 {
-    private const int Year = 2026;
+    private static readonly RegistrationValidator Rules = new();
 
-    private static readonly ChildValidator ChildRules = new(new FixedClock());
-
-    [Theory]
-    [InlineData(Year - 18)]
-    [InlineData(Year - 10)]
-    [InlineData(Year - 3)]
-    public void Child_BirthYearInRange_Passes(int birthYear) => ChildRules.Validate(new Child { BirthYear = birthYear });
-
-    [Theory]
-    [InlineData(Year - 19)]
-    [InlineData(Year - 2)]
-    [InlineData(0)]
-    public void Child_BirthYearOutOfRange_Throws(int birthYear) =>
-        Assert.Throws<InvalidRequestException>(() => ChildRules.Validate(new Child { BirthYear = birthYear }));
+    private static Registration Body(bool accepted = true, BoardType board = BoardType.Cbse, int classLevel = 3, Guid? familyId = null) =>
+        new()
+        {
+            FamilyId = familyId ?? Guid.NewGuid(),
+            ConsentAccepted = accepted,
+            Board = board,
+            Children = [new Child { ClassLevel = 1 }, new Child { ClassLevel = classLevel }],
+        };
 
     [Fact]
-    public void Registration_RequiresConsentAndChecksEveryChild()
-    {
-        var registration = new RegistrationValidator(ChildRules);
-        Registration Body(bool accepted, int birthYear) =>
-            new()
-            {
-                ConsentAccepted = accepted,
-                Children = [new Child { BirthYear = Year - 8 }, new Child { BirthYear = birthYear }],
-            };
-
-        Assert.Throws<InvalidRequestException>(() => registration.Validate(Body(false, Year - 8)));
-        Assert.Throws<InvalidRequestException>(() => registration.Validate(Body(true, Year - 30)));
-        registration.Validate(Body(true, Year - 9));
-    }
+    public void Registration_WithConsentAndAFamilyId_Passes() => Rules.Validate(Body());
 
     [Fact]
-    public void Normalizer_TrimsNameAndTurnsABlankSchoolIntoNull()
-    {
-        var text = new ChildTextNormalizer();
+    public void Registration_WithoutConsent_Throws() => Assert.Throws<InvalidRequestException>(() => Rules.Validate(Body(accepted: false)));
 
-        Assert.Equal("Aarav", text.Name("  Aarav "));
-        Assert.Null(text.School("   "));
-        Assert.Null(text.School(null));
-        Assert.Equal("Green School", text.School(" Green School "));
+    [Fact]
+    public void Registration_WithoutAFamilyId_Throws() => Assert.Throws<InvalidRequestException>(() => Rules.Validate(Body(familyId: Guid.Empty)));
+
+    [Theory]
+    [InlineData(BoardType.Cbse, 10, true)]
+    [InlineData(BoardType.Ssc, 5, true)]
+    [InlineData(BoardType.Ssc, 6, false)]
+    [InlineData(BoardType.Ssc, 10, false)]
+    public void Registration_ChecksEveryChildsClassAgainstTheBoard(BoardType board, int classLevel, bool allowed)
+    {
+        void Act() => Rules.Validate(Body(board: board, classLevel: classLevel));
+
+        if (allowed)
+        {
+            Act();
+        }
+        else
+        {
+            Assert.Throws<ClassNotAvailableException>(Act);
+        }
     }
 
-    private sealed class FixedClock : TimeProvider
-    {
-        public override DateTimeOffset GetUtcNow() => new(Year, 6, 1, 0, 0, 0, TimeSpan.Zero);
-    }
+    [Theory]
+    [InlineData(BoardType.Cbse, 0, false)]
+    [InlineData(BoardType.Cbse, 11, false)]
+    [InlineData(BoardType.Ssc, 1, true)]
+    public void Child_ClassAvailability(BoardType board, int classLevel, bool expected) =>
+        Assert.Equal(expected, Child.IsClassAvailable(board, classLevel));
 }

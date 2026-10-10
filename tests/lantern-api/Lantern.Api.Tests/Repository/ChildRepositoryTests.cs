@@ -55,7 +55,7 @@ public sealed class ChildRepositoryTests(AzuriteFixture azurite) : IDisposable
         await harness.ChildRepository().AddAsync(added, CancellationToken.None);
 
         Assert.Equal(2, added.Position);
-        Assert.Equal("Kavya", (await harness.ChildRepository().CollectionAsync(family.FamilyId, CancellationToken.None))[^1].Name);
+        Assert.Equal("Kavya", (await harness.ChildRepository().CollectionAsync(family.FamilyId, CancellationToken.None))[^1].NameLocked);
         await Assert.ThrowsAsync<FamilyChangedException>(() => harness.ChildRepository().AddAsync(added, CancellationToken.None));
     }
 
@@ -64,17 +64,17 @@ public sealed class ChildRepositoryTests(AzuriteFixture azurite) : IDisposable
     {
         var family = NewFamily();
         var child = NewChild(family, 0);
-        child.School = "Green School";
+        child.SchoolLocked = "Green School";
         child.ClassLevel = 6;
         await harness.FamilyRepository().RegisterAsync(NewUid(), family, NewParent(family), [child], CancellationToken.None);
 
         await harness.ChildRepository().UpdateAsync(
-            new Child { FamilyId = family.FamilyId, ChildId = child.ChildId, Name = "New Name", BirthYear = 2019, ClassLevel = 9 },
+            new Child { FamilyId = family.FamilyId, ChildId = child.ChildId, NameLocked = "New Name", BirthYearLocked = "2019", ClassLevel = 9 },
             CancellationToken.None
         );
 
         var stored = Assert.Single(await harness.ChildRepository().CollectionAsync(family.FamilyId, CancellationToken.None));
-        Assert.Equal(("New Name", (string?)null, 2019, 6, ChildStatus.Active), (stored.Name, stored.School, stored.BirthYear, stored.ClassLevel, stored.Status));
+        Assert.Equal(("New Name", (string?)null, "2019", 6, ChildStatus.Active), (stored.NameLocked, stored.SchoolLocked, stored.BirthYearLocked, stored.ClassLevel, stored.Status));
     }
 
     [Fact]
@@ -103,7 +103,7 @@ public sealed class ChildRepositoryTests(AzuriteFixture azurite) : IDisposable
         await harness.ChildRepository().MarkDeletingAsync(family.FamilyId, child.ChildId, CancellationToken.None);
 
         var stored = await harness.ChildRepository().SingleAsync(family.FamilyId, child.ChildId, CancellationToken.None);
-        Assert.Equal((ChildStatus.Deleting, "Aarav"), (stored.Status, stored.Name));
+        Assert.Equal((ChildStatus.Deleting, "Aarav"), (stored.Status, stored.NameLocked));
     }
 
     [Fact]

@@ -1,8 +1,6 @@
 using System.Reflection;
 using Azure.Data.Tables;
 using Azure.Messaging.ServiceBus;
-using Azure.Security.KeyVault.Keys;
-using Azure.Security.KeyVault.Keys.Cryptography;
 using Azure.Storage.Blobs;
 
 namespace Lantern.Api.Tests.Architecture;
@@ -52,8 +50,6 @@ public sealed class LayerTests
             { typeof(BlobServiceClient), "WorkspaceStore" },
             { typeof(ServiceBusClient), "ServiceBusService" },
             { typeof(ServiceBusSender), "ServiceBusService" },
-            { typeof(KeyClient), "KeyVaultClient" },
-            { typeof(CryptographyClient), "KeyVaultClient" },
         };
 
     [Theory]

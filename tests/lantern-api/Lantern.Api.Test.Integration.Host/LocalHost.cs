@@ -8,13 +8,12 @@ internal static class LocalHost
 {
     private static void Main()
     {
-        var keyPath = Environment.GetEnvironmentVariable("Local__KeyPath") ?? "/keys/family-field-key.pem";
         var certificate = X509Certificate2.CreateFromPemFile(
             Environment.GetEnvironmentVariable("Kestrel__Certificates__Default__Path") ?? "/certs/local.lantern.api.crt",
             Environment.GetEnvironmentVariable("Kestrel__Certificates__Default__KeyPath") ?? "/certs/local.lantern.api.key"
         );
 
-        using var factory = new LocalApiFactory(keyPath, AppContext.BaseDirectory);
+        using var factory = new LocalApiFactory(AppContext.BaseDirectory);
         factory.UseKestrel(options => options.ListenAnyIP(8443, listen => listen.UseHttps(certificate)));
         factory.StartServer();
 

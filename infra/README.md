@@ -3,7 +3,7 @@
 Base infrastructure for Lantern, environment `uat`, deployed into the existing `rg-lantern-dev`
 (Central India). One file, `main.bicep`; the environment is in `params/lantern.uat.bicepparam`.
 It creates the Container App fully wired (Firebase project id, storage table endpoint, the
-`security-key` secret from Key Vault, the `family-field-key` name and vault URI) but on a
+`security-key` secret from Key Vault) but on a
 placeholder image; the API release sets the real image and port (`.github/workflows/api.yml`),
 nothing else.
 
@@ -15,17 +15,14 @@ infra/bootstrap.sh rg-lantern-dev uat
 
 Needs Owner or User Access Administrator on the resource group. Safe to run again. It creates the
 identity `id-lantern-uat`, the Key Vault `kv-lantern-uat`, the roles the identity needs (Storage Table
-Data Contributor, Storage Blob Data Contributor, Storage Blob Data Owner (the Functions host's own state), Azure Service Bus Data Sender and Azure Service Bus Data Receiver and Monitoring Metrics Publisher (telemetry export) on the resource group, Key Vault Secrets User and Key Vault Crypto User on the vault),
+Data Contributor, Storage Blob Data Contributor, Storage Blob Data Owner (the Functions host's own state), Azure Service Bus Data Sender and Azure Service Bus Data Receiver and Monitoring Metrics Publisher (telemetry export) on the resource group, Key Vault Secrets User on the vault),
 a Storage Blob Data Contributor role on the resource group for whoever runs it (so `ncert-build upload`
-works once the container exists), the secret `security-key`, and the key `family-field-key`, each only
-if missing. Whoever runs it also gets Key Vault Crypto User on the vault, since local development has
-no Key Vault emulator and calls the real vault through `az login`.
+works once the container exists), and the secret `security-key`, only if missing.
 
 **`security-key` derives the uid hash key. Rotating it makes every registration unreadable.**
-Save a copy (the script prints the command). **`family-field-key` wraps each family's own
-field-encryption key (issue #23) — its private material never leaves the vault.** Deleting it makes
-every family's data unreadable; rotating it is safe, since Key Vault keeps prior versions and
-already-wrapped keys keep unwrapping.
+Save a copy (the script prints the command). Lantern holds no Family key: each Family's personal fields are
+locked on the phone with a key only the Parent can open (D66, [ADR-0010](../docs/adr/0010-family-key-held-by-the-parent.md)).
+The old `family-field-key` in the vault is no longer used; it can be deleted once no Family on the old scheme remains.
 
 ## 2. Deploy
 
@@ -42,10 +39,8 @@ The deploying account needs Contributor only. It creates the storage account `la
 Apps environment with two apps (each 0 to 1 replica, the identity attached): the API `ca-lantern-uat`, and `ca-lantern-uat-functions`, which runs `Lantern.Functions` with no ingress and is woken by a KEDA Service Bus rule when a message arrives ([ADR-0004](../docs/adr/0004-actions-through-service-bus-and-functions.md)). All names come from
 `environmentName`. The template reads the identity and the Key Vault by name and wires the app's
 settings: `Firebase__ProjectId` (a param, not a secret), `Storage__TableEndpoint` and `Storage__BlobEndpoint` (read from the
-storage account), `ServiceBus__FullyQualifiedNamespace` (the Service Bus namespace the API sends to), `Actions__Queue` (the queue's name, read by both apps), `Security__Key` (a Key Vault secret reference), `KeyVault__VaultUri` and
-`KeyVault__FamilyKeyName` (plain values — the app only ever calls Key Vault's wrapKey/unwrapKey by
-name, it never holds the key itself), and `AZURE_CLIENT_ID` (the identity's client id, needed since
-`DefaultAzureCredential` can't otherwise tell which user-assigned identity to use). Every name and tuning value (tables, the Workspace container, the Key Vault secret and key names, the queue and its retry settings, each app's size and scale, the children rate limit, the action resend delay) is written once in `params/lantern.<env>.bicepparam`; the template passes each to the apps as an env var and `bootstrap.sh` reads the Key Vault names from the same file, so nothing environment-specific is hard-coded in the apps (D36). Add tables, never
+storage account), `ServiceBus__FullyQualifiedNamespace` (the Service Bus namespace the API sends to), `Actions__Queue` (the queue's name, read by both apps), `Security__Key` (a Key Vault secret reference), and `AZURE_CLIENT_ID` (the identity's client id, needed since
+`DefaultAzureCredential` can't otherwise tell which user-assigned identity to use). Every name and tuning value (tables, the Workspace container, the Key Vault secret name, the queue and its retry settings, each app's size and scale, the children rate limit, the action resend delay) is written once in `params/lantern.<env>.bicepparam`; the template passes each to the apps as an env var and `bootstrap.sh` reads the Key Vault secret name from the same file, so nothing environment-specific is hard-coded in the apps (D36). Add tables, never
 rename one.
 
 The release sets the real images and the API's port by deploying this template with them (`CONTAINER_IMAGE` for the API,
