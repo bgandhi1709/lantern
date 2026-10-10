@@ -39,7 +39,10 @@ const requiredStories: Record<string, string[]> = {
     'Unreachable',
     'Registered',
   ],
-  'shared/ui/PrimaryButton.stories.tsx': ['Default', 'LongLabel'],
+  'shared/ui/PrimaryButton.stories.tsx': ['Default', 'Disabled', 'LongLabel'],
+  'shared/ui/TextField.stories.tsx': ['Empty', 'Filled', 'LongLabel'],
+  'shared/ui/CheckRow.stories.tsx': ['Unchecked', 'Checked', 'LongLabel'],
+  'registration/AboutYouView.stories.tsx': ['Empty', 'RegionOnly', 'AgreedOnly', 'Ready'],
   'registration/StepHeader.stories.tsx': ['Step1', 'Step2', 'Step3', 'Step4'],
   'registration/GoogleAccountCard.stories.tsx': ['Default', 'LongValues'],
 };
@@ -50,6 +53,7 @@ const withoutStory: Record<string, string> = {
   'auth/AuthProvider.tsx': 'context provider with no look of its own',
   'auth/StartScreen.tsx': 'container for StartView, which has the stories',
   'registration/AboutYouScreen.tsx': 'container for AboutYouView, which has the stories',
+  'registration/RegistrationDraft.tsx': 'context provider with no look of its own',
   'registration/RegistrationFlow.tsx':
     'moves between the registration steps, which have the stories',
   'auth/SignedInRoute.tsx': 'container for SignedInView, which has the stories',
@@ -57,7 +61,7 @@ const withoutStory: Record<string, string> = {
   'auth/IntroMark.tsx': 'animation of Mark, shown inside OpeningScreen',
   'auth/PageTurnLoader.tsx': 'loader shown inside OpeningScreen',
   'shared/ui/FadeIn.tsx': 'animation wrapper with no look of its own',
-  'shared/ui/icons.tsx': 'SVG parts used by FeatureList and GoogleButton',
+  'shared/ui/icons.tsx': 'SVG parts used by the screens and their components',
   'shared/ui/markParts.tsx': 'SVG parts of Mark',
 };
 

@@ -58,6 +58,20 @@ export const MailIcon = () => (
   </LineIcon>
 );
 
+export const PinIcon = () => (
+  <LineIcon>
+    <Path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z" />
+    <Circle cx={12} cy={10} r={2.5} />
+  </LineIcon>
+);
+
+export const ShieldCheckIcon = () => (
+  <LineIcon>
+    <Path d="M12 3l8 3v6c0 5-3.4 8-8 9-4.6-1-8-4-8-9V6z" />
+    <Path d="M8.5 12l2.5 2.5 4.5-5" />
+  </LineIcon>
+);
+
 export const BackIcon = () => (
   <LineIcon strokeWidth={2.75}>
     <Path d="M15 5l-7 7 7 7" />

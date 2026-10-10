@@ -1,5 +1,10 @@
 import { AboutYouScreen } from './AboutYouScreen';
+import { RegistrationDraftProvider } from './RegistrationDraft';
 
 export function RegistrationFlow() {
-  return <AboutYouScreen />;
+  return (
+    <RegistrationDraftProvider>
+      <AboutYouScreen onContinue={() => undefined} />
+    </RegistrationDraftProvider>
+  );
 }
