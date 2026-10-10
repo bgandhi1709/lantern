@@ -16,6 +16,7 @@ type Props = {
   canContinue: boolean;
   onRegionChange: (region: string) => void;
   onNoticeToggle: () => void;
+  onOpenNotice: () => void;
   onContinue: () => void;
   onBack: () => void;
 };
@@ -27,6 +28,7 @@ export function AboutYouView({
   canContinue,
   onRegionChange,
   onNoticeToggle,
+  onOpenNotice,
   onContinue,
   onBack,
 }: Props) {
@@ -61,7 +63,13 @@ export function AboutYouView({
         >
           <Text className="font-inter-medium text-body text-ink">
             {about.agreeBefore}
-            <Text className="font-inter-bold text-primary underline">{about.noticeLink}</Text>
+            <Text
+              accessibilityRole="link"
+              onPress={onOpenNotice}
+              className="font-inter-bold text-primary underline"
+            >
+              {about.noticeLink}
+            </Text>
             {about.agreeAfter}
           </Text>
         </CheckRow>

@@ -3,7 +3,9 @@ import { AboutYouView } from './AboutYouView';
 import { isValidRegion } from './region';
 import { useRegistrationDraft } from './RegistrationDraft';
 
-export function AboutYouScreen({ onContinue }: { onContinue: () => void }) {
+type Props = { onOpenNotice: () => void; onContinue: () => void };
+
+export function AboutYouScreen({ onOpenNotice, onContinue }: Props) {
   const { draft, update } = useRegistrationDraft();
 
   return (
@@ -14,6 +16,7 @@ export function AboutYouScreen({ onContinue }: { onContinue: () => void }) {
       canContinue={isValidRegion(draft.region) && draft.noticeAccepted}
       onRegionChange={(region) => update({ region })}
       onNoticeToggle={() => update({ noticeAccepted: !draft.noticeAccepted })}
+      onOpenNotice={onOpenNotice}
       onContinue={onContinue}
       onBack={signOutOfLantern}
     />

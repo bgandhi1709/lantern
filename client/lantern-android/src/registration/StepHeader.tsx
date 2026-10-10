@@ -1,7 +1,7 @@
-import { Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { useStrings } from '../shared/i18n';
-import { BackIcon } from '../shared/ui/icons';
+import { BackButton } from './BackButton';
 
 type Props = { step: number; total: number; onBack: () => void };
 
@@ -13,14 +13,7 @@ export function StepHeader({ step, total, onBack }: Props) {
   return (
     <View>
       <View className="flex-row items-center justify-between">
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={strings.back}
-          onPress={onBack}
-          className="-ml-3 size-12 items-center justify-center"
-        >
-          <BackIcon />
-        </Pressable>
+        <BackButton onBack={onBack} />
         <Text className="font-inter-semibold text-small text-muted">
           {strings.step(step, total)}
         </Text>

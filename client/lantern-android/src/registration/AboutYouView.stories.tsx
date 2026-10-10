@@ -13,6 +13,7 @@ const meta = {
     canContinue: false,
     onRegionChange: fn(),
     onNoticeToggle: fn(),
+    onOpenNotice: fn(),
     onContinue: fn(),
     onBack: fn(),
   },

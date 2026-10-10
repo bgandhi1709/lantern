@@ -1,6 +1,6 @@
 import '@testing-library/react-native/matchers';
-import { fireEvent, render, screen, userEvent } from '@testing-library/react-native';
-import { Text } from 'react-native';
+import { act, fireEvent, render, screen, userEvent } from '@testing-library/react-native';
+import { BackHandler, Text } from 'react-native';
 
 import { ApiError, api } from '../shared/api';
 import { fakeRestoredSession } from '../test/fakeFirebaseAuth';
@@ -95,5 +95,74 @@ describe('Continue on About you', () => {
     await user.type(regionField(), 'x'.repeat(70));
 
     expect(regionField()).toHaveDisplayValue('x'.repeat(60));
+  });
+});
+
+const fillIn = async (user: ReturnType<typeof userEvent.setup>) => {
+  await user.type(regionField(), 'Pune, Maharashtra');
+  await user.press(agreeBox());
+};
+const backButton = () => screen.getByRole('button', { name: 'Back' });
+
+describe('moving between the steps', () => {
+  const handlers: (() => boolean | null | undefined)[] = [];
+  const pressSystemBack = () => act(() => void handlers.at(-1)?.());
+
+  beforeEach(() => {
+    handlers.length = 0;
+    jest.spyOn(BackHandler, 'addEventListener').mockImplementation((_event, handler) => {
+      const press = () => handler({ type: 'hardwareBackPress', timeStamp: 0 });
+      handlers.push(press);
+      return { remove: () => void handlers.splice(handlers.indexOf(press), 1) };
+    });
+  });
+
+  it('opens the privacy notice from its link and comes back with everything kept', async () => {
+    const user = userEvent.setup();
+    await renderNotRegistered();
+    await fillIn(user);
+
+    await user.press(screen.getByRole('link', { name: 'privacy notice' }));
+
+    expect(screen.getByRole('header', { name: 'Your privacy, in plain words' })).toBeOnTheScreen();
+    expect(screen.getByText('Notice version 2026-10')).toBeOnTheScreen();
+    expect(screen.queryByText('Step 1 of 4')).not.toBeOnTheScreen();
+
+    await user.press(backButton());
+
+    expect(regionField()).toHaveDisplayValue('Pune, Maharashtra');
+    expect(agreeBox()).toBeChecked();
+  });
+
+  it('goes to step 2 on Continue, and Back returns with everything kept', async () => {
+    const user = userEvent.setup();
+    await renderNotRegistered();
+    await fillIn(user);
+
+    await user.press(continueButton());
+
+    expect(screen.getByText('Step 2 of 4')).toBeOnTheScreen();
+    expect(screen.getByText('Board comes next')).toBeOnTheScreen();
+    expect(screen.queryByRole('header', { name: 'A little about you' })).not.toBeOnTheScreen();
+
+    await user.press(backButton());
+
+    expect(regionField()).toHaveDisplayValue('Pune, Maharashtra');
+    expect(agreeBox()).toBeChecked();
+    expect(continueButton()).toBeEnabled();
+  });
+
+  it("takes Android's back button back one step, and leaves it to the system on About you", async () => {
+    const user = userEvent.setup();
+    await renderNotRegistered();
+    expect(handlers).toHaveLength(0);
+    await fillIn(user);
+    await user.press(continueButton());
+
+    await pressSystemBack();
+
+    expect(screen.getByRole('header', { name: 'A little about you' })).toBeOnTheScreen();
+    expect(regionField()).toHaveDisplayValue('Pune, Maharashtra');
+    expect(handlers).toHaveLength(0);
   });
 });
