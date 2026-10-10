@@ -114,4 +114,25 @@ describe('npm run lint', () => {
 
     expect(await rulesBroken(code, 'src/auth/Example.tsx')).not.toContain('no-restricted-syntax');
   });
+
+  it.each([
+    ['a StyleSheet', 'export const styles = StyleSheet.create({ a: { flex: 1 } });\n'],
+    ['an inline style object', 'export const A = () => <View style={{ flex: 1 }} />;\n'],
+    ['a style array', 'export const A = () => <View style={[a, b]} />;\n'],
+    [
+      'a style function',
+      'export const A = () => <Pressable style={({ pressed }) => pressed} />;\n',
+    ],
+  ])('fails on %s instead of class names', async (_, code) => {
+    expect(await rulesBroken(code, 'src/auth/Example.tsx')).toContain('no-restricted-syntax');
+  });
+
+  it.each([
+    ['an animated value', 'export const A = () => <Animated.View style={{ opacity: shown }} />;\n'],
+    ['an SVG', 'export const A = () => <Svg style={{ opacity: 1 }} />;\n'],
+    ['a class name', 'export const A = () => <View className="flex-1 bg-ground" />;\n'],
+    ['a style name', 'export const A = () => <StatusBar style="dark" />;\n'],
+  ])('allows %s', async (_, code) => {
+    expect(await rulesBroken(code, 'src/auth/Example.tsx')).not.toContain('no-restricted-syntax');
+  });
 });

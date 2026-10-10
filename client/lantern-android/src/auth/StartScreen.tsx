@@ -1,9 +1,7 @@
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ScrollView, Text, View } from 'react-native';
 
 import { useStrings } from '../shared/i18n';
 import { Mark } from '../shared/ui/Mark';
-import { colors, fonts } from '../shared/ui/theme';
 import { FeatureList } from './FeatureList';
 import { GoogleButton } from './GoogleButton';
 import { useGoogleSignIn } from './useGoogleSignIn';
@@ -13,66 +11,37 @@ export function StartScreen() {
   const strings = useStrings();
 
   return (
-    <SafeAreaView style={styles.screen}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.wordmark}>{strings.appName}</Text>
-        <View style={styles.mark}>
+    <View className="flex-1 bg-ground pb-safe pt-safe">
+      <ScrollView contentContainerClassName="gap-3 p-6 pb-3">
+        <Text className="text-center font-inter-bold text-brand text-primary">
+          {strings.appName}
+        </Text>
+        <View className="items-center">
           <Mark />
         </View>
-        <Text accessibilityRole="header" style={styles.heading}>
+        <Text
+          accessibilityRole="header"
+          className="text-center font-inter-bold text-heading text-ink"
+        >
           {strings.start.heading}
         </Text>
-        <Text style={styles.subheading}>{strings.start.subheading}</Text>
+        <Text className="text-center font-inter-medium text-body text-muted">
+          {strings.start.subheading}
+        </Text>
         <FeatureList />
       </ScrollView>
-      <View style={styles.footer}>
-        <Text accessibilityLiveRegion="polite" style={styles.error}>
+      <View className="gap-2 px-6 pb-6">
+        <Text
+          accessibilityLiveRegion="polite"
+          className="text-center font-inter-semibold text-small text-danger"
+        >
           {status === 'failed' ? strings.start.signInFailed : null}
         </Text>
         <GoogleButton busy={status === 'signingIn'} onPress={signIn} />
-        <Text style={styles.note}>{strings.start.note}</Text>
+        <Text className="text-center font-inter-medium text-caption text-muted">
+          {strings.start.note}
+        </Text>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.ground },
-  content: { padding: 24, paddingBottom: 12, gap: 12 },
-  wordmark: {
-    textAlign: 'center',
-    fontFamily: fonts.bold,
-    fontSize: 28,
-    lineHeight: 36,
-    color: colors.primary,
-  },
-  mark: { alignItems: 'center' },
-  heading: {
-    textAlign: 'center',
-    fontFamily: fonts.bold,
-    fontSize: 28,
-    lineHeight: 34,
-    color: colors.text,
-  },
-  subheading: {
-    textAlign: 'center',
-    fontFamily: fonts.medium,
-    fontSize: 16,
-    lineHeight: 22,
-    color: colors.textSecondary,
-  },
-  footer: { paddingHorizontal: 24, paddingBottom: 24, gap: 8 },
-  note: {
-    textAlign: 'center',
-    fontFamily: fonts.medium,
-    fontSize: 13,
-    lineHeight: 18,
-    color: colors.textSecondary,
-  },
-  error: {
-    textAlign: 'center',
-    fontFamily: fonts.semiBold,
-    fontSize: 15,
-    color: colors.error,
-  },
-});

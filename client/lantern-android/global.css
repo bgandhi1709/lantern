@@ -1,0 +1,45 @@
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/preflight.css' layer(base);
+@import 'tailwindcss/utilities.css';
+@import 'nativewind/theme';
+
+/* The one definition of how Lantern looks. Keep `src/shared/ui/theme.ts` in step (a test checks it). */
+@theme {
+  /* One spacing step is 4 px, so p-6 is 24 px, whatever the rem size. */
+  --spacing: 4px;
+
+  --color-primary: #0f766e;
+  --color-primary-deep: #115e59;
+  --color-ink: #1e293b;
+  --color-muted: #55657a;
+  --color-ground: #f2faf9;
+  --color-card: #ffffff;
+  --color-line: #e1eae8;
+  --color-tile: #e6faf7;
+  --color-on-primary: #ffffff;
+  --color-danger: #b42318;
+
+  --font-inter-medium: Inter_500Medium;
+  --font-inter-semibold: Inter_600SemiBold;
+  --font-inter-bold: Inter_700Bold;
+
+  --radius-control: 12px;
+  --radius-tile: 8px;
+  --radius-card: 16px;
+
+  /* Line heights are ratios (line / size): react-native-css reads a unitless value as a multiple of the size. */
+  --text-caption: 13px;
+  --text-caption--line-height: calc(18 / 13);
+  --text-small: 15px;
+  --text-small--line-height: calc(21 / 15);
+  --text-body: 16px;
+  --text-body--line-height: calc(22 / 16);
+  --text-lead: 17px;
+  --text-lead--line-height: calc(22 / 17);
+  --text-heading: 28px;
+  --text-heading--line-height: calc(34 / 28);
+  --text-brand: 28px;
+  --text-brand--line-height: calc(36 / 28);
+  --text-display: 40px;
+  --text-display--line-height: calc(48 / 40);
+}

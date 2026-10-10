@@ -74,7 +74,7 @@ module.exports = [
     },
   },
   {
-    // App text lives in src/shared/i18n so every language is a dictionary, not a code change.
+    // App text lives in src/shared/i18n, and the look lives in class names (global.css holds the tokens).
     files: ['src/**/*.tsx', 'app/**/*.tsx'],
     ignores: ['**/*.test.tsx'],
     rules: {
@@ -87,6 +87,14 @@ module.exports = [
         ].map((selector) => ({
           selector,
           message: 'Put app text in src/shared/i18n/en.ts and read it with useStrings().',
+        })),
+        ...[
+          "CallExpression[callee.object.name='StyleSheet'][callee.property.name='create']",
+          // Animated values and SVG cannot be class names, so only they may take a style prop.
+          "JSXOpeningElement:not([name.object.name='Animated'], [name.name='Svg']) > JSXAttribute[name.name='style'] > JSXExpressionContainer > :matches(ObjectExpression, ArrayExpression, ArrowFunctionExpression)",
+        ].map((selector) => ({
+          selector,
+          message: 'Style with class names (global.css holds the tokens), not a style object.',
         })),
       ],
     },

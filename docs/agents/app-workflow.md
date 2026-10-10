@@ -28,7 +28,7 @@ A story with a screen or a flow works end to end when it is done: real data, rea
 
 - **Standards:** `.claude/skills/expo-app-standards/SKILL.md` is the rule book. Review applies every rule in it.
 - **Local storage:** the strictest area. Nothing personal on the device, one storage module, everything wiped on sign out, Android backup off. A new stored value is a founder decision, not an implementation detail.
-- **Dependencies:** each new package must support Android and iOS (ADR-0007, web dropped by D67), be installed with `npx expo install`, and be justified in **Why this way**.
+- **Dependencies:** each new package must support Android and iOS (ADR-0007, web dropped by D67), be installed with `npx expo install`, be vetted before the founder's yes (a scratch install of the exact version: `npm audit --omit=dev` shows no high or critical advisory from it, and its licence and its dependencies' are MIT-like and fit PolyForm Noncommercial; MPL, GPL, LGPL, AGPL or an unknown licence needs the founder's yes), and be justified in **Why this way**. Then re-run the audit on the real install, since peer and runtime dependencies can differ from the scratch one.
 - **Fidelity:** the built screen matches the canvas board in layout, copy and accessibility rules. A difference is either fixed or written into the ticket before the PR.
 - **Shipping:** an app PR leaves `android.yml` green. The release APK is built by the manual run behind the `uat` approval; the UAT address stays a secret (D61).
 - **Tokens:** read the specific files you need, run single test files while iterating and the full set once at the end, and keep chat replies short.
