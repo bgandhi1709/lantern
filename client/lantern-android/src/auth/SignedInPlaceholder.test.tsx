@@ -1,5 +1,6 @@
 import '@testing-library/react-native/matchers';
 import { render, screen, userEvent } from '@testing-library/react-native';
+import { Text } from 'react-native';
 
 import { api } from '../shared/api';
 import { fakeRestoredSession, signOut as firebaseSignOut } from '../test/fakeFirebaseAuth';
@@ -15,7 +16,7 @@ const renderSignedIn = () => {
   fakeRestoredSession();
   return render(
     <AuthProvider>
-      <AuthGate home={<SignedInPlaceholder />} />
+      <AuthGate home={<SignedInPlaceholder />} registration={<Text>Registration</Text>} />
     </AuthProvider>,
   );
 };

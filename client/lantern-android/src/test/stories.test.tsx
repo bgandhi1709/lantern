@@ -40,6 +40,8 @@ const requiredStories: Record<string, string[]> = {
     'Registered',
   ],
   'shared/ui/PrimaryButton.stories.tsx': ['Default', 'LongLabel'],
+  'registration/StepHeader.stories.tsx': ['Step1', 'Step2', 'Step3', 'Step4'],
+  'registration/GoogleAccountCard.stories.tsx': ['Default', 'LongValues'],
 };
 
 // A component file with no story of its own must say why, so the list stays short and honest.
@@ -47,6 +49,9 @@ const withoutStory: Record<string, string> = {
   'auth/AuthGate.tsx': 'routes by session state; the screens it picks have the stories',
   'auth/AuthProvider.tsx': 'context provider with no look of its own',
   'auth/StartScreen.tsx': 'container for StartView, which has the stories',
+  'registration/AboutYouScreen.tsx': 'container for AboutYouView, which has the stories',
+  'registration/RegistrationFlow.tsx':
+    'moves between the registration steps, which have the stories',
   'auth/SignedInRoute.tsx': 'container for SignedInView, which has the stories',
   'auth/IntroLayer.tsx': 'animation layer shown inside OpeningScreen',
   'auth/IntroMark.tsx': 'animation of Mark, shown inside OpeningScreen',
@@ -124,7 +129,7 @@ describe('the stories', () => {
     expect(screen.getByText(en.opening.waking)).toBeOnTheScreen();
 
     await render(<NotRegistered />);
-    expect(screen.getByRole('button', { name: en.common.signOut })).toBeOnTheScreen();
+    expect(screen.getByText(en.registration.about.heading)).toBeOnTheScreen();
 
     await render(<Unreachable />);
     expect(screen.getByRole('button', { name: en.opening.tryAgain })).toBeOnTheScreen();

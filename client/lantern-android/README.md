@@ -71,6 +71,8 @@ client/lantern-android/ci/setup-signing.sh
 
 It creates one release key in `~/lantern-secrets/` (outside the repo), reads UAT's address from the deployed Container App, sets the six `uat` secrets (the key, its password and alias, the UAT address and `google-services.json`), and prints the key's SHA-1 for the Firebase registration in the sign-in story. **Back up `~/lantern-secrets/`.** A lost key means a new SHA-1 and a new Firebase registration.
 
+If a build stops with `GOOGLE_SERVICES_JSON_BASE64 is missing`, the wizard ran before `google-services.json` was saved in this folder and skipped that secret. Set it by hand and run the build again: `base64 -w0 google-services.json | gh secret set GOOGLE_SERVICES_JSON_BASE64 --env uat`.
+
 **Each build:**
 
 1. GitHub → Actions → **Android - Check and Build** → Run workflow (any branch).

@@ -18,6 +18,11 @@
   --color-tile: #e6faf7;
   --color-on-primary: #ffffff;
   --color-danger: #b42318;
+  --color-track: #d3ddee;
+  --color-field: #7f8b9c;
+  --color-disabled: #e8ecf1;
+  --color-disabled-line: #a9b4c2;
+  --color-disabled-text: #6b7686;
 
   --font-inter-medium: Inter_500Medium;
   --font-inter-semibold: Inter_600SemiBold;

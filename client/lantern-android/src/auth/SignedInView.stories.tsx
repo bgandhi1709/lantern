@@ -1,6 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react-native';
+import { Text } from 'react-native';
 import { fn } from 'storybook/test';
 
+import { en } from '../shared/i18n/en';
 import { fixedIntro } from '../test/fixedIntro';
 import { SignedInPlaceholder } from './SignedInPlaceholder';
 import { SignedInView } from './SignedInView';
@@ -12,8 +14,8 @@ const meta = {
     status: 'checking',
     intro: fixedIntro({ done: true, still: true }),
     home: <SignedInPlaceholder />,
+    registration: <Text>{en.registration.about.heading}</Text>,
     onTryAgain: fn(),
-    onSignOut: fn(),
   },
 } satisfies Meta<typeof SignedInView>;
 

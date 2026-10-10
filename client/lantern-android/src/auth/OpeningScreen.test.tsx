@@ -8,7 +8,7 @@ import { AuthGate, AuthProvider } from '.';
 const renderApp = () =>
   render(
     <AuthProvider>
-      <AuthGate home={<Text>Home</Text>} />
+      <AuthGate home={<Text>Home</Text>} registration={<Text>Registration</Text>} />
     </AuthProvider>,
   );
 

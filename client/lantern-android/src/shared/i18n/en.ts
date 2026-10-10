@@ -13,7 +13,6 @@ export const en = {
     waking: 'Waking Lantern up, this can take up to a minute…',
     unreachable: "Can't reach Lantern",
     tryAgain: 'Try again',
-    notRegistered: 'Registration comes next',
   },
   start: {
     heading: 'Teach your child with confidence.',
@@ -36,6 +35,17 @@ export const en = {
         title: 'See their progress',
         text: 'Know what stuck, and where to help next.',
       },
+    },
+  },
+  registration: {
+    back: 'Back',
+    step: (step: number, total: number) => `Step ${step} of ${total}`,
+    about: {
+      heading: 'A little about you',
+      intro: 'We took your name and email from your Google account.',
+      fromGoogle: 'FROM GOOGLE',
+      name: 'Name',
+      email: 'Email',
     },
   },
   signedIn: {
