@@ -5,12 +5,20 @@ internal sealed class FamilyEntity : TableEntityBase
 {
     public Guid FamilyId { get; set; }
 
-    public string Region { get; set; } = string.Empty;
+    public string Region { get; set; }
 
-    // Unwrap to decrypt the Family's fields; clearing it makes them unreadable forever (crypto-shredding).
-    public string WrappedFieldKey { get; set; } = string.Empty;
+    // Missing on a row written before Board existed: read as CBSE.
+    public string Board { get; set; }
 
-    public string KeyScheme { get; set; } = "KeyVault";
+    // The Family key wrapped on the phone, once by the Passphrase and once by the Recovery code (D66). Lantern cannot
+    // open them; clearing them makes the locked fields unreadable forever (crypto-shredding).
+    public string PassphraseWrappedKey { get; set; }
+
+    public string PassphraseSalt { get; set; }
+
+    public string RecoveryWrappedKey { get; set; }
+
+    public string RecoverySalt { get; set; }
 
     public DateTimeOffset CreatedAt { get; set; }
 

@@ -7,15 +7,14 @@ internal sealed class ParentEntity : TableEntityBase
 
     public Guid FamilyId { get; set; }
 
-    [Encrypted("name")]
-    public string NameCipher { get; set; } = string.Empty;
+    // Locked on the phone (D66); stored as sent.
+    public string Name { get; set; }
 
-    [Encrypted("email")]
-    public string EmailCipher { get; set; } = string.Empty;
+    public string Email { get; set; }
 
-    public string Language { get; set; } = string.Empty;
+    public string Language { get; set; }
 
-    public string ConsentVersion { get; set; } = string.Empty;
+    public string ConsentVersion { get; set; }
 
     public DateTimeOffset ConsentAt { get; set; }
 

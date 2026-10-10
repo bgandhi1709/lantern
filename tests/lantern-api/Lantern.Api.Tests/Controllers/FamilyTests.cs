@@ -11,6 +11,8 @@ using Functions::Lantern.Functions.Handler;
 using Lantern.Api.Models;
 using Lantern.Api.Tests.Infrastructure;
 using Lantern.Core.Actions;
+using Lantern.Core.Constants;
+using Lantern.Core.Models;
 using Lantern.Core.Repository;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
@@ -34,31 +36,130 @@ public sealed class FamilyTests(AzuriteFixture azurite) : IDisposable
     private IReadOnlyList<ActionMessage> Erasures => [.. factory.Sender.Sent.Where(m => m.Type == ActionType.RemoveFamily)];
 
     [Fact]
-    public async Task Register_Valid_Returns201AndMeReturnsTheSameFamily()
+    public async Task Register_Valid_Returns201AndMeReturnsTheSameFamilyWithTheSameLockedValues()
     {
         var uid = NewUid();
         using var client = Client(uid, "Meena Patel", "meena@example.test");
+        var body = ValidBody();
 
-        var created = await client.RegisterAsync(ValidBody());
+        var created = await client.RegisterAsync(body);
 
         Assert.Equal(HttpStatusCode.Created, created.StatusCode);
         var family = await created.Content.ReadFromJsonAsync<FamilyModel>();
         Assert.NotNull(family);
-        Assert.NotEqual(Guid.Empty, family.FamilyId);
+        Assert.Equal(body.FamilyId, family.FamilyId);
         Assert.NotEqual(Guid.Empty, family.Parent.ParentId);
-        Assert.Equal("Meena Patel", family.Parent.Name);
-        Assert.Equal("meena@example.test", family.Parent.Email);
+        Assert.Equal(body.ParentName, family.Parent.Name);
+        Assert.Equal(body.ParentEmail, family.Parent.Email);
 
         var me = await client.GetFromJsonAsync<FamilyModel>(ApiClientExtensions.Me);
         Assert.NotNull(me);
-        Assert.Equal(family.FamilyId, me.FamilyId);
+        Assert.Equal(body.FamilyId, me.FamilyId);
         Assert.Equal("Gujarat", me.Region);
+        Assert.Equal(BoardType.Ssc, me.Board);
         Assert.Equal(family.Parent.ParentId, me.Parent.ParentId);
         Assert.Equal("gu", me.Parent.Language);
         Assert.Equal("2026-09", me.Parent.ConsentVersion);
-        Assert.Equal(["Aarav", "Diya"], me.Children.Select(child => child.Name));
-        Assert.Equal("Sunrise School", me.Children[0].School);
-        Assert.Null(me.Children[1].School);
+        Assert.Equal(body.ParentName, me.Parent.Name);
+        Assert.Equal(body.Children.Select(child => child.Name), me.Children.Select(child => child.Name));
+        Assert.Equal(body.Children.Select(child => child.BirthYear), me.Children.Select(child => child.BirthYear));
+        Assert.Equal(body.Children[0].School, me.Children[0].School);
+        Assert.Equal(body.Children[1].School, me.Children[1].School);
+    }
+
+    [Fact]
+    public async Task Me_ReturnsTheWrappedKeysTheCallersFamilyWasRegisteredWith_AndNeverAnotherFamilys()
+    {
+        using var first = Client(NewUid());
+        using var second = Client(NewUid());
+        var firstBody = ValidBody();
+        var secondBody = ValidBody();
+        secondBody.PassphraseWrappedKey = Locked("other-passphrase-key");
+        secondBody.RecoveryWrappedKey = Locked("other-recovery-key");
+        await first.RegisterAsync(firstBody);
+        await second.RegisterAsync(secondBody);
+
+        var meFirst = await first.GetFromJsonAsync<FamilyModel>(ApiClientExtensions.Me);
+        var meSecond = await second.GetFromJsonAsync<FamilyModel>(ApiClientExtensions.Me);
+
+        Assert.Equal(firstBody.PassphraseWrappedKey, meFirst!.PassphraseWrappedKey);
+        Assert.Equal(firstBody.PassphraseSalt, meFirst.PassphraseSalt);
+        Assert.Equal(firstBody.RecoveryWrappedKey, meFirst.RecoveryWrappedKey);
+        Assert.Equal(firstBody.RecoverySalt, meFirst.RecoverySalt);
+        Assert.Equal(secondBody.PassphraseWrappedKey, meSecond!.PassphraseWrappedKey);
+        Assert.NotEqual(meFirst.PassphraseWrappedKey, meSecond.PassphraseWrappedKey);
+        Assert.NotEqual(meFirst.RecoveryWrappedKey, meSecond.RecoveryWrappedKey);
+    }
+
+    [Fact]
+    public async Task Register_AFamilyIdThatAlreadyExists_Returns409FamilyIdTaken_AndChangesNothing()
+    {
+        using var first = Client(NewUid());
+        using var second = Client(NewUid());
+        var firstBody = ValidBody();
+        await first.RegisterAsync(firstBody);
+        var stolen = ValidBody();
+        stolen.FamilyId = firstBody.FamilyId;
+
+        var response = await second.RegisterAsync(stolen);
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        Assert.Equal("family-id-taken", await response.ProblemCodeAsync());
+        Assert.Equal(HttpStatusCode.NotFound, (await second.GetAsync(ApiClientExtensions.Me)).StatusCode);
+        var me = await first.GetFromJsonAsync<FamilyModel>(ApiClientExtensions.Me);
+        Assert.Equal(firstBody.PassphraseWrappedKey, me!.PassphraseWrappedKey);
+        Assert.Equal(firstBody.Children.Count, me.Children.Count);
+    }
+
+    [Fact]
+    public async Task Register_TwoCallersWithTheSameFamilyIdAtOnce_ExactlyOneWins()
+    {
+        var id = Guid.NewGuid();
+        var responses = await Task.WhenAll(
+            Enumerable
+                .Range(0, 6)
+                .Select(_ =>
+                {
+                    var body = ValidBody();
+                    body.FamilyId = id;
+                    return factory.CreateClient().WithBearer(TestTokens.Create(NewUid())).RegisterAsync(body);
+                })
+        );
+
+        Assert.Equal(1, responses.Count(response => response.StatusCode == HttpStatusCode.Created));
+        Assert.Equal(5, responses.Count(response => response.StatusCode == HttpStatusCode.Conflict));
+    }
+
+    [Theory]
+    [InlineData("cbse", 10)]
+    [InlineData("ssc", 5)]
+    public async Task Register_BothBoards_AreStoredAndReturnedByWireName(string board, int topClass)
+    {
+        using var client = Client(NewUid());
+        var body = ValidBody();
+        body.Board = board == "cbse" ? BoardType.Cbse : BoardType.Ssc;
+        body.Children[1].ClassLevel = topClass;
+
+        Assert.Equal(HttpStatusCode.Created, (await client.RegisterAsync(body)).StatusCode);
+
+        using var me = JsonDocument.Parse(await client.GetStringAsync(ApiClientExtensions.Me));
+        Assert.Equal(board, me.RootElement.GetProperty("board").GetString());
+    }
+
+    [Theory]
+    [InlineData(6)]
+    [InlineData(10)]
+    public async Task Register_AnSscChildAboveClassFive_Returns400ClassNotAvailable_AndStoresNothing(int classLevel)
+    {
+        using var client = Client(NewUid());
+        var body = ValidBody();
+        body.Children[1].ClassLevel = classLevel;
+
+        var response = await client.RegisterAsync(body);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal("class-not-available", await response.ProblemCodeAsync());
+        Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync(ApiClientExtensions.Me)).StatusCode);
     }
 
     [Fact]
@@ -117,14 +218,17 @@ public sealed class FamilyTests(AzuriteFixture azurite) : IDisposable
     [InlineData("seven-children")]
     [InlineData("class-zero")]
     [InlineData("class-eleven")]
-    [InlineData("born-too-long-ago")]
-    [InlineData("born-too-recently")]
+    [InlineData("board-missing")]
+    [InlineData("family-id-missing")]
+    [InlineData("passphrase-key-missing")]
+    [InlineData("recovery-salt-missing")]
+    [InlineData("parent-name-missing")]
     [InlineData("language-not-offered")]
     [InlineData("empty-region")]
     [InlineData("overlong-region")]
     [InlineData("empty-child-name")]
     [InlineData("overlong-child-name")]
-    [InlineData("control-character-in-name")]
+    [InlineData("empty-birth-year")]
     [InlineData("missing-consent-version")]
     public async Task Register_InvalidBody_Returns400AndStoresNothing(string scenario)
     {
@@ -139,15 +243,13 @@ public sealed class FamilyTests(AzuriteFixture azurite) : IDisposable
     }
 
     [Fact]
-    public async Task Register_StoredRows_HoldNoPlaintextAndNoUid()
+    public async Task Register_StoredRows_HoldExactlyTheLockedValuesTheClientSent_AndNoUidOrTokenDetail()
     {
         var uid = NewUid();
         var name = $"Name-{Guid.NewGuid():N}";
         var email = $"{Guid.NewGuid():N}@example.test";
-        var childName = $"Child-{Guid.NewGuid():N}";
         using var client = Client(uid, name, email);
         var body = ValidBody();
-        body.Children[0].Name = childName;
         await client.RegisterAsync(body);
 
         var stored = new List<string>();
@@ -162,43 +264,20 @@ public sealed class FamilyTests(AzuriteFixture azurite) : IDisposable
             }
         }
 
-        Assert.NotEmpty(stored);
-        foreach (var secret in new[] { uid, name, email, childName, "Sunrise School" })
+        foreach (var sent in new[]
+        {
+            body.ParentName, body.ParentEmail, body.PassphraseWrappedKey, body.PassphraseSalt,
+            body.RecoveryWrappedKey, body.RecoverySalt, body.Children[0].Name, body.Children[0].BirthYear,
+            body.Children[0].School,
+        })
+        {
+            Assert.Contains(sent, stored);
+        }
+
+        foreach (var secret in new[] { uid, name, email })
         {
             Assert.DoesNotContain(stored, value => value.Contains(secret, StringComparison.Ordinal));
         }
-    }
-
-    [Fact]
-    public async Task Register_TwoFamiliesWithTheSameName_GetDifferentWrappedKeysAndCiphertext()
-    {
-        using var first = Client(NewUid(), "Meena Patel", "meena@example.test");
-        using var second = Client(NewUid(), "Meena Patel", "meena@example.test");
-
-        var firstFamily = await (await first.RegisterAsync(ValidBody())).Content.ReadFromJsonAsync<FamilyModel>();
-        var secondFamily = await (await second.RegisterAsync(ValidBody())).Content.ReadFromJsonAsync<FamilyModel>();
-
-        var families = new TableServiceClient(azurite.ConnectionString).GetTableClient(LanternApiFactory.FamiliesTable);
-        var wrapped = new List<string>();
-        foreach (var id in new[] { firstFamily!.FamilyId, secondFamily!.FamilyId })
-        {
-            var row = await families.GetEntityAsync<TableEntity>(id.ToString("D"), "family");
-            wrapped.Add(row.Value.GetString("WrappedFieldKey"));
-        }
-
-        var parents = new TableServiceClient(azurite.ConnectionString).GetTableClient(LanternApiFactory.ParentsTable);
-        var names = new List<string>();
-        await foreach (var entity in parents.QueryAsync<TableEntity>(row => row.RowKey == "profile"))
-        {
-            if (new[] { firstFamily.FamilyId, secondFamily.FamilyId }.Any(id => id == entity.GetGuid("FamilyId")))
-            {
-                names.Add(entity.GetString("NameCipher"));
-            }
-        }
-
-        Assert.NotEqual(wrapped[0], wrapped[1]);
-        Assert.Equal(2, names.Count);
-        Assert.NotEqual(names[0], names[1]);
     }
 
     [Fact]
@@ -248,7 +327,7 @@ public sealed class FamilyTests(AzuriteFixture azurite) : IDisposable
     {
         var repository = new Mock<IFamilyRepository>();
         repository
-            .Setup(r => r.RegisterAsync(It.IsAny<string>(), It.IsAny<Core.Models.Family>(), It.IsAny<Core.Models.Parent>(), It.IsAny<IReadOnlyList<Core.Models.Child>>(), It.IsAny<CancellationToken>()))
+            .Setup(r => r.RegisterAsync(It.IsAny<string>(), It.IsAny<Family>(), It.IsAny<Parent>(), It.IsAny<IReadOnlyList<Child>>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new RequestFailedException(500, "secret-detail-account-name"));
         using var failing = factory.WithWebHostBuilder(builder =>
             builder.ConfigureTestServices(services => services.AddSingleton(repository.Object))
@@ -270,10 +349,9 @@ public sealed class FamilyTests(AzuriteFixture azurite) : IDisposable
         var name = $"Name-{Guid.NewGuid():N}";
         var email = $"{Guid.NewGuid():N}@example.test";
         var token = TestTokens.Create(uid, name, email);
-        var childName = $"Child-{Guid.NewGuid():N}";
         using var client = factory.CreateClient().WithBearer(token);
         var body = ValidBody();
-        body.Children[0].Name = childName;
+        var childName = body.Children[0].Name;
 
         await client.RegisterAsync(body);
         await client.RegisterAsync(body);
@@ -407,7 +485,7 @@ public sealed class FamilyTests(AzuriteFixture azurite) : IDisposable
         Assert.NotEmpty(await BlobNamesAsync($"{me.FamilyId:D}/"));
     }
 
-    private HttpClient Client(string uid, string? name = null, string? email = null) =>
+    private HttpClient Client(string uid, string name = null, string email = null) =>
         factory.CreateClient().WithBearer(TestTokens.Create(uid, name, email));
 
     private async Task<HttpClient> RegisteredAsync()
@@ -433,23 +511,32 @@ public sealed class FamilyTests(AzuriteFixture azurite) : IDisposable
 
     private static string NewUid() => $"uid-{Guid.NewGuid():N}";
 
+    // What the phone sends: every personal value already locked. The tests only need them to be distinct and opaque.
+    private static string Locked(string plaintext) => $"v1.{Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(plaintext))}.{Guid.NewGuid():N}";
+
     private static FamilyRegisterRequest ValidBody() =>
         new()
         {
+            FamilyId = Guid.NewGuid(),
             Region = "Gujarat",
+            Board = BoardType.Ssc,
             Language = "gu",
+            ParentName = Locked("Meena Patel"),
+            ParentEmail = Locked("meena@example.test"),
+            PassphraseWrappedKey = Locked("passphrase-key"),
+            PassphraseSalt = Locked("passphrase-salt"),
+            RecoveryWrappedKey = Locked("recovery-key"),
+            RecoverySalt = Locked("recovery-salt"),
             Consent = new ConsentModel { Accepted = true, NoticeVersion = "2026-09" },
             Children =
             [
-                new ChildSaveModel { Name = "Aarav", ClassLevel = 1, BirthYear = DateTime.UtcNow.Year - 6, School = "Sunrise School" },
-                new ChildSaveModel { Name = "Diya", ClassLevel = 3, BirthYear = DateTime.UtcNow.Year - 8 },
+                new ChildSaveModel { Name = Locked("Aarav"), ClassLevel = 1, BirthYear = Locked("2020"), School = Locked("Sunrise School") },
+                new ChildSaveModel { Name = Locked("Diya"), ClassLevel = 3, BirthYear = Locked("2018"), School = Locked("Sunrise School") },
             ],
         };
 
     private static void Mutate(string scenario, FamilyRegisterRequest request)
     {
-        var year = DateTime.UtcNow.Year;
-
         switch (scenario)
         {
             case "consent-declined": request.Consent.Accepted = false; break;
@@ -457,14 +544,17 @@ public sealed class FamilyTests(AzuriteFixture azurite) : IDisposable
             case "seven-children": request.Children = [.. Enumerable.Repeat(request.Children[0], 7)]; break;
             case "class-zero": request.Children[0].ClassLevel = 0; break;
             case "class-eleven": request.Children[0].ClassLevel = 11; break;
-            case "born-too-long-ago": request.Children[0].BirthYear = year - 19; break;
-            case "born-too-recently": request.Children[0].BirthYear = year - 2; break;
+            case "board-missing": request.Board = default; break;
+            case "family-id-missing": request.FamilyId = Guid.Empty; break;
+            case "passphrase-key-missing": request.PassphraseWrappedKey = ""; break;
+            case "recovery-salt-missing": request.RecoverySalt = ""; break;
+            case "parent-name-missing": request.ParentName = ""; break;
             case "language-not-offered": request.Language = "fr"; break;
             case "empty-region": request.Region = " "; break;
             case "overlong-region": request.Region = new string('x', 61); break;
-            case "empty-child-name": request.Children[0].Name = " "; break;
-            case "overlong-child-name": request.Children[0].Name = new string('x', 41); break;
-            case "control-character-in-name": request.Children[0].Name = "Aar\u0007av"; break;
+            case "empty-child-name": request.Children[0].Name = ""; break;
+            case "overlong-child-name": request.Children[0].Name = new string('x', 401); break;
+            case "empty-birth-year": request.Children[0].BirthYear = ""; break;
             case "missing-consent-version": request.Consent.NoticeVersion = ""; break;
             default: throw new ArgumentOutOfRangeException(nameof(scenario), scenario, null);
         }

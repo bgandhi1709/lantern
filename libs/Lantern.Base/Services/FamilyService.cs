@@ -1,6 +1,6 @@
 using Lantern.Base.Logging;
-using Lantern.Base.Validation;
 using Lantern.Core.Actions;
+using Lantern.Core.Constants;
 using Lantern.Core.Exceptions;
 using Lantern.Core.Identity;
 using Lantern.Core.Models;
@@ -16,7 +16,6 @@ internal sealed class FamilyService(
     IActionPublisher actions,
     IIdentityResolver identityResolver,
     IValidator<Registration> validator,
-    IChildTextNormalizer text,
     TimeProvider clock,
     ILogger<FamilyService> logger
 ) : ServiceBase<Family, IFamilyRepository>(families, identityResolver, families), IFamilyService
@@ -31,22 +30,33 @@ internal sealed class FamilyService(
         // Before any write, so a repeat register leaves nothing behind; the repository still settles a real race.
         if (await Families.FindParentAsync(identity.Uid, cancellationToken) is not null)
         {
-            throw new AlreadyRegisteredException();
+            throw new LanternException(LanternErrorCode.AlreadyRegistered);
+        }
+
+        // The phone picks the Family id (the first Child is locked with a key tied to it), so refuse one in use.
+        if (await Families.SingleOrNullAsync(registration.FamilyId, registration.FamilyId, cancellationToken) is not null)
+        {
+            throw new LanternException(LanternErrorCode.FamilyIdTaken);
         }
 
         var now = clock.GetUtcNow();
         var family = new Family
         {
-            FamilyId = Guid.NewGuid(),
+            FamilyId = registration.FamilyId,
             Region = registration.Region.Trim(),
+            Board = registration.Board,
+            PassphraseWrappedKey = registration.PassphraseWrappedKey,
+            PassphraseSalt = registration.PassphraseSalt,
+            RecoveryWrappedKey = registration.RecoveryWrappedKey,
+            RecoverySalt = registration.RecoverySalt,
             CreatedAt = now,
         };
         var parent = new Parent
         {
             ParentId = Guid.NewGuid(),
             FamilyId = family.FamilyId,
-            Name = identity.Name,
-            Email = identity.Email,
+            Name = registration.ParentName,
+            Email = registration.ParentEmail,
             Language = registration.Language,
             ConsentVersion = registration.ConsentNoticeVersion.Trim(),
             ConsentAt = now,
@@ -60,8 +70,8 @@ internal sealed class FamilyService(
                     {
                         FamilyId = family.FamilyId,
                         ChildId = Guid.NewGuid(),
-                        Name = text.Name(child.Name),
-                        School = text.School(child.School),
+                        Name = child.Name,
+                        School = child.School,
                         ClassLevel = child.ClassLevel,
                         BirthYear = child.BirthYear,
                         Position = position,
@@ -95,7 +105,7 @@ internal sealed class FamilyService(
     public async Task<Family> MeAsync(CancellationToken cancellationToken)
     {
         var parent =
-            await Families.FindParentAsync(Identity.Uid, cancellationToken) ?? throw new NotRegisteredException();
+            await Families.FindParentAsync(Identity.Uid, cancellationToken) ?? throw new LanternException(LanternErrorCode.NotRegistered);
         var family =
             await Families.SingleOrNullAsync(parent.FamilyId, parent.FamilyId, cancellationToken)
             ?? throw new InvalidOperationException("A parent's profile points at a family that has no family row.");

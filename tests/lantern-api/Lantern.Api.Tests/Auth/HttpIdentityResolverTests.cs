@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Lantern.Api.Auth;
-using Lantern.Core.Exceptions;
+using Lantern.Api.Tests.Infrastructure;
+using Lantern.Core.Constants;
 using Lantern.Core.Identity;
 using Microsoft.AspNetCore.Http;
 using Moq;
@@ -25,13 +26,13 @@ public sealed class HttpIdentityResolverTests
     [InlineData("  ")]
     public void Identity_WithABlankOrMissingSub_Throws(string sub)
     {
-        Assert.Throws<CallerNotIdentifiedException>(() => Resolver(new Claim("sub", sub)).Identity);
-        Assert.Throws<CallerNotIdentifiedException>(() => Resolver().Identity);
+        Errors.Throws(LanternErrorCode.CallerNotIdentified, () => _ = Resolver(new Claim("sub", sub)).Identity);
+        Errors.Throws(LanternErrorCode.CallerNotIdentified, () => _ = Resolver().Identity);
     }
 
     [Fact]
     public void Identity_WithoutAnHttpContext_Throws() =>
-        Assert.Throws<CallerNotIdentifiedException>(() => new HttpIdentityResolver(new Mock<IHttpContextAccessor>().Object).Identity);
+        Errors.Throws(LanternErrorCode.CallerNotIdentified, () => _ = new HttpIdentityResolver(new Mock<IHttpContextAccessor>().Object).Identity);
 
     private static HttpIdentityResolver Resolver(params Claim[] claims)
     {

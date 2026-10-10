@@ -1,5 +1,6 @@
 using Azure.Data.Tables;
 using Lantern.Api.Tests.Infrastructure;
+using Lantern.Core.Constants;
 using Lantern.Core.Exceptions;
 using Lantern.Core.Models;
 using static Lantern.Api.Tests.Repository.FamilyRepositoryTests;
@@ -26,7 +27,7 @@ public sealed class ChildRepositoryTests(AzuriteFixture azurite) : IDisposable
                     await harness.ChildRepository().AddAsync(NewChild(family, 0), CancellationToken.None);
                     return true;
                 }
-                catch (Exception ex) when (ex is FamilyChangedException or ChildLimitReachedException)
+                catch (Exception ex) when (ex is LanternException { Code: LanternErrorCode.FamilyChanged or LanternErrorCode.ChildLimitReached })
                 {
                     return false;
                 }
@@ -41,7 +42,7 @@ public sealed class ChildRepositoryTests(AzuriteFixture azurite) : IDisposable
     {
         var family = await RegisteredAsync(6);
 
-        await Assert.ThrowsAsync<ChildLimitReachedException>(() =>
+        await Errors.ThrowsAsync(LanternErrorCode.ChildLimitReached, () =>
             harness.ChildRepository().AddAsync(NewChild(family, 0), CancellationToken.None)
         );
     }
@@ -56,11 +57,11 @@ public sealed class ChildRepositoryTests(AzuriteFixture azurite) : IDisposable
 
         Assert.Equal(2, added.Position);
         Assert.Equal("Kavya", (await harness.ChildRepository().CollectionAsync(family.FamilyId, CancellationToken.None))[^1].Name);
-        await Assert.ThrowsAsync<FamilyChangedException>(() => harness.ChildRepository().AddAsync(added, CancellationToken.None));
+        await Errors.ThrowsAsync(LanternErrorCode.FamilyChanged, () => harness.ChildRepository().AddAsync(added, CancellationToken.None));
     }
 
     [Fact]
-    public async Task UpdateAsync_ChangesFieldsAndClearsSchool_KeepsClassAndStatus()
+    public async Task UpdateAsync_ChangesFields_KeepsClassAndStatus()
     {
         var family = NewFamily();
         var child = NewChild(family, 0);
@@ -69,12 +70,12 @@ public sealed class ChildRepositoryTests(AzuriteFixture azurite) : IDisposable
         await harness.FamilyRepository().RegisterAsync(NewUid(), family, NewParent(family), [child], CancellationToken.None);
 
         await harness.ChildRepository().UpdateAsync(
-            new Child { FamilyId = family.FamilyId, ChildId = child.ChildId, Name = "New Name", BirthYear = 2019, ClassLevel = 9 },
+            new Child { FamilyId = family.FamilyId, ChildId = child.ChildId, Name = "New Name", School = "New School", BirthYear = "2019", ClassLevel = 9 },
             CancellationToken.None
         );
 
         var stored = Assert.Single(await harness.ChildRepository().CollectionAsync(family.FamilyId, CancellationToken.None));
-        Assert.Equal(("New Name", (string?)null, 2019, 6, ChildStatus.Active), (stored.Name, stored.School, stored.BirthYear, stored.ClassLevel, stored.Status));
+        Assert.Equal(("New Name", "New School", "2019", 6, ChildStatus.Active), (stored.Name, stored.School, stored.BirthYear, stored.ClassLevel, stored.Status));
     }
 
     [Fact]
@@ -84,12 +85,12 @@ public sealed class ChildRepositoryTests(AzuriteFixture azurite) : IDisposable
         var child = NewChild(family, 0);
         await harness.FamilyRepository().RegisterAsync(NewUid(), family, NewParent(family), [child], CancellationToken.None);
 
-        await Assert.ThrowsAsync<NotFoundException>(() =>
+        await Errors.ThrowsAsync(LanternErrorCode.ChildNotFound, () =>
             harness.ChildRepository().UpdateAsync(NewChild(family, 0), CancellationToken.None)
         );
 
         await harness.ChildRepository().MarkDeletingAsync(family.FamilyId, child.ChildId, CancellationToken.None);
-        await Assert.ThrowsAsync<NotFoundException>(() => harness.ChildRepository().UpdateAsync(child, CancellationToken.None));
+        await Errors.ThrowsAsync(LanternErrorCode.ChildNotFound, () => harness.ChildRepository().UpdateAsync(child, CancellationToken.None));
     }
 
     [Fact]
@@ -140,7 +141,7 @@ public sealed class ChildRepositoryTests(AzuriteFixture azurite) : IDisposable
         var theirChild = NewChild(theirs, 0);
         await harness.FamilyRepository().RegisterAsync(NewUid(), theirs, NewParent(theirs), [theirChild], CancellationToken.None);
 
-        await Assert.ThrowsAsync<NotFoundException>(() =>
+        await Errors.ThrowsAsync(LanternErrorCode.ChildNotFound, () =>
             harness.ChildRepository().SingleAsync(mine.FamilyId, theirChild.ChildId, CancellationToken.None)
         );
     }

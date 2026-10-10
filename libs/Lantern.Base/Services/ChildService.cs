@@ -1,7 +1,7 @@
 using System.Globalization;
 using Lantern.Base.Logging;
-using Lantern.Base.Validation;
 using Lantern.Core.Actions;
+using Lantern.Core.Constants;
 using Lantern.Core.Exceptions;
 using Lantern.Core.Identity;
 using Lantern.Core.Models;
@@ -16,8 +16,6 @@ internal sealed class ChildService(
     IFamilyRepository families,
     IIdentityResolver identityResolver,
     IActionPublisher actions,
-    IValidator<Child> validator,
-    IChildTextNormalizer text,
     TimeProvider clock,
     ILogger<ChildService> logger
 ) : ServiceBase<Child, IChildRepository>(children, identityResolver, families), IChildService
@@ -31,27 +29,29 @@ internal sealed class ChildService(
 
         if (child.ChildId == Guid.Empty)
         {
-            throw new InvalidRequestException("A child id is required.");
+            throw new LanternException(LanternErrorCode.InvalidRequest, "A child id is required.");
         }
 
-        validator.Validate(child);
-
         var familyId = await FamilyIdAsync(cancellationToken);
+        var board = (await Families.SingleOrNullAsync(familyId, familyId, cancellationToken))?.Board ?? throw new LanternException(LanternErrorCode.FamilyNotFound);
         var family = await Repository.CollectionAsync(familyId, cancellationToken);
         if (family.FirstOrDefault(stored => stored.ChildId == child.ChildId) is { } existing)
         {
-            return existing.Status == ChildStatus.Deleting ? throw new ChildDeletingException() : (existing, false);
+            return existing.Status == ChildStatus.Deleting ? throw new LanternException(LanternErrorCode.ChildDeleting) : (existing, false);
+        }
+
+        if (!Child.IsClassAvailable(board, child.ClassLevel))
+        {
+            throw new LanternException(LanternErrorCode.ClassNotAvailable);
         }
 
         // Checked here too so a full Family records no action; the repository holds the limit under a race.
         if (family.Count(stored => stored.Status == ChildStatus.Active) >= Child.MaxPerFamily)
         {
-            throw new ChildLimitReachedException();
+            throw new LanternException(LanternErrorCode.ChildLimitReached);
         }
 
         child.FamilyId = familyId;
-        child.Name = text.Name(child.Name);
-        child.School = text.School(child.School);
         child.CreatedAt = clock.GetUtcNow();
 
         // Recorded before the row, so a crash after it still gets the Child its Workspace (D33).
@@ -68,11 +68,6 @@ internal sealed class ChildService(
     public override async Task<Child> UpdateAsync(Child instance, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(instance);
-
-        validator.Validate(instance);
-
-        instance.Name = text.Name(instance.Name);
-        instance.School = text.School(instance.School);
 
         var updated = await base.UpdateAsync(instance, cancellationToken);
 

@@ -1,7 +1,7 @@
 # Run the API locally over HTTPS
 
 Serves the API at `https://local.lantern.api` in Docker, with stand-ins beside it for everything that is not local: an Azurite table and blob emulator, the Firebase
-Auth Emulator, a key file in place of Key Vault, and the Service Bus emulator (with its SQL Server container) with the real `Lantern.Functions` image beside the API.
+Auth Emulator, and the Service Bus emulator (with its SQL Server container) with the real `Lantern.Functions` image beside the API.
 Works from WSL and from Windows.
 
 ## Setup (once)
@@ -40,8 +40,7 @@ returns 401, which is correct. The Development settings apply (`Firebase:Project
 
 ## Sign in and test end to end
 
-The Firebase Auth Emulator replaces Google sign-in and a PEM file in the `keys` volume replaces Key Vault
-(same RSA-OAEP-256 wrapping). On start the API also writes a dev Family: two Parents (`dev-parent-1`,
+The Firebase Auth Emulator replaces Google sign-in. On start the API also writes a dev Family: two Parents (`dev-parent-1`,
 `dev-parent-2`) and ten Children, one in each Class from 1 to 10, each with a Workspace.
 
 This lives in `tests/lantern-api/Lantern.Api.Test.Integration.Host`, not in the API. `deploy/local/api.Dockerfile` runs the
@@ -67,8 +66,7 @@ None of this can reach another environment: the stand-ins are not in the API or 
 tokens are unsigned, so the local host relaxes signature checking; issuer, audience and expiry are still checked (the
 tests prove a wrong one gets 401).
 
-Table and Blob data is kept in the `lantern-local_azurite-data` volume and the Key Vault stand-in key in
-`lantern-local_keys`. Reset both with
+Table and Blob data is kept in the `lantern-local_azurite-data` volume. Reset it with
 `docker compose -f deploy/local/docker-compose.yml down -v`.
 
 ## Notes

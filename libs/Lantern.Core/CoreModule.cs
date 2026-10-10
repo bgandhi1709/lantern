@@ -13,20 +13,18 @@ namespace Lantern.Core;
 public static class CoreModule
 {
     /// <summary>
-    /// Crypto, the action publisher, the generic service and one Mapster mapper built from every layer's
+    /// The uid hash, the action publisher, the generic service and one Mapster mapper built from every layer's
     /// <see cref="IRegister"/>. Options are bound here; a host that uses them adds <c>ValidateOnStart</c>.
     /// </summary>
     public static IServiceCollection AddLanternCore(this IServiceCollection services, IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(configuration);
 
-        services.AddOptions<KeyVaultOptions>().Bind(configuration.GetSection(KeyVaultOptions.SectionName)).ValidateDataAnnotations();
         services.AddOptions<SecurityOptions>().Bind(configuration.GetSection(SecurityOptions.SectionName)).ValidateDataAnnotations();
         services.AddOptions<ServiceBusOptions>().Bind(configuration.GetSection(ServiceBusOptions.SectionName)).ValidateDataAnnotations();
         services.AddOptions<ActionOptions>().Bind(configuration.GetSection(ActionOptions.SectionName)).ValidateDataAnnotations();
 
         services.TryAddSingleton(TimeProvider.System);
-        services.TryAddSingleton<IKeyVaultClient, KeyVaultClient>();
         services.TryAddSingleton<ICryptoService, CryptoService>();
         services.TryAddSingleton<IServiceBusService, ServiceBusService>();
         services.TryAddScoped(typeof(IServiceBase<>), typeof(ServiceBase<>));

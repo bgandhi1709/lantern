@@ -1,6 +1,7 @@
 using Azure;
 using Azure.Data.Tables;
 using Lantern.Api.Tests.Infrastructure;
+using Lantern.Core.Constants;
 using Lantern.Core.Exceptions;
 using Lantern.Core.Models;
 
@@ -26,8 +27,9 @@ public sealed class FamilyRepositoryTests(AzuriteFixture azurite) : IDisposable
         var stored = await harness.FamilyRepository().SingleAsync(family.FamilyId, family.FamilyId, CancellationToken.None);
         var children = await harness.ChildRepository().CollectionAsync(family.FamilyId, CancellationToken.None);
 
-        Assert.Equal(("Meena", "meena@example.test", family.FamilyId), (parent!.Name, parent.Email, parent.FamilyId));
-        Assert.Equal("Gujarat", stored.Region);
+        Assert.Equal(("locked:Meena", "locked:meena@example.test", family.FamilyId), (parent!.Name, parent.Email, parent.FamilyId));
+        Assert.Equal(("Gujarat", BoardType.Ssc), (stored.Region, stored.Board));
+        Assert.Equal(("passphrase-key", "passphrase-salt", "recovery-key", "recovery-salt"), (stored.PassphraseWrappedKey, stored.PassphraseSalt, stored.RecoveryWrappedKey, stored.RecoverySalt));
         Assert.Equal(["Aarav", "Diya"], children.Select(child => child.Name));
     }
 
@@ -46,7 +48,7 @@ public sealed class FamilyRepositoryTests(AzuriteFixture azurite) : IDisposable
                     await harness.FamilyRepository().RegisterAsync(uid, family, NewParent(family), [NewChild(family, 0)], CancellationToken.None);
                     return true;
                 }
-                catch (AlreadyRegisteredException)
+                catch (LanternException ex) when (ex.Code == LanternErrorCode.AlreadyRegistered)
                 {
                     return false;
                 }
@@ -74,21 +76,45 @@ public sealed class FamilyRepositoryTests(AzuriteFixture azurite) : IDisposable
     }
 
     [Fact]
-    public async Task RegisterAsync_StoresNoPlaintext_AndAWrappedKey()
+    public async Task RegisterAsync_StoresTheLockedValuesAndKeysAsSent_AndNoUid()
     {
         var uid = NewUid();
         var family = NewFamily();
-        await harness.FamilyRepository().RegisterAsync(uid, family, NewParent(family), [NewChild(family, 0, "Aarav")], CancellationToken.None);
+        var parent = NewParent(family);
+        var child = NewChild(family, 0, "Aarav");
+        await harness.FamilyRepository().RegisterAsync(uid, family, parent, [child], CancellationToken.None);
 
         var rows = await harness.Families.QueryAsync<TableEntity>().ToListAsync();
         rows.AddRange(await harness.Parents.QueryAsync<TableEntity>().ToListAsync());
-        var flat = string.Join('|', rows.SelectMany(row => ((IDictionary<string, object>)row).Values));
+        var values = rows.SelectMany(row => ((IDictionary<string, object>)row).Values).OfType<string>().ToList();
 
-        Assert.DoesNotContain("Aarav", flat, StringComparison.Ordinal);
-        Assert.DoesNotContain("Meena", flat, StringComparison.Ordinal);
-        Assert.DoesNotContain("meena@example.test", flat, StringComparison.Ordinal);
-        Assert.DoesNotContain(uid, flat, StringComparison.Ordinal);
-        Assert.False(string.IsNullOrEmpty(rows.Single(row => row.RowKey == "family").GetString("WrappedFieldKey")));
+        foreach (var sent in new[] { parent.Name, parent.Email, child.Name, child.BirthYear, family.PassphraseWrappedKey, family.RecoveryWrappedKey })
+        {
+            Assert.Contains(sent, values);
+        }
+
+        Assert.DoesNotContain(values, value => value.Contains(uid, StringComparison.Ordinal));
+        Assert.Equal("Ssc", rows.Single(row => row.RowKey == "family").GetString("Board"));
+    }
+
+    [Fact]
+    public async Task RegisterAsync_WhenTheFamilyIdIsTaken_Throws_AndLeavesTheFirstFamilyAlone()
+    {
+        var family = NewFamily();
+        await harness.FamilyRepository().RegisterAsync(NewUid(), family, NewParent(family), [NewChild(family, 0, "Aarav")], CancellationToken.None);
+        var intruderUid = NewUid();
+        var intruder = NewFamily();
+        intruder.FamilyId = family.FamilyId;
+        intruder.PassphraseWrappedKey = "intruder-key";
+
+        await Errors.ThrowsAsync(LanternErrorCode.FamilyIdTaken, () =>
+            harness.FamilyRepository().RegisterAsync(intruderUid, intruder, NewParent(intruder), [NewChild(intruder, 0, "Intruder")], CancellationToken.None)
+        );
+
+        Assert.Null(await harness.FamilyRepository().FindParentAsync(intruderUid, CancellationToken.None));
+        var stored = await harness.FamilyRepository().SingleAsync(family.FamilyId, family.FamilyId, CancellationToken.None);
+        Assert.Equal("passphrase-key", stored.PassphraseWrappedKey);
+        Assert.Equal(["Aarav"], (await harness.ChildRepository().CollectionAsync(family.FamilyId, CancellationToken.None)).Select(child => child.Name));
     }
 
     [Fact]
@@ -99,7 +125,7 @@ public sealed class FamilyRepositoryTests(AzuriteFixture azurite) : IDisposable
         await harness.FamilyRepository().RegisterAsync(uid, family, NewParent(family), [NewChild(family, 0)], CancellationToken.None);
         var again = NewFamily();
 
-        await Assert.ThrowsAsync<AlreadyRegisteredException>(() =>
+        await Errors.ThrowsAsync(LanternErrorCode.AlreadyRegistered, () =>
             harness.FamilyRepository().RegisterAsync(uid, again, NewParent(again), [NewChild(again, 0)], CancellationToken.None)
         );
 
@@ -126,76 +152,22 @@ public sealed class FamilyRepositoryTests(AzuriteFixture azurite) : IDisposable
         Assert.Equal(TimeSpan.Zero, stored.ConsentAt.Offset);
     }
 
+    // Families registered before the Board existed have no Board column; they follow CBSE and need no migration.
     [Fact]
-    public async Task ACipherMovedToAnotherFamily_DoesNotDecrypt()
+    public async Task AFamilyRowWithNoBoard_ReadsAsCbse()
     {
-        var mine = NewFamily();
-        var theirs = NewFamily();
-        var theirUid = NewUid();
-        var myChild = NewChild(mine, 0, "Aarav");
-        var theirChild = NewChild(theirs, 0, "Diya");
-        await harness.FamilyRepository().RegisterAsync(NewUid(), mine, NewParent(mine), [myChild], CancellationToken.None);
-        await harness.FamilyRepository().RegisterAsync(theirUid, theirs, NewParent(theirs), [theirChild], CancellationToken.None);
-        var stolen = (await harness.Families.GetEntityAsync<TableEntity>(mine.FamilyId.ToString("D"), HarnessChildRow(myChild))).Value;
-        var target = (await harness.Families.GetEntityAsync<TableEntity>(theirs.FamilyId.ToString("D"), HarnessChildRow(theirChild))).Value;
-
-        target["NameCipher"] = stolen["NameCipher"];
-        await harness.Families.UpdateEntityAsync(target, target.ETag, TableUpdateMode.Replace);
-
-        await Assert.ThrowsAnyAsync<System.Security.Cryptography.CryptographicException>(() =>
-            harness.ChildRepository().CollectionAsync(theirs.FamilyId, CancellationToken.None)
-        );
-    }
-
-    // Rows written before the repository took over encryption (same columns, row keys and authenticated data) still read.
-    [Fact]
-    public async Task RowsInThePreviousLayout_StillDecrypt()
-    {
-        var uid = NewUid();
-        var uidHash = harness.Crypto.Hash(uid);
         var familyId = Guid.NewGuid();
-        var childId = Guid.NewGuid();
-        var partition = familyId.ToString("D");
-        var childRow = "child_" + childId.ToString("N");
-        var (key, wrapped) = await harness.Crypto.GenerateKeyAsync(CancellationToken.None);
         await harness.Families.CreateIfNotExistsAsync();
-        await harness.Parents.CreateIfNotExistsAsync();
-        await harness.Families.AddEntityAsync(new TableEntity(partition, "family")
+        await harness.Families.AddEntityAsync(new TableEntity(familyId.ToString("D"), "family")
         {
             ["FamilyId"] = familyId,
             ["Region"] = "Gujarat",
-            ["WrappedFieldKey"] = wrapped,
-            ["KeyScheme"] = "KeyVault",
-            ["CreatedAt"] = DateTimeOffset.UtcNow,
-        });
-        await harness.Families.AddEntityAsync(new TableEntity(partition, childRow)
-        {
-            ["ChildId"] = childId,
-            ["NameCipher"] = harness.Crypto.Protect(key, "Aarav", partition, childRow, "name"),
-            ["ClassLevel"] = 5,
-            ["BirthYear"] = 2016,
-            ["Position"] = 0,
-            ["CreatedAt"] = DateTimeOffset.UtcNow,
-            ["Status"] = "Active",
-        });
-        await harness.Parents.AddEntityAsync(new TableEntity(uidHash, "profile")
-        {
-            ["PartitionKey"] = uidHash,
-            ["ParentId"] = Guid.NewGuid(),
-            ["FamilyId"] = familyId,
-            ["NameCipher"] = harness.Crypto.Protect(key, "Meena", uidHash, "profile", "name"),
-            ["EmailCipher"] = harness.Crypto.Protect(key, "meena@example.test", uidHash, "profile", "email"),
-            ["Language"] = "gu",
-            ["ConsentVersion"] = "2026-09",
-            ["ConsentAt"] = DateTimeOffset.UtcNow,
             ["CreatedAt"] = DateTimeOffset.UtcNow,
         });
 
-        var parent = await harness.FamilyRepository().FindParentAsync(uid, CancellationToken.None);
-        var child = Assert.Single(await harness.ChildRepository().CollectionAsync(familyId, CancellationToken.None));
+        var stored = await harness.FamilyRepository().SingleAsync(familyId, familyId, CancellationToken.None);
 
-        Assert.Equal(("Meena", "meena@example.test"), (parent!.Name, parent.Email));
-        Assert.Equal(("Aarav", (string?)null, 5, ChildStatus.Active), (child.Name, child.School, child.ClassLevel, child.Status));
+        Assert.Equal(BoardType.Cbse, stored.Board);
     }
 
     [Fact]
@@ -290,15 +262,26 @@ public sealed class FamilyRepositoryTests(AzuriteFixture azurite) : IDisposable
 
     private static string NewUid() => $"uid-{Guid.NewGuid():N}";
 
-    internal static Family NewFamily() => new() { FamilyId = Guid.NewGuid(), Region = "Gujarat", CreatedAt = DateTimeOffset.UtcNow };
+    internal static Family NewFamily() =>
+        new()
+        {
+            FamilyId = Guid.NewGuid(),
+            Region = "Gujarat",
+            Board = BoardType.Ssc,
+            PassphraseWrappedKey = "passphrase-key",
+            PassphraseSalt = "passphrase-salt",
+            RecoveryWrappedKey = "recovery-key",
+            RecoverySalt = "recovery-salt",
+            CreatedAt = DateTimeOffset.UtcNow,
+        };
 
     internal static Parent NewParent(Family family) =>
         new()
         {
             ParentId = Guid.NewGuid(),
             FamilyId = family.FamilyId,
-            Name = "Meena",
-            Email = "meena@example.test",
+            Name = "locked:Meena",
+            Email = "locked:meena@example.test",
             Language = "gu",
             ConsentVersion = "2026-09",
             ConsentAt = DateTimeOffset.UtcNow,
@@ -312,7 +295,7 @@ public sealed class FamilyRepositoryTests(AzuriteFixture azurite) : IDisposable
             ChildId = Guid.NewGuid(),
             Name = name,
             ClassLevel = 1,
-            BirthYear = 2020,
+            BirthYear = "locked:2020",
             Position = position,
             CreatedAt = DateTimeOffset.UtcNow,
             Status = ChildStatus.Active,

@@ -1,11 +1,11 @@
 using Azure;
 using Azure.Data.Tables;
+using Lantern.Core.Constants;
 using Lantern.Core.Exceptions;
 using Lantern.Core.Models;
 using Lantern.Core.Repository;
 using Lantern.Core.Security;
 using Lantern.Repository.Entities;
-using Lantern.Repository.Security;
 using Lantern.Repository.UnitOfWork;
 using MapsterMapper;
 
@@ -16,12 +16,10 @@ namespace Lantern.Repository;
 internal sealed class FamilyRepository(
     IUnitOfWork<FamilyEntity> unitOfWork,
     IUnitOfWork<ParentEntity> parents,
-    IFamilyKeyRing keyRing,
-    IFieldProtector protector,
     ICryptoService crypto,
     IMapper mapper,
     IRowKeyService keyService
-) : BaseRepository<Family, FamilyEntity>(unitOfWork, keyRing, protector, mapper, keyService), IFamilyRepository
+) : BaseRepository<Family, FamilyEntity>(unitOfWork, mapper, keyService), IFamilyRepository
 {
     // Table Storage's limit on actions in one transaction.
     private const int MaxBatch = 100;
@@ -32,17 +30,13 @@ internal sealed class FamilyRepository(
 
     protected override Guid IdOf(Family model) => model.FamilyId;
 
-    public async Task<Parent?> FindParentAsync(string uid, CancellationToken cancellationToken)
+    protected override LanternErrorCode NotFoundCode => LanternErrorCode.FamilyNotFound;
+
+    public async Task<Parent> FindParentAsync(string uid, CancellationToken cancellationToken)
     {
         var profile = await parents.SingleOrNullAsync(crypto.Hash(uid), KeyService.ProfileRowKey, cancellationToken);
-        if (profile is null)
-        {
-            return null;
-        }
 
-        Protector.Unprotect(profile, await KeyRing.GetAsync(profile.FamilyId, cancellationToken));
-
-        return Mapper.Map<Parent>(profile);
+        return profile is null ? null : Mapper.Map<Parent>(profile);
     }
 
     public async Task RegisterAsync(
@@ -61,12 +55,10 @@ internal sealed class FamilyRepository(
         // Lookup first so a repeat register writes nothing; the profile Add below still settles a real race.
         if (await parents.SingleOrNullAsync(uidHash, KeyService.ProfileRowKey, cancellationToken) is not null)
         {
-            throw new AlreadyRegisteredException();
+            throw new LanternException(LanternErrorCode.AlreadyRegistered);
         }
 
-        var (_, wrappedKey) = await KeyRing.CreateAsync(family.FamilyId, cancellationToken);
-        var familyRow = await ToEntityAsync(family, cancellationToken);
-        familyRow.WrappedFieldKey = wrappedKey;
+        var familyRow = ToEntity(family);
 
         var partition = KeyService.FamilyPartition(family.FamilyId);
         List<TableTransactionAction> rows =
@@ -88,16 +80,22 @@ internal sealed class FamilyRepository(
             var childRow = Mapper.Map<ChildEntity>(child);
             childRow.PartitionKey = partition;
             childRow.RowKey = KeyService.ChildRowKey(child.ChildId);
-            await ProtectAsync(family.FamilyId, childRow, cancellationToken);
-            rows.Add(new(TableTransactionActionType.Add, childRow));
+            rows.Add(new TableTransactionAction(TableTransactionActionType.Add, childRow));
         }
 
         var profile = Mapper.Map<ParentEntity>(parent);
         profile.PartitionKey = uidHash;
         profile.RowKey = KeyService.ProfileRowKey;
-        await ProtectAsync(family.FamilyId, profile, cancellationToken);
 
-        await UnitOfWork.SubmitAsync(rows, cancellationToken);
+        try
+        {
+            await UnitOfWork.SubmitAsync(rows, cancellationToken);
+        }
+        catch (TableTransactionFailedException ex) when (ex.Status == 409)
+        {
+            // The phone picks the Family id, so a taken id is a refusal, never an overwrite.
+            throw new LanternException(LanternErrorCode.FamilyIdTaken);
+        }
 
         try
         {
@@ -114,7 +112,7 @@ internal sealed class FamilyRepository(
                 cancellationToken
             );
 
-            throw new AlreadyRegisteredException();
+            throw new LanternException(LanternErrorCode.AlreadyRegistered);
         }
     }
 
@@ -141,9 +139,13 @@ internal sealed class FamilyRepository(
         var partition = KeyService.FamilyPartition(familyId);
         try
         {
-            // Crypto-shredding first: whatever survives a failed sweep can no longer be decrypted.
+            // Crypto-shredding first: without the wrapped keys, whatever survives a failed sweep can never be unlocked.
             await UnitOfWork.UpdateAsync(
-                new TableEntity(partition, KeyService.FamilyRowKey) { [nameof(FamilyEntity.WrappedFieldKey)] = string.Empty },
+                new TableEntity(partition, KeyService.FamilyRowKey)
+                {
+                    [nameof(FamilyEntity.PassphraseWrappedKey)] = string.Empty,
+                    [nameof(FamilyEntity.RecoveryWrappedKey)] = string.Empty,
+                },
                 ETag.All,
                 TableUpdateMode.Merge,
                 cancellationToken

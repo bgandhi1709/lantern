@@ -29,8 +29,7 @@ builder
     .ValidateOnStart();
 
 builder.Services.AddLanternBase(builder.Configuration);
-// The API wraps keys, hashes uids and sends actions, so it refuses to start without those settings.
-builder.Services.AddOptions<KeyVaultOptions>().ValidateOnStart();
+// The API hashes uids and sends actions, so it refuses to start without those settings.
 builder.Services.AddOptions<SecurityOptions>().ValidateOnStart();
 builder.Services.AddOptions<ServiceBusOptions>().ValidateOnStart();
 builder.Services.AddOptions<ActionOptions>().ValidateOnStart();

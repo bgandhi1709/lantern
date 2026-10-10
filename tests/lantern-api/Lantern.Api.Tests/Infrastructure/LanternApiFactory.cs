@@ -2,8 +2,6 @@ extern alias Functions;
 
 using Functions::Lantern.Functions;
 using Functions::Lantern.Functions.Handler;
-using Lantern.Core.Actions;
-using Lantern.Core.Security;
 using Lantern.Core.Service;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Hosting;
@@ -58,10 +56,6 @@ public sealed class LanternApiFactory(string connectionString) : WebApplicationF
         builder.UseSetting("Actions:ResendAfter", "00:05:00");
         builder.UseSetting("RateLimits:ChildrenPerMinute", "30");
         builder.UseSetting("Security:Key", SecurityKey);
-        // Key Vault has no local emulator; LocalRsaKeyVaultClient below replaces the real client,
-        // so these two values only need to satisfy startup validation, never actually resolve.
-        builder.UseSetting("KeyVault:VaultUri", "https://unused.vault.azure.net/");
-        builder.UseSetting("KeyVault:FamilyKeyName", "unused");
 
         builder.ConfigureLogging(logging => logging.AddProvider(Logs));
 
@@ -76,7 +70,6 @@ public sealed class LanternApiFactory(string connectionString) : WebApplicationF
             services.AddSingleton<IServiceBusService>(Sender);
             // The Functions app's handlers, so a test can deliver what the API sent.
             services.AddLanternFunctions();
-            services.AddSingleton<IKeyVaultClient, LocalRsaKeyVaultClient>();
             services.PostConfigure<JwtBearerOptions>(
                 JwtBearerDefaults.AuthenticationScheme,
                 options =>

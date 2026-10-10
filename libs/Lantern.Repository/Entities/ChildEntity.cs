@@ -5,19 +5,18 @@ internal sealed class ChildEntity : TableEntityBase
 {
     public Guid ChildId { get; set; }
 
-    [Encrypted("name")]
-    public string NameCipher { get; set; } = string.Empty;
+    // Locked on the phone (D66); stored as sent.
+    public string Name { get; set; }
 
-    [Encrypted("school")]
-    public string? SchoolCipher { get; set; }
+    public string School { get; set; }
 
     public int ClassLevel { get; set; }
 
-    public int BirthYear { get; set; }
+    public string BirthYear { get; set; }
 
     public int Position { get; set; }
 
     public DateTimeOffset CreatedAt { get; set; }
 
-    public string Status { get; set; } = string.Empty;
+    public string Status { get; set; }
 }

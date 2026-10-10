@@ -23,7 +23,7 @@ public sealed class ActionFunction(IActionDispatcher dispatcher, ILogger<ActionF
         ArgumentNullException.ThrowIfNull(message);
         ArgumentNullException.ThrowIfNull(actions);
 
-        ActionMessage? action;
+        ActionMessage action;
         try
         {
             action = message.Body.ToObjectFromJson<ActionMessage>(JsonSerializerOptions.Web);

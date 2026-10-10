@@ -1,3 +1,5 @@
+using Lantern.Core.Constants;
+
 namespace Lantern.Core.Actions;
 
 public interface IActionPublisher

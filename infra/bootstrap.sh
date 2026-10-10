@@ -11,14 +11,13 @@ ENV_NAME="${2:-uat}"
 IDENTITY="id-lantern-${ENV_NAME}"
 VAULT="kv-lantern-${ENV_NAME}"
 
-# The secret and key names come from the environment's bicepparam, so the app settings and this script never differ.
+# The secret name comes from the environment's bicepparam, so the app settings and this script never differ.
 PARAMS_FILE="$(dirname "$0")/params/lantern.${ENV_NAME}.bicepparam"
 key_vault_param() {
   az bicep build-params --file "$PARAMS_FILE" --stdout \
     | python3 -c "import json, sys; print(json.loads(json.load(sys.stdin)['parametersJson'])['parameters']['keyVault']['value']['$1'])"
 }
 SECRET=$(key_vault_param securityKeySecret)
-FAMILY_KEY=$(key_vault_param familyKey)
 
 SUB_ID=$(az account show --query id -o tsv)
 
@@ -58,15 +57,10 @@ assign "Azure Service Bus Data Receiver" "$RG_ID" "$PRINCIPAL_ID" ServicePrincip
 # Both apps export telemetry to Application Insights with this identity: the resource has no ingestion key.
 assign "Monitoring Metrics Publisher" "$RG_ID" "$PRINCIPAL_ID" ServicePrincipal
 assign "Key Vault Secrets User" "$VAULT_ID" "$PRINCIPAL_ID" ServicePrincipal
-# Wrap/unwrap only, not manage: the app never needs to create or delete the key itself.
-assign "Key Vault Crypto User" "$VAULT_ID" "$PRINCIPAL_ID" ServicePrincipal
 
-# The person running this creates the secret and the key, so they need to write to the vault.
+# The person running this creates the secret, so they need to write to the vault.
 ME=$(az ad signed-in-user show --query id -o tsv)
 assign "Key Vault Secrets Officer" "$VAULT_ID" "$ME" User
-assign "Key Vault Crypto Officer" "$VAULT_ID" "$ME" User
-# Local development has no Key Vault emulator: dev machines call the real vault via `az login`.
-assign "Key Vault Crypto User" "$VAULT_ID" "$ME" User
 
 # So `ncert-build upload` can write to the ncert blob container once it exists. On the resource
 # group like the Table role above, since the storage account isn't created yet either.
@@ -94,20 +88,4 @@ else
   echo "Losing it loses access to all registrations."
 fi
 
-# Create the key only if it is missing. Its private material never leaves the vault — rotating it
-# is safe (Key Vault keeps prior versions, so already-wrapped family keys keep unwrapping), but
-# deleting it makes every family's data unreadable.
-if az keyvault key show --vault-name "$VAULT" -n "$FAMILY_KEY" -o none 2>/dev/null; then
-  echo "Key ${FAMILY_KEY} exists, left as is"
-else
-  echo "Creating key ${FAMILY_KEY} (role assignments can take a minute to apply)"
-  for attempt in 1 2 3 4 5 6; do
-    if az keyvault key create --vault-name "$VAULT" -n "$FAMILY_KEY" \
-         --kty RSA --size 2048 --ops wrapKey unwrapKey -o none 2>/dev/null; then
-      break
-    fi
-    [ "$attempt" -eq 6 ] && { echo "Could not create the key" >&2; exit 1; }
-    sleep 20
-  done
-fi
 echo "Done. Next: az deployment group create -g ${RG} -f infra/main.bicep -p infra/params/lantern.${ENV_NAME}.bicepparam"

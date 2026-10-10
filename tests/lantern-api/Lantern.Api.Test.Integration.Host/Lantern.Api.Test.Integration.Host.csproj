@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <!--
-    Runs the API for local Docker through WebApplicationFactory, so the stand-ins for Key Vault and Firebase are
+    Runs the API for local Docker through WebApplicationFactory, so the stand-in for Firebase is
     applied after the API's own registrations and nothing dev-only lives in Lantern.Api or its production image.
   -->
   <PropertyGroup>

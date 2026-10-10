@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using Lantern.Core.Actions;
 using Lantern.Core.Configuration;
+using Lantern.Core.Constants;
 using Lantern.Core.Repository;
 using Lantern.Core.Service;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -15,7 +16,7 @@ public sealed class ActionPublisherTests
 
     private readonly Mock<IServiceBusService> serviceBus = new();
     private readonly Mock<IActionLedger> ledger = new();
-    private readonly TimeProvider clock = new FixedClock(new DateTimeOffset(2026, 10, 1, 8, 0, 0, TimeSpan.Zero));
+    private readonly FixedClock clock = new FixedClock(new DateTimeOffset(2026, 10, 1, 8, 0, 0, TimeSpan.Zero));
 
     private ActionPublisher Publisher => new(serviceBus.Object, ledger.Object, Options.Create(new ActionOptions { Queue = "actions" }), clock, NullLogger<ActionPublisher>.Instance);
 

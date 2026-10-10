@@ -1,10 +1,10 @@
 using Azure;
 using Azure.Data.Tables;
+using Lantern.Core.Constants;
 using Lantern.Core.Exceptions;
 using Lantern.Core.Models;
 using Lantern.Core.Repository;
 using Lantern.Repository.Entities;
-using Lantern.Repository.Security;
 using Lantern.Repository.UnitOfWork;
 using MapsterMapper;
 
@@ -13,11 +13,9 @@ namespace Lantern.Repository;
 internal sealed class ChildRepository(
     IUnitOfWork<ChildEntity> unitOfWork,
     IUnitOfWork<FamilyEntity> families,
-    IFamilyKeyRing keyRing,
-    IFieldProtector protector,
     IMapper mapper,
     IRowKeyService keyService
-) : BaseRepository<Child, ChildEntity>(unitOfWork, keyRing, protector, mapper, keyService), IChildRepository
+) : BaseRepository<Child, ChildEntity>(unitOfWork, mapper, keyService), IChildRepository
 {
     private const int MaxEditAttempts = 3;
 
@@ -26,6 +24,8 @@ internal sealed class ChildRepository(
     protected override string RowKey(Guid id) => KeyService.ChildRowKey(id);
 
     protected override Guid IdOf(Child model) => model.ChildId;
+
+    protected override LanternErrorCode NotFoundCode => LanternErrorCode.ChildNotFound;
 
     public override async Task<IReadOnlyList<Child>> CollectionAsync(Guid familyId, CancellationToken cancellationToken) =>
         [.. (await base.CollectionAsync(familyId, cancellationToken)).OrderBy(child => child.Position)];
@@ -38,12 +38,12 @@ internal sealed class ChildRepository(
         // The family row first: an add that lands between the two reads is counted and still breaks this ETag.
         var family =
             await families.SingleOrNullAsync(partition, KeyService.FamilyRowKey, cancellationToken)
-            ?? throw new NotFoundException("family");
+            ?? throw new LanternException(LanternErrorCode.FamilyNotFound);
         var children = await UnitOfWork.PartitionAsync(partition, KeyService.ChildRowPrefix, cancellationToken);
 
         if (children.Count(child => child.Status == nameof(ChildStatus.Active)) >= Child.MaxPerFamily)
         {
-            throw new ChildLimitReachedException();
+            throw new LanternException(LanternErrorCode.ChildLimitReached);
         }
 
         instance.Position = children.Select(child => child.Position).DefaultIfEmpty(-1).Max() + 1;
@@ -53,7 +53,7 @@ internal sealed class ChildRepository(
         {
             await UnitOfWork.SubmitAsync(
                 [
-                    new(TableTransactionActionType.Add, await ToEntityAsync(instance, cancellationToken)),
+                    new(TableTransactionActionType.Add, ToEntity(instance)),
                     new(TableTransactionActionType.UpdateMerge, new TableEntity(partition, KeyService.FamilyRowKey)
                     {
                         [nameof(FamilyEntity.ChildrenChangedAt)] = instance.CreatedAt,
@@ -64,7 +64,7 @@ internal sealed class ChildRepository(
         }
         catch (TableTransactionFailedException ex) when (ex.Status is 409 or 412)
         {
-            throw new FamilyChangedException();
+            throw new LanternException(LanternErrorCode.FamilyChanged);
         }
 
         return instance;
@@ -74,7 +74,7 @@ internal sealed class ChildRepository(
     {
         ArgumentNullException.ThrowIfNull(instance);
 
-        var changed = await ToEntityAsync(instance, cancellationToken);
+        var changed = ToEntity(instance);
 
         // The row's own ETag keeps an edit from writing a stale Status over a delete that just marked it.
         for (var attempt = 0; attempt < MaxEditAttempts; attempt++)
@@ -82,11 +82,11 @@ internal sealed class ChildRepository(
             var row = await UnitOfWork.SingleOrNullAsync(changed.PartitionKey, changed.RowKey, cancellationToken);
             if (row is null || row.Status == nameof(ChildStatus.Deleting))
             {
-                throw new NotFoundException("child");
+                throw new LanternException(LanternErrorCode.ChildNotFound);
             }
 
-            row.NameCipher = changed.NameCipher;
-            row.SchoolCipher = changed.SchoolCipher;
+            row.Name = changed.Name;
+            row.School = changed.School;
             row.BirthYear = changed.BirthYear;
 
             try
@@ -106,7 +106,7 @@ internal sealed class ChildRepository(
             return instance;
         }
 
-        throw new FamilyChangedException();
+        throw new LanternException(LanternErrorCode.FamilyChanged);
     }
 
     public async Task MarkDeletingAsync(Guid familyId, Guid childId, CancellationToken cancellationToken)

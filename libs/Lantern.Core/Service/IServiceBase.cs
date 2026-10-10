@@ -6,7 +6,7 @@ namespace Lantern.Core.Service;
 public interface IServiceBase<T>
     where T : class, IFamilyModel
 {
-    /// <exception cref="Exceptions.NotFoundException">No such id in the caller's Family.</exception>
+    /// <exception cref="Exceptions.LanternException">No such id in the caller's Family (a <c>NotFound</c> code).</exception>
     Task<T> SingleAsync(Guid id, CancellationToken cancellationToken);
 
     Task<IReadOnlyList<T>> CollectionAsync(CancellationToken cancellationToken);

@@ -1,6 +1,6 @@
 namespace Lantern.Repository;
 
-// Partition and row names. They are also part of each field's encryption context, so they stay fixed in code.
+// Partition and row names. Once released they stay fixed in code.
 internal interface IRowKeyService
 {
     string FamilyRowKey { get; }

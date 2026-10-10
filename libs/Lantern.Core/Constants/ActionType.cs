@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Lantern.Core.Actions;
+namespace Lantern.Core.Constants;
 
 [JsonConverter(typeof(JsonStringEnumConverter<ActionType>))]
 public enum ActionType

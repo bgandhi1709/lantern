@@ -5,14 +5,16 @@ namespace Lantern.Api.Models;
 // What an edit may change. The Class is not here: it changes only when a Class starts.
 public class ChildUpdateModel
 {
+    // Locked on the phone (D66): Lantern stores them as sent and cannot read them, so it only bounds their size. School is always sent: the phone locks an empty one.
     [Required]
-    [StringLength(40, MinimumLength = 1)]
-    [RegularExpression(TextPatterns.NoControlCharacters)]
-    public string Name { get; set; } = string.Empty;
+    [StringLength(400, MinimumLength = 1)]
+    public string Name { get; set; }
 
-    public int BirthYear { get; set; }
+    [Required]
+    [StringLength(400, MinimumLength = 1)]
+    public string BirthYear { get; set; }
 
-    [StringLength(120)]
-    [RegularExpression(TextPatterns.NoControlCharactersOrEmpty)]
-    public string? School { get; set; }
+    [Required]
+    [StringLength(400, MinimumLength = 1)]
+    public string School { get; set; }
 }

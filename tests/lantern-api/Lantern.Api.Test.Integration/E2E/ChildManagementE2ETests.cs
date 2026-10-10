@@ -23,11 +23,10 @@ public sealed class ChildManagementE2ETests(RegisteredFamilyFixture fixture) : I
     public async Task AddEditAndDeleteAChild_EndToEnd()
     {
         var id = Guid.NewGuid();
-        var year = DateTime.UtcNow.Year;
 
         var added = await fixture.Client.PostAsJsonAsync(
             Children,
-            new ChildAddModel { ChildId = id, Name = "Kavya", ClassLevel = 6, BirthYear = year - 11, School = "Green School" }
+            new ChildAddModel { ChildId = id, Name = "locked-kavya", ClassLevel = 6, BirthYear = "locked-year", School = "locked-school" }
         );
         Assert.Equal(HttpStatusCode.Created, added.StatusCode);
         var container = new BlobServiceClient(AzuriteBlobs).GetBlobContainerClient("family");
@@ -36,11 +35,11 @@ public sealed class ChildManagementE2ETests(RegisteredFamilyFixture fixture) : I
 
         var edited = await fixture.Client.PutAsJsonAsync(
             new Uri($"/v1/family/children/{id}", UriKind.Relative),
-            new { Name = "Kavya P", School = (string?)null, BirthYear = year - 11 }
+            new { Name = "locked-kavya-p", School = "locked-school-2", BirthYear = "locked-year" }
         );
         Assert.Equal(HttpStatusCode.OK, edited.StatusCode);
         var afterEdit = (await fixture.Client.GetFromJsonAsync<FamilyModel>(Me))!.Children.Single(c => c.ChildId == id);
-        Assert.Equal(("Kavya P", null, 6), (afterEdit.Name, afterEdit.School, afterEdit.ClassLevel));
+        Assert.Equal(("locked-kavya-p", "locked-school-2", 6), (afterEdit.Name, afterEdit.School, afterEdit.ClassLevel));
 
         var deleted = await fixture.Client.DeleteAsync(new Uri($"/v1/family/children/{id}", UriKind.Relative));
         Assert.Equal(HttpStatusCode.Accepted, deleted.StatusCode);
@@ -69,7 +68,7 @@ public sealed class ChildManagementE2ETests(RegisteredFamilyFixture fixture) : I
         var deleted = await fixture.Client.DeleteAsync(new Uri($"/v1/family/children/{target.ChildId}", UriKind.Relative));
         var edited = await fixture.Client.PutAsJsonAsync(
             new Uri($"/v1/family/children/{target.ChildId}", UriKind.Relative),
-            new { Name = "Hijacked", BirthYear = target.BirthYear }
+            new { Name = "Hijacked", School = "locked-school", BirthYear = target.BirthYear }
         );
 
         Assert.Equal(HttpStatusCode.NotFound, deleted.StatusCode);

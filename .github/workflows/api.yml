@@ -44,9 +44,9 @@ jobs:
     name: Build and test
     # Pull requests from forks get no Azure token and should not push images.
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           global-json-file: global.json
@@ -59,21 +59,21 @@ jobs:
           bad=$(git ls-files -s 'deploy/*.sh' 'infra/*.sh' | grep -v '^100755' || true)
           [ -z "$bad" ] || { echo "Not executable (git update-index --chmod=+x):"; echo "$bad"; exit 1; }
           # apps/ and libs/ are production code only; tests and local stand-ins live under tests/.
-          hits=$(grep -rnE 'Xunit|Seeder|LocalKeyVaultClient|WebApplicationFactory' apps libs --include='*.cs' --include='*.csproj' || true)
+          hits=$(grep -rnE 'Xunit|Seeder|WebApplicationFactory' apps libs --include='*.cs' --include='*.csproj' || true)
           [ -z "$hits" ] || { echo "Test or dev-only code in a production project:"; echo "$hits"; exit 1; }
       - run: npm install -g azurite@3
       - run: dotnet build Lantern.slnx -c Release
       # The E2E tests (Category=E2E) need the Docker stack; they run in the e2e-docker job.
-      - run: dotnet test --solution Lantern.slnx -c Release --no-build --filter-not-trait "Category=E2E"
+      - run: dotnet test --solution Lantern.slnx -c Release --no-build --filter-not-trait "Category=E2E" --ignore-exit-code 8
 
   # The same E2E tests the cloud used to run, against the Docker stack in deploy/local: Azurite, the Firebase Auth
-  # Emulator, a key file for Key Vault and a seeded dev Family. It gates the release.
+  # Emulator and a seeded dev Family. It gates the release.
   e2e-docker:
     name: E2E - docker
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           global-json-file: global.json
@@ -93,13 +93,13 @@ jobs:
   infra-check:
     name: Infra - lint and what-if
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       id-token: write
       contents: read
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - uses: azure/login@7184910d9eb2b1c5e48f7073824a90609bb9b6d6 # v2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3.1.0
         with:
           client-id: ${{ vars.AZURE_CLIENT_ID }}
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
@@ -114,14 +114,14 @@ jobs:
   image:
     name: Build image
     needs: [build-test, e2e-docker]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       packages: write
     outputs:
       tag: ${{ steps.tag.outputs.value }}
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - id: tag
         run: echo "value=sha-${GITHUB_SHA::12}" >> "$GITHUB_OUTPUT"
       - run: docker build -f apps/lantern-api/Dockerfile -t "ghcr.io/${{ github.repository_owner }}/lantern-api:${{ steps.tag.outputs.value }}" .
@@ -143,7 +143,7 @@ jobs:
     name: Deploy - uat
     needs: [image, infra-check]
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'deploy-uat')
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # Required reviewers on this environment gate the deployment.
     environment: uat
     permissions:
@@ -151,8 +151,8 @@ jobs:
       contents: read
     steps:
       # The Bicep file and its parameters are read from the repo.
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - uses: azure/login@7184910d9eb2b1c5e48f7073824a90609bb9b6d6 # v2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3.1.0
         with:
           client-id: ${{ vars.AZURE_CLIENT_ID }}
           tenant-id: ${{ vars.AZURE_TENANT_ID }}

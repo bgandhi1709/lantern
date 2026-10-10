@@ -85,8 +85,8 @@ ncert.nic.in PDFs                                         Mother's phone (Expo, 
   workers that refine it into clean memory files for the child and the mother.
 - **Bounded cost.** Scales to zero with one replica at most, fresh-answer limits per session and
   week, and a $10 monthly budget alert. Thumbs up / down tunes the router and retires bad answers.
-- **Privacy.** No keys anywhere: managed identity and RBAC. Personal details are kept under a key
-  per family in Key Vault; deleting that key erases the family's data (DPDP Act 2023).
+- **Privacy.** No keys anywhere: managed identity and RBAC. Personal details are locked on the phone
+  with a key only the Parent can open (the Passphrase and Recovery code, ADR-0010), so Lantern stores them but cannot read them; deleting a family erases its rows and the wrapped keys (DPDP Act 2023).
 - **Families, Parents and Children.** A **Family** groups its **Parents** and **Children**, like a
   resource group. Each Parent has their own settings (Language, Consent); a Child is stored once,
   however many Parents the Family has. In Table Storage the `parents` table holds each Parent's
@@ -119,8 +119,7 @@ ncert.nic.in PDFs                                         Mother's phone (Expo, 
   (`tools/ncert-build`).
 - **Infrastructure.** The UAT environment is deployed from Bicep by one GitHub Actions workflow (`api.yml`), together with each API release; see
   [`infra/README.md`](infra/README.md).
-- **API.** Firebase sign-in, `POST /v1/register` and `GET /v1/me` with per-family encryption are
-  live in UAT. Add, edit and delete a Child (`/v1/family/children`, #51) are built: delete returns
+- **API.** Firebase sign-in, `POST /v1/register` and `GET /v1/me` store locked personal values and the Parent's wrapped Family keys (the phone makes the key, ADR-0010; #123), and a Family picks its Board, CBSE or SSC, at registration (#100). Add, edit and delete a Child (`/v1/family/children`, #51) are built: delete returns
   `202` and `Lantern.Functions` finishes it from a Service Bus queue, and the max is six Children. The end-to-end tests run in Docker on every PR and gate the release, and a smoke check follows each UAT deploy. The Family split
   (#48) is merged and Workspaces (#49, then called Class spaces) are built. Deleting a Family (`DELETE /v1/family`, #53) is built: it returns `204` with the caller already unregistered, and `Lantern.Functions` erases the rest. Moving a Child to a new Class (#50) is next, in the Family management milestone. The Family key is unwrapped once per request with no cache (#52 dropped, D40). One request is one end-to-end trace in Application Insights, through Service Bus into the Functions app (#70, [ADR-0006](docs/adr/0006-one-trace-in-application-insights.md)); the KQL to pull it is in [`infra/README.md`](infra/README.md).
   The code is layered like `wf` ([ADR-0005](docs/adr/0005-layered-like-wf.md)): under `libs`, `Lantern.Core` holds the
@@ -131,10 +130,10 @@ ncert.nic.in PDFs                                         Mother's phone (Expo, 
   creates and removes Workspaces from the one `workspace-events` queue). Tests live under `tests/lantern-api`: `Lantern.Api.Tests` and
   `Lantern.Functions.Tests` hold unit and in-process tests; `Lantern.Api.Test.Integration` holds the end-to-end tests, which run unchanged
   against local Docker and UAT; `Lantern.Api.Test.Integration.Host` holds the local stand-ins (Firebase
-  Auth Emulator tokens, a Key Vault stand-in, a seeded dev Family) and is never in the production
+  Auth Emulator tokens, a seeded dev Family) and is never in the production
   image. Running it locally: [`deploy/local/README.md`](deploy/local/README.md).
 - **Parent app.** `client/lantern-android` is the Expo app. It opens with an animated intro of the mother-and-child mark and has the Start screen (#113, teal look, D74 to D76): **Continue with Google** through native Firebase, a session the SDK keeps and renews on the device, and a placeholder for signed-in Parents that asks UAT `GET /v1/me` and has Sign out, until the registration and Home stories replace it. It has the guardrails for every later screen (#110): lint rules, one storage module (nothing personal on the device, Android backup off), one API client that sends the Firebase ID token, a Jest setup, and every word the Parent sees in one typed dictionary (`src/shared/i18n`), ready for Gujarati and Hindi. GitHub Actions (`android.yml`) checks every PR and, on a manual run, builds a signed APK that expires after a day; the UAT address and `google-services.json` are secrets on the `uat` environment, not in the repo. A debug build can instead point at the local Docker stack. Run and build steps are in [`client/lantern-android/README.md`](client/lantern-android/README.md).
-- **Next.** The Ask API, to be designed, and, before production, a Family key held on the device (#47).
+- **Next.** The Ask API, to be designed, and the registration screens in the app that use the locked-value API.
 
 How we work in this repo (cycle, skills, standards) is in
 [`docs/agents/workflow.md`](docs/agents/workflow.md) and [`CODING_STANDARDS.md`](CODING_STANDARDS.md).
@@ -142,6 +141,13 @@ How we work in this repo (cycle, skills, standards) is in
 The decisions so far are in
 [`docs/ideation/decision-log.md`](docs/ideation/decision-log.md) and [`docs/adr`](docs/adr), and
 the work is tracked in [Issues](../../issues) and the project board.
+
+## Git hooks
+
+After cloning, run `npm install` once at the repo root: it installs Husky, which runs `scripts/pre-commit.sh` before every
+commit. A commit that touches .NET code must build with no warnings (unused usings included), match `dotnet format`, and
+pass the unit tests (they need `azurite` on the PATH: `npm install -g azurite@3`); a commit that touches the app must pass
+typecheck, lint, format and the Jest tests. The E2E tests stay in CI. `git commit --no-verify` skips the hook.
 
 ## License
 

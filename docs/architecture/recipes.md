@@ -28,7 +28,7 @@ Reuse is the default. Create a class only when the reuse case fails.
 | Repository method | The base's single, collection, add, update or remove fits | Storage needs a rule the base lacks (ETag retry, a batch with another row, a status-only read): add to `I{Noun}Repository` |
 | Store | Blob data belongs to the Workspace: add a method to `IWorkspaceStore` | A new Blob area with its own paths: `{Noun}Store` |
 | Event | Never reuse a type for a different meaning | Each distinct outcome gets its own `ActionType` |
-| Exception | An existing condition fits exactly (`NotFoundException("child")`) | A new condition the caller must tell apart: a new exception and a new problem code |
+| Error | An existing `LanternErrorCode` fits exactly (`ChildNotFound`) | A new condition the caller must tell apart: a new `LanternErrorCode` member and a new problem code |
 | Interactor | One service can do it with its own repository | Two or more services in a fixed order, see below |
 
 A service never injects another service's repository. When a service needs another model's data, it injects that
@@ -46,7 +46,7 @@ model's `IServiceBase<T>` or `I{Noun}Service`, or it is time for an interactor.
    command). Map anything not by name in `ApiProfile`.
 5. **Action.** Add the method to the existing `{Nouns}Controller`: bind, `Mapper.Map`, call one service method, return
    the status code (`Ok`, `Created`, `Accepted` for queued work).
-6. **Errors.** A new exception gets one line in `ProblemExceptionHandler` with its problem code.
+6. **Errors.** A new `LanternErrorCode` member gets one line in `ProblemExceptionHandler` with its problem code. Throw it as `new LanternException(code)`.
 7. **Tests.** An in-process controller test in `Lantern.Api.Tests/Controllers` (happy path, another Family's id → 404,
    bad input → 400), and an Azurite repository test for any new storage rule.
 
@@ -54,7 +54,7 @@ model's `IServiceBase<T>` or `I{Noun}Service`, or it is time for an interactor.
 
 1. **Service model.** `Lantern.Core/Models/{Noun}.cs`, implementing `IFamilyModel`, plaintext, no storage fields.
 2. **Entity.** `Lantern.Repository/Entities/{Noun}Entity.cs`, `internal sealed`, deriving `TableEntityBase`. Mark
-   personal text `[Encrypted("column")]` on a `{Field}Cipher` property, and add the renames to `RepositoryProfile`.
+   personal text as a `{Field}Locked` string the phone has already locked; the server stores it as sent.
 3. **Keys.** Add `{Noun}RowPrefix` and `{Noun}RowKey(id)` to `IRowKeyService` and `RowKeyService`. They are cipher
    context: once released, never changed.
 4. **Repository.** `I{Noun}Repository : IRepositoryBase<{Noun}>` in `Core/Repository`, and
@@ -129,11 +129,11 @@ Storage formats, wire names and product rules are never settings ([D36](../ideat
 ## External dependency
 
 1. A contract in Core (`I{Resource}Service` or `I{Resource}Client`) that knows nothing of the domain: it takes and returns
-   general types (`SendAsync<T>(queue, message)`, `WrapKeyAsync(bytes)`).
+   general types (`SendAsync<T>(queue, message)`).
 2. The implementation in Core holds the SDK client, created lazily from its options; it is the only holder of that
    client type (add a row to `LayerTests.ClientOwners`).
 3. Domain code wraps it in the layer that needs it (`ActionPublisher` over `ServiceBusService`).
-4. Tests replace it at this seam only (`RecordingServiceBus`, a local RSA `IKeyVaultClient`).
+4. Tests replace it at this seam only (`RecordingServiceBus`).
 
 ## Done
 

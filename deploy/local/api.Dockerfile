@@ -1,4 +1,4 @@
-# The API for local Docker, run through Lantern.Api.Test.Integration.Host (Key Vault stand-in, Firebase Auth Emulator
+# The API for local Docker, run through Lantern.Api.Test.Integration.Host (Firebase Auth Emulator
 # tokens, seeded dev Family). The production Dockerfile at apps/lantern-api/Dockerfile never contains any of it.
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
@@ -22,7 +22,6 @@ WORKDIR /app
 COPY --from=build /out .
 # The API's settings files are content of Lantern.Api, which a project reference does not carry over.
 COPY --from=build /src/apps/lantern-api/Lantern.Api/appsettings*.json .
-RUN mkdir /keys && chown $APP_UID /keys
 USER $APP_UID
 EXPOSE 8443
 ENTRYPOINT ["dotnet", "Lantern.Api.Test.Integration.Host.dll"]

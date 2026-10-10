@@ -27,3 +27,6 @@ deploy/local/certs/
 
 # Claude Code: per-machine permissions
 .claude/settings.local.json
+
+# Repo-level tooling (Husky)
+/node_modules/

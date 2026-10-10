@@ -1,7 +1,7 @@
 extern alias Functions;
 
 using System.Text.RegularExpressions;
-using Lantern.Core.Actions;
+using Lantern.Core.Constants;
 using Lantern.Core.Service;
 using Microsoft.AspNetCore.Mvc;
 using IActionHandler = Functions::Lantern.Functions.Handler.IActionHandler;
@@ -126,7 +126,7 @@ public sealed partial class NamingTests
     private static bool Implements(Type type, Type openInterface) =>
         type.GetInterfaces().Any(contract => contract.IsGenericType && contract.GetGenericTypeDefinition() == openInterface);
 
-    private static Type[]? BaseRepositoryArguments(Type type)
+    private static Type[] BaseRepositoryArguments(Type type)
     {
         for (var current = type.BaseType; current is not null; current = current.BaseType)
         {

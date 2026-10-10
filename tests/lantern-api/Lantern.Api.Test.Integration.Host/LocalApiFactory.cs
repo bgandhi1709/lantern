@@ -1,4 +1,3 @@
-using Lantern.Core.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -9,9 +8,9 @@ using Microsoft.IdentityModel.JsonWebTokens;
 
 namespace Lantern.Api.Test.Integration.Host;
 
-// The API with local stand-ins: a key file for Key Vault, the Firebase Auth Emulator's unsigned tokens, and the dev Family.
+// The API with local stand-ins: the Firebase Auth Emulator's unsigned tokens, and the dev Family.
 // ConfigureTestServices runs after the API's own registrations, which is what lets these replace them.
-internal sealed class LocalApiFactory(string keyPath, string contentRoot) : WebApplicationFactory<Program>
+internal sealed class LocalApiFactory(string contentRoot) : WebApplicationFactory<Program>
 {
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -19,7 +18,6 @@ internal sealed class LocalApiFactory(string keyPath, string contentRoot) : WebA
         builder.UseContentRoot(contentRoot);
         builder.ConfigureTestServices(services =>
         {
-            services.AddSingleton<IKeyVaultClient>(new LocalKeyVaultClient(keyPath));
             services.AddScoped<DevelopmentSeeder>();
             services.AddHostedService<SeedOnStartup>();
             services.PostConfigure<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme, AcceptEmulatorTokens);

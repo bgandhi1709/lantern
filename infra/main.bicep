@@ -17,10 +17,9 @@ param containers {
   ssc: string
 }
 
-@description('Key Vault names bootstrap.sh creates: the uid-hash secret and the RSA key that wraps each Family key.')
+@description('The Key Vault secret bootstrap.sh creates: the key that hashes each uid. Lantern holds no Family key (D66).')
 param keyVault {
   securityKeySecret: string
-  familyKey: string
 }
 
 @description('The one queue for every Workspace event; the dispatcher picks the handler by type. The lock is the retry delay; deliveries times lock is how long a failing event retries.')
@@ -265,10 +264,6 @@ resource app 'Microsoft.App/containerApps@2025-01-01' = {
             { name: 'ServiceBus__FullyQualifiedNamespace', value: '${serviceBus.name}.servicebus.windows.net' }
             { name: 'Actions__Queue', value: serviceBus::queue.name }
             { name: 'Security__Key', secretRef: 'security-key' }
-            // Not a secret: the app only ever calls Key Vault's wrapKey/unwrapKey with this name.
-            // The key's own private material never leaves the vault.
-            { name: 'KeyVault__VaultUri', value: vault.properties.vaultUri }
-            { name: 'KeyVault__FamilyKeyName', value: keyVault.familyKey }
             { name: 'RateLimits__ChildrenPerMinute', value: string(childrenPerMinute) }
             { name: 'Actions__ResendAfter', value: actionResendAfter }
             { name: 'APPLICATIONINSIGHTS_CONNECTION_STRING', secretRef: insightsSecret.name }

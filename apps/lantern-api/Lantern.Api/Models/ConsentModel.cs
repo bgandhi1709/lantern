@@ -9,5 +9,5 @@ public sealed class ConsentModel
     [Required]
     [StringLength(20, MinimumLength = 1)]
     [RegularExpression(TextPatterns.NoControlCharacters)]
-    public string NoticeVersion { get; set; } = string.Empty;
+    public string NoticeVersion { get; set; }
 }

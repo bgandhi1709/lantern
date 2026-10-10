@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Lantern.Api.Models;
+using Lantern.Core.Constants;
 
 namespace Lantern.Api.Test.Integration.E2E;
 
@@ -40,16 +41,25 @@ public sealed class RegisteredFamilyFixture : IAsyncLifetime
     public static FamilyRegisterRequest ValidBody() =>
         new()
         {
+            FamilyId = Guid.NewGuid(),
             Region = "Gujarat",
+            Board = BoardType.Cbse,
             Language = "gu",
+            ParentName = "e2e-locked-parent-name",
+            ParentEmail = "e2e-locked-parent-email",
+            PassphraseWrappedKey = "e2e-passphrase-wrapped-key",
+            PassphraseSalt = "e2e-passphrase-salt",
+            RecoveryWrappedKey = "e2e-recovery-wrapped-key",
+            RecoverySalt = "e2e-recovery-salt",
             Consent = new ConsentModel { Accepted = true, NoticeVersion = "e2e" },
             Children =
             [
                 new ChildSaveModel
                 {
-                    Name = "E2E Child",
+                    Name = "e2e-locked-child-name",
                     ClassLevel = 1,
-                    BirthYear = DateTime.UtcNow.Year - 6,
+                    BirthYear = "e2e-locked-birth-year",
+                    School = "e2e-locked-school",
                 },
             ],
         };

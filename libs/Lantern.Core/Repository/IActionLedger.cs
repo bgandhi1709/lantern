@@ -1,4 +1,5 @@
 using Lantern.Core.Actions;
+using Lantern.Core.Constants;
 
 namespace Lantern.Core.Repository;
 
@@ -11,7 +12,7 @@ public interface IActionLedger
     /// <summary>Records the action. Repeating an id changes nothing.</summary>
     Task RecordAsync(ActionMessage message, DateTimeOffset now, CancellationToken cancellationToken);
 
-    Task<bool> IsPendingAsync(Actions.ActionType type, string id, CancellationToken cancellationToken);
+    Task<bool> IsPendingAsync(Constants.ActionType type, string id, CancellationToken cancellationToken);
 
     Task MarkSentAsync(ActionType type, string id, DateTimeOffset now, CancellationToken cancellationToken);
 
@@ -19,5 +20,5 @@ public interface IActionLedger
     Task<IReadOnlyList<ActionMessage>> UnsentSinceAsync(DateTimeOffset cutoff, CancellationToken cancellationToken);
 
     /// <summary>The last step of a handler. Safe to repeat.</summary>
-    Task CompleteAsync(Actions.ActionType type, string id, CancellationToken cancellationToken);
+    Task CompleteAsync(Constants.ActionType type, string id, CancellationToken cancellationToken);
 }

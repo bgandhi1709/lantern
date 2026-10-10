@@ -6,10 +6,10 @@ namespace Lantern.Core.Repository;
 public interface IRepositoryBase<T>
     where T : class, IFamilyModel
 {
-    /// <exception cref="Exceptions.NotFoundException">No such row in this Family.</exception>
+    /// <exception cref="Exceptions.LanternException">No such row in this Family (a <c>NotFound</c> code).</exception>
     Task<T> SingleAsync(Guid familyId, Guid id, CancellationToken cancellationToken);
 
-    Task<T?> SingleOrNullAsync(Guid familyId, Guid id, CancellationToken cancellationToken);
+    Task<T> SingleOrNullAsync(Guid familyId, Guid id, CancellationToken cancellationToken);
 
     Task<IReadOnlyList<T>> CollectionAsync(Guid familyId, CancellationToken cancellationToken);
 

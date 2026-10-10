@@ -4,13 +4,14 @@ namespace Lantern.Core.Repository;
 
 public interface IFamilyRepository : IRepositoryBase<Family>
 {
-    Task<Parent?> FindParentAsync(string uid, CancellationToken cancellationToken);
+    Task<Parent> FindParentAsync(string uid, CancellationToken cancellationToken);
 
     /// <summary>
-    /// Writes the Family, its Children and the Parent, creating the Family key. The Parent's profile row is written last
+    /// Writes the Family (with the keys the phone wrapped), its Children and the Parent. The Parent's profile row is written last
     /// and is the commit point.
     /// </summary>
-    /// <exception cref="Exceptions.AlreadyRegisteredException">The uid already has a profile.</exception>
+    /// <exception cref="Core.Exceptions.LanternException">(<c>AlreadyRegistered</c>) The uid already has a profile.</exception>
+    /// <exception cref="Core.Exceptions.LanternException">(<c>FamilyIdTaken</c>) A Family with this id already exists.</exception>
     Task RegisterAsync(string uid, Family family, Parent parent, IReadOnlyList<Child> children, CancellationToken cancellationToken);
 
     /// <summary>
@@ -19,6 +20,6 @@ public interface IFamilyRepository : IRepositoryBase<Family>
     /// </summary>
     Task RemoveParentsAsync(Guid familyId, CancellationToken cancellationToken);
 
-    /// <summary>Removes the Parents' profiles, clears the Family key and deletes every row of the Family. Safe to repeat.</summary>
+    /// <summary>Removes the Parents' profiles, clears the wrapped Family keys and deletes every row of the Family. Safe to repeat.</summary>
     Task EraseAsync(Guid familyId, CancellationToken cancellationToken);
 }
