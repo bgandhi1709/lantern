@@ -1,4 +1,4 @@
-import { ScrollView, Text, View } from 'react-native';
+import { KeyboardAvoidingView, ScrollView, Text, View } from 'react-native';
 
 import { useStrings } from '../shared/i18n';
 import { CheckRow } from '../shared/ui/CheckRow';
@@ -36,7 +36,7 @@ export function AboutYouView({
   const about = strings.about;
 
   return (
-    <View className="flex-1 bg-ground px-6 pb-safe pt-safe">
+    <KeyboardAvoidingView behavior="padding" className="flex-1 bg-ground px-6 pb-safe pt-safe">
       <StepHeader step={1} total={4} onBack={onBack} />
       <ScrollView contentContainerClassName="gap-4 pb-3" keyboardShouldPersistTaps="handled">
         <View className="mt-5 gap-2">
@@ -77,6 +77,6 @@ export function AboutYouView({
       <View className="pb-6 pt-2">
         <PrimaryButton label={about.continue} onPress={onContinue} disabled={!canContinue} />
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
