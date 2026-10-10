@@ -18,6 +18,7 @@ jest.mock('./src/shared/config', () => ({
     apiTimeoutMs: 1000,
     authEmulator: undefined,
     googleWebClientId: 'web-client-id',
+    storybookEnabled: false,
   },
 }));
 

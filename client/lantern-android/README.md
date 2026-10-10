@@ -49,6 +49,16 @@ To run the emulator against the API in Docker ([`deploy/local`](../../deploy/loc
 
 The sign-in then goes through the Firebase Auth Emulator, which accepts the Google account you pick and creates a new emulator user. `GET /v1/me` therefore answers `not-registered` instead of finding the seeded `dev-parent-1`, which is the path to test registration. A release build refuses both the `http://` address and the emulator setting.
 
+## Look at components and screen states (Storybook)
+
+Storybook shows every shared component and every state of a screen from fixed data, with no Docker stack and no sign-in (ADR-0012). It is for development builds only.
+
+1. Run `npm run start:storybook` (Metro with `EXPO_PUBLIC_STORYBOOK_ENABLED=true`), then open the app on the emulator. The app starts in Storybook instead of the Start screen. The first time, or after a native package changes, run `EXPO_PUBLIC_STORYBOOK_ENABLED=true npm run android` once.
+2. Pick a story in the list. **Controls** changes its props live, **Actions** shows a press, and **Backgrounds** tries it on `ground`, `card` and `primary`.
+3. Run `npm run android` or `npm start` without the switch to get the real app back.
+
+A story sits beside its component (`PrimaryButton.stories.tsx`), with one export per state. How to write one, and when a component may go without, is in `.claude/skills/storybook-standards`. While Metro runs, `http://localhost:7007/mcp` lists the components and their props for an agent (experimental). Release builds contain none of this: the switch is off, Metro replaces Storybook with empty modules, and the app refuses to start a release build with the switch on.
+
 ## Build an APK for a real phone
 
 The `Android - Check and Build` workflow ([`android.yml`](../../.github/workflows/android.yml)) checks every pull request that touches `client/**` (typecheck, lint, format, `expo-doctor`, and a bundle export). A manual run also builds a signed release APK.
@@ -81,12 +91,12 @@ It creates one release key in `~/lantern-secrets/` (outside the repo), reads UAT
 
 Run these from `client/lantern-android`. CI (`android.yml`) runs the same four on every pull request that touches `client/**`.
 
-| Command                | What it does                                                                                              |
-| ---------------------- | --------------------------------------------------------------------------------------------------------- |
-| `npm run typecheck`    | `tsc` in strict mode                                                                                      |
-| `npm run lint`         | ESLint: `eslint-config-expo` plus the rules below                                                         |
-| `npm run format:check` | Prettier check (`npm run format` fixes)                                                                   |
-| `npm test`             | Jest (`jest-expo`) with React Native Testing Library; one file while iterating: `npx jest src/shared/api` |
+| Command                | What it does                                                                                                                                 |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run typecheck`    | `tsc` in strict mode                                                                                                                         |
+| `npm run lint`         | ESLint: `eslint-config-expo` plus the rules below                                                                                            |
+| `npm run format:check` | Prettier check (`npm run format` fixes)                                                                                                      |
+| `npm test`             | Jest (`jest-expo`) with React Native Testing Library, including a render of every story; one file while iterating: `npx jest src/shared/api` |
 
 Lint fails on `any`, a `!` assertion, `console.*`, an AsyncStorage or SecureStore import outside `src/shared/storage`, a `@react-native-firebase` import outside `src/shared/session`, and a Google sign-in import outside `src/auth`, `StyleSheet.create` and `style={{…}}` objects anywhere except on `Animated` and SVG elements (use class names). A feature folder (`src/auth`, `src/family`, `src/catalog`) may import another feature only through its `index.ts`. `src/test/lint.test.ts` proves each rule.
 
@@ -98,6 +108,7 @@ Lint fails on `any`, a `!` assertion, `console.*`, an AsyncStorage or SecureStor
 - `src/shared/i18n`: every word the Parent sees, in `en.ts`, read with `useStrings()`. A new language is a copy of `en.ts` typed as `Strings`; lint rejects text written in JSX or label props.
 - `src/auth`: the Opening intro (`useIntro`, `IntroMark`, `PageTurnLoader`: full on a new install, short after, still when the phone asks for less motion), the Start screen, the Google account sheet (the only code that imports `@react-native-google-signin`), `AuthProvider` (`restoring`, `signedOut`, `signedIn`) and `AuthGate`.
 - `global.css`: the one definition of how Lantern looks (ADR-0011). Its `@theme` block holds the colours, Inter fonts, radii and text sizes as tokens, which screens use as NativeWind class names (`bg-ground`, `text-muted`, `font-inter-bold`, `text-heading`, `rounded-card`); one spacing step is 4 px. To change the look, change a token there; `src/shared/ui/theme.ts` keeps only the colours that SVG needs, and a test fails if the two differ. Metro (`metro.config.js`) and PostCSS (`postcss.config.mjs`) compile it, and a change to them needs `npx expo start --clear`.
+- `.rnstorybook` and `*.stories.tsx`: Storybook's config and a story per component state (ADR-0012). `storybook.requires.ts` is generated when Metro starts; commit it.
 - `src/shared/ui`: the teal colours and Inter fonts from the canvas, the mother-and-child mark (`markParts`, shared with the intro and the launcher icon) and icons (SVG).
 - `src/shared/config.ts`: the only reader of `EXPO_PUBLIC_*`, the Google web client (taken from `google-services.json` by `app.config.js`) and the API timeout.
 - Tests fake the API (`src/test/fakeApi.ts`), the device stores (`jest.setup.ts`, `src/test/fakeSecureStore.ts`), the Firebase session (`src/test/fakeFirebaseAuth.ts`) and Google sign-in (`src/test/fakeGoogleSignIn.ts`). Google sign-in itself is checked by hand.

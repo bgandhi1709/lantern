@@ -2,6 +2,7 @@ import Constants from 'expo-constants';
 
 const apiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
 const authEmulator = process.env.EXPO_PUBLIC_FIREBASE_AUTH_EMULATOR || undefined;
+const storybookEnabled = process.env.EXPO_PUBLIC_STORYBOOK_ENABLED === 'true';
 const googleWebClientId = Constants.expoConfig?.extra?.googleWebClientId;
 
 if (!apiBaseUrl) {
@@ -14,6 +15,10 @@ if (!__DEV__ && !apiBaseUrl.startsWith('https://')) {
 
 if (!__DEV__ && authEmulator) {
   throw new Error('EXPO_PUBLIC_FIREBASE_AUTH_EMULATOR must not be set in a release build.');
+}
+
+if (!__DEV__ && storybookEnabled) {
+  throw new Error('EXPO_PUBLIC_STORYBOOK_ENABLED must not be set in a release build.');
 }
 
 if (typeof googleWebClientId !== 'string') {
@@ -30,4 +35,5 @@ export const config = {
   apiTimeoutMs: API_TIMEOUT_MS,
   authEmulator,
   googleWebClientId,
+  storybookEnabled,
 };
