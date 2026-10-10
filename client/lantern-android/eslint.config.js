@@ -38,7 +38,7 @@ const otherFeaturesInternals = (own) =>
 
 module.exports = [
   ...expo,
-  { ignores: ['dist/*', '.expo/*'] },
+  { ignores: ['dist/*', '.expo/*', '.rnstorybook/storybook.requires.ts'] },
   {
     files: ['**/*.{ts,tsx}'],
     rules: {
