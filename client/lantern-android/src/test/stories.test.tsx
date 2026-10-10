@@ -5,6 +5,7 @@ import '@testing-library/react-native/matchers';
 import { render, screen } from '@testing-library/react-native';
 import { withBackgrounds } from '@storybook/addon-ondevice-backgrounds';
 import { composeStories } from '@storybook/react';
+import { isValidElement } from 'react';
 import type { ComponentType } from 'react';
 
 import preview from '../../.rnstorybook/preview';
@@ -144,6 +145,22 @@ describe('the stories', () => {
     await render(<Registered />);
     expect(screen.getByText(en.signedIn.message)).toBeOnTheScreen();
   });
+
+  it.each(storyFiles.map((file) => [relative(file), file]))(
+    '%s passes no React element as an arg',
+    (_name, file) => {
+      // Storybook walks an element's internals to infer arg types and throws on React Navigation's context.
+      const { default: meta, ...stories } = jest.requireActual<{
+        default: { args?: object };
+        [story: string]: { args?: object };
+      }>(file);
+      const args = [meta, ...Object.values(stories)].flatMap((entry) =>
+        Object.values(entry.args ?? {}),
+      );
+
+      expect(args.filter((arg) => isValidElement(arg))).toEqual([]);
+    },
+  );
 
   describe.each(storyFiles.map((file) => [relative(file), file]))('%s', (_name, file) => {
     const stories = storiesOf(file);
