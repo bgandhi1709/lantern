@@ -8,6 +8,7 @@ import { composeStories } from '@storybook/react';
 import type { ComponentType } from 'react';
 
 import preview from '../../.rnstorybook/preview';
+import { en } from '../shared/i18n/en';
 import { colors } from '../shared/ui/theme';
 
 const src = path.resolve(__dirname, '..');
@@ -31,6 +32,13 @@ const requiredStories: Record<string, string[]> = {
   'auth/StartView.stories.tsx': ['Idle', 'SigningIn', 'Failed'],
   'auth/OpeningScreen.stories.tsx': ['Playing', 'Loading', 'LoadingStill'],
   'auth/GoogleButton.stories.tsx': ['Idle', 'Busy'],
+  'auth/SignedInView.stories.tsx': [
+    'Checking',
+    'Waking',
+    'NotRegistered',
+    'Unreachable',
+    'Registered',
+  ],
   'shared/ui/PrimaryButton.stories.tsx': ['Default', 'LongLabel'],
 };
 
@@ -39,7 +47,7 @@ const withoutStory: Record<string, string> = {
   'auth/AuthGate.tsx': 'routes by session state; the screens it picks have the stories',
   'auth/AuthProvider.tsx': 'context provider with no look of its own',
   'auth/StartScreen.tsx': 'container for StartView, which has the stories',
-  'auth/SignedInPlaceholder.tsx': 'stand-in for Home that asks the API; replaced by the Home story',
+  'auth/SignedInRoute.tsx': 'container for SignedInView, which has the stories',
   'auth/IntroLayer.tsx': 'animation layer shown inside OpeningScreen',
   'auth/IntroMark.tsx': 'animation of Mark, shown inside OpeningScreen',
   'auth/PageTurnLoader.tsx': 'loader shown inside OpeningScreen',
@@ -105,6 +113,24 @@ describe('the stories', () => {
 
     await render(<SigningIn />);
     expect(screen.getByRole('button', { name: 'Signing in…' })).toBeDisabled();
+  });
+
+  it('show what the signed-in Parent sees for each answer from the API', async () => {
+    const { Waking, NotRegistered, Unreachable, Registered } = storiesOf(
+      path.join(src, 'auth/SignedInView.stories.tsx'),
+    );
+
+    await render(<Waking />);
+    expect(screen.getByText(en.opening.waking)).toBeOnTheScreen();
+
+    await render(<NotRegistered />);
+    expect(screen.getByRole('button', { name: en.common.signOut })).toBeOnTheScreen();
+
+    await render(<Unreachable />);
+    expect(screen.getByRole('button', { name: en.opening.tryAgain })).toBeOnTheScreen();
+
+    await render(<Registered />);
+    expect(screen.getByText(en.signedIn.message)).toBeOnTheScreen();
   });
 
   describe.each(storyFiles.map((file) => [relative(file), file]))('%s', (_name, file) => {
