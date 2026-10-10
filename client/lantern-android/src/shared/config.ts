@@ -27,8 +27,8 @@ if (typeof googleWebClientId !== 'string') {
   );
 }
 
-// UAT scales to zero: the first call after idle takes about 25 s.
-const API_TIMEOUT_MS = 45_000;
+// UAT scales to zero: the first call after idle takes up to about a minute.
+const API_TIMEOUT_MS = 65_000;
 
 export const config = {
   apiBaseUrl: apiBaseUrl.replace(/\/+$/, ''),

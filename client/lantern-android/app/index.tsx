@@ -4,5 +4,5 @@ import { config } from '../src/shared/config';
 
 export default function Index() {
   if (config.storybookEnabled) return <Storybook />;
-  return <AuthGate signedIn={<SignedInPlaceholder />} />;
+  return <AuthGate home={<SignedInPlaceholder />} />;
 }

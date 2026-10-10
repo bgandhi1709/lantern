@@ -6,10 +6,12 @@ import { fakeRestoredSession } from '../test/fakeFirebaseAuth';
 import { GoogleSignin, setGoogleOutcome } from '../test/fakeGoogleSignIn';
 import { AuthGate, AuthProvider } from '.';
 
+jest.mock('../shared/api', () => jest.requireActual('../test/fakeApiModule'));
+
 const renderApp = () =>
   render(
     <AuthProvider>
-      <AuthGate signedIn={<Text>Home</Text>} />
+      <AuthGate home={<Text>Home</Text>} />
     </AuthProvider>,
   );
 

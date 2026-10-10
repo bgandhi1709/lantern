@@ -1,6 +1,6 @@
 # lantern-android
 
-The Parent app: Expo, React Native and TypeScript (strict), with expo-router. It is one codebase, so it uses only libraries that support Android and iOS ([ADR-0007](../../docs/adr/0007-parent-app-in-expo.md), web dropped by D67); the POC targets Android only. Right now it has the Start screen: one **Continue with Google** button and the Firebase sign-in behind it. A signed-in Parent sees a placeholder that asks the API `GET /v1/me` (which proves the ID token is sent) and has Sign out; the registration and Home stories replace it. It is built and signed by GitHub Actions, so it can be installed on a real phone.
+The Parent app: Expo, React Native and TypeScript (strict), with expo-router. It is one codebase, so it uses only libraries that support Android and iOS ([ADR-0007](../../docs/adr/0007-parent-app-in-expo.md), web dropped by D67); the POC targets Android only. Right now it has the Start screen: one **Continue with Google** button and the Firebase sign-in behind it. On launch the Opening screen restores the sign-in and asks the API `GET /v1/me`: a registered Parent reaches a Home placeholder with Sign out, an unregistered one sees "Registration comes next", and if the API cannot be reached the Parent stays signed in and sees "Can't reach Lantern" with Try again; the registration and Home stories replace the placeholders. It is built and signed by GitHub Actions, so it can be installed on a real phone.
 
 ## Prerequisites
 
@@ -78,7 +78,7 @@ It creates one release key in `~/lantern-secrets/` (outside the repo), reads UAT
 3. The build is lean: arm64-v8a only (so the APK installs on nearly every phone since about 2017 but not on an x86 emulator or an old 32-bit phone; use `npm run android` for the emulator), Gradle's downloads and unchanged tasks are cached between runs, and Gradle gets 4 GB of heap. The first run on a branch is slower than the ones after it.
 4. When it finishes, download the `lantern-android-<n>` artifact from the run page (a zip with `app-release.apk`).
 5. Put the APK on the phone (USB or any file transfer), open it, and allow "Install unknown apps" for the app you opened it from. Or with USB debugging on: `adb install app-release.apk`.
-6. Open Lantern. The screen should say "Lantern is reachable". The first call after UAT has been idle takes up to about 30 seconds, and the screen says it is waking Lantern up meanwhile.
+6. Open Lantern. A registered Parent reaches Home; an unregistered one sees "Registration comes next". The first call after UAT has been idle takes up to about a minute, and the Opening screen says it is waking Lantern up meanwhile (the API timeout is 65 s).
 
 **What this exposes.** The repository is public and any signed-in GitHub user can download its artifacts, so:
 
