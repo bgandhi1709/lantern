@@ -18,14 +18,16 @@ internal sealed class RepositoryHarness : IDisposable
     private readonly UnitOfWork<ChildEntity> childRows;
     private readonly UnitOfWork<ParentEntity> parentRows;
 
-    public RepositoryHarness(string connectionString, bool createTables = true, string? parentsTable = null, string? familiesTable = null)
+    public RepositoryHarness(string connectionString, bool createTables = true, string parentsTable = null, string familiesTable = null)
     {
         var service = new TableServiceClient(connectionString);
         Parents = service.GetTableClient(parentsTable ?? $"parents{Guid.NewGuid():N}");
         Families = service.GetTableClient(familiesTable ?? $"families{Guid.NewGuid():N}");
         Crypto = new CryptoService(Options.Create(new SecurityOptions { Key = LanternApiFactory.SecurityKey }));
 
-        mapper = new Mapper(new TypeAdapterConfig());
+        var config = new TypeAdapterConfig();
+        config.Apply(new RepositoryProfile());
+        mapper = new Mapper(config);
 
         familyRows = new UnitOfWork<FamilyEntity>(Families, createTables);
         childRows = new UnitOfWork<ChildEntity>(Families, createTables);

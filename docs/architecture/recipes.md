@@ -28,7 +28,7 @@ Reuse is the default. Create a class only when the reuse case fails.
 | Repository method | The base's single, collection, add, update or remove fits | Storage needs a rule the base lacks (ETag retry, a batch with another row, a status-only read): add to `I{Noun}Repository` |
 | Store | Blob data belongs to the Workspace: add a method to `IWorkspaceStore` | A new Blob area with its own paths: `{Noun}Store` |
 | Event | Never reuse a type for a different meaning | Each distinct outcome gets its own `ActionType` |
-| Exception | An existing condition fits exactly (`NotFoundException("child")`) | A new condition the caller must tell apart: a new exception and a new problem code |
+| Error | An existing `LanternErrorCode` fits exactly (`ChildNotFound`) | A new condition the caller must tell apart: a new `LanternErrorCode` member and a new problem code |
 | Interactor | One service can do it with its own repository | Two or more services in a fixed order, see below |
 
 A service never injects another service's repository. When a service needs another model's data, it injects that
@@ -46,7 +46,7 @@ model's `IServiceBase<T>` or `I{Noun}Service`, or it is time for an interactor.
    command). Map anything not by name in `ApiProfile`.
 5. **Action.** Add the method to the existing `{Nouns}Controller`: bind, `Mapper.Map`, call one service method, return
    the status code (`Ok`, `Created`, `Accepted` for queued work).
-6. **Errors.** A new exception gets one line in `ProblemExceptionHandler` with its problem code.
+6. **Errors.** A new `LanternErrorCode` member gets one line in `ProblemExceptionHandler` with its problem code. Throw it as `new LanternException(code)`.
 7. **Tests.** An in-process controller test in `Lantern.Api.Tests/Controllers` (happy path, another Family's id → 404,
    bad input → 400), and an Azurite repository test for any new storage rule.
 

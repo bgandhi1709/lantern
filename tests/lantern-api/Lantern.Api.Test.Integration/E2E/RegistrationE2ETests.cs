@@ -1,7 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using Lantern.Api.Models;
-using Lantern.Core.Models;
+using Lantern.Core.Constants;
 
 namespace Lantern.Api.Test.Integration.E2E;
 

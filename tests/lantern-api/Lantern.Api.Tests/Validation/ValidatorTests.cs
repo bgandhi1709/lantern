@@ -1,5 +1,6 @@
 using Lantern.Base.Validation;
-using Lantern.Core.Exceptions;
+using Lantern.Api.Tests.Infrastructure;
+using Lantern.Core.Constants;
 using Lantern.Core.Models;
 
 namespace Lantern.Api.Tests.Validation;
@@ -21,10 +22,10 @@ public sealed class ValidatorTests
     public void Registration_WithConsentAndAFamilyId_Passes() => Rules.Validate(Body());
 
     [Fact]
-    public void Registration_WithoutConsent_Throws() => Assert.Throws<InvalidRequestException>(() => Rules.Validate(Body(accepted: false)));
+    public void Registration_WithoutConsent_Throws() => Errors.Throws(LanternErrorCode.InvalidRequest, () => Rules.Validate(Body(accepted: false)));
 
     [Fact]
-    public void Registration_WithoutAFamilyId_Throws() => Assert.Throws<InvalidRequestException>(() => Rules.Validate(Body(familyId: Guid.Empty)));
+    public void Registration_WithoutAFamilyId_Throws() => Errors.Throws(LanternErrorCode.InvalidRequest, () => Rules.Validate(Body(familyId: Guid.Empty)));
 
     [Theory]
     [InlineData(BoardType.Cbse, 10, true)]
@@ -41,7 +42,7 @@ public sealed class ValidatorTests
         }
         else
         {
-            Assert.Throws<ClassNotAvailableException>(Act);
+            Errors.Throws(LanternErrorCode.ClassNotAvailable, Act);
         }
     }
 

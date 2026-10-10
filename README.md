@@ -142,6 +142,13 @@ The decisions so far are in
 [`docs/ideation/decision-log.md`](docs/ideation/decision-log.md) and [`docs/adr`](docs/adr), and
 the work is tracked in [Issues](../../issues) and the project board.
 
+## Git hooks
+
+After cloning, run `npm install` once at the repo root: it installs Husky, which runs `scripts/pre-commit.sh` before every
+commit. A commit that touches .NET code must build with no warnings (unused usings included), match `dotnet format`, and
+pass the unit tests (they need `azurite` on the PATH: `npm install -g azurite@3`); a commit that touches the app must pass
+typecheck, lint, format and the Jest tests. The E2E tests stay in CI. `git commit --no-verify` skips the hook.
+
 ## License
 
 Lantern is source-available under the [PolyForm Noncommercial License 1.0.0](LICENSE). It is free for

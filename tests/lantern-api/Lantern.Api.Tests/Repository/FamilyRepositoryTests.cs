@@ -1,6 +1,7 @@
 using Azure;
 using Azure.Data.Tables;
 using Lantern.Api.Tests.Infrastructure;
+using Lantern.Core.Constants;
 using Lantern.Core.Exceptions;
 using Lantern.Core.Models;
 
@@ -26,10 +27,10 @@ public sealed class FamilyRepositoryTests(AzuriteFixture azurite) : IDisposable
         var stored = await harness.FamilyRepository().SingleAsync(family.FamilyId, family.FamilyId, CancellationToken.None);
         var children = await harness.ChildRepository().CollectionAsync(family.FamilyId, CancellationToken.None);
 
-        Assert.Equal(("locked:Meena", "locked:meena@example.test", family.FamilyId), (parent!.NameLocked, parent.EmailLocked, parent.FamilyId));
+        Assert.Equal(("locked:Meena", "locked:meena@example.test", family.FamilyId), (parent!.Name, parent.Email, parent.FamilyId));
         Assert.Equal(("Gujarat", BoardType.Ssc), (stored.Region, stored.Board));
         Assert.Equal(("passphrase-key", "passphrase-salt", "recovery-key", "recovery-salt"), (stored.PassphraseWrappedKey, stored.PassphraseSalt, stored.RecoveryWrappedKey, stored.RecoverySalt));
-        Assert.Equal(["Aarav", "Diya"], children.Select(child => child.NameLocked));
+        Assert.Equal(["Aarav", "Diya"], children.Select(child => child.Name));
     }
 
     [Fact]
@@ -47,7 +48,7 @@ public sealed class FamilyRepositoryTests(AzuriteFixture azurite) : IDisposable
                     await harness.FamilyRepository().RegisterAsync(uid, family, NewParent(family), [NewChild(family, 0)], CancellationToken.None);
                     return true;
                 }
-                catch (AlreadyRegisteredException)
+                catch (LanternException ex) when (ex.Code == LanternErrorCode.AlreadyRegistered)
                 {
                     return false;
                 }
@@ -87,7 +88,7 @@ public sealed class FamilyRepositoryTests(AzuriteFixture azurite) : IDisposable
         rows.AddRange(await harness.Parents.QueryAsync<TableEntity>().ToListAsync());
         var values = rows.SelectMany(row => ((IDictionary<string, object>)row).Values).OfType<string>().ToList();
 
-        foreach (var sent in new[] { parent.NameLocked, parent.EmailLocked, child.NameLocked, child.BirthYearLocked, family.PassphraseWrappedKey, family.RecoveryWrappedKey })
+        foreach (var sent in new[] { parent.Name, parent.Email, child.Name, child.BirthYear, family.PassphraseWrappedKey, family.RecoveryWrappedKey })
         {
             Assert.Contains(sent, values);
         }
@@ -106,14 +107,14 @@ public sealed class FamilyRepositoryTests(AzuriteFixture azurite) : IDisposable
         intruder.FamilyId = family.FamilyId;
         intruder.PassphraseWrappedKey = "intruder-key";
 
-        await Assert.ThrowsAsync<FamilyIdTakenException>(() =>
+        await Errors.ThrowsAsync(LanternErrorCode.FamilyIdTaken, () =>
             harness.FamilyRepository().RegisterAsync(intruderUid, intruder, NewParent(intruder), [NewChild(intruder, 0, "Intruder")], CancellationToken.None)
         );
 
         Assert.Null(await harness.FamilyRepository().FindParentAsync(intruderUid, CancellationToken.None));
         var stored = await harness.FamilyRepository().SingleAsync(family.FamilyId, family.FamilyId, CancellationToken.None);
         Assert.Equal("passphrase-key", stored.PassphraseWrappedKey);
-        Assert.Equal(["Aarav"], (await harness.ChildRepository().CollectionAsync(family.FamilyId, CancellationToken.None)).Select(child => child.NameLocked));
+        Assert.Equal(["Aarav"], (await harness.ChildRepository().CollectionAsync(family.FamilyId, CancellationToken.None)).Select(child => child.Name));
     }
 
     [Fact]
@@ -124,7 +125,7 @@ public sealed class FamilyRepositoryTests(AzuriteFixture azurite) : IDisposable
         await harness.FamilyRepository().RegisterAsync(uid, family, NewParent(family), [NewChild(family, 0)], CancellationToken.None);
         var again = NewFamily();
 
-        await Assert.ThrowsAsync<AlreadyRegisteredException>(() =>
+        await Errors.ThrowsAsync(LanternErrorCode.AlreadyRegistered, () =>
             harness.FamilyRepository().RegisterAsync(uid, again, NewParent(again), [NewChild(again, 0)], CancellationToken.None)
         );
 
@@ -279,8 +280,8 @@ public sealed class FamilyRepositoryTests(AzuriteFixture azurite) : IDisposable
         {
             ParentId = Guid.NewGuid(),
             FamilyId = family.FamilyId,
-            NameLocked = "locked:Meena",
-            EmailLocked = "locked:meena@example.test",
+            Name = "locked:Meena",
+            Email = "locked:meena@example.test",
             Language = "gu",
             ConsentVersion = "2026-09",
             ConsentAt = DateTimeOffset.UtcNow,
@@ -292,9 +293,9 @@ public sealed class FamilyRepositoryTests(AzuriteFixture azurite) : IDisposable
         {
             FamilyId = family.FamilyId,
             ChildId = Guid.NewGuid(),
-            NameLocked = name,
+            Name = name,
             ClassLevel = 1,
-            BirthYearLocked = "locked:2020",
+            BirthYear = "locked:2020",
             Position = position,
             CreatedAt = DateTimeOffset.UtcNow,
             Status = ChildStatus.Active,

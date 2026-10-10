@@ -1,6 +1,7 @@
 using Azure.Data.Tables;
 using Lantern.Api.Tests.Infrastructure;
 using Lantern.Core.Actions;
+using Lantern.Core.Constants;
 using Lantern.Repository;
 using Lantern.Repository.Entities;
 using Lantern.Repository.UnitOfWork;

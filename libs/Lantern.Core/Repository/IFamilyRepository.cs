@@ -4,14 +4,14 @@ namespace Lantern.Core.Repository;
 
 public interface IFamilyRepository : IRepositoryBase<Family>
 {
-    Task<Parent?> FindParentAsync(string uid, CancellationToken cancellationToken);
+    Task<Parent> FindParentAsync(string uid, CancellationToken cancellationToken);
 
     /// <summary>
     /// Writes the Family (with the keys the phone wrapped), its Children and the Parent. The Parent's profile row is written last
     /// and is the commit point.
     /// </summary>
-    /// <exception cref="Exceptions.AlreadyRegisteredException">The uid already has a profile.</exception>
-    /// <exception cref="Exceptions.FamilyIdTakenException">A Family with this id already exists.</exception>
+    /// <exception cref="Core.Exceptions.LanternException">(<c>AlreadyRegistered</c>) The uid already has a profile.</exception>
+    /// <exception cref="Core.Exceptions.LanternException">(<c>FamilyIdTaken</c>) A Family with this id already exists.</exception>
     Task RegisterAsync(string uid, Family family, Parent parent, IReadOnlyList<Child> children, CancellationToken cancellationToken);
 
     /// <summary>

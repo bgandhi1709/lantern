@@ -48,8 +48,8 @@ HTTP ─▶ Controller ─▶ (Interactor) ─▶ Service ─▶ Repository / St
   (`ResponseExportResolver`).
 
 **ExceptionHandler** (`ProblemExceptionHandler`, `Exceptions/`)
-- Meaning: the one place a Core exception becomes an HTTP problem code (wf: `ExceptionMiddleware`). A new caller-facing
-  exception adds one line here.
+- Meaning: the one place a `LanternException` becomes an HTTP problem code (wf: `ExceptionMiddleware`). A new
+  `LanternErrorCode` adds one line here.
 
 **Options** (`{Section}Options`, `Configuration/`) **(tested)**: see the Core layer. API-only settings
 (`FirebaseOptions`, `RateLimitOptions`) live in `Lantern.Api/Configuration`.
@@ -94,7 +94,7 @@ HTTP ─▶ Controller ─▶ (Interactor) ─▶ Service ─▶ Repository / St
   names those `*Validator`.
 
 **Validator** (`{Noun}Validator : IValidator<{Noun}>`, `Validation/`) **(tested)**
-- Meaning: checks one service model against the product rules and throws `InvalidRequestException` on the first failure.
+- Meaning: checks one service model against the product rules and throws a `LanternException` (`InvalidRequest`, or the specific code) on the first failure.
   One validator per model; a composite model's validator calls its parts' validators (`RegistrationValidator` uses the
   Child rules).
 - Registered as a singleton `IValidator<T>` in `BaseModule`.
@@ -135,9 +135,11 @@ HTTP ─▶ Controller ─▶ (Interactor) ─▶ Service ─▶ Repository / St
 
 **Resolver contract** (`IIdentityResolver`): the caller, resolved per request by the host.
 
-**Exception** (`{Condition}Exception`, `Exceptions/`) **(tested: one per file)**
-- Meaning: a failure the caller must see. Each maps to one problem code in `ProblemExceptionHandler`. Name the condition
-  (`ChildLimitReachedException`), not the status code.
+**Exception** (`LanternException`, `Exceptions/`)
+- Meaning: the one exception for a failure the caller must see. A `LanternErrorCode` (in `Constants/`) says which
+  condition; `ProblemExceptionHandler` maps each code to a status and a problem code. Name the condition
+  (`ChildLimitReached`), not the status code. A new condition is a new `LanternErrorCode` member and one line in the
+  handler, never a new exception class.
 
 **Options** (`{Section}Options` with `const string SectionName`, `Configuration/`) **(tested: no defaults)**
 - Meaning: one configuration section, bound and validated with DataAnnotations; the host calls `ValidateOnStart`.
@@ -146,8 +148,9 @@ HTTP ─▶ Controller ─▶ (Interactor) ─▶ Service ─▶ Repository / St
 **Module** (`{Layer}Module.AddLantern{Layer}()`): the one DI registration per project (wf: `*Module`,
 `DependencyInjection`). `CoreModule`, `RepositoryModule`, `BaseModule`, `FunctionsModule`.
 
-**Enum** (`{Noun}Type` or `{Noun}Status`): a fixed set of values (wf: `ActivationType`, `*Status`). `ActionType`,
-`ChildStatus`. Never a static class of string constants.
+**Enum** (`{Noun}Type`, `{Noun}Status` or `{Noun}Code`, `Constants/`, namespace `Lantern.Core.Constants`): a fixed set of
+values (wf: `ActivationType`, `*Status`). `ActionType`, `ChildStatus`, `BoardType`, `LanternErrorCode`. Every enum is a
+constant, so every enum lives in `Lantern.Core.Constants`. Never a static class of string constants.
 
 ## Repository layer: `libs/Lantern.Repository` (storage only)
 
@@ -172,6 +175,9 @@ HTTP ─▶ Controller ─▶ (Interactor) ─▶ Service ─▶ Repository / St
 **Ledger** (`ActionLedger`): the action ledger's table operations.
 
 **RowKeyService** (`IRowKeyService`): every partition and row key. Keys are cipher context, so they are fixed in code.
+
+**Profile** (`RepositoryProfile`): the one Mapster `IRegister` for service model ⇄ entity. Only what is not by name goes
+here (the Board, stored as text; a row with no Board reads as CBSE).
 
 **Attribute** (`{Meaning}Attribute`)
 - Meaning: declarative metadata a framework class reads by reflection, so the rule sits on the thing it describes

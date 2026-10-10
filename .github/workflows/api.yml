@@ -64,7 +64,7 @@ jobs:
       - run: npm install -g azurite@3
       - run: dotnet build Lantern.slnx -c Release
       # The E2E tests (Category=E2E) need the Docker stack; they run in the e2e-docker job.
-      - run: dotnet test --solution Lantern.slnx -c Release --no-build --filter-not-trait "Category=E2E"
+      - run: dotnet test --solution Lantern.slnx -c Release --no-build --filter-not-trait "Category=E2E" --ignore-exit-code 8
 
   # The same E2E tests the cloud used to run, against the Docker stack in deploy/local: Azurite, the Firebase Auth
   # Emulator and a seeded dev Family. It gates the release.

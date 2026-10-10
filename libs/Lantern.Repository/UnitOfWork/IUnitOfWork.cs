@@ -7,7 +7,7 @@ namespace Lantern.Repository.UnitOfWork;
 internal interface IUnitOfWork<TEntity>
     where TEntity : class, ITableEntity, new()
 {
-    Task<TEntity?> SingleOrNullAsync(string partitionKey, string rowKey, CancellationToken cancellationToken);
+    Task<TEntity> SingleOrNullAsync(string partitionKey, string rowKey, CancellationToken cancellationToken);
 
     /// <summary>The rows of the partition whose row key starts with the prefix.</summary>
     Task<IReadOnlyList<TEntity>> PartitionAsync(string partitionKey, string rowKeyPrefix, CancellationToken cancellationToken);

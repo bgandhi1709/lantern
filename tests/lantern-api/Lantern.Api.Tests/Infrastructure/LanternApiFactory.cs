@@ -2,7 +2,6 @@ extern alias Functions;
 
 using Functions::Lantern.Functions;
 using Functions::Lantern.Functions.Handler;
-using Lantern.Core.Actions;
 using Lantern.Core.Service;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Hosting;

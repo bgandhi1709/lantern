@@ -1,4 +1,4 @@
-using Lantern.Core.Actions;
+using Lantern.Core.Constants;
 using Microsoft.Extensions.Logging;
 
 namespace Lantern.Functions;

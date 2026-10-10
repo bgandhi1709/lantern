@@ -14,7 +14,7 @@ public sealed class AzuriteFixture : IAsyncLifetime, IDisposable
         "Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==";
 
     private readonly StringBuilder output = new();
-    private Process? process;
+    private Process process;
     private string dataDirectory = string.Empty;
 
     public string ConnectionString { get; private set; } = string.Empty;
@@ -110,7 +110,7 @@ public sealed class AzuriteFixture : IAsyncLifetime, IDisposable
     {
         var deadline = DateTimeOffset.UtcNow.AddSeconds(20);
         var probe = CreateClient().GetTableClient("startupprobe");
-        Exception? lastError = null;
+        Exception lastError = null;
 
         while (DateTimeOffset.UtcNow < deadline)
         {

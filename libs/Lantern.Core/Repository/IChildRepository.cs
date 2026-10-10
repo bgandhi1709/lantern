@@ -1,3 +1,4 @@
+using Lantern.Core.Constants;
 using Lantern.Core.Models;
 
 namespace Lantern.Core.Repository;

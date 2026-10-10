@@ -1,3 +1,5 @@
+using Lantern.Core.Constants;
+
 namespace Lantern.Core.Models;
 
 public sealed class Child : IFamilyModel
@@ -13,13 +15,13 @@ public sealed class Child : IFamilyModel
     public Guid ChildId { get; set; }
 
     // Locked on the phone with the Family key (D66): the server stores and returns them as sent.
-    public string NameLocked { get; set; } = string.Empty;
+    public string Name { get; set; }
 
-    public string? SchoolLocked { get; set; }
+    public string School { get; set; }
 
     public int ClassLevel { get; set; }
 
-    public string BirthYearLocked { get; set; } = string.Empty;
+    public string BirthYear { get; set; }
 
     // Children saved together share a timestamp; Position keeps the order they were entered in.
     public int Position { get; set; }

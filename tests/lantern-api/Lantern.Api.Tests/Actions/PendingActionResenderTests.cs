@@ -2,6 +2,7 @@ using System.Diagnostics;
 using Lantern.Api.Services;
 using Lantern.Core.Actions;
 using Lantern.Core.Configuration;
+using Lantern.Core.Constants;
 using Lantern.Core.Repository;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -17,7 +18,7 @@ public sealed class PendingActionResenderTests
     [Theory]
     [InlineData(TraceParent, true)]
     [InlineData(null, false)]
-    public async Task RunOnceAsync_StartsItsOwnTrace_LinkedToTheRequestThatRecordedTheAction(string? traceParent, bool linked)
+    public async Task RunOnceAsync_StartsItsOwnTrace_LinkedToTheRequestThatRecordedTheAction(string traceParent, bool linked)
     {
         var message = new ActionMessage("id", ActionType.RemoveWorkspace, "{}", traceParent);
         var ledger = new Mock<IActionLedger>();

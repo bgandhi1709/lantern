@@ -1,5 +1,6 @@
 using Azure.Data.Tables;
 using Lantern.Core.Configuration;
+using Lantern.Core.Constants;
 using Lantern.Core.Models;
 using Lantern.Core.Repository;
 using Lantern.Core.Security;
@@ -55,8 +56,8 @@ internal sealed class DevelopmentSeeder(
         {
             ParentId = Guid.NewGuid(),
             FamilyId = family.FamilyId,
-            NameLocked = "locked:Dev Parent One",
-            EmailLocked = "locked:dev-parent-1@lantern.local",
+            Name = "locked:Dev Parent One",
+            Email = "locked:dev-parent-1@lantern.local",
             Language = "en",
             ConsentVersion = "dev",
             ConsentAt = now,
@@ -70,10 +71,10 @@ internal sealed class DevelopmentSeeder(
                 {
                     FamilyId = family.FamilyId,
                     ChildId = Guid.NewGuid(),
-                    NameLocked = $"locked:Dev Child {level}",
-                    SchoolLocked = "locked:Lantern Dev School",
+                    Name = $"locked:Dev Child {level}",
+                    School = "locked:Lantern Dev School",
                     ClassLevel = level,
-                    BirthYearLocked = $"locked:{now.Year - (level + 5)}",
+                    BirthYear = $"locked:{now.Year - (level + 5)}",
                     Position = level - 1,
                     CreatedAt = now,
                     Status = ChildStatus.Active,
@@ -108,8 +109,8 @@ internal sealed class DevelopmentSeeder(
             RowKey = keyService.ProfileRowKey,
             ParentId = parentId,
             FamilyId = familyId,
-            NameLocked = "locked:Dev Parent Two",
-            EmailLocked = "locked:dev-parent-2@lantern.local",
+            Name = "locked:Dev Parent Two",
+            Email = "locked:dev-parent-2@lantern.local",
             Language = "gu",
             ConsentVersion = "dev",
             ConsentAt = now,

@@ -114,15 +114,14 @@ defaults, suffixes, one type per file, namespaces). Review the rest.
 - Every setting binds to a `{Section}Options` class with DataAnnotations, **no default value**, and `ValidateOnStart()`
   in the host that uses it, so a missing setting stops the app instead of falling back silently.
 - GitHub Actions carries only per-run values (image tags, port) and its own sign-in.
-- **Never configurable**, by design: storage formats (row keys such as `profile`, the `[Encrypted]` column names and
-  the cipher context, `class.json`), the wire contract (action wire names, problem codes, routes, the
+- **Never configurable**, by design: storage formats (row keys such as `profile`, `class.json`), the wire contract (action wire names, problem codes, routes, the
   `x-api-version` header) and product rules (six Children, ages 3 to 18, body and text limits). These are constants or
-  enums in the class that owns them; changing one is a code change with tests or a migration.
+  enums (every enum lives in `Lantern.Core.Constants`); changing one is a code change with tests or a migration.
 
 ### 9. Errors
 
-- A failure the caller must see is an exception from `Core/Exceptions`, mapped to a problem code in
-  `ProblemExceptionHandler`. Never a `bool`, a `null` or a status code from a service or repository.
+- A failure the caller must see is a `LanternException` carrying a `LanternErrorCode`, mapped to a problem code in
+  `ProblemExceptionHandler`. A new condition is a new code, not a new exception class. Never a `bool`, a `null` or a status code from a service or repository.
 - Catch only a specific, expected condition, and say why in one line (a 409 that means "already recorded", a 404 that
   means "already gone"). The only broad catches are the documented boundaries: the publisher's send, the resender, the
   Functions trigger.

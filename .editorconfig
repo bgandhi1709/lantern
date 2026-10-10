@@ -20,3 +20,6 @@ dotnet_diagnostic.AV0016.severity = none
 # The namespace mirrors the folder (CODING_STANDARDS.md, Architecture 7).
 dotnet_style_namespace_match_folder = true
 dotnet_diagnostic.IDE0130.severity = error
+
+# No unused usings. Enforced at build (needs GenerateDocumentationFile) and by the pre-commit hook.
+dotnet_diagnostic.IDE0005.severity = error

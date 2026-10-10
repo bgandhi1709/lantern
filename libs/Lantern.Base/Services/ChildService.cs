@@ -1,7 +1,7 @@
 using System.Globalization;
 using Lantern.Base.Logging;
-using Lantern.Base.Validation;
 using Lantern.Core.Actions;
+using Lantern.Core.Constants;
 using Lantern.Core.Exceptions;
 using Lantern.Core.Identity;
 using Lantern.Core.Models;
@@ -29,26 +29,26 @@ internal sealed class ChildService(
 
         if (child.ChildId == Guid.Empty)
         {
-            throw new InvalidRequestException("A child id is required.");
+            throw new LanternException(LanternErrorCode.InvalidRequest, "A child id is required.");
         }
 
         var familyId = await FamilyIdAsync(cancellationToken);
-        var board = (await Families.SingleOrNullAsync(familyId, familyId, cancellationToken))?.Board ?? throw new NotFoundException("family");
+        var board = (await Families.SingleOrNullAsync(familyId, familyId, cancellationToken))?.Board ?? throw new LanternException(LanternErrorCode.FamilyNotFound);
         var family = await Repository.CollectionAsync(familyId, cancellationToken);
         if (family.FirstOrDefault(stored => stored.ChildId == child.ChildId) is { } existing)
         {
-            return existing.Status == ChildStatus.Deleting ? throw new ChildDeletingException() : (existing, false);
+            return existing.Status == ChildStatus.Deleting ? throw new LanternException(LanternErrorCode.ChildDeleting) : (existing, false);
         }
 
         if (!Child.IsClassAvailable(board, child.ClassLevel))
         {
-            throw new ClassNotAvailableException();
+            throw new LanternException(LanternErrorCode.ClassNotAvailable);
         }
 
         // Checked here too so a full Family records no action; the repository holds the limit under a race.
         if (family.Count(stored => stored.Status == ChildStatus.Active) >= Child.MaxPerFamily)
         {
-            throw new ChildLimitReachedException();
+            throw new LanternException(LanternErrorCode.ChildLimitReached);
         }
 
         child.FamilyId = familyId;

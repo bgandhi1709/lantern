@@ -19,7 +19,7 @@ The secret a Parent chooses once for the Family, before any Child is saved. The 
 _Avoid_: Password, PIN, key
 
 **Locked value**:
-A personal detail the phone has locked with the Family key before sending it, so Lantern stores and returns it without being able to read it. The Parent's name and email and each Child's name, birth year and School are locked values; the API names them with a `Locked` suffix.
+A personal detail the phone has locked with the Family key before sending it, so Lantern stores and returns it without being able to read it. The Parent's name and email and each Child's name, birth year and School are locked values; the API keeps their plain names, and only the content is locked.
 _Avoid_: Encrypted field (the server does not encrypt), ciphertext
 
 **Recovery code**:

@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Lantern.Core.Constants;
 using Lantern.Core.Exceptions;
 using Lantern.Core.Identity;
 
@@ -11,11 +12,11 @@ internal sealed class HttpIdentityResolver(IHttpContextAccessor accessor) : IIde
     {
         get
         {
-            var principal = accessor.HttpContext?.User ?? throw new CallerNotIdentifiedException();
+            var principal = accessor.HttpContext?.User ?? throw new LanternException(LanternErrorCode.CallerNotIdentified);
             var uid = principal.FindFirstValue("sub");
 
             return string.IsNullOrWhiteSpace(uid)
-                ? throw new CallerNotIdentifiedException()
+                ? throw new LanternException(LanternErrorCode.CallerNotIdentified)
                 : new CallerIdentity(
                     uid,
                     principal.FindFirstValue("name") ?? string.Empty,

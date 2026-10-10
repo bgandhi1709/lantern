@@ -1,3 +1,4 @@
+using Lantern.Core.Constants;
 using Lantern.Core.Exceptions;
 using Lantern.Core.Identity;
 using Lantern.Core.Models;
@@ -47,10 +48,10 @@ public class ServiceBase<T, TRepository>(TRepository repository, IIdentityResolv
     public virtual async Task RemoveAsync(Guid id, CancellationToken cancellationToken) =>
         await repository.RemoveAsync(await FamilyIdAsync(cancellationToken), id, cancellationToken);
 
-    /// <exception cref="NotRegisteredException">The caller has no profile.</exception>
+    /// <exception cref="Core.Exceptions.LanternException">(<c>NotRegistered</c>) The caller has no profile.</exception>
     protected async Task<Guid> FamilyIdAsync(CancellationToken cancellationToken) =>
         familyId ??= (
-            await families.FindParentAsync(Identity.Uid, cancellationToken) ?? throw new NotRegisteredException()
+            await families.FindParentAsync(Identity.Uid, cancellationToken) ?? throw new LanternException(LanternErrorCode.NotRegistered)
         ).FamilyId;
 }
 

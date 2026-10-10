@@ -11,6 +11,7 @@ using Functions::Lantern.Functions.Handler;
 using Lantern.Api.Models;
 using Lantern.Api.Tests.Infrastructure;
 using Lantern.Core.Actions;
+using Lantern.Core.Constants;
 using Lantern.Core.Models;
 using Lantern.Core.Repository;
 using Microsoft.AspNetCore.TestHost;
@@ -48,8 +49,8 @@ public sealed class FamilyTests(AzuriteFixture azurite) : IDisposable
         Assert.NotNull(family);
         Assert.Equal(body.FamilyId, family.FamilyId);
         Assert.NotEqual(Guid.Empty, family.Parent.ParentId);
-        Assert.Equal(body.ParentNameLocked, family.Parent.NameLocked);
-        Assert.Equal(body.ParentEmailLocked, family.Parent.EmailLocked);
+        Assert.Equal(body.ParentName, family.Parent.Name);
+        Assert.Equal(body.ParentEmail, family.Parent.Email);
 
         var me = await client.GetFromJsonAsync<FamilyModel>(ApiClientExtensions.Me);
         Assert.NotNull(me);
@@ -59,11 +60,11 @@ public sealed class FamilyTests(AzuriteFixture azurite) : IDisposable
         Assert.Equal(family.Parent.ParentId, me.Parent.ParentId);
         Assert.Equal("gu", me.Parent.Language);
         Assert.Equal("2026-09", me.Parent.ConsentVersion);
-        Assert.Equal(body.ParentNameLocked, me.Parent.NameLocked);
-        Assert.Equal(body.Children.Select(child => child.NameLocked), me.Children.Select(child => child.NameLocked));
-        Assert.Equal(body.Children.Select(child => child.BirthYearLocked), me.Children.Select(child => child.BirthYearLocked));
-        Assert.Equal(body.Children[0].SchoolLocked, me.Children[0].SchoolLocked);
-        Assert.Null(me.Children[1].SchoolLocked);
+        Assert.Equal(body.ParentName, me.Parent.Name);
+        Assert.Equal(body.Children.Select(child => child.Name), me.Children.Select(child => child.Name));
+        Assert.Equal(body.Children.Select(child => child.BirthYear), me.Children.Select(child => child.BirthYear));
+        Assert.Equal(body.Children[0].School, me.Children[0].School);
+        Assert.Equal(body.Children[1].School, me.Children[1].School);
     }
 
     [Fact]
@@ -265,9 +266,9 @@ public sealed class FamilyTests(AzuriteFixture azurite) : IDisposable
 
         foreach (var sent in new[]
         {
-            body.ParentNameLocked, body.ParentEmailLocked, body.PassphraseWrappedKey, body.PassphraseSalt,
-            body.RecoveryWrappedKey, body.RecoverySalt, body.Children[0].NameLocked, body.Children[0].BirthYearLocked,
-            body.Children[0].SchoolLocked!,
+            body.ParentName, body.ParentEmail, body.PassphraseWrappedKey, body.PassphraseSalt,
+            body.RecoveryWrappedKey, body.RecoverySalt, body.Children[0].Name, body.Children[0].BirthYear,
+            body.Children[0].School,
         })
         {
             Assert.Contains(sent, stored);
@@ -350,7 +351,7 @@ public sealed class FamilyTests(AzuriteFixture azurite) : IDisposable
         var token = TestTokens.Create(uid, name, email);
         using var client = factory.CreateClient().WithBearer(token);
         var body = ValidBody();
-        var childName = body.Children[0].NameLocked;
+        var childName = body.Children[0].Name;
 
         await client.RegisterAsync(body);
         await client.RegisterAsync(body);
@@ -484,7 +485,7 @@ public sealed class FamilyTests(AzuriteFixture azurite) : IDisposable
         Assert.NotEmpty(await BlobNamesAsync($"{me.FamilyId:D}/"));
     }
 
-    private HttpClient Client(string uid, string? name = null, string? email = null) =>
+    private HttpClient Client(string uid, string name = null, string email = null) =>
         factory.CreateClient().WithBearer(TestTokens.Create(uid, name, email));
 
     private async Task<HttpClient> RegisteredAsync()
@@ -520,8 +521,8 @@ public sealed class FamilyTests(AzuriteFixture azurite) : IDisposable
             Region = "Gujarat",
             Board = BoardType.Ssc,
             Language = "gu",
-            ParentNameLocked = Locked("Meena Patel"),
-            ParentEmailLocked = Locked("meena@example.test"),
+            ParentName = Locked("Meena Patel"),
+            ParentEmail = Locked("meena@example.test"),
             PassphraseWrappedKey = Locked("passphrase-key"),
             PassphraseSalt = Locked("passphrase-salt"),
             RecoveryWrappedKey = Locked("recovery-key"),
@@ -529,8 +530,8 @@ public sealed class FamilyTests(AzuriteFixture azurite) : IDisposable
             Consent = new ConsentModel { Accepted = true, NoticeVersion = "2026-09" },
             Children =
             [
-                new ChildSaveModel { NameLocked = Locked("Aarav"), ClassLevel = 1, BirthYearLocked = Locked("2020"), SchoolLocked = Locked("Sunrise School") },
-                new ChildSaveModel { NameLocked = Locked("Diya"), ClassLevel = 3, BirthYearLocked = Locked("2018") },
+                new ChildSaveModel { Name = Locked("Aarav"), ClassLevel = 1, BirthYear = Locked("2020"), School = Locked("Sunrise School") },
+                new ChildSaveModel { Name = Locked("Diya"), ClassLevel = 3, BirthYear = Locked("2018"), School = Locked("Sunrise School") },
             ],
         };
 
@@ -543,17 +544,17 @@ public sealed class FamilyTests(AzuriteFixture azurite) : IDisposable
             case "seven-children": request.Children = [.. Enumerable.Repeat(request.Children[0], 7)]; break;
             case "class-zero": request.Children[0].ClassLevel = 0; break;
             case "class-eleven": request.Children[0].ClassLevel = 11; break;
-            case "board-missing": request.Board = null; break;
-            case "family-id-missing": request.FamilyId = null; break;
+            case "board-missing": request.Board = default; break;
+            case "family-id-missing": request.FamilyId = Guid.Empty; break;
             case "passphrase-key-missing": request.PassphraseWrappedKey = ""; break;
             case "recovery-salt-missing": request.RecoverySalt = ""; break;
-            case "parent-name-missing": request.ParentNameLocked = ""; break;
+            case "parent-name-missing": request.ParentName = ""; break;
             case "language-not-offered": request.Language = "fr"; break;
             case "empty-region": request.Region = " "; break;
             case "overlong-region": request.Region = new string('x', 61); break;
-            case "empty-child-name": request.Children[0].NameLocked = ""; break;
-            case "overlong-child-name": request.Children[0].NameLocked = new string('x', 401); break;
-            case "empty-birth-year": request.Children[0].BirthYearLocked = ""; break;
+            case "empty-child-name": request.Children[0].Name = ""; break;
+            case "overlong-child-name": request.Children[0].Name = new string('x', 401); break;
+            case "empty-birth-year": request.Children[0].BirthYear = ""; break;
             case "missing-consent-version": request.Consent.NoticeVersion = ""; break;
             default: throw new ArgumentOutOfRangeException(nameof(scenario), scenario, null);
         }

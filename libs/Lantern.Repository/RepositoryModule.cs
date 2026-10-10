@@ -5,6 +5,7 @@ using Lantern.Core.Configuration;
 using Lantern.Core.Repository;
 using Lantern.Repository.Entities;
 using Lantern.Repository.UnitOfWork;
+using Mapster;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -53,6 +54,7 @@ public static class RepositoryModule
         services.TryAddScoped<IRepositoryBase<Core.Models.Child>>(serviceProvider => serviceProvider.GetRequiredService<IChildRepository>());
         services.TryAddScoped<IRepositoryBase<Core.Models.Family>>(serviceProvider => serviceProvider.GetRequiredService<IFamilyRepository>());
         services.TryAddSingleton<IActionLedger, ActionLedger>();
+        services.AddSingleton<IRegister, RepositoryProfile>();
         services.TryAddSingleton<IWorkspaceStore>(serviceProvider => new WorkspaceStore(
             serviceProvider.GetRequiredService<BlobServiceClient>().GetBlobContainerClient(Storage(serviceProvider).WorkspaceContainer),
             createContainer: !string.IsNullOrWhiteSpace(Storage(serviceProvider).ConnectionString)

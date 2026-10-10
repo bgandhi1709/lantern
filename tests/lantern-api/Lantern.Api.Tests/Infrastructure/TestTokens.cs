@@ -15,13 +15,13 @@ public static class TestTokens
 
     public static string Create(
         string uid,
-        string? name = null,
-        string? email = null,
+        string name = null,
+        string email = null,
         string projectId = ProjectId,
-        string? audience = null,
-        string? issuer = null,
+        string audience = null,
+        string issuer = null,
         DateTimeOffset? expires = null,
-        SecurityKey? key = null
+        SecurityKey key = null
     )
     {
         var expiry = expires ?? DateTimeOffset.UtcNow.AddMinutes(30);

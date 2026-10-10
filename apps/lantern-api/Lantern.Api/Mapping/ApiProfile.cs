@@ -14,8 +14,6 @@ internal sealed class ApiProfile : IRegister
         config
             .NewConfig<FamilyRegisterRequest, Registration>()
             .Map(registration => registration.ConsentAccepted, request => request.Consent.Accepted)
-            .Map(registration => registration.ConsentNoticeVersion, request => request.Consent.NoticeVersion)
-            .Map(registration => registration.FamilyId, request => request.FamilyId ?? Guid.Empty)
-            .Map(registration => registration.Board, request => request.Board ?? BoardType.Cbse);
+            .Map(registration => registration.ConsentNoticeVersion, request => request.Consent.NoticeVersion);
     }
 }

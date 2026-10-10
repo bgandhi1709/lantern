@@ -7,13 +7,13 @@ public sealed class Parent : IFamilyModel
     public Guid FamilyId { get; set; }
 
     // Locked on the phone with the Family key (D66).
-    public string NameLocked { get; set; } = string.Empty;
+    public string Name { get; set; }
 
-    public string EmailLocked { get; set; } = string.Empty;
+    public string Email { get; set; }
 
-    public string Language { get; set; } = string.Empty;
+    public string Language { get; set; }
 
-    public string ConsentVersion { get; set; } = string.Empty;
+    public string ConsentVersion { get; set; }
 
     public DateTimeOffset ConsentAt { get; set; }
 

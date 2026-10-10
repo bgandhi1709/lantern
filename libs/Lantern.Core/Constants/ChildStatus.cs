@@ -1,4 +1,4 @@
-namespace Lantern.Core.Models;
+namespace Lantern.Core.Constants;
 
 public enum ChildStatus
 {

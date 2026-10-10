@@ -26,7 +26,7 @@ public sealed class ChildManagementE2ETests(RegisteredFamilyFixture fixture) : I
 
         var added = await fixture.Client.PostAsJsonAsync(
             Children,
-            new ChildAddModel { ChildId = id, NameLocked = "locked-kavya", ClassLevel = 6, BirthYearLocked = "locked-year", SchoolLocked = "locked-school" }
+            new ChildAddModel { ChildId = id, Name = "locked-kavya", ClassLevel = 6, BirthYear = "locked-year", School = "locked-school" }
         );
         Assert.Equal(HttpStatusCode.Created, added.StatusCode);
         var container = new BlobServiceClient(AzuriteBlobs).GetBlobContainerClient("family");
@@ -35,11 +35,11 @@ public sealed class ChildManagementE2ETests(RegisteredFamilyFixture fixture) : I
 
         var edited = await fixture.Client.PutAsJsonAsync(
             new Uri($"/v1/family/children/{id}", UriKind.Relative),
-            new { NameLocked = "locked-kavya-p", SchoolLocked = (string?)null, BirthYearLocked = "locked-year" }
+            new { Name = "locked-kavya-p", School = "locked-school-2", BirthYear = "locked-year" }
         );
         Assert.Equal(HttpStatusCode.OK, edited.StatusCode);
         var afterEdit = (await fixture.Client.GetFromJsonAsync<FamilyModel>(Me))!.Children.Single(c => c.ChildId == id);
-        Assert.Equal(("locked-kavya-p", null, 6), (afterEdit.NameLocked, afterEdit.SchoolLocked, afterEdit.ClassLevel));
+        Assert.Equal(("locked-kavya-p", "locked-school-2", 6), (afterEdit.Name, afterEdit.School, afterEdit.ClassLevel));
 
         var deleted = await fixture.Client.DeleteAsync(new Uri($"/v1/family/children/{id}", UriKind.Relative));
         Assert.Equal(HttpStatusCode.Accepted, deleted.StatusCode);
@@ -68,13 +68,13 @@ public sealed class ChildManagementE2ETests(RegisteredFamilyFixture fixture) : I
         var deleted = await fixture.Client.DeleteAsync(new Uri($"/v1/family/children/{target.ChildId}", UriKind.Relative));
         var edited = await fixture.Client.PutAsJsonAsync(
             new Uri($"/v1/family/children/{target.ChildId}", UriKind.Relative),
-            new { NameLocked = "Hijacked", BirthYearLocked = target.BirthYearLocked }
+            new { Name = "Hijacked", School = "locked-school", BirthYear = target.BirthYear }
         );
 
         Assert.Equal(HttpStatusCode.NotFound, deleted.StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, edited.StatusCode);
         var after = await SeededMeAsync("dev-parent-1");
-        Assert.Equal(seeded.Children.Select(c => (c.ChildId, c.NameLocked)), after.Children.Select(c => (c.ChildId, c.NameLocked)));
+        Assert.Equal(seeded.Children.Select(c => (c.ChildId, c.Name)), after.Children.Select(c => (c.ChildId, c.Name)));
     }
 
     private static async Task<FamilyModel> SeededMeAsync(string uid)

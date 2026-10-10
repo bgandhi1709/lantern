@@ -1,5 +1,6 @@
 using Azure;
 using Azure.Data.Tables;
+using Lantern.Core.Constants;
 using Lantern.Core.Exceptions;
 using Lantern.Core.Models;
 using Lantern.Core.Repository;
@@ -29,7 +30,9 @@ internal sealed class FamilyRepository(
 
     protected override Guid IdOf(Family model) => model.FamilyId;
 
-    public async Task<Parent?> FindParentAsync(string uid, CancellationToken cancellationToken)
+    protected override LanternErrorCode NotFoundCode => LanternErrorCode.FamilyNotFound;
+
+    public async Task<Parent> FindParentAsync(string uid, CancellationToken cancellationToken)
     {
         var profile = await parents.SingleOrNullAsync(crypto.Hash(uid), KeyService.ProfileRowKey, cancellationToken);
 
@@ -52,7 +55,7 @@ internal sealed class FamilyRepository(
         // Lookup first so a repeat register writes nothing; the profile Add below still settles a real race.
         if (await parents.SingleOrNullAsync(uidHash, KeyService.ProfileRowKey, cancellationToken) is not null)
         {
-            throw new AlreadyRegisteredException();
+            throw new LanternException(LanternErrorCode.AlreadyRegistered);
         }
 
         var familyRow = ToEntity(family);
@@ -77,7 +80,7 @@ internal sealed class FamilyRepository(
             var childRow = Mapper.Map<ChildEntity>(child);
             childRow.PartitionKey = partition;
             childRow.RowKey = KeyService.ChildRowKey(child.ChildId);
-            rows.Add(new(TableTransactionActionType.Add, childRow));
+            rows.Add(new TableTransactionAction(TableTransactionActionType.Add, childRow));
         }
 
         var profile = Mapper.Map<ParentEntity>(parent);
@@ -91,7 +94,7 @@ internal sealed class FamilyRepository(
         catch (TableTransactionFailedException ex) when (ex.Status == 409)
         {
             // The phone picks the Family id, so a taken id is a refusal, never an overwrite.
-            throw new FamilyIdTakenException();
+            throw new LanternException(LanternErrorCode.FamilyIdTaken);
         }
 
         try
@@ -109,7 +112,7 @@ internal sealed class FamilyRepository(
                 cancellationToken
             );
 
-            throw new AlreadyRegisteredException();
+            throw new LanternException(LanternErrorCode.AlreadyRegistered);
         }
     }
 

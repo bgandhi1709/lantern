@@ -17,7 +17,7 @@ public sealed class CapturingLoggerProvider : ILoggerProvider
 
     private sealed class CapturingLogger(ConcurrentQueue<string> entries) : ILogger
     {
-        public IDisposable? BeginScope<TState>(TState state)
+        public IDisposable BeginScope<TState>(TState state)
             where TState : notnull => null;
 
         public bool IsEnabled(LogLevel logLevel) => true;
@@ -26,8 +26,8 @@ public sealed class CapturingLoggerProvider : ILoggerProvider
             LogLevel logLevel,
             EventId eventId,
             TState state,
-            Exception? exception,
-            Func<TState, Exception?, string> formatter
+            Exception exception,
+            Func<TState, Exception, string> formatter
         )
         {
             entries.Enqueue(formatter(state, exception));

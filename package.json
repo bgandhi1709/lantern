@@ -1,0 +1,11 @@
+{
+  "name": "lantern",
+  "private": true,
+  "description": "Repo-level tooling only: it installs the git hooks. The app has its own package.json under client/lantern-android.",
+  "scripts": {
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "husky": "9.1.7"
+  }
+}

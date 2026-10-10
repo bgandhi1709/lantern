@@ -1,5 +1,6 @@
 using Azure;
 using Azure.Data.Tables;
+using Lantern.Core.Constants;
 using Lantern.Core.Exceptions;
 using Lantern.Core.Models;
 using Lantern.Core.Repository;
@@ -31,7 +32,10 @@ internal abstract class BaseRepository<TModel, TEntity>(
 
     protected abstract Guid IdOf(TModel model);
 
-    public virtual async Task<TModel?> SingleOrNullAsync(Guid familyId, Guid id, CancellationToken cancellationToken)
+    /// <summary>The error a missing row of this type raises.</summary>
+    protected abstract LanternErrorCode NotFoundCode { get; }
+
+    public virtual async Task<TModel> SingleOrNullAsync(Guid familyId, Guid id, CancellationToken cancellationToken)
     {
         var entity = await unitOfWork.SingleOrNullAsync(keyService.FamilyPartition(familyId), RowKey(id), cancellationToken);
 
@@ -40,7 +44,7 @@ internal abstract class BaseRepository<TModel, TEntity>(
 
     public virtual async Task<TModel> SingleAsync(Guid familyId, Guid id, CancellationToken cancellationToken) =>
         await SingleOrNullAsync(familyId, id, cancellationToken)
-        ?? throw new NotFoundException(typeof(TModel).Name.ToLowerInvariant());
+        ?? throw new LanternException(NotFoundCode);
 
     public virtual async Task<IReadOnlyList<TModel>> CollectionAsync(Guid familyId, CancellationToken cancellationToken)
     {

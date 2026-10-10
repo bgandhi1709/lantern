@@ -7,7 +7,7 @@ namespace Lantern.Repository.UnitOfWork;
 internal sealed class UnitOfWork<TEntity>(TableClient table, bool createTable) : IUnitOfWork<TEntity>
     where TEntity : class, ITableEntity, new()
 {
-    public async Task<TEntity?> SingleOrNullAsync(string partitionKey, string rowKey, CancellationToken cancellationToken)
+    public async Task<TEntity> SingleOrNullAsync(string partitionKey, string rowKey, CancellationToken cancellationToken)
     {
         // A query, not GetEntityIfExists: that reads a missing table as "no row", and a missing table must stop the
         // request rather than read as, say, "not registered".
