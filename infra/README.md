@@ -79,10 +79,13 @@ environment, the `env-uat-e2e` federated credential on the Entra app, its `Stora
 `lanternuat`, the Firebase `github-actions` OpenID Connect provider, the `FIREBASE_WEB_API_KEY` secret and the
 `github-e2e-tests-lantern-ai-bg` service account.
 
+## Catalogs
+
+The API reads `ncert` and `ssc` with the resource-group Blob role from `bootstrap.sh` (D82); their names reach it as `Catalog__NcertContainer` and `Catalog__SscContainer` from `containers` in the bicepparam, and it will not start without them. A catalog is kept in memory for the life of the process, so after the yearly upload restart the API (`az containerapp revision restart`, or any new release).
+
 ## Not here yet
 
-Service Bus topics (publish and subscribe need the Standard tier; add when an event gets a second consumer), the API's read access to `ncert` (add with the read-path PR),
-Foundry, a prod environment.
+Service Bus topics (publish and subscribe need the Standard tier; add when an event gets a second consumer), Foundry, a prod environment.
 
 ## Tracing one request
 
