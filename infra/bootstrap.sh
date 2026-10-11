@@ -48,6 +48,7 @@ assign() { # role scope assignee-object-id assignee-type
 }
 echo "Roles for ${IDENTITY}"
 assign "Storage Table Data Contributor" "$RG_ID" "$PRINCIPAL_ID" ServicePrincipal
+# Covers every blob container, so the API reads ncert, ssc and any later one with no further role (D82).
 assign "Storage Blob Data Contributor" "$RG_ID" "$PRINCIPAL_ID" ServicePrincipal
 # The Functions host keeps its own state (leases) in the storage account, which needs Blob Data Owner.
 assign "Storage Blob Data Owner" "$RG_ID" "$PRINCIPAL_ID" ServicePrincipal

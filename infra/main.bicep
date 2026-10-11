@@ -143,8 +143,8 @@ resource storage 'Microsoft.Storage/storageAccounts@2023-05-01' = {
     }]
   }
 
-  // Private containers for each Board's refined corpus (ncert-build's output). Read by nothing yet;
-  // the API's read path is a later PR. Access comes from the resource-group roles in bootstrap.sh.
+  // Private containers for each Board's refined corpus (ncert-build's output). The API reads them with the
+  // resource-group Blob role from bootstrap.sh, which covers every container (D82); their names reach it as Catalog__*.
   resource blobService 'blobServices' = {
     name: 'default'
 
@@ -261,6 +261,8 @@ resource app 'Microsoft.App/containerApps@2025-01-01' = {
             { name: 'Firebase__ProjectId', value: firebaseProjectId }
             { name: 'Storage__TableEndpoint', value: storage.properties.primaryEndpoints.table }
             { name: 'Storage__BlobEndpoint', value: storage.properties.primaryEndpoints.blob }
+            { name: 'Catalog__NcertContainer', value: containers.ncert }
+            { name: 'Catalog__SscContainer', value: containers.ssc }
             { name: 'ServiceBus__FullyQualifiedNamespace', value: '${serviceBus.name}.servicebus.windows.net' }
             { name: 'Actions__Queue', value: serviceBus::queue.name }
             { name: 'Security__Key', secretRef: 'security-key' }

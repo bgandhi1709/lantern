@@ -23,7 +23,7 @@ internal sealed class RepositoryHarness : IDisposable
         var service = new TableServiceClient(connectionString);
         Parents = service.GetTableClient(parentsTable ?? $"parents{Guid.NewGuid():N}");
         Families = service.GetTableClient(familiesTable ?? $"families{Guid.NewGuid():N}");
-        Crypto = new CryptoService(Options.Create(new SecurityOptions { Key = LanternApiFactory.SecurityKey }));
+        Crypto = new CryptoService(Options.Create(new SecurityOptions { Key = TestSettings.SecurityKey }));
 
         var config = new TypeAdapterConfig();
         config.Apply(new RepositoryProfile());
