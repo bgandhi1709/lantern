@@ -62,8 +62,9 @@ up() {
   docker compose -f "$COMPOSE" up --build -d
   wait_for "the local API" 60 api_live
 
+  # -no-snapshot neither loads nor saves quick-boot state, which otherwise grows the AVD on every run.
   # setsid keeps the emulator alive when this shell or the agent's shell ends.
-  setsid nohup emulator -avd "$AVD" -gpu "$EMU_GPU" -no-snapshot-save -no-audio >"$LOGS/emulator.log" 2>&1 &
+  setsid nohup emulator -avd "$AVD" -gpu "$EMU_GPU" -no-snapshot -no-audio >"$LOGS/emulator.log" 2>&1 &
   wait_for "the emulator to boot" 90 emulator_booted
 
   # The emulator keeps its data between runs, so a saved sign-in survives unless the app is removed first.
