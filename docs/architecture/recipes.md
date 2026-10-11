@@ -122,7 +122,7 @@ would make that service depend on a peer. Until then, keep the logic in the serv
    (`{Section}__{Property}`) on each Container App that reads it.
 4. Add the key with an empty value to `appsettings.json`, the local value to `appsettings.Development.json`, and to
    `deploy/local/docker-compose.yml` for the Functions container if it reads it.
-5. In-process tests set it with `UseSetting` in `LanternApiFactory`.
+5. In-process tests read it from `tests/lantern-api/Lantern.Api.Tests/appsettings.Testing.json`, which `LanternApiFactory` loads (D83). Add the value there, never in test code; only values a test run decides, such as the Azurite connection string, are set in the factory.
 
 Storage formats, wire names and product rules are never settings ([D36](../ideation/decision-log.md)).
 

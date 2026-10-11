@@ -23,6 +23,7 @@ public static class CoreModule
         services.AddOptions<SecurityOptions>().Bind(configuration.GetSection(SecurityOptions.SectionName)).ValidateDataAnnotations();
         services.AddOptions<ServiceBusOptions>().Bind(configuration.GetSection(ServiceBusOptions.SectionName)).ValidateDataAnnotations();
         services.AddOptions<ActionOptions>().Bind(configuration.GetSection(ActionOptions.SectionName)).ValidateDataAnnotations();
+        services.AddOptions<CatalogOptions>().Bind(configuration.GetSection(CatalogOptions.SectionName)).ValidateDataAnnotations();
 
         services.TryAddSingleton(TimeProvider.System);
         services.TryAddSingleton<ICryptoService, CryptoService>();

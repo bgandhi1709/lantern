@@ -290,7 +290,7 @@ public sealed class FamilyTests(AzuriteFixture azurite) : IDisposable
         var family = await response.Content.ReadFromJsonAsync<FamilyModel>();
         Assert.NotNull(family);
         await factory.DeliverAsync();
-        var container = azurite.CreateBlobClient().GetBlobContainerClient(LanternApiFactory.WorkspaceContainer);
+        var container = azurite.CreateBlobClient().GetBlobContainerClient(TestSettings.WorkspaceContainer);
         foreach (var child in family.Children)
         {
             var marker = container.GetBlobClient($"{family.FamilyId:D}/{child.ChildId:D}/{child.ClassLevel}/class.json");
