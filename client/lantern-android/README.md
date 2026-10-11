@@ -49,6 +49,19 @@ To run the emulator against the API in Docker ([`deploy/local`](../../deploy/loc
 
 The sign-in then goes through the Firebase Auth Emulator, which accepts the Google account you pick and creates a new emulator user. `GET /v1/me` therefore answers `not-registered` instead of finding the seeded `dev-parent-1`, which is the path to test registration. A release build refuses both the `http://` address and the emulator setting.
 
+## Drive the emulator with Maestro
+
+Maestro (Apache-2.0, dev-only) runs the flows in `.maestro/` and prints pass or fail, so nobody reads screenshots. Install the pinned release once, with its checksum:
+
+```sh
+gh release download cli-2.10.0 -R mobile-dev-inc/maestro -p maestro.zip -p checksums_sha256.txt
+sha256sum -c checksums_sha256.txt
+mkdir -p ~/.local/maestro-2.10.0 && unzip -q maestro.zip -d ~/.local/maestro-2.10.0
+ln -sfn ~/.local/maestro-2.10.0/maestro ~/.local/maestro   # then put ~/.local/maestro/bin on PATH
+```
+
+Start the app with `scripts/verify-env.sh up`, then `maestro test .maestro`. `about-you.yaml` needs a Google account on the emulator, added once in Settings. `maestro hierarchy --compact` prints the screen as text when you need to look.
+
 ## Look at components and screen states (Storybook)
 
 Storybook shows every shared component and every state of a screen from fixed data, with no Docker stack and no sign-in (ADR-0012). It is for development builds only.

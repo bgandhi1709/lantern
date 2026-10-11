@@ -2,12 +2,13 @@
 # One clean slate for verifying the Parent app: local Docker, one emulator, one Metro, a fresh install.
 #   scripts/verify-env.sh up      tear everything down, then start it all fresh
 #   scripts/verify-env.sh down    stop it all and free the disk (run it after the PR is created)
+#   scripts/verify-env.sh down --deep   also remove the base images (a re-pull costs about 2.5 GB)
 set -euo pipefail
 
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 APP=$ROOT/client/lantern-android
 COMPOSE=$ROOT/deploy/local/docker-compose.yml
-AVD=${LANTERN_AVD:-Small_Phone}
+AVD=${LANTERN_AVD:-Lantern_34}
 # Software rendering: the host GPU path (gpu mode host) left the emulator dead mid-verify.
 EMU_GPU=${LANTERN_EMU_GPU:-swiftshader_indirect}
 PACKAGE=com.lantern.app
@@ -23,6 +24,7 @@ export PATH=$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH
 metro_pid() { ss -ltnp 2>/dev/null | grep ":$METRO_PORT " | grep -oE 'pid=[0-9]+' | head -1 | cut -d= -f2 || true; }
 
 down() {
+  local deep=${1:-}
   local pid
   pid=$(metro_pid)
   [ -z "$pid" ] || kill "$pid" || true
@@ -35,8 +37,8 @@ down() {
   pkill -f "qemu.*-avd $AVD" 2>/dev/null || true
   rm -f "$HOME/.android/avd/$AVD.avd/"*.lock
   docker compose -f "$COMPOSE" down --remove-orphans
-  docker image prune -f >/dev/null
-  docker builder prune -f >/dev/null
+  if [ "$deep" = --deep ]; then docker image prune -a -f >/dev/null; else docker image prune -f >/dev/null; fi
+  if [ "$deep" = --deep ]; then docker builder prune -a -f >/dev/null; else docker builder prune -f >/dev/null; fi
   rm -rf "${TMPDIR:-/tmp}"/metro-cache "${TMPDIR:-/tmp}"/metro-file-map-* "$LOGS"
   docker system df
   df -h / | tail -1
@@ -80,6 +82,6 @@ up() {
 
 case ${1:-} in
   up) up ;;
-  down) down ;;
-  *) echo "Usage: verify-env.sh up | down" >&2; exit 2 ;;
+  down) down "${2:-}" ;;
+  *) echo "Usage: verify-env.sh up | down [--deep]" >&2; exit 2 ;;
 esac

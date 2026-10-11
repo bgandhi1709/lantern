@@ -1,0 +1,4 @@
+appId: com.lantern.app
+---
+- assertVisible: 'Teach your child with confidence.'
+- assertVisible: 'Continue with Google'

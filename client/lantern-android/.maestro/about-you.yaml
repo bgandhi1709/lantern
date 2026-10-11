@@ -1,0 +1,26 @@
+# Needs a Google account on the emulator (add it once in Settings). Run: maestro test .maestro/about-you.yaml
+appId: com.lantern.app
+---
+- assertVisible: 'Continue with Google'
+- tapOn: 'Continue with Google'
+- tapOn:
+    id: 'com.google.android.gms:id/account_name'
+- assertVisible: 'A little about you'
+- assertVisible: 'Not you? Use a different account'
+- assertVisible:
+    text: 'Continue'
+    enabled: false
+- tapOn: 'City, State'
+- inputText: 'Pune, Maharashtra'
+- hideKeyboard
+- assertVisible:
+    text: 'Continue'
+    enabled: false
+- tapOn: 'I agree to the privacy notice'
+- assertVisible:
+    text: 'Continue'
+    enabled: true
+- tapOn: 'Not you? Use a different account'
+- assertVisible: 'Continue with Google'
+- tapOn: 'Continue with Google'
+- assertVisible: 'Choose an account'
