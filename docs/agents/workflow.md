@@ -11,14 +11,24 @@ Work under `client/` (the Expo app) follows `docs/agents/app-workflow.md` instea
 | 2 | Tech pass | Agent lists the areas the issue touches and loads only the matching skills from the routing table. | Skills loaded |
 | 3 | Plan | Before planning any change to code under `apps/` or `libs/`, read `docs/architecture/recipes.md` and `docs/architecture/code-glossary.md` (the `backend-architecture` skill). Plan in chat: the recipe(s) the change follows, each new class with its glossary suffix, layer and reference class, behaviours to test, files touched, risks. A class with no glossary suffix, or a step against a recipe, is a divergence: ask first. User approves in one word. | Approved plan naming recipes and suffixes |
 | 4 | Implement | Re-read the recipe being followed before its first edit, and follow its steps in order. `/implement`, driving `/tdd` one red-green slice at a time. Build and run single tests as you go, the full suite once at the end. | Commits on the branch |
-| 5 | Verify | `/verify` against local Docker, in the real working tree: a scratch copy proves nothing about what the user builds. Old files a restructure leaves behind move to `~/lantern-stale/` before the build. The full suite includes the architecture tests (`Lantern.Api.Tests/Architecture`). Write down every test scenario. | Scenario list |
+| 5 | Verify | Start from a clean slate (see below). `/verify` against local Docker, in the real working tree: a scratch copy proves nothing about what the user builds. Old files a restructure leaves behind move to `~/lantern-stale/` before the build. The full suite includes the architecture tests (`Lantern.Api.Tests/Architecture`). Write down every test scenario. | Scenario list |
 | 6 | Security | `/security-review` on the branch diff, before the PR. Fix findings in the same branch. Check the security rules in `CODING_STANDARDS.md`. | Findings fixed or recorded |
 | 7 | PR | `/pr` with the scenarios and acceptance criteria. Edit a PR description only after the commit it describes is pushed. | PR |
 | 8 | Doc sync | Root `README.md` (Status and runtime), `docs/ideation/decision-log.md`, ADRs, any README or skill the change touches. | Docs match the code |
 | 9 | Review | User reviews on GitHub. Fix, reply as Claude, resolve the threads. | Resolved threads |
 | 10 | Retro | `/retro` in the same session, before `/clear`. Mechanical misses become checks, judgement calls go to `CODING_STANDARDS.md`. | Environment fixes |
+| 11 | Clean up | Once the PR exists, leave the machine as you found it (see below). | Nothing running, disk freed |
 
 Skip `/to-spec` and `/to-tickets` at this scope. Use them only when the work spans several sessions.
+
+## Clean slate
+
+A stale emulator, Metro cache, installed app or Docker image shows old code, and each restart costs a verify. So a verify begins with nothing running and ends with nothing running.
+
+- **Start:** for app work run `scripts/verify-env.sh up`. It tears everything down first, then starts the Docker stack, one emulator, one Metro with `--clear` and a fresh install of the app. For API-only work, `docker compose -f deploy/local/docker-compose.yml down` before `/verify` does the same.
+- **Change code mid-verify:** the same `up`, not a patch of the running pieces. A phone showing the old screen means Metro served a cached bundle; restart Metro with `--clear`.
+- **Clean up:** after the PR is created run `scripts/verify-env.sh down`. It stops Metro and the emulator, uninstalls the app, takes the Docker stack down, prunes dangling images and the build cache, deletes Metro's cache and prints the disk left. Base images such as SQL Server and Azurite stay, since a re-pull costs about 2 GB.
+- Start every long-lived process you launch (emulator, Metro) with `setsid nohup`, and stop Metro by its port, never with `pkill -f`, which matches your own shell.
 
 ## Divergence guard
 
