@@ -110,7 +110,7 @@ defaults, suffixes, one type per file, namespaces). Review the rest.
 - **No environment value in code or `appsettings.json`.** Every name and tuning value is written once in
   `infra/params/lantern.<env>.bicepparam` (secrets in Key Vault), and Bicep passes it to the apps as an env var
   ([D36](docs/ideation/decision-log.md)). `appsettings.json` holds empty keys only; local values live in
-  `appsettings.Development.json` and `deploy/local`.
+  `appsettings.Development.json` and `deploy/local`, and the in-process tests' in `tests/lantern-api/Lantern.Api.Tests/appsettings.Testing.json` (D83).
 - Every setting binds to a `{Section}Options` class with DataAnnotations, **no default value**, and `ValidateOnStart()`
   in the host that uses it, so a missing setting stops the app instead of falling back silently.
 - GitHub Actions carries only per-run values (image tags, port) and its own sign-in.
