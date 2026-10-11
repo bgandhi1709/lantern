@@ -2,11 +2,12 @@ import { createContext, useContext, useState } from 'react';
 import type { ReactNode } from 'react';
 
 import { getParent } from '../shared/session';
+import type { Parent } from '../shared/session';
 
 // What the Parent has entered so far. It lives in memory only: closing the app or signing out drops
 // it, and nothing is stored on the device until Finish succeeds.
 export type RegistrationDraft = {
-  parent: { name: string; email: string };
+  parent: Parent;
   region: string;
   noticeAccepted: boolean;
 };

@@ -2,11 +2,12 @@ import type { Meta, StoryObj } from '@storybook/react-native';
 import { fn } from 'storybook/test';
 
 import { StepHeader } from './StepHeader';
+import { REGISTRATION_STEP_COUNT } from './steps';
 
 const meta = {
   title: 'Registration/StepHeader',
   component: StepHeader,
-  args: { step: 1, total: 4, onBack: fn() },
+  args: { step: 1, total: REGISTRATION_STEP_COUNT, onBack: fn() },
 } satisfies Meta<typeof StepHeader>;
 
 export default meta;

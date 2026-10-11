@@ -16,11 +16,15 @@ describe('the Region rule, the same one /v1/register applies', () => {
     ['a tab', 'Pune,\tMaharashtra'],
     ['a bell character', 'Pune\u0007'],
     ['a zero-width space', 'Pune​, Maharashtra'],
+    ['a trailing line break', 'Pune\n'],
+    ['a trailing tab', 'Pune\t'],
+    ['a trailing byte-order mark', 'Pune\uFEFF'],
+    ['spaces that push it past 60 characters', `  ${'x'.repeat(REGION_MAX_LENGTH)}  `],
   ])('refuses %s', (_name, region) => {
     expect(isValidRegion(region)).toBe(false);
   });
 
-  it('ignores spaces around the text when counting and checking', () => {
-    expect(isValidRegion(`  ${'x'.repeat(REGION_MAX_LENGTH)}  `)).toBe(true);
+  it('counts spaces as the server does, since the Region is sent as typed', () => {
+    expect(isValidRegion(` ${'x'.repeat(REGION_MAX_LENGTH - 2)} `)).toBe(true);
   });
 });

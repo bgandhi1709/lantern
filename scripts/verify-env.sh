@@ -11,8 +11,14 @@ COMPOSE=$ROOT/deploy/local/docker-compose.yml
 AVD=${LANTERN_AVD:-Lantern_34}
 # Software rendering: the host GPU path (gpu mode host) left the emulator dead mid-verify.
 EMU_GPU=${LANTERN_EMU_GPU:-swiftshader_indirect}
+# PACKAGE and METRO_PORT are repeated in client/lantern-android/.maestro/*.yaml, which cannot read this file.
 PACKAGE=com.lantern.app
 METRO_PORT=8081
+POLL_SECONDS=5
+EMULATOR_EXIT_SECONDS=3
+API_TIMEOUT_SECONDS=300
+EMULATOR_BOOT_TIMEOUT_SECONDS=450
+METRO_TIMEOUT_SECONDS=120
 LOGS=${TMPDIR:-/tmp}/lantern-verify
 export ANDROID_HOME=${ANDROID_HOME:-$HOME/Android/Sdk}
 export PATH=$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH
@@ -33,21 +39,24 @@ down() {
     adb emu kill >/dev/null 2>&1 || true
   fi
   # A qemu left behind by a crashed emulator makes the next one start offline.
-  sleep 3
+  sleep "$EMULATOR_EXIT_SECONDS"
   pkill -f "qemu.*-avd $AVD" 2>/dev/null || true
   rm -f "$HOME/.android/avd/$AVD.avd/"*.lock
-  docker compose -f "$COMPOSE" down --remove-orphans
-  if [ "$deep" = --deep ]; then docker image prune -a -f >/dev/null; else docker image prune -f >/dev/null; fi
-  if [ "$deep" = --deep ]; then docker builder prune -a -f >/dev/null; else docker builder prune -f >/dev/null; fi
+  # --deep removes this stack's own images and the whole build cache; the images of other projects stay.
+  local rmi=() builder_all=()
+  [ "$deep" != --deep ] || { rmi=(--rmi all); builder_all=(-a); }
+  docker compose -f "$COMPOSE" down --remove-orphans "${rmi[@]}"
+  docker image prune -f >/dev/null
+  docker builder prune -f "${builder_all[@]}" >/dev/null
   rm -rf "${TMPDIR:-/tmp}"/metro-cache "${TMPDIR:-/tmp}"/metro-file-map-* "$LOGS"
   docker system df
   df -h / | tail -1
 }
 
-wait_for() { # <description> <attempts> <command...>
-  local what=$1 tries=$2
+wait_for() { # <description> <timeout seconds> <command...>
+  local what=$1 tries=$(($2 / POLL_SECONDS))
   shift 2
-  for _ in $(seq "$tries"); do "$@" >/dev/null 2>&1 && return 0; sleep 5; done
+  for _ in $(seq "$tries"); do "$@" >/dev/null 2>&1 && return 0; sleep "$POLL_SECONDS"; done
   echo "Timed out waiting for $what" >&2
   exit 1
 }
@@ -60,19 +69,19 @@ up() {
   mkdir -p "$LOGS"
 
   docker compose -f "$COMPOSE" up --build -d
-  wait_for "the local API" 60 api_live
+  wait_for "the local API" "$API_TIMEOUT_SECONDS" api_live
 
   # -no-snapshot neither loads nor saves quick-boot state, which otherwise grows the AVD on every run.
   # setsid keeps the emulator alive when this shell or the agent's shell ends.
   setsid nohup emulator -avd "$AVD" -gpu "$EMU_GPU" -no-snapshot -no-audio >"$LOGS/emulator.log" 2>&1 &
-  wait_for "the emulator to boot" 90 emulator_booted
+  wait_for "the emulator to boot" "$EMULATOR_BOOT_TIMEOUT_SECONDS" emulator_booted
 
   # The emulator keeps its data between runs, so a saved sign-in survives unless the app is removed first.
   adb uninstall "$PACKAGE" >/dev/null 2>&1 || true
   cd "$APP"
   npx expo run:android --no-bundler >"$LOGS/build.log" 2>&1
   CI=1 setsid nohup npx expo start --dev-client --port "$METRO_PORT" --clear >"$LOGS/metro.log" 2>&1 &
-  wait_for "Metro" 24 grep -q "Waiting on" "$LOGS/metro.log"
+  wait_for "Metro" "$METRO_TIMEOUT_SECONDS" grep -q "Waiting on" "$LOGS/metro.log"
   adb reverse "tcp:$METRO_PORT" "tcp:$METRO_PORT" >/dev/null
   # expo run:android already opened the app at a LAN address; a running app ignores the launch link.
   adb shell am force-stop "$PACKAGE"

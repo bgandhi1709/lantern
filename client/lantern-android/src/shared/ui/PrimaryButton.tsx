@@ -3,6 +3,7 @@ import { Pressable, Text } from 'react-native';
 type Props = { label: string; onPress: () => void; disabled?: boolean };
 
 // Disabled is dashed and grey as well as unresponsive, so it never relies on colour alone.
+// will-change-variable: the two looks use different CSS variables; without it the button re-mounts on every switch.
 export function PrimaryButton({ label, onPress, disabled = false }: Props) {
   return (
     <Pressable

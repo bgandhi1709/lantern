@@ -27,8 +27,8 @@ A stale emulator, Metro cache, installed app or Docker image shows old code, and
 
 - **Start:** for app work run `scripts/verify-env.sh up`. It tears everything down first, then starts the Docker stack, one emulator, one Metro with `--clear` and a fresh install of the app. For API-only work, `docker compose -f deploy/local/docker-compose.yml down` before `/verify` does the same.
 - **Change code mid-verify:** the same `up`, not a patch of the running pieces. A phone showing the old screen means Metro served a cached bundle; restart Metro with `--clear`.
-- **Clean up:** after the PR is created run `scripts/verify-env.sh down --deep`. It stops Metro and the emulator, uninstalls the app, takes the Docker stack down, removes every unused image and the build cache, deletes Metro's cache and prints the disk left. The next `up` pulls the base images again (about 2.5 GB); plain `down` keeps them.
-- Start every long-lived process you launch (emulator, Metro) with `setsid nohup`, and stop Metro by its port, never with `pkill -f`, which matches your own shell.
+- **Clean up:** after the PR is created run `scripts/verify-env.sh down --deep`. It stops Metro and the emulator, uninstalls the app, takes the Docker stack down, removes this stack's own images and the whole build cache (other projects' images stay), deletes Metro's cache and prints the disk left. The next `up` pulls the base images again (about 2.5 GB); plain `down` keeps them.
+- Start every long-lived process you launch (emulator, Metro) with `setsid nohup`, and stop Metro by its port. `pkill -f` kills your own shell whenever its pattern appears in your own command line, so match a process by PID, or by a pattern your command line does not contain.
 
 ## Divergence guard
 

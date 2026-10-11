@@ -2,9 +2,10 @@ import type { ReactNode } from 'react';
 import { Text, View } from 'react-native';
 
 import { useStrings } from '../shared/i18n';
+import type { Parent } from '../shared/session';
 import { GoogleG, MailIcon, UserIcon } from '../shared/ui/icons';
 
-type Props = { name: string; email: string };
+type Props = Parent;
 
 function Row({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
   return (

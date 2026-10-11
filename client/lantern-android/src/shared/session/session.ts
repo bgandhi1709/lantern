@@ -41,8 +41,10 @@ export async function getIdToken() {
   }
 }
 
+export type Parent = { name: string; email: string };
+
 // The name and email on the Google account. Google always sends an email; the name falls back to it.
-export function getParent() {
+export function getParent(): Parent {
   const email = auth.currentUser?.email ?? '';
   return { name: auth.currentUser?.displayName || email, email };
 }

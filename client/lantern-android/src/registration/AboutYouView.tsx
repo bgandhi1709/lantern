@@ -3,14 +3,16 @@ import { KeyboardAvoidingView, Pressable, ScrollView, Text, View } from 'react-n
 import { useStrings } from '../shared/i18n';
 import { CheckRow } from '../shared/ui/CheckRow';
 import { PinIcon, ShieldCheckIcon } from '../shared/ui/icons';
+import type { Parent } from '../shared/session';
 import { PrimaryButton } from '../shared/ui/PrimaryButton';
 import { TextField } from '../shared/ui/TextField';
 import { GoogleAccountCard } from './GoogleAccountCard';
 import { REGION_MAX_LENGTH } from './region';
 import { StepHeader } from './StepHeader';
+import { REGISTRATION_STEP_COUNT } from './steps';
 
 type Props = {
-  parent: { name: string; email: string };
+  parent: Parent;
   region: string;
   noticeAccepted: boolean;
   canContinue: boolean;
@@ -39,7 +41,7 @@ export function AboutYouView({
 
   return (
     <KeyboardAvoidingView behavior="padding" className="flex-1 bg-ground px-6 pb-safe pt-safe">
-      <StepHeader step={1} total={4} onBack={onBack} />
+      <StepHeader step={1} total={REGISTRATION_STEP_COUNT} onBack={onBack} />
       <ScrollView contentContainerClassName="gap-4 pb-3" keyboardShouldPersistTaps="handled">
         <View className="mt-5 gap-2">
           <Text accessibilityRole="header" className="font-inter-bold text-heading text-ink">
@@ -48,6 +50,7 @@ export function AboutYouView({
           <Text className="font-inter-medium text-body text-muted">{about.intro}</Text>
         </View>
         <GoogleAccountCard name={parent.name} email={parent.email} />
+        {/* -my-4 cancels the form's gap, so the link sits tight under the card as on the canvas. */}
         <Pressable
           accessibilityRole="link"
           onPress={onChangeAccount}

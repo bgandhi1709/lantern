@@ -423,6 +423,7 @@ The API identity already holds Storage Blob Data Contributor on the resource gro
 
 ### D83. In-process test settings live in `appsettings.Testing.json`, not in `LanternApiFactory` (amends the Setting recipe)
 The founder asked that no value be written in test code, as D36 asks for the apps. The fixed settings the in-process tests run with (tables, containers, resend delay, rate limit, security key) are now in `tests/lantern-api/Lantern.Api.Tests/appsettings.Testing.json`, loaded by `LanternApiFactory` and read by the two tests that need a value through `TestSettings`. Only what a run decides stays in the factory: the Azurite connection string, the Firebase project id of the test tokens and the fake Service Bus settings. A test that blanks a setting adds an in-memory source after the factory's. Step 5 of the Setting recipe in `docs/architecture/recipes.md` now says so.
+
 ## 2026-10-11: Registration step 1 (issue #118)
 
 ### D84. About you keeps the draft in memory and lets the Parent change Google account (issue #118)

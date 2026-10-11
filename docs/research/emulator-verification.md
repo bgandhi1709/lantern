@@ -2,6 +2,8 @@
 
 Researched 2026-10-11. Scope: `client/lantern-android` (Expo `~57.0.27`, React Native `0.86.3`, Reanimated `4.5.1`, package `com.lantern.app`, scheme `lantern`), Android only, Linux host, emulator `Small_Phone` (system image `android-37.2`, Google APIs, 16 KB pages).
 
+> **Superseded.** What was decided is in D85 (`docs/ideation/decision-log.md`) and the README of `client/lantern-android`: Maestro 2.10.0, pinned and checked against the release's SHA-256, on an Android 34 emulator (`Lantern_34`). The Maestro install and API 37 notes below were written before that and were not run.
+
 No research convention existed in the repo (`docs/` holds `adr`, `agents`, `architecture`, `ideation`, `pilot`), so this note lives in `docs/research/`.
 
 Nothing here was run on the emulator, Metro or Docker (another session owns them). Everything below comes from official docs and upstream source. Items marked **[untested]** need a first run.
