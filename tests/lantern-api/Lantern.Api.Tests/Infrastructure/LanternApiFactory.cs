@@ -25,6 +25,8 @@ public sealed class LanternApiFactory(string connectionString) : WebApplicationF
     public const string FamiliesTable = "families";
     public const string ActionsTable = "actions";
     public const string WorkspaceContainer = "family";
+    public const string NcertContainer = "ncert";
+    public const string SscContainer = "ssc";
 
     private int delivered;
 
@@ -53,6 +55,8 @@ public sealed class LanternApiFactory(string connectionString) : WebApplicationF
         builder.UseSetting("Storage:FamiliesTable", FamiliesTable);
         builder.UseSetting("Storage:ActionsTable", ActionsTable);
         builder.UseSetting("Storage:WorkspaceContainer", WorkspaceContainer);
+        builder.UseSetting("Catalog:NcertContainer", NcertContainer);
+        builder.UseSetting("Catalog:SscContainer", SscContainer);
         builder.UseSetting("Actions:ResendAfter", "00:05:00");
         builder.UseSetting("RateLimits:ChildrenPerMinute", "30");
         builder.UseSetting("Security:Key", SecurityKey);

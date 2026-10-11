@@ -39,6 +39,13 @@ builder
     .ValidateDataAnnotations()
     .ValidateOnStart();
 
+// Only the API reads the Boards' catalogs, so only it refuses to start without their container names.
+builder
+    .Services.AddOptions<CatalogOptions>()
+    .Bind(builder.Configuration.GetSection(CatalogOptions.SectionName))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+
 builder.Services.AddSingleton<IRegister, ApiProfile>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IIdentityResolver, HttpIdentityResolver>();
