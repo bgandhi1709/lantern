@@ -1,4 +1,5 @@
 using Lantern.Api.Tests.Infrastructure;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 
 namespace Lantern.Api.Tests.Configuration;
@@ -13,7 +14,9 @@ public sealed class CatalogStartupTests(AzuriteFixture azurite) : IDisposable
     [InlineData("Catalog:SscContainer")]
     public void Start_WithoutACatalogContainer_Stops(string setting)
     {
-        using var broken = factory.WithWebHostBuilder(builder => builder.UseSetting(setting, string.Empty));
+        using var broken = factory.WithWebHostBuilder(builder =>
+            builder.ConfigureAppConfiguration((_, config) => config.AddInMemoryCollection([new(setting, string.Empty)]))
+        );
 
         Assert.Throws<OptionsValidationException>(() => broken.CreateClient());
     }

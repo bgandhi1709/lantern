@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
@@ -19,15 +20,6 @@ namespace Lantern.Api.Tests.Infrastructure;
 // Only the signing-key source is replaced; issuer, audience, lifetime and signature checks are the production settings.
 public sealed class LanternApiFactory(string connectionString) : WebApplicationFactory<Program>
 {
-    public const string SecurityKey = "dGVzdC1rZXktb25seS1mb3ItdGhlLXRlc3Qtc3VpdGUtMDE=";
-
-    public const string ParentsTable = "parents";
-    public const string FamiliesTable = "families";
-    public const string ActionsTable = "actions";
-    public const string WorkspaceContainer = "family";
-    public const string NcertContainer = "ncert";
-    public const string SscContainer = "ssc";
-
     private int delivered;
 
     public CapturingLoggerProvider Logs { get; } = new();
@@ -51,15 +43,8 @@ public sealed class LanternApiFactory(string connectionString) : WebApplicationF
         builder.UseEnvironment("Testing");
         builder.UseSetting("Firebase:ProjectId", TestTokens.ProjectId);
         builder.UseSetting("Storage:ConnectionString", connectionString);
-        builder.UseSetting("Storage:ParentsTable", ParentsTable);
-        builder.UseSetting("Storage:FamiliesTable", FamiliesTable);
-        builder.UseSetting("Storage:ActionsTable", ActionsTable);
-        builder.UseSetting("Storage:WorkspaceContainer", WorkspaceContainer);
-        builder.UseSetting("Catalog:NcertContainer", NcertContainer);
-        builder.UseSetting("Catalog:SscContainer", SscContainer);
-        builder.UseSetting("Actions:ResendAfter", "00:05:00");
-        builder.UseSetting("RateLimits:ChildrenPerMinute", "30");
-        builder.UseSetting("Security:Key", SecurityKey);
+        // The fixed values are in appsettings.Testing.json; only what the test run decides is set here.
+        builder.ConfigureAppConfiguration(config => config.AddJsonFile(TestSettings.FilePath, optional: false));
 
         builder.ConfigureLogging(logging => logging.AddProvider(Logs));
 
