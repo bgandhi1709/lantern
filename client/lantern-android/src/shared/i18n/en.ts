@@ -93,6 +93,7 @@ export const en = {
       heading: 'A little about you',
       intro: 'We took your name and email from your Google account.',
       fromGoogle: 'FROM GOOGLE',
+      differentAccount: 'Not you? Use a different account',
       name: 'Name',
       email: 'Email',
       regionLabel: 'Where do you live?',

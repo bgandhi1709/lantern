@@ -193,6 +193,20 @@ describe('leaving registration', () => {
     expect(continueButton()).toBeDisabled();
   });
 
+  it('lets a Parent who picked the wrong Google account start over with "Not you?"', async () => {
+    const user = userEvent.setup();
+    await renderNotRegistered();
+    await fillIn(user);
+
+    await user.press(screen.getByRole('link', { name: 'Not you? Use a different account' }));
+
+    expect(await screen.findByRole('button', { name: 'Continue with Google' })).toBeOnTheScreen();
+    expect(GoogleSignin.signOut).toHaveBeenCalled();
+    await user.press(screen.getByRole('button', { name: 'Continue with Google' }));
+    expect(await screen.findByLabelText('Where do you live?')).toHaveDisplayValue('');
+    expect(agreeBox()).not.toBeChecked();
+  });
+
   it('shows the email in place of a name when Google has none', async () => {
     await renderNotRegistered({ displayName: null, email: 'asha.verma@gmail.com' });
 

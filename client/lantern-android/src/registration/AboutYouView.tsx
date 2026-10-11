@@ -1,4 +1,4 @@
-import { KeyboardAvoidingView, ScrollView, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Pressable, ScrollView, Text, View } from 'react-native';
 
 import { useStrings } from '../shared/i18n';
 import { CheckRow } from '../shared/ui/CheckRow';
@@ -19,6 +19,7 @@ type Props = {
   onOpenNotice: () => void;
   onContinue: () => void;
   onBack: () => void;
+  onChangeAccount: () => void;
 };
 
 export function AboutYouView({
@@ -31,6 +32,7 @@ export function AboutYouView({
   onOpenNotice,
   onContinue,
   onBack,
+  onChangeAccount,
 }: Props) {
   const strings = useStrings().registration;
   const about = strings.about;
@@ -46,6 +48,15 @@ export function AboutYouView({
           <Text className="font-inter-medium text-body text-muted">{about.intro}</Text>
         </View>
         <GoogleAccountCard name={parent.name} email={parent.email} />
+        <Pressable
+          accessibilityRole="link"
+          onPress={onChangeAccount}
+          className="-my-4 min-h-12 flex-row items-center self-start"
+        >
+          <Text className="font-inter-bold text-body text-primary underline">
+            {about.differentAccount}
+          </Text>
+        </Pressable>
         <TextField
           label={about.regionLabel}
           hint={about.regionHint}

@@ -16,6 +16,7 @@ const meta = {
     onOpenNotice: fn(),
     onContinue: fn(),
     onBack: fn(),
+    onChangeAccount: fn(),
   },
 } satisfies Meta<typeof AboutYouView>;
 

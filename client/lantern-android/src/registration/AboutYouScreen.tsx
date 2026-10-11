@@ -19,6 +19,7 @@ export function AboutYouScreen({ onOpenNotice, onContinue }: Props) {
       onOpenNotice={onOpenNotice}
       onContinue={onContinue}
       onBack={signOutOfLantern}
+      onChangeAccount={signOutOfLantern}
     />
   );
 }
