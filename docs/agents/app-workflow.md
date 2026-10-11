@@ -25,6 +25,7 @@ A story with a screen or a flow works end to end when it is done: real data, rea
 | 8b | Code review | Run `/code-review` on the branch (Standards and Spec axes) before asking the founder; fix what it finds or record why not. | Review findings handled |
 | 9 | Review | The founder reviews on GitHub and on a device. Fix, reply as Claude, resolve the threads. | Resolved threads |
 | 10 | Retro | `/retro` in the same session. A rule a review caught becomes a lint rule or a test, not a sentence. Add it to the ESLint config first, `expo-app-standards` second. | Environment fixes |
+| 11 | Clean up | After the PR is created: `docker compose -f deploy/local/docker-compose.yml down`, then `docker image prune -f` and `docker builder prune -f` (look at `docker system df` first and say how much was freed), stop Metro and the emulator you started, and delete the scratch exports and screenshots. A stale Metro cache shows old code on the phone: start Metro with `--clear` after every code change you are about to verify. | Disk freed, nothing left running |
 
 ## Rules of this cycle
 

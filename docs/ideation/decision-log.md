@@ -415,3 +415,8 @@ Screens use Tailwind class names through NativeWind 5.0.0-rc.0 (pinned exactly),
 
 ### D81. Components and screen states are reviewed in Storybook on the device (issue #139)
 `@storybook/react-native` 10.6.0 shows every shared component and every screen state from fixed data (`npm run start:storybook`). A screen that reads a hook is split into a container and a view that takes its state as props. A component file needs a story or a written reason it has none, and a Jest test enforces it. Release builds carry none of it: Metro swaps Storybook for empty modules unless `EXPO_PUBLIC_STORYBOOK_ENABLED=true`, and `config.ts` refuses a release build with it on. Telemetry is off and Storybook stores nothing on the device. The experimental Storybook MCP endpoint (`experimental_mcp`) lets the agent list existing components before building a new one. See ADR-0012.
+
+## 2026-10-11: Registration step 1 (issue #118)
+
+### D82. About you keeps the draft in memory and lets the Parent change Google account (issue #118)
+The four registration steps share one in-memory draft (Parent name and email from the Google token, Region, the notice agreement). Nothing is stored on the device before Finish; closing the app or signing out drops it. A Parent who signed in with the wrong Google account taps "Not you? Use a different account" (or the back arrow), which ends the Lantern session and forgets the Google account, so the account sheet opens again. The Firebase user made by the wrong sign-in stays in Firebase Authentication with no Lantern record, because `/v1/register` runs only at Finish. Android's own Back on About you is left to the system and closes the app, with the session kept. The canvas board 3 shows the link.
