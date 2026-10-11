@@ -1,11 +1,22 @@
-# Needs a Google account on the emulator (add it once in Settings). Run: maestro test .maestro/about-you.yaml
+# Needs a Google account on the emulator (add it once in Settings) and `scripts/verify-env.sh up` running.
+# Run: maestro test .maestro/about-you.yaml
 appId: com.lantern.app
 ---
-- assertVisible: 'Continue with Google'
+- stopApp
+- clearState
+- openLink: 'lantern://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8081'
+- extendedWaitUntil:
+    visible: 'Continue with Google'
+    timeout: 60000
 - tapOn: 'Continue with Google'
+- extendedWaitUntil:
+    visible: 'Choose an account'
+    timeout: 15000
 - tapOn:
-    id: 'com.google.android.gms:id/account_name'
-- assertVisible: 'A little about you'
+    id: 'com.google.android.gms:id/account_display_name'
+- extendedWaitUntil:
+    visible: 'A little about you'
+    timeout: 30000
 - assertVisible: 'Not you? Use a different account'
 - assertVisible:
     text: 'Continue'
@@ -24,3 +35,13 @@ appId: com.lantern.app
 - assertVisible: 'Continue with Google'
 - tapOn: 'Continue with Google'
 - assertVisible: 'Choose an account'
+- tapOn:
+    id: 'com.google.android.gms:id/account_display_name'
+- extendedWaitUntil:
+    visible: 'A little about you'
+    timeout: 30000
+- assertVisible: 'City, State'
+- assertNotVisible: 'Pune, Maharashtra'
+- assertVisible:
+    text: 'Continue'
+    enabled: false

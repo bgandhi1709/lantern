@@ -1,4 +1,10 @@
 appId: com.lantern.app
 ---
+- stopApp
+- clearState
+- openLink: 'lantern://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8081'
+- extendedWaitUntil:
+    visible: 'Continue with Google'
+    timeout: 60000
 - assertVisible: 'Teach your child with confidence.'
 - assertVisible: 'Continue with Google'
