@@ -71,6 +71,22 @@ describe('npm run lint', () => {
     );
   });
 
+  it('fails on the crypto library outside src/shared/crypto, and allows it inside', async () => {
+    const code =
+      "import { randomBytes } from 'react-native-quick-crypto';\nexport { randomBytes };\n";
+
+    expect(await rulesBroken(code)).toContain('no-restricted-imports');
+    expect(await rulesBroken(code, 'src/registration/example.ts')).toContain(
+      'no-restricted-imports',
+    );
+    expect(await rulesBroken(code, 'src/shared/session/session.ts')).toContain(
+      'no-restricted-imports',
+    );
+    expect(await rulesBroken(code, 'src/shared/crypto/native.ts')).not.toContain(
+      'no-restricted-imports',
+    );
+  });
+
   it('fails on the Google sign-in import outside src/auth, and allows it inside', async () => {
     const code =
       "import { GoogleSignin } from '@react-native-google-signin/google-signin';\nexport { GoogleSignin };\n";

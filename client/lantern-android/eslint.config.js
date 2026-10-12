@@ -21,6 +21,13 @@ const firebasePaths = [
   },
 ];
 
+const cryptoPaths = [
+  {
+    name: 'react-native-quick-crypto',
+    message: 'Only src/shared/crypto touches the crypto library.',
+  },
+];
+
 const googlePaths = [
   {
     name: '@react-native-google-signin/google-signin',
@@ -51,7 +58,7 @@ module.exports = [
       'no-console': 'error',
       'no-restricted-imports': [
         'error',
-        { paths: [...storagePaths, ...firebasePaths, ...googlePaths] },
+        { paths: [...storagePaths, ...firebasePaths, ...googlePaths, ...cryptoPaths] },
       ],
     },
   },
@@ -61,7 +68,12 @@ module.exports = [
       'no-restricted-imports': [
         'error',
         {
-          paths: [...storagePaths, ...firebasePaths, ...(feature === 'auth' ? [] : googlePaths)],
+          paths: [
+            ...storagePaths,
+            ...firebasePaths,
+            ...cryptoPaths,
+            ...(feature === 'auth' ? [] : googlePaths),
+          ],
           patterns: otherFeaturesInternals(feature),
         },
       ],
@@ -70,7 +82,10 @@ module.exports = [
   {
     files: ['src/shared/session/**'],
     rules: {
-      'no-restricted-imports': ['error', { paths: [...storagePaths, ...googlePaths] }],
+      'no-restricted-imports': [
+        'error',
+        { paths: [...storagePaths, ...googlePaths, ...cryptoPaths] },
+      ],
     },
   },
   {
@@ -104,7 +119,7 @@ module.exports = [
     languageOptions: { globals: { __dirname: 'readonly' } },
   },
   {
-    files: ['src/shared/storage/**', 'src/test/**', 'jest.setup.ts'],
+    files: ['src/shared/storage/**', 'src/shared/crypto/**', 'src/test/**', 'jest.setup.ts'],
     rules: { 'no-restricted-imports': 'off' },
   },
 ];
