@@ -40,7 +40,21 @@ export const en = {
   registration: {
     back: 'Back',
     step: (step: number, total: number) => `Step ${step} of ${total}`,
-    boardNext: 'Board comes next',
+    board: {
+      heading: 'Which board does your child follow?',
+      intro: "This decides which school books Lantern uses. You can't change it later.",
+      groupLabel: 'Board',
+      continue: 'Continue',
+      cards: {
+        cbse: { title: 'CBSE', subtitle: 'NCERT books', classes: 'Classes 1 to 10' },
+        ssc: {
+          title: 'Maharashtra State Board',
+          subtitle: 'SSC · Balbharati books, English medium',
+          classes: 'Classes 1 to 5',
+        },
+      },
+    },
+    passphraseNext: 'Passphrase comes next',
     notice: {
       heading: 'Your privacy, in plain words',
       intro:

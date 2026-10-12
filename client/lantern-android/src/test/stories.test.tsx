@@ -44,7 +44,9 @@ const requiredStories: Record<string, string[]> = {
   'shared/ui/TextField.stories.tsx': ['Empty', 'Filled', 'LongLabel'],
   'shared/ui/CheckRow.stories.tsx': ['Unchecked', 'Checked', 'LongLabel'],
   'registration/NoticeView.stories.tsx': ['Default'],
-  'registration/BoardNextView.stories.tsx': ['Default'],
+  'registration/PassphraseNextView.stories.tsx': ['Default'],
+  'registration/BoardView.stories.tsx': ['NothingPicked', 'CbsePicked', 'SscPicked'],
+  'registration/BoardCard.stories.tsx': ['Unselected', 'Selected', 'LongLabel'],
   'registration/AboutYouView.stories.tsx': ['Empty', 'RegionOnly', 'AgreedOnly', 'Ready'],
   'registration/StepHeader.stories.tsx': ['Step1', 'Step2', 'Step3', 'Step4'],
   'registration/GoogleAccountCard.stories.tsx': ['Default', 'LongValues'],
@@ -56,6 +58,7 @@ const withoutStory: Record<string, string> = {
   'auth/AuthProvider.tsx': 'context provider with no look of its own',
   'auth/StartScreen.tsx': 'container for StartView, which has the stories',
   'registration/AboutYouScreen.tsx': 'container for AboutYouView, which has the stories',
+  'registration/BoardScreen.tsx': 'container for BoardView, which has the stories',
   'registration/BackButton.tsx': 'the back arrow shown inside StepHeader and NoticeView',
   'registration/RegistrationDraft.tsx': 'context provider with no look of its own',
   'registration/RegistrationFlow.tsx':
