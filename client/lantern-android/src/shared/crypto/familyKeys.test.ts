@@ -18,6 +18,23 @@ describe('the Family id', () => {
   });
 });
 
+describe('a Passphrase typed on different keyboards', () => {
+  it('opens the same whether an accent is one character or two', async () => {
+    const familyId = makeFamilyId();
+    const composed = 'caf\u00e9 lantern';
+    const keys = await createFamilyKeys(familyId, composed);
+
+    expect(
+      await openWithPassphrase(
+        familyId,
+        'cafe\u0301 lantern',
+        keys.passphraseWrappedKey,
+        keys.passphraseSalt,
+      ),
+    ).toBe(keys.familyKey);
+  });
+});
+
 describe('the Family key and its two wrapped copies', () => {
   const familyId = makeFamilyId();
 

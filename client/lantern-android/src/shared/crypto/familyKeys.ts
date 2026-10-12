@@ -1,5 +1,5 @@
 import { lockBytes, makeFamilyKey, unlockBytes } from './lock';
-import { deriveKey, fromBase64, randomBytes, toBase64 } from './native';
+import { deriveKey, fromBase64, randomBytes, randomUUID, toBase64 } from './native';
 import type { KeyCost } from './native';
 import { formatRecoveryCode, makeRecoveryCode } from './recoveryCode';
 
@@ -7,8 +7,6 @@ import { formatRecoveryCode, makeRecoveryCode } from './recoveryCode';
 // phone, and make a stolen wrapped key slow to guess. Changing it means a new version.
 const WRAP_COST: KeyCost = { memoryKiB: 65_536, passes: 3 };
 const SALT_BYTES = 16;
-const UUID_VERSION_4 = 0x40;
-const UUID_VARIANT = 0x80;
 
 export type FamilyKeys = {
   // Kept on the phone (and only after registering). The other fields go to /v1/register.
@@ -21,17 +19,12 @@ export type FamilyKeys = {
   recoveryCode: string;
 };
 
-export function makeFamilyId() {
-  const bytes = randomBytes(16);
-  bytes[6] = (bytes[6] & 0x0f) | UUID_VERSION_4;
-  bytes[8] = (bytes[8] & 0x3f) | UUID_VARIANT;
-  const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
-  return [0, 8, 12, 16, 20].map((start, i, all) => hex.slice(start, all[i + 1])).join('-');
-}
+export const makeFamilyId = () => randomUUID();
 
 // The Family id is part of the input, so two Families with the same Passphrase get different keys.
+// NFC makes an accented letter the same bytes whichever keyboard typed it.
 const wrappingKey = (familyId: string, secret: string, salt: Uint8Array) =>
-  deriveKey(`${familyId}_${secret}`, salt, WRAP_COST);
+  deriveKey(`${familyId}_${secret.normalize('NFC')}`, salt, WRAP_COST);
 
 async function wrap(familyKey: string, familyId: string, secret: string) {
   const salt = randomBytes(SALT_BYTES);

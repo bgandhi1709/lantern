@@ -5,7 +5,7 @@ import * as nodeCrypto from 'node:crypto';
 // Lantern builds with, so the slow derivation is a cheap scrypt here: the tests check how the app
 // wraps and locks, not how strong Argon2 is.
 export { Buffer };
-export const { randomBytes, createCipheriv, createDecipheriv } = nodeCrypto;
+export const { randomBytes, randomUUID, createCipheriv, createDecipheriv } = nodeCrypto;
 
 type Argon2Params = { message: Uint8Array; nonce: Uint8Array; tagLength: number };
 

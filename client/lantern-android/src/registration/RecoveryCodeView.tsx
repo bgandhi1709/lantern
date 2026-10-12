@@ -12,6 +12,7 @@ import { REGISTRATION_STEP_COUNT } from './steps';
 type Props = {
   code: string;
   saved: boolean;
+  shareFailed?: boolean;
   onSavedToggle: () => void;
   onEmail: () => void;
   onSave: () => void;
@@ -22,6 +23,7 @@ type Props = {
 export function RecoveryCodeView({
   code,
   saved,
+  shareFailed = false,
   onSavedToggle,
   onEmail,
   onSave,
@@ -42,6 +44,14 @@ export function RecoveryCodeView({
         <RecoveryCodeCard code={code} />
         <OutlineButton label={strings.email} onPress={onEmail} icon={<MailIcon />} />
         <OutlineButton label={strings.save} onPress={onSave} icon={<ShareIcon />} />
+        {shareFailed ? (
+          <Text
+            accessibilityLiveRegion="polite"
+            className="font-inter-semibold text-small text-danger"
+          >
+            {strings.shareFailed}
+          </Text>
+        ) : null}
         <Text className="font-inter-medium text-small text-muted">{strings.hint}</Text>
         <CheckRow checked={saved} onToggle={onSavedToggle} accessibilityLabel={strings.saved}>
           <Text className="font-inter-medium text-body text-ink">{strings.saved}</Text>

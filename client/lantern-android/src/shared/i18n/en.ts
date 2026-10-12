@@ -77,6 +77,7 @@ export const en = {
       email: 'Email it to myself',
       save: 'Save elsewhere',
       hint: "Email opens your mail app with a message to your Google address, and you send it yourself. Save elsewhere opens your phone's share sheet, for example to keep it in a notes app. Lantern never sends or sees it.",
+      shareFailed: "Couldn't open that. Try the other button, or write the code down.",
       saved: 'I have saved my recovery code somewhere safe.',
       continue: 'Continue',
       mailSubject: 'Your Lantern recovery code',

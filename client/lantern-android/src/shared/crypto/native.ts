@@ -4,6 +4,7 @@ import {
   createCipheriv,
   createDecipheriv,
   randomBytes as nativeRandomBytes,
+  randomUUID,
 } from 'react-native-quick-crypto';
 
 // The only file that touches the crypto library; everything else works on bytes and strings.
@@ -14,6 +15,7 @@ const KEY_BYTES = 32;
 
 export type KeyCost = { memoryKiB: number; passes: number };
 
+export { randomUUID };
 export const randomBytes = (count: number) => new Uint8Array(nativeRandomBytes(count));
 
 export const toBase64 = (bytes: Uint8Array) => Buffer.from(bytes).toString('base64');

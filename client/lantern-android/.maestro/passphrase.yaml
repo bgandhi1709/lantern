@@ -20,15 +20,18 @@ appId: com.lantern.app
       id: 'again-field'
 - tapOn:
     id: 'again-field'
-- inputText: 'blue lantern'
+- inputText: 'blue lantern 2025'
 - hideKeyboard
 - assertVisible: 'The two passphrases are not the same.'
 - scrollUntilVisible:
     element:
       id: 'again-field'
+# A tap at the right edge puts the cursor at the end, so the erase takes the last character.
 - tapOn:
     id: 'again-field'
-- inputText: ' 2026'
+    point: '95%,50%'
+- eraseText: 1
+- inputText: '6'
 - hideKeyboard
 - assertNotVisible: 'The two passphrases are not the same.'
 - assertVisible:

@@ -17,7 +17,6 @@ export function RegistrationFlow() {
   const [step, setStep] = useState<Step>('about');
   const backToAbout = () => setStep('about');
   const backToBoard = () => setStep('board');
-  const backToPassphrase = () => setStep('passphrase');
   const backToRecovery = () => setStep('recovery');
 
   useEffect(() => {
@@ -38,7 +37,7 @@ export function RegistrationFlow() {
       <AboutYouScreen onOpenNotice={() => setStep('notice')} onContinue={() => setStep('board')} />
     ),
     notice: <NoticeView version={NOTICE_VERSION} onBack={backToAbout} />,
-    board: <BoardScreen onContinue={backToPassphrase} onBack={backToAbout} />,
+    board: <BoardScreen onContinue={() => setStep('passphrase')} onBack={backToAbout} />,
     passphrase: <PassphraseScreen onCreated={() => setStep('recovery')} onBack={backToBoard} />,
     recovery: <RecoveryCodeScreen onContinue={() => setStep('firstChild')} />,
     firstChild: <FirstChildNextView onBack={backToRecovery} />,

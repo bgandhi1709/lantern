@@ -21,4 +21,5 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const NotSavedYet: Story = {};
+export const ShareFailed: Story = { args: { shareFailed: true } };
 export const Saved: Story = { args: { saved: true } };

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { createFamilyKeys, makeFamilyId } from '../shared/crypto';
 import { canCreatePassphrase, isMismatch } from './passphrase';
@@ -16,18 +16,33 @@ export function PassphraseScreen({ onCreated, onBack }: Props) {
   const [understood, setUnderstood] = useState(false);
   const [creating, setCreating] = useState(false);
   const [failed, setFailed] = useState(false);
+  const busy = useRef(false);
+  const mounted = useRef(true);
+  useEffect(
+    () => () => {
+      mounted.current = false;
+    },
+    [],
+  );
 
+  // One creation at a time, and a result that arrives after the Parent left the step is dropped.
   const create = async () => {
+    if (busy.current) return;
+    busy.current = true;
     setCreating(true);
     setFailed(false);
     try {
       const id = makeFamilyId();
       const keys = await createFamilyKeys(id, passphrase);
+      if (!mounted.current) return;
       update({ family: { id, keys } });
       onCreated();
     } catch {
+      if (!mounted.current) return;
       setFailed(true);
       setCreating(false);
+    } finally {
+      busy.current = false;
     }
   };
 
@@ -44,7 +59,7 @@ export function PassphraseScreen({ onCreated, onBack }: Props) {
       onAgainChange={setAgain}
       onUnderstoodToggle={() => setUnderstood((value) => !value)}
       onCreate={create}
-      onBack={onBack}
+      onBack={() => (busy.current ? undefined : onBack())}
     />
   );
 }

@@ -50,7 +50,7 @@ export function TextField({
           autoCapitalize={secret ? 'none' : 'words'}
           autoCorrect={!secret}
           autoComplete="off"
-          importantForAutofill="no"
+          importantForAutofill={secret ? 'no' : 'auto'}
           returnKeyType="done"
           className={`h-14 rounded-control border-2 border-field bg-card pr-4 font-inter-medium text-lead text-ink focus:border-primary-deep ${icon ? 'pl-12' : 'pl-4'}`}
         />

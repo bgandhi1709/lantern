@@ -117,7 +117,7 @@ describe('the Passphrase step', () => {
     expect(createButton()).toBeDisabled();
   });
 
-  it('says the two typings differ only once the second has something in it, and gives no other error', async () => {
+  it('says the two typings differ only once the second goes a different way, and gives no other error', async () => {
     const user = await renderPassphraseStep();
     expect(screen.queryByText('The two passphrases are not the same.')).not.toBeOnTheScreen();
 
@@ -125,10 +125,23 @@ describe('the Passphrase step', () => {
     expect(screen.queryByText(/not the same|too short/)).not.toBeOnTheScreen();
 
     await user.type(againField(), 'shor');
+    expect(screen.queryByText('The two passphrases are not the same.')).not.toBeOnTheScreen();
+
+    await user.type(againField(), 'x');
     expect(screen.getByText('The two passphrases are not the same.')).toBeOnTheScreen();
 
-    await user.type(againField(), 't');
+    await user.clear(againField());
+    await user.type(againField(), 'short');
     expect(screen.queryByText('The two passphrases are not the same.')).not.toBeOnTheScreen();
+  });
+
+  it('does not take spaces alone as a passphrase', async () => {
+    const user = await renderPassphraseStep();
+    await user.type(passphraseField(), '        ');
+    await user.type(againField(), '        ');
+    await user.press(understoodBox());
+
+    expect(createButton()).toBeDisabled();
   });
 
   it('goes back to the Board with the pick kept', async () => {
@@ -153,6 +166,23 @@ describe('the Passphrase step', () => {
     await user.press(createButton());
 
     expect(screen.getByRole('button', { name: 'Creating…' })).toBeDisabled();
+    await act(async () => finish());
+  });
+
+  it('makes the keys once when the button is pressed twice, and drops them when the Parent has gone back', async () => {
+    let finish: () => void = () => {};
+    const derive = jest.spyOn(fakeLibrary, 'argon2').mockImplementation((_a, params, callback) => {
+      finish = () => callback(null, fakeLibrary.Buffer.alloc(params.tagLength, 7));
+    });
+    const user = await renderPassphraseStep();
+    await fillPassphrase(user);
+
+    await user.press(createButton());
+    await user.press(screen.getByRole('button', { name: 'Creating…' }));
+    await user.press(backButton());
+
+    expect(derive).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('header', { name: 'Choose a family passphrase' })).toBeOnTheScreen();
     await act(async () => finish());
   });
 
@@ -233,6 +263,18 @@ describe('the Recovery code step', () => {
 
     await user.press(screen.getByRole('button', { name: 'Email it to myself' }));
     expect(share).toHaveBeenCalledTimes(2);
+  });
+
+  it('says so when neither the mail app nor the share sheet opens', async () => {
+    jest.spyOn(Share, 'share').mockRejectedValue(new Error('no share targets'));
+    jest.spyOn(Linking, 'openURL').mockRejectedValue(new Error('no mail app'));
+    const user = await renderRecoveryStep();
+
+    await user.press(screen.getByRole('button', { name: 'Save elsewhere' }));
+
+    expect(
+      screen.getByText("Couldn't open that. Try the other button, or write the code down."),
+    ).toBeOnTheScreen();
   });
 
   it('goes on to step 4 once ticked, and Back there returns to the same code', async () => {

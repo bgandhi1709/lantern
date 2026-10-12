@@ -54,7 +54,7 @@ const requiredStories: Record<string, string[]> = {
     'Creating',
     'Failed',
   ],
-  'registration/RecoveryCodeView.stories.tsx': ['NotSavedYet', 'Saved'],
+  'registration/RecoveryCodeView.stories.tsx': ['NotSavedYet', 'ShareFailed', 'Saved'],
   'registration/RecoveryCodeCard.stories.tsx': ['Default', 'WidestLetters'],
   'registration/KeepSafeNote.stories.tsx': ['Default'],
   'registration/BoardView.stories.tsx': ['NothingPicked', 'CbsePicked', 'SscPicked'],
