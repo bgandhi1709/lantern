@@ -312,6 +312,9 @@ resource functionsApp 'Microsoft.App/containerApps@2025-01-01' = {
             { name: 'AZURE_CLIENT_ID', value: identity.properties.clientId }
             { name: 'Storage__TableEndpoint', value: storage.properties.primaryEndpoints.table }
             { name: 'Storage__BlobEndpoint', value: storage.properties.primaryEndpoints.blob }
+            // Each Child's Content slice is copied out of its Board's container (ADR-0013).
+            { name: 'Catalog__NcertContainer', value: containers.ncert }
+            { name: 'Catalog__SscContainer', value: containers.ssc }
             // The Functions host keeps its own state in the storage account.
             { name: 'AzureWebJobsStorage__accountName', value: storage.name }
             { name: 'AzureWebJobsStorage__credential', value: 'managedidentity' }

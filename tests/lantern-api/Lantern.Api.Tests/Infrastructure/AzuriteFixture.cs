@@ -77,6 +77,7 @@ public sealed class AzuriteFixture : IAsyncLifetime, IDisposable
         }
 
         await WaitUntilReadyAsync();
+        await ApiBoardMasters.SeedAsync(CreateBlobClient());
     }
 
     public ValueTask DisposeAsync()

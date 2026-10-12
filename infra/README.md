@@ -81,7 +81,7 @@ environment, the `env-uat-e2e` federated credential on the Entra app, its `Stora
 
 ## Catalogs
 
-The API reads `ncert` and `ssc` with the resource-group Blob role from `bootstrap.sh` (D82); their names reach it as `Catalog__NcertContainer` and `Catalog__SscContainer` from `containers` in the bicepparam, and it will not start without them. A catalog is kept in memory for the life of the process, so after the yearly upload restart the API (`az containerapp revision restart`, or any new release).
+The API reads `ncert` and `ssc` with the resource-group Blob role from `bootstrap.sh` (D82); their names reach it as `Catalog__NcertContainer` and `Catalog__SscContainer` from `containers` in the bicepparam, and it will not start without them. `Lantern.Functions` reads the same two containers, with the same role and the same two settings, to copy each Child's Content slice out of its Board's container when the Child is registered or added (D88, ADR-0013), and it will not start without them either. Run the yearly upload in a maintenance window: a copy that sees the container change while it runs is not marked ready and retries. A catalog is kept in memory for the life of the process, so after the yearly upload restart the API (`az containerapp revision restart`, or any new release).
 
 ## Not here yet
 
