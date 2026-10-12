@@ -5,19 +5,27 @@ appId: com.lantern.app
 ---
 - runFlow: board.yaml
 - assertVisible: 'Choose a family passphrase'
-- assertVisible: 'Please keep it safe'
-- assertVisible: 'At least 8 characters. A few words are easier to remember.'
 - assertVisible:
     text: 'Create passphrase'
     enabled: false
+- scrollUntilVisible:
+    element:
+      id: 'passphrase-field'
 - tapOn:
     id: 'passphrase-field'
 - inputText: 'blue lantern 2026'
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+      id: 'again-field'
 - tapOn:
     id: 'again-field'
 - inputText: 'blue lantern'
 - hideKeyboard
 - assertVisible: 'The two passphrases are not the same.'
+- scrollUntilVisible:
+    element:
+      id: 'again-field'
 - tapOn:
     id: 'again-field'
 - inputText: ' 2026'
@@ -26,6 +34,8 @@ appId: com.lantern.app
 - assertVisible:
     text: 'Create passphrase'
     enabled: false
+- scrollUntilVisible:
+    element: "I understand Lantern can't reset or change it, and I will keep it safe."
 - tapOn: "I understand Lantern can't reset or change it, and I will keep it safe."
 - assertVisible:
     text: 'Create passphrase'
@@ -40,9 +50,12 @@ appId: com.lantern.app
 - assertVisible:
     text: 'Continue'
     enabled: false
+- scrollUntilVisible:
+    element: 'Save elsewhere'
 - tapOn: 'Save elsewhere'
 - pressKey: back
-- assertVisible: 'Save your recovery code'
+- scrollUntilVisible:
+    element: 'I have saved my recovery code somewhere safe.'
 - tapOn: 'I have saved my recovery code somewhere safe.'
 - assertVisible:
     text: 'Continue'

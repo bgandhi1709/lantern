@@ -14,7 +14,7 @@ export function RecoveryCodeCard({ code }: { code: string }) {
       <Text
         selectable
         testID="recovery-code"
-        className="font-inter-bold text-heading tracking-widest text-ink"
+        className="font-inter-bold text-lead tracking-widest text-ink"
       >
         {code}
       </Text>
