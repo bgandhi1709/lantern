@@ -16,17 +16,19 @@ function AgreementRow({
   checked,
   onToggle,
   long = false,
+  bare = false,
 }: {
   checked: boolean;
   onToggle: () => void;
   long?: boolean;
+  bare?: boolean;
 }) {
   return (
     <CheckRow
       checked={checked}
       onToggle={onToggle}
       accessibilityLabel={about.agreeLabel}
-      icon={<ShieldCheckIcon />}
+      icon={bare ? undefined : <ShieldCheckIcon />}
     >
       <Text className="font-inter-medium text-body text-ink">
         {long ? (
@@ -57,3 +59,5 @@ export const Unchecked: Story = {};
 export const Checked: Story = { args: { checked: true } };
 // Gujarati and Hindi run longer than English, so the row must grow instead of squeezing the box.
 export const LongLabel: Story = { args: { checked: true, long: true } };
+// The Passphrase steps draw the row with no icon, just the sentence and the box.
+export const WithoutIcon: Story = { args: { bare: true } };

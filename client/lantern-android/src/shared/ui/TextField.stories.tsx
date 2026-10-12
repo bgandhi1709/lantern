@@ -9,8 +9,11 @@ import { TextField } from './TextField';
 const about = en.registration.about;
 
 // The icon is a node, and Storybook's args must stay plain data, so the story fixes it.
-function RegionField(props: Omit<ComponentProps<typeof TextField>, 'icon'>) {
-  return <TextField {...props} icon={<PinIcon />} />;
+function RegionField({
+  bare = false,
+  ...props
+}: Omit<ComponentProps<typeof TextField>, 'icon'> & { bare?: boolean }) {
+  return <TextField {...props} icon={bare ? undefined : <PinIcon />} />;
 }
 
 const meta = {
@@ -38,5 +41,27 @@ export const LongLabel: Story = {
     label: 'તમે કયા શહેર અને રાજ્યમાં રહો છો, જ્યાં તમારું બાળક ભણે છે?',
     hint: 'ઉદાહરણ તરીકે: પુણે, મહારાષ્ટ્ર અથવા અમદાવાદ, ગુજરાત',
     value: 'अहमदाबाद, गुजरात',
+  },
+};
+// A secret is hidden as it is typed, and a field with no icon starts its text at the edge.
+export const Secret: Story = {
+  args: {
+    bare: true,
+    secret: true,
+    label: en.registration.passphrase.passphraseLabel,
+    hint: en.registration.passphrase.passphraseHint,
+    placeholder: undefined,
+    value: 'blue lantern 2026',
+  },
+};
+export const WithError: Story = {
+  args: {
+    bare: true,
+    secret: true,
+    label: en.registration.passphrase.againLabel,
+    hint: undefined,
+    placeholder: undefined,
+    error: en.registration.passphrase.mismatch,
+    value: 'blue lantern',
   },
 };

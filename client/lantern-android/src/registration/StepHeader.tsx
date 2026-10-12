@@ -3,7 +3,7 @@ import { Text, View } from 'react-native';
 import { useStrings } from '../shared/i18n';
 import { BackButton } from './BackButton';
 
-type Props = { step: number; total: number; onBack: () => void };
+type Props = { step: number; total: number; onBack?: () => void };
 
 // The step is said in words as well as drawn, so it never relies on colour alone.
 export function StepHeader({ step, total, onBack }: Props) {
@@ -13,7 +13,7 @@ export function StepHeader({ step, total, onBack }: Props) {
   return (
     <View>
       <View className="flex-row items-center justify-between">
-        <BackButton onBack={onBack} />
+        {onBack ? <BackButton onBack={onBack} /> : <View className="size-12" />}
         <Text className="font-inter-semibold text-small text-muted">
           {strings.step(step, total)}
         </Text>

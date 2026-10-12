@@ -54,7 +54,36 @@ export const en = {
         },
       },
     },
-    passphraseNext: 'Passphrase comes next',
+    passphrase: {
+      heading: 'Choose a family passphrase',
+      intro:
+        "Your children's names and your details are private. This passphrase locks them on your phone before they are sent, so nobody at Lantern, and nobody who broke into our systems, could read them. It is there to protect you and your children.",
+      noteTitle: 'Please keep it safe',
+      note: "Lantern never sees your passphrase, so we can't reset or change it for you. That is what keeps your family's details safe: if we could open them, someone else could too. If you lose it and your recovery code, they can't be opened again, so pick something you will remember.",
+      passphraseLabel: 'Passphrase',
+      passphraseHint: 'At least 8 characters. A few words are easier to remember.',
+      againLabel: 'Type it again',
+      mismatch: 'The two passphrases are not the same.',
+      understood: "I understand Lantern can't reset or change it, and I will keep it safe.",
+      create: 'Create passphrase',
+      creating: 'Creating…',
+      failed: "Couldn't create the passphrase. Try again.",
+    },
+    recovery: {
+      heading: 'Save your recovery code',
+      intro:
+        "If you forget the passphrase, this code is the only other way to open your family's details. We show it once because we don't keep a copy: that is what keeps it private to you.",
+      codeLabel: 'RECOVERY CODE',
+      email: 'Email it to myself',
+      save: 'Save elsewhere',
+      hint: "Email opens your mail app with a message to your Google address, and you send it yourself. Save elsewhere opens your phone's share sheet, for example to keep it in a notes app. Lantern never sends or sees it.",
+      saved: 'I have saved my recovery code somewhere safe.',
+      continue: 'Continue',
+      mailSubject: 'Your Lantern recovery code',
+      message: (code: string) =>
+        `Your Lantern recovery code is ${code}\n\nIf you forget your passphrase, this code is the only other way to open your family's details. Keep it somewhere safe. Lantern does not keep a copy.`,
+    },
+    firstChildNext: 'First child comes next',
     notice: {
       heading: 'Your privacy, in plain words',
       intro:
