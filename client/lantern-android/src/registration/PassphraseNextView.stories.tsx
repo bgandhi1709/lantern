@@ -1,13 +1,13 @@
 import type { Meta, StoryObj } from '@storybook/react-native';
 import { fn } from 'storybook/test';
 
-import { BoardNextView } from './BoardNextView';
+import { PassphraseNextView } from './PassphraseNextView';
 
 const meta = {
-  title: 'Registration/BoardNextView',
-  component: BoardNextView,
+  title: 'Registration/PassphraseNextView',
+  component: PassphraseNextView,
   args: { onBack: fn() },
-} satisfies Meta<typeof BoardNextView>;
+} satisfies Meta<typeof PassphraseNextView>;
 
 export default meta;
 

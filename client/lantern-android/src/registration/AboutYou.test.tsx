@@ -143,7 +143,9 @@ describe('moving between the steps', () => {
     await user.press(continueButton());
 
     expect(screen.getByText('Step 2 of 4')).toBeOnTheScreen();
-    expect(screen.getByText('Board comes next')).toBeOnTheScreen();
+    expect(
+      screen.getByRole('header', { name: 'Which board does your child follow?' }),
+    ).toBeOnTheScreen();
     expect(screen.queryByRole('header', { name: 'A little about you' })).not.toBeOnTheScreen();
 
     await user.press(backButton());
