@@ -8,6 +8,7 @@ jest.mock('@react-native-async-storage/async-storage', () =>
   jest.requireActual('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );
 jest.mock('expo-secure-store', () => jest.requireActual('./src/test/fakeSecureStore'));
+jest.mock('react-native-quick-crypto', () => jest.requireActual('./src/test/fakeQuickCrypto'));
 jest.mock('@react-native-firebase/auth', () => jest.requireActual('./src/test/fakeFirebaseAuth'));
 jest.mock('@react-native-google-signin/google-signin', () =>
   jest.requireActual('./src/test/fakeGoogleSignIn'),

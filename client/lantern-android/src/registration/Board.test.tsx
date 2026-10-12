@@ -115,7 +115,7 @@ describe('the Board step', () => {
     await user.press(continueButton());
 
     expect(screen.getByText('Step 3 of 4')).toBeOnTheScreen();
-    expect(screen.getByText('Passphrase comes next')).toBeOnTheScreen();
+    expect(screen.getByRole('header', { name: 'Choose a family passphrase' })).toBeOnTheScreen();
 
     await user.press(backButton());
 

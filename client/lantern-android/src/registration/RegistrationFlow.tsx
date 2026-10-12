@@ -5,21 +5,27 @@ import { AboutYouScreen } from './AboutYouScreen';
 import { BoardScreen } from './BoardScreen';
 import { NOTICE_VERSION } from './notice';
 import { NoticeView } from './NoticeView';
-import { PassphraseNextView } from './PassphraseNextView';
+import { FirstChildNextView } from './FirstChildNextView';
+import { PassphraseScreen } from './PassphraseScreen';
+import { RecoveryCodeScreen } from './RecoveryCodeScreen';
 import { RegistrationDraftProvider } from './RegistrationDraft';
 
-type Step = 'about' | 'notice' | 'board' | 'passphrase';
+type Step = 'about' | 'notice' | 'board' | 'passphrase' | 'recovery' | 'firstChild';
 
 // The steps share one draft, so going back never loses what the Parent typed.
 export function RegistrationFlow() {
   const [step, setStep] = useState<Step>('about');
   const backToAbout = () => setStep('about');
   const backToBoard = () => setStep('board');
+  const backToRecovery = () => setStep('recovery');
 
   useEffect(() => {
     if (step === 'about') return;
     const press = BackHandler.addEventListener('hardwareBackPress', () => {
-      if (step === 'passphrase') backToBoard();
+      // The Recovery code is shown once, so Android's back button does nothing there.
+      if (step === 'recovery') return true;
+      if (step === 'firstChild') backToRecovery();
+      else if (step === 'passphrase') backToBoard();
       else backToAbout();
       return true;
     });
@@ -32,7 +38,9 @@ export function RegistrationFlow() {
     ),
     notice: <NoticeView version={NOTICE_VERSION} onBack={backToAbout} />,
     board: <BoardScreen onContinue={() => setStep('passphrase')} onBack={backToAbout} />,
-    passphrase: <PassphraseNextView onBack={backToBoard} />,
+    passphrase: <PassphraseScreen onCreated={() => setStep('recovery')} onBack={backToBoard} />,
+    recovery: <RecoveryCodeScreen onContinue={() => setStep('firstChild')} />,
+    firstChild: <FirstChildNextView onBack={backToRecovery} />,
   };
 
   return <RegistrationDraftProvider>{steps[step]}</RegistrationDraftProvider>;

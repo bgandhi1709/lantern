@@ -23,7 +23,7 @@ A personal detail the phone has locked with the Family key before sending it, so
 _Avoid_: Encrypted field (the server does not encrypt), ciphertext
 
 **Recovery code**:
-A one-time code shown right after the Passphrase is set, the only other way back in if the Passphrase is forgotten. The Parent saves it themselves (Lantern never emails it). A Family that loses both starts again as a new Family.
+A one-time code shown right after the Passphrase is set, the only other way back in if the Passphrase is forgotten. The Parent saves it themselves, by emailing it to their own Google address from the phone's mail app or by the share sheet; Lantern never sends or sees it. A Family that loses both starts again as a new Family.
 _Avoid_: Backup key, reset code
 
 **Child**:

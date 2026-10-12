@@ -8,7 +8,7 @@ type Props = {
   checked: boolean;
   onToggle: () => void;
   accessibilityLabel: string;
-  icon: ReactNode;
+  icon?: ReactNode;
   children: ReactNode;
 };
 

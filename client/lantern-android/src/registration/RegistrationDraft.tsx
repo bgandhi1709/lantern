@@ -2,6 +2,7 @@ import { createContext, useContext, useState } from 'react';
 import type { ReactNode } from 'react';
 
 import { getParent } from '../shared/session';
+import type { FamilyKeys } from '../shared/crypto';
 import type { Parent } from '../shared/session';
 import type { Board } from './board';
 
@@ -13,6 +14,8 @@ export type RegistrationDraft = {
   noticeAccepted: boolean;
   // null until the Parent picks one: a Family has no default Board.
   board: Board | null;
+  // Made when the Passphrase is created. The keys hold the Recovery code until the Parent has saved it.
+  family: { id: string; keys: FamilyKeys } | null;
 };
 
 type DraftContext = {
@@ -28,6 +31,7 @@ export function RegistrationDraftProvider({ children }: { children: ReactNode })
     region: '',
     noticeAccepted: false,
     board: null,
+    family: null,
   }));
   const update = (changes: Partial<RegistrationDraft>) =>
     setDraft((current) => ({ ...current, ...changes }));

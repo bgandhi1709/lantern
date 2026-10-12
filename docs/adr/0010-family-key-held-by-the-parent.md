@@ -11,3 +11,11 @@ Deleting a Family still erases the rows and the Workspace; crypto-shredding now 
 There is no migration: no pilot Family exists on the Key Vault scheme, and UAT test Families are deleted. The old `family-field-key` stays in the vault, unused, until someone removes it.
 
 Considered and rejected: keeping a Key Vault key per Family (Lantern can read everything, which the founder did not want), a key in the phone's keystore only with no Passphrase (a lost phone loses the Family), and email recovery of the Passphrase (Lantern would have to know it). Decision D66 in the decision log carries the reasoning; the Passphrase screens come with their own stories.
+
+## Follow-up: how the phone locks and wraps (issue #122)
+
+- **Locked value and wrapped key:** `v1.` followed by the base64 of `nonce (12 bytes) + AES-256-GCM ciphertext + tag (16 bytes)`. The version fixes the cipher and the key-derivation cost below, so a stronger setting becomes `v2` and old Families still open. A locked value must fit the API's 400 characters, which is 269 bytes of plain text.
+- **Wrapping key:** Argon2id (version 0x13, 64 MiB, 3 passes, 1 lane, 32 bytes) over `{family_guid}_{passphrase}` (the Passphrase in Unicode NFC, so an accent typed on any keyboard gives the same bytes; nothing is trimmed) with its own random 16-byte salt, once for the Passphrase and once for the Recovery code. The salts are sent as base64.
+- **Recovery code:** 16 characters from a 32-character alphabet with no look-alikes (80 bits), shown as `XXXX-XXXX-XXXX-XXXX` and read back in any case, with or without dashes.
+- **Library:** `react-native-quick-crypto` (native OpenSSL, MIT) with `react-native-nitro-modules` and `react-native-quick-base64`. Pure-JavaScript Argon2 and PBKDF2 were estimated at tens of seconds per derivation on Hermes, so they were rejected. Only `src/shared/crypto/native.ts` imports it.
+- **On the phone:** the Family key is kept in `expo-secure-store` only once `/v1/register` succeeds (#120). Until then it, the Passphrase and the Recovery code live in memory and are dropped when the Parent leaves registration.

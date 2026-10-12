@@ -18,3 +18,5 @@ export const Step1: Story = {};
 export const Step2: Story = { args: { step: 2 } };
 export const Step3: Story = { args: { step: 3 } };
 export const Step4: Story = { args: { step: 4 } };
+// The Recovery code step has no Back, and keeps the step text where it was.
+export const Step3NoBack: Story = { args: { step: 3, onBack: undefined } };

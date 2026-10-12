@@ -72,6 +72,20 @@ export const ShieldCheckIcon = () => (
   </LineIcon>
 );
 
+export const LockIcon = () => (
+  <LineIcon>
+    <Rect x={5} y={11} width={14} height={10} rx={3} />
+    <Path d="M8 11V8a4 4 0 0 1 8 0v3" />
+  </LineIcon>
+);
+
+export const ShareIcon = () => (
+  <LineIcon>
+    <Path d="M12 15V4M8 8l4-4 4 4" />
+    <Path d="M5 13v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5" />
+  </LineIcon>
+);
+
 export const BackIcon = () => (
   <LineIcon strokeWidth={2.75}>
     <Path d="M15 5l-7 7 7 7" />

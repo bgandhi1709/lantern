@@ -58,5 +58,5 @@ appId: com.lantern.app
     text: 'Maharashtra State Board.*'
     checked: true
 - tapOn: 'Continue'
-- assertVisible: 'Passphrase comes next'
+- assertVisible: 'Choose a family passphrase'
 - assertVisible: 'Step 3 of 4'
