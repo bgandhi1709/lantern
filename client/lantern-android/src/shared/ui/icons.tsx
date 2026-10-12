@@ -2,22 +2,17 @@ import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
 import { colors } from './theme';
 
-const ICON_SIZE = 26;
-const BOARD_ICON_SIZE = 44;
-
 function LineIcon({
   children,
   strokeWidth = 2.5,
-  size = ICON_SIZE,
 }: {
   children: React.ReactNode;
   strokeWidth?: number;
-  size?: number;
 }) {
   return (
     <Svg
-      width={size}
-      height={size}
+      width={26}
+      height={26}
       viewBox="0 0 24 24"
       fill="none"
       stroke={colors.text}
@@ -74,21 +69,6 @@ export const ShieldCheckIcon = () => (
   <LineIcon>
     <Path d="M12 3l8 3v6c0 5-3.4 8-8 9-4.6-1-8-4-8-9V6z" />
     <Path d="M8.5 12l2.5 2.5 4.5-5" />
-  </LineIcon>
-);
-
-// The Board cards' pictures: a plain book and a schoolhouse, not either board's own mark (ADR-0009).
-export const BookIcon = () => (
-  <LineIcon size={BOARD_ICON_SIZE} strokeWidth={2}>
-    <Path d="M12 6c-2-1.5-5-2-8-2v14c3 0 6 .5 8 2 2-1.5 5-2 8-2V4c-3 0-6 .5-8 2z" />
-    <Path d="M12 6v14" />
-  </LineIcon>
-);
-
-export const SchoolIcon = () => (
-  <LineIcon size={BOARD_ICON_SIZE} strokeWidth={2}>
-    <Path d="M3 10l9-6 9 6v10H3z" />
-    <Path d="M10 20v-5h4v5" />
   </LineIcon>
 );
 

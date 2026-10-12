@@ -1,8 +1,7 @@
-import type { ReactNode } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import type { ImageSourcePropType } from 'react-native';
+import { Image, Pressable, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
-import { BookIcon, SchoolIcon } from '../shared/ui/icons';
 import { colors } from '../shared/ui/theme';
 import type { Board } from './board';
 
@@ -15,7 +14,11 @@ type Props = {
   onSelect: () => void;
 };
 
-const PICTURES: Record<Board, ReactNode> = { cbse: <BookIcon />, ssc: <SchoolIcon /> };
+// Each Board's own mark. The CBSE logo is under the Government Open Data License - India (D86).
+const LOGOS: Record<Board, ImageSourcePropType> = {
+  cbse: require('../../assets/boards/cbse.png'),
+  ssc: require('../../assets/boards/ssc.png'),
+};
 
 // A tick, not just a heavier border, shows which card is picked.
 function Tick() {
@@ -47,7 +50,7 @@ export function BoardCard({ board, title, subtitle, classes, selected, onSelect 
       className={`flex-1 items-center gap-3 rounded-card ${selected ? 'border-[3px] border-primary bg-tile px-[11px] pb-[15px] pt-[19px]' : 'border-2 border-field bg-card px-3 pb-4 pt-5'}`}
     >
       <View className="size-22 items-center justify-center rounded-full bg-tile">
-        {PICTURES[board]}
+        <Image source={LOGOS[board]} resizeMode="contain" accessible={false} className="size-22" />
       </View>
       <View className="flex-1 items-center gap-0.5">
         <Text className="text-center font-inter-bold text-lead text-ink">{title}</Text>
