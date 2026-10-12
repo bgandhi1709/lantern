@@ -14,6 +14,7 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
+export const Disabled: Story = { args: { disabled: true } };
 // Gujarati and Hindi labels run longer than English, so the button must still hold them.
 export const LongLabel: Story = {
   args: { label: 'તમારા બાળકના પુસ્તકનું પહેલું પાનું ફોટોગ્રાફ કરો અને આગળ વધો' },

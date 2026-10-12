@@ -1,6 +1,6 @@
 const expo = require('eslint-config-expo/flat');
 
-const features = ['auth', 'family', 'catalog'];
+const features = ['auth', 'registration', 'family', 'catalog'];
 
 const storagePaths = [
   {

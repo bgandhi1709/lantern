@@ -13,7 +13,7 @@ const get = api.get as jest.Mock;
 const renderApp = () =>
   render(
     <AuthProvider>
-      <AuthGate home={<Text>Home</Text>} />
+      <AuthGate home={<Text>Home</Text>} registration={<Text>Registration</Text>} />
     </AuthProvider>,
   );
 
@@ -81,29 +81,16 @@ describe('where the Opening screen sends the Parent', () => {
     expect(screen.getByText('Home')).toBeOnTheScreen();
   });
 
-  it('tells a signed-in Parent who has not registered that registration comes next', async () => {
+  it('sends a signed-in Parent who has not registered to registration, not Home or Start', async () => {
     fakeRestoredSession();
     get.mockRejectedValue(new ApiError('not-registered', 404));
 
     await renderApp();
     await wait(0);
 
-    expect(screen.getByText('Registration comes next')).toBeOnTheScreen();
-    expect(screen.getByRole('button', { name: 'Sign out' })).toBeOnTheScreen();
-    expect(screen.getByRole('image', { name: /mother teaching/ })).toBeOnTheScreen();
-  });
-
-  it('lets that Parent sign out to Start', async () => {
-    fakeRestoredSession();
-    get.mockRejectedValue(new ApiError('not-registered', 404));
-    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
-    await renderApp();
-    await wait(0);
-
-    await user.press(screen.getByRole('button', { name: 'Sign out' }));
-    await wait(0);
-
-    expect(startButton()).toBeOnTheScreen();
+    expect(screen.getByText('Registration')).toBeOnTheScreen();
+    expect(screen.queryByText('Home')).not.toBeOnTheScreen();
+    expect(startButton()).not.toBeOnTheScreen();
   });
 
   it.each([
@@ -167,17 +154,17 @@ describe('when the API answers before the intro has finished', () => {
     expect(startButton()).not.toBeOnTheScreen();
   });
 
-  it('holds Opening until the intro is done, then says registration comes next', async () => {
+  it('holds Opening until the intro is done, then shows registration', async () => {
     fakeRestoredSession();
     get.mockRejectedValue(new ApiError('not-registered', 404));
 
     await renderApp();
     await wait(1500);
-    expect(screen.queryByText('Registration comes next')).not.toBeOnTheScreen();
+    expect(screen.queryByText('Registration')).not.toBeOnTheScreen();
 
     await wait(1600);
 
-    expect(screen.getByText('Registration comes next')).toBeOnTheScreen();
+    expect(screen.getByText('Registration')).toBeOnTheScreen();
   });
 
   it('holds Opening until the intro is done, then offers Try again', async () => {

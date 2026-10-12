@@ -1,1 +1,2 @@
-export { endSession, getIdToken, onSessionChange, startSession } from './session';
+export { endSession, getIdToken, getParent, onSessionChange, startSession } from './session';
+export type { Parent } from './session';

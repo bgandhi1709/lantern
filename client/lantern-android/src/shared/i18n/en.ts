@@ -13,7 +13,6 @@ export const en = {
     waking: 'Waking Lantern up, this can take up to a minute…',
     unreachable: "Can't reach Lantern",
     tryAgain: 'Try again',
-    notRegistered: 'Registration comes next',
   },
   start: {
     heading: 'Teach your child with confidence.',
@@ -36,6 +35,75 @@ export const en = {
         title: 'See their progress',
         text: 'Know what stuck, and where to help next.',
       },
+    },
+  },
+  registration: {
+    back: 'Back',
+    step: (step: number, total: number) => `Step ${step} of ${total}`,
+    boardNext: 'Board comes next',
+    notice: {
+      heading: 'Your privacy, in plain words',
+      intro:
+        'Lantern is open about what it asks of you. Here is everything it collects, and why. If something here is not what you expected, do not agree to it.',
+      version: (version: string) => `Notice version ${version}`,
+      sections: [
+        {
+          title: 'What you tell us',
+          text: [
+            'Your name and email, from Google. They set up your Family. Your phone locks them before they reach Lantern, so Lantern cannot read them.',
+            'Where you live (city and state). Lantern can read this. It helps us understand where Lantern is used.',
+            "Your school board and each child's Class. Lantern can read these, so it can pick the right books and chapters.",
+            "Each child's name, birth year and school. Your phone locks these before they reach Lantern, so Lantern cannot read them.",
+          ],
+        },
+        {
+          title: 'While you use the app',
+          text: [
+            'Lantern counts how the app is used, without knowing who you are: which screens open and for how long, which buttons are tapped, and how fast the app starts. Google, who provides this, also notes your phone model, your Android version and roughly which city your connection comes from. It is not your exact location.',
+            'None of your details go with these numbers: not your name, email, your children, your Region or anything you type. They start only after you agree.',
+          ],
+        },
+        {
+          title: 'What stays on your phone',
+          text: [
+            "Your Google sign-in, kept by the phone itself. A secret key for your Family, kept in the phone's secure store so you do not have to type your passphrase every time. Nothing else about you is saved on the phone.",
+          ],
+        },
+        {
+          title: 'What we never do',
+          text: [
+            "We do not collect your exact location, contacts, photos or microphone, or the phone's advertising ID. We show no ads and we do not sell your data.",
+            'Lantern runs on Microsoft Azure and Google Firebase, who store and process data on our behalf.',
+          ],
+        },
+        {
+          title: 'Your passphrase and your data',
+          text: [
+            'You will choose a passphrase for your Family. It cannot be reset. If you lose it and its recovery code, nobody, including Lantern, can open the locked details.',
+            'Deleting your Family erases everything stored for it.',
+          ],
+        },
+        {
+          title: 'Who runs Lantern',
+          text: ['Lantern is free and not run for profit.'],
+        },
+      ],
+    },
+    about: {
+      heading: 'A little about you',
+      intro: 'We took your name and email from your Google account.',
+      fromGoogle: 'FROM GOOGLE',
+      differentAccount: 'Not you? Use a different account',
+      name: 'Name',
+      email: 'Email',
+      regionLabel: 'Where do you live?',
+      regionPlaceholder: 'City, State',
+      regionHint: 'For example, Pune, Maharashtra',
+      agreeBefore: 'I have read the ',
+      noticeLink: 'privacy notice',
+      agreeAfter: ' and I agree to it.',
+      agreeLabel: 'I agree to the privacy notice',
+      continue: 'Continue',
     },
   },
   signedIn: {

@@ -1,0 +1,1 @@
+export const REGISTRATION_STEP_COUNT = 4;

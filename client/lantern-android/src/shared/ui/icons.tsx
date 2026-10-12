@@ -1,8 +1,14 @@
-import Svg, { Circle, Path } from 'react-native-svg';
+import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
 import { colors } from './theme';
 
-function LineIcon({ children }: { children: React.ReactNode }) {
+function LineIcon({
+  children,
+  strokeWidth = 2.5,
+}: {
+  children: React.ReactNode;
+  strokeWidth?: number;
+}) {
   return (
     <Svg
       width={26}
@@ -10,7 +16,7 @@ function LineIcon({ children }: { children: React.ReactNode }) {
       viewBox="0 0 24 24"
       fill="none"
       stroke={colors.text}
-      strokeWidth={2.5}
+      strokeWidth={strokeWidth}
       strokeLinecap="round"
       strokeLinejoin="round"
     >
@@ -35,6 +41,40 @@ export const CheckCircleIcon = () => (
   <LineIcon>
     <Circle cx={12} cy={12} r={9} />
     <Path d="M8 12.5l2.7 2.7L16 9.5" />
+  </LineIcon>
+);
+
+export const UserIcon = () => (
+  <LineIcon>
+    <Circle cx={12} cy={8} r={4} />
+    <Path d="M4 21c0-4 3.6-7 8-7s8 3 8 7" />
+  </LineIcon>
+);
+
+export const MailIcon = () => (
+  <LineIcon>
+    <Rect x={3} y={5} width={18} height={14} rx={3} />
+    <Path d="M3.5 7l8.5 6 8.5-6" />
+  </LineIcon>
+);
+
+export const PinIcon = () => (
+  <LineIcon>
+    <Path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z" />
+    <Circle cx={12} cy={10} r={2.5} />
+  </LineIcon>
+);
+
+export const ShieldCheckIcon = () => (
+  <LineIcon>
+    <Path d="M12 3l8 3v6c0 5-3.4 8-8 9-4.6-1-8-4-8-9V6z" />
+    <Path d="M8.5 12l2.5 2.5 4.5-5" />
+  </LineIcon>
+);
+
+export const BackIcon = () => (
+  <LineIcon strokeWidth={2.75}>
+    <Path d="M15 5l-7 7 7 7" />
   </LineIcon>
 );
 

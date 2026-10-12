@@ -423,3 +423,11 @@ The API identity already holds Storage Blob Data Contributor on the resource gro
 
 ### D83. In-process test settings live in `appsettings.Testing.json`, not in `LanternApiFactory` (amends the Setting recipe)
 The founder asked that no value be written in test code, as D36 asks for the apps. The fixed settings the in-process tests run with (tables, containers, resend delay, rate limit, security key) are now in `tests/lantern-api/Lantern.Api.Tests/appsettings.Testing.json`, loaded by `LanternApiFactory` and read by the two tests that need a value through `TestSettings`. Only what a run decides stays in the factory: the Azurite connection string, the Firebase project id of the test tokens and the fake Service Bus settings. A test that blanks a setting adds an in-memory source after the factory's. Step 5 of the Setting recipe in `docs/architecture/recipes.md` now says so.
+
+## 2026-10-11: Registration step 1 (issue #118)
+
+### D84. About you keeps the draft in memory and lets the Parent change Google account (issue #118)
+The four registration steps share one in-memory draft (Parent name and email from the Google token, Region, the notice agreement). Nothing is stored on the device before Finish; closing the app or signing out drops it. A Parent who signed in with the wrong Google account taps "Not you? Use a different account" (or the back arrow), which ends the Lantern session and forgets the Google account, so the account sheet opens again. The Firebase user made by the wrong sign-in stays in Firebase Authentication with no Lantern record, because `/v1/register` runs only at Finish. Android's own Back on About you is left to the system and closes the app, with the session kept. The canvas board 3 shows the link.
+
+### D85. The app is driven with Maestro, on an Android 34 emulator (issue #118)
+Verifying a screen by reading screenshots cost many tokens, and `adb uiautomator` failed during animations. Maestro 2.10.0 (Apache-2.0, dev-only, never in the app, no published advisories, pinned and checked against the release's SHA-256) reads the screen as text and asserts on it: `maestro test .maestro`. The emulator moved from Android 37 to 34 because Maestro lists 29 to 34 as supported and the 37 image and AVD took 13 GB. `scripts/verify-env.sh` starts the emulator with software rendering after the host GPU path left it dead mid-verify.

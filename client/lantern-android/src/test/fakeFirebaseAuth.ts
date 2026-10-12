@@ -1,11 +1,20 @@
-type FakeUser = { getIdToken: jest.Mock<Promise<string>, []> };
+type FakeUser = {
+  getIdToken: jest.Mock<Promise<string>, []>;
+  displayName: string | null;
+  email: string | null;
+};
+type Profile = Pick<FakeUser, 'displayName' | 'email'>;
 type Listener = (user: FakeUser | null) => void;
 
 let user: FakeUser | null = null;
 const listeners = new Set<Listener>();
 
 const notify = () => listeners.forEach((listener) => listener(user));
-const userWithToken = (token: string): FakeUser => ({ getIdToken: jest.fn(async () => token) });
+const asha: Profile = { displayName: 'Asha Verma', email: 'asha.verma@gmail.com' };
+const userWithToken = (token: string, profile: Profile = asha): FakeUser => ({
+  getIdToken: jest.fn(async () => token),
+  ...profile,
+});
 
 const auth = {
   get currentUser() {
@@ -38,8 +47,8 @@ export const signOut = jest.fn(async () => {
   notify();
 });
 
-export function fakeRestoredSession(token = 'restored-id-token') {
-  user = userWithToken(token);
+export function fakeRestoredSession(token = 'restored-id-token', profile?: Profile) {
+  user = userWithToken(token, profile);
 }
 
 // Makes the restored user's token refresh fail, like Firebase does for a revoked sign-in.

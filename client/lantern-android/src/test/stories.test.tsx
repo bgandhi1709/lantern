@@ -5,6 +5,7 @@ import '@testing-library/react-native/matchers';
 import { render, screen } from '@testing-library/react-native';
 import { withBackgrounds } from '@storybook/addon-ondevice-backgrounds';
 import { composeStories } from '@storybook/react';
+import { isValidElement } from 'react';
 import type { ComponentType } from 'react';
 
 import preview from '../../.rnstorybook/preview';
@@ -39,7 +40,14 @@ const requiredStories: Record<string, string[]> = {
     'Unreachable',
     'Registered',
   ],
-  'shared/ui/PrimaryButton.stories.tsx': ['Default', 'LongLabel'],
+  'shared/ui/PrimaryButton.stories.tsx': ['Default', 'Disabled', 'LongLabel'],
+  'shared/ui/TextField.stories.tsx': ['Empty', 'Filled', 'LongLabel'],
+  'shared/ui/CheckRow.stories.tsx': ['Unchecked', 'Checked', 'LongLabel'],
+  'registration/NoticeView.stories.tsx': ['Default'],
+  'registration/BoardNextView.stories.tsx': ['Default'],
+  'registration/AboutYouView.stories.tsx': ['Empty', 'RegionOnly', 'AgreedOnly', 'Ready'],
+  'registration/StepHeader.stories.tsx': ['Step1', 'Step2', 'Step3', 'Step4'],
+  'registration/GoogleAccountCard.stories.tsx': ['Default', 'LongValues'],
 };
 
 // A component file with no story of its own must say why, so the list stays short and honest.
@@ -47,12 +55,17 @@ const withoutStory: Record<string, string> = {
   'auth/AuthGate.tsx': 'routes by session state; the screens it picks have the stories',
   'auth/AuthProvider.tsx': 'context provider with no look of its own',
   'auth/StartScreen.tsx': 'container for StartView, which has the stories',
+  'registration/AboutYouScreen.tsx': 'container for AboutYouView, which has the stories',
+  'registration/BackButton.tsx': 'the back arrow shown inside StepHeader and NoticeView',
+  'registration/RegistrationDraft.tsx': 'context provider with no look of its own',
+  'registration/RegistrationFlow.tsx':
+    'moves between the registration steps, which have the stories',
   'auth/SignedInRoute.tsx': 'container for SignedInView, which has the stories',
   'auth/IntroLayer.tsx': 'animation layer shown inside OpeningScreen',
   'auth/IntroMark.tsx': 'animation of Mark, shown inside OpeningScreen',
   'auth/PageTurnLoader.tsx': 'loader shown inside OpeningScreen',
   'shared/ui/FadeIn.tsx': 'animation wrapper with no look of its own',
-  'shared/ui/icons.tsx': 'SVG parts used by FeatureList and GoogleButton',
+  'shared/ui/icons.tsx': 'SVG parts used by the screens and their components',
   'shared/ui/markParts.tsx': 'SVG parts of Mark',
 };
 
@@ -124,7 +137,7 @@ describe('the stories', () => {
     expect(screen.getByText(en.opening.waking)).toBeOnTheScreen();
 
     await render(<NotRegistered />);
-    expect(screen.getByRole('button', { name: en.common.signOut })).toBeOnTheScreen();
+    expect(screen.getByText(en.registration.about.heading)).toBeOnTheScreen();
 
     await render(<Unreachable />);
     expect(screen.getByRole('button', { name: en.opening.tryAgain })).toBeOnTheScreen();
@@ -132,6 +145,22 @@ describe('the stories', () => {
     await render(<Registered />);
     expect(screen.getByText(en.signedIn.message)).toBeOnTheScreen();
   });
+
+  it.each(storyFiles.map((file) => [relative(file), file]))(
+    '%s passes no React element as an arg',
+    (_name, file) => {
+      // Storybook walks an element's internals to infer arg types and throws on React Navigation's context.
+      const { default: meta, ...stories } = jest.requireActual<{
+        default: { args?: object };
+        [story: string]: { args?: object };
+      }>(file);
+      const args = [meta, ...Object.values(stories)].flatMap((entry) =>
+        Object.values(entry.args ?? {}),
+      );
+
+      expect(args.filter((arg) => isValidElement(arg))).toEqual([]);
+    },
+  );
 
   describe.each(storyFiles.map((file) => [relative(file), file]))('%s', (_name, file) => {
     const stories = storiesOf(file);
