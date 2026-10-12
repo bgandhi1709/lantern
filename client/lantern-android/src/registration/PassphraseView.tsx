@@ -54,6 +54,7 @@ export function PassphraseView({
         <KeepSafeNote />
         <TextField
           secret
+          testID="passphrase-field"
           label={strings.passphraseLabel}
           hint={strings.passphraseHint}
           value={passphrase}
@@ -62,6 +63,7 @@ export function PassphraseView({
         />
         <TextField
           secret
+          testID="again-field"
           label={strings.againLabel}
           error={mismatch ? strings.mismatch : undefined}
           value={again}

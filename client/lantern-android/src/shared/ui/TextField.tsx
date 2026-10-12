@@ -14,6 +14,8 @@ type Props = {
   // A secret: hidden as it is typed, never capitalised, corrected or offered to the keyboard's memory.
   secret?: boolean;
   error?: string;
+  // For the Maestro flows, which find a field with no placeholder by its id.
+  testID?: string;
 };
 
 // The label is the field's accessibility label, so a screen reader says it once, on the field.
@@ -27,6 +29,7 @@ export function TextField({
   icon,
   secret = false,
   error,
+  testID,
 }: Props) {
   return (
     <View>
@@ -36,6 +39,7 @@ export function TextField({
       <View className="mt-1.5 justify-center">
         {icon ? <View className="absolute left-3.5 z-10">{icon}</View> : null}
         <TextInput
+          testID={testID}
           accessibilityLabel={label}
           value={value}
           onChangeText={onChangeText}

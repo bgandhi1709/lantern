@@ -1,0 +1,54 @@
+# Needs a Google account on the emulator and `scripts/verify-env.sh up` running. It signs in and
+# walks About you and Board through board.yaml first.
+# Run: maestro test .maestro/passphrase.yaml
+appId: com.lantern.app
+---
+- runFlow: board.yaml
+- assertVisible: 'Choose a family passphrase'
+- assertVisible: 'Please keep it safe'
+- assertVisible: 'At least 8 characters. A few words are easier to remember.'
+- assertVisible:
+    text: 'Create passphrase'
+    enabled: false
+- tapOn:
+    id: 'passphrase-field'
+- inputText: 'blue lantern 2026'
+- tapOn:
+    id: 'again-field'
+- inputText: 'blue lantern'
+- hideKeyboard
+- assertVisible: 'The two passphrases are not the same.'
+- tapOn:
+    id: 'again-field'
+- inputText: ' 2026'
+- hideKeyboard
+- assertNotVisible: 'The two passphrases are not the same.'
+- assertVisible:
+    text: 'Create passphrase'
+    enabled: false
+- tapOn: "I understand Lantern can't reset or change it, and I will keep it safe."
+- assertVisible:
+    text: 'Create passphrase'
+    enabled: true
+- tapOn: 'Create passphrase'
+- extendedWaitUntil:
+    visible: 'Save your recovery code'
+    timeout: 30000
+- assertVisible: 'Step 3 of 4'
+- assertVisible: 'RECOVERY CODE'
+- assertNotVisible: 'Back'
+- assertVisible:
+    text: 'Continue'
+    enabled: false
+- tapOn: 'Save elsewhere'
+- pressKey: back
+- assertVisible: 'Save your recovery code'
+- tapOn: 'I have saved my recovery code somewhere safe.'
+- assertVisible:
+    text: 'Continue'
+    enabled: true
+- tapOn: 'Continue'
+- assertVisible: 'First child comes next'
+- assertVisible: 'Step 4 of 4'
+- tapOn: 'Back'
+- assertVisible: 'Save your recovery code'
