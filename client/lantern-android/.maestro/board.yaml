@@ -1,0 +1,62 @@
+# Needs a Google account on the emulator (add it once in Settings) and `scripts/verify-env.sh up` running.
+# Run: maestro test .maestro/board.yaml
+appId: com.lantern.app
+---
+- stopApp
+- clearState
+- openLink: 'lantern://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8081'
+- extendedWaitUntil:
+    visible: 'Continue with Google'
+    timeout: 60000
+- tapOn: 'Continue with Google'
+- extendedWaitUntil:
+    visible: 'Choose an account'
+    timeout: 15000
+- tapOn:
+    id: 'com.google.android.gms:id/account_display_name'
+- extendedWaitUntil:
+    visible: 'A little about you'
+    timeout: 30000
+- tapOn: 'City, State'
+- inputText: 'Pune, Maharashtra'
+- hideKeyboard
+- tapOn: 'I agree to the privacy notice'
+- tapOn: 'Continue'
+- extendedWaitUntil:
+    visible: 'Which board does your child follow?'
+    timeout: 10000
+- assertVisible: 'Step 2 of 4'
+- assertVisible: "This decides which school books Lantern uses. You can't change it later."
+- assertVisible: 'NCERT books'
+- assertVisible: 'Classes 1 to 10'
+- assertVisible: 'SSC · Balbharati books, English medium'
+- assertVisible: 'Classes 1 to 5'
+- assertVisible:
+    text: 'Continue'
+    enabled: false
+- assertNotVisible:
+    checked: true
+- tapOn: 'CBSE'
+- assertVisible:
+    text: 'CBSE.*'
+    checked: true
+- assertVisible:
+    text: 'Continue'
+    enabled: true
+- tapOn: 'Maharashtra State Board'
+- assertVisible:
+    text: 'Maharashtra State Board.*'
+    checked: true
+- assertNotVisible:
+    text: 'CBSE.*'
+    checked: true
+- tapOn: 'Back'
+- assertVisible: 'A little about you'
+- assertVisible: 'Pune, Maharashtra'
+- tapOn: 'Continue'
+- assertVisible:
+    text: 'Maharashtra State Board.*'
+    checked: true
+- tapOn: 'Continue'
+- assertVisible: 'Passphrase comes next'
+- assertVisible: 'Step 3 of 4'

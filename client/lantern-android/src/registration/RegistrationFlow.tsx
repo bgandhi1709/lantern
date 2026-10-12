@@ -15,16 +15,16 @@ export function RegistrationFlow() {
   const [step, setStep] = useState<Step>('about');
   const backToAbout = () => setStep('about');
   const backToBoard = () => setStep('board');
-  const goBack = step === 'passphrase' ? backToBoard : backToAbout;
 
   useEffect(() => {
     if (step === 'about') return;
     const press = BackHandler.addEventListener('hardwareBackPress', () => {
-      goBack();
+      if (step === 'passphrase') backToBoard();
+      else backToAbout();
       return true;
     });
     return () => press.remove();
-  }, [step, goBack]);
+  }, [step]);
 
   const steps: Record<Step, React.ReactNode> = {
     about: (
