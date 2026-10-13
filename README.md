@@ -127,7 +127,7 @@ ncert.nic.in PDFs                                         Mother's phone (Expo, 
   table entities, unit of work and generic `BaseRepository` (it alone encrypts fields), and `Lantern.Base` holds the
   services. Under `apps/lantern-api`: `Lantern.Api` holds the controllers and the API models (the
   only shapes the app sees); `Lantern.Functions` is the queue-triggered Functions app with the action handlers (it
-  creates and removes Workspaces from the one `workspace-events` queue). Tests live under `tests/lantern-api`: `Lantern.Api.Tests` and
+  creates and removes Workspaces from the one `workspace-events` queue, and copies each Child's Content slice into the Workspace: the Books of the Child's Board and Class, kept in the Family's own storage, [ADR-0013](docs/adr/0013-family-is-a-self-contained-space.md)). Tests live under `tests/lantern-api`: `Lantern.Api.Tests` and
   `Lantern.Functions.Tests` hold unit and in-process tests; `Lantern.Api.Test.Integration` holds the end-to-end tests, which run unchanged
   against local Docker and UAT; `Lantern.Api.Test.Integration.Host` holds the local stand-ins (Firebase
   Auth Emulator tokens, a seeded dev Family) and is never in the production

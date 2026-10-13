@@ -172,6 +172,14 @@ constant, so every enum lives in `Lantern.Core.Constants`. Never a static class 
 **Store** (`{Noun}Store`) **(tested: the only Blob client holder)**
 - Meaning: the Blob counterpart of a repository. `WorkspaceStore` owns the Workspace paths and marker.
 
+**Manifest** (`{Noun}Manifest`, a private record inside the Store that reads a master container)
+- Meaning: the blobs one copy will make, each with its ETag, read from the master before the copy and read again after it.
+  A second read that differs means the master changed mid-copy, so the slice is not marked ready (ADR-0013, D90).
+- Examples: `ContentManifest` (one Class's slice), `BookManifest` (one Book's files).
+- Never: a "plan". Plan is the Parent's intent to study a Chapter, the first step of Plan, Ask and Check (`GLOSSARY.md`), so
+  no class, method or comment names a copy's file list that. Also not for a build's file list or an app manifest: a
+  Manifest here is only a list of blobs with ETags that is read twice and compared.
+
 **Ledger** (`ActionLedger`): the action ledger's table operations.
 
 **RowKeyService** (`IRowKeyService`): every partition and row key. Keys are cipher context, so they are fixed in code.

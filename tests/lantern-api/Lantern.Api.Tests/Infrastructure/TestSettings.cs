@@ -14,4 +14,8 @@ internal static class TestSettings
     public static string SecurityKey => Root["Security:Key"];
 
     public static string WorkspaceContainer => Root["Storage:WorkspaceContainer"];
+
+    public static string NcertContainer => Root["Catalog:NcertContainer"];
+
+    public static string SscContainer => Root["Catalog:SscContainer"];
 }

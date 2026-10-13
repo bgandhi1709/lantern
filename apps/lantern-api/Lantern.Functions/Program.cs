@@ -1,6 +1,7 @@
 using Azure.Identity;
 using Azure.Monitor.OpenTelemetry.Exporter;
 using Lantern.Base;
+using Lantern.Core.Configuration;
 using Lantern.Functions;
 using Microsoft.Azure.Functions.Worker.Builder;
 using Microsoft.Azure.Functions.Worker.OpenTelemetry;
@@ -10,6 +11,9 @@ using Microsoft.Extensions.Hosting;
 var builder = FunctionsApplication.CreateBuilder(args);
 
 builder.Services.AddLanternBase(builder.Configuration).AddLanternFunctions();
+
+// The Content slice is copied from the Boards' containers (ADR-0013), so this app refuses to start without their names.
+builder.Services.AddOptions<CatalogOptions>().ValidateOnStart();
 
 // Telemetry is off without a connection string, so local runs and the E2E need none. OTEL_SERVICE_NAME is the cloud
 // role name.

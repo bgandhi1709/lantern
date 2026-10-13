@@ -359,7 +359,7 @@ public sealed class ChildrenTests(AzuriteFixture azurite) : IDisposable
         var me = await MeAsync(client);
         var (gone, kept) = (me.Children[0], me.Children[1]);
         // The Child moved from Class 5 to Class 6 (issue #50 will do this): two Workspaces.
-        await new WorkspaceStore(Blobs, createContainer: false).CreateAsync(me.FamilyId, gone.ChildId, 6, CancellationToken.None);
+        await PlainWorkspaceStore.Over(Blobs, createContainer: false).CreateAsync(me.FamilyId, gone.ChildId, 6, CancellationToken.None);
 
         var response = await client.DeleteAsync(ApiClientExtensions.Child(gone.ChildId));
 

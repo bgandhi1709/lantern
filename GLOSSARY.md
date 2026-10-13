@@ -88,6 +88,10 @@ _Avoid_: Teacher notes, preface, instructions
 How a Board's Books are built: what a Chapter is (an English Balbharati Unit, an NCERT chapter), how lessons nest, where Book guidance sits. Agents pick their prompt by Board using it. Internal term.
 _Avoid_: Schema, template
 
+**Content slice**:
+The copy of a Board's Books for one Child's Class, kept inside that Class's folder of the Child's Workspace. Plan, Ask and Check read it and never the shared Board container, so a Family needs nothing outside its own storage. It is made in the background when the Child is registered or changes Class, is ready once its `version.json` exists, and stays pinned to the version it was copied from until a refresh. Only the runtime JSON is copied.
+_Avoid_: Cache, snapshot, local copy
+
 **Chapter**:
 A numbered unit of a Book, and the unit a Concept belongs to.
 _Avoid_: Lesson, unit
@@ -117,7 +121,7 @@ The lasting record of a Child's Scrubbed Questions, Plan progress, Checks, Tests
 _Avoid_: Log, activity, profile
 
 **Workspace**:
-A Child's own area in Lantern: one folder per Class, each holding that Class's share of the Child's History and files. Created in the background shortly after the Child is registered or added; moving the Child to a new Class adds a folder. Removing a Child removes its whole Workspace. Every Parent and agent in the Family sees the same Workspaces.
+A Child's own area in Lantern: one folder per Class, each holding that Class's share of the Child's History and files, and its Content slice. Created in the background shortly after the Child is registered or added; moving the Child to a new Class adds a folder. Removing a Child removes its whole Workspace. Every Parent and agent in the Family sees the same Workspaces.
 _Avoid_: Class space (its old name), year folder, term, session
 
 **Answer**:

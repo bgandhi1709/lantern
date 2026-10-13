@@ -11,7 +11,7 @@ public sealed class WorkspaceStoreTests(AzuriteFixture azurite)
 {
     private readonly BlobContainerClient container = azurite.CreateBlobClient().GetBlobContainerClient($"family{Guid.NewGuid():N}");
 
-    private WorkspaceStore Store => new(container, createContainer: true);
+    private WorkspaceStore Store => PlainWorkspaceStore.Over(container, createContainer: true);
 
     [Fact]
     public async Task CreateAsync_CreatesMarkerUnderTheChildsClassPath()
@@ -91,7 +91,7 @@ public sealed class WorkspaceStoreTests(AzuriteFixture azurite)
     {
         var neverCreated = azurite.CreateBlobClient().GetBlobContainerClient($"family{Guid.NewGuid():N}");
 
-        await new WorkspaceStore(neverCreated, createContainer: false).RemoveAsync(
+        await PlainWorkspaceStore.Over(neverCreated, createContainer: false).RemoveAsync(
             Guid.NewGuid(),
             Guid.NewGuid(),
             CancellationToken.None

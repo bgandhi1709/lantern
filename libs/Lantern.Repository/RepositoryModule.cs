@@ -2,6 +2,7 @@ using Azure.Data.Tables;
 using Azure.Identity;
 using Azure.Storage.Blobs;
 using Lantern.Core.Configuration;
+using Lantern.Core.Constants;
 using Lantern.Core.Repository;
 using Lantern.Repository.Entities;
 using Lantern.Repository.UnitOfWork;
@@ -55,10 +56,22 @@ public static class RepositoryModule
         services.TryAddScoped<IRepositoryBase<Core.Models.Family>>(serviceProvider => serviceProvider.GetRequiredService<IFamilyRepository>());
         services.TryAddSingleton<IActionLedger, ActionLedger>();
         services.AddSingleton<IRegister, RepositoryProfile>();
-        services.TryAddSingleton<IWorkspaceStore>(serviceProvider => new WorkspaceStore(
-            serviceProvider.GetRequiredService<BlobServiceClient>().GetBlobContainerClient(Storage(serviceProvider).WorkspaceContainer),
-            createContainer: !string.IsNullOrWhiteSpace(Storage(serviceProvider).ConnectionString)
-        ));
+        services.TryAddSingleton<IWorkspaceStore>(serviceProvider =>
+        {
+            var blobs = serviceProvider.GetRequiredService<BlobServiceClient>();
+            var catalogs = serviceProvider.GetRequiredService<IOptions<CatalogOptions>>().Value;
+
+            return new WorkspaceStore(
+                blobs.GetBlobContainerClient(Storage(serviceProvider).WorkspaceContainer),
+                new Dictionary<BoardType, BlobContainerClient>
+                {
+                    [BoardType.Cbse] = blobs.GetBlobContainerClient(catalogs.NcertContainer),
+                    [BoardType.Ssc] = blobs.GetBlobContainerClient(catalogs.SscContainer),
+                },
+                serviceProvider.GetRequiredService<TimeProvider>(),
+                createContainer: !string.IsNullOrWhiteSpace(Storage(serviceProvider).ConnectionString)
+            );
+        });
 
         return services;
     }

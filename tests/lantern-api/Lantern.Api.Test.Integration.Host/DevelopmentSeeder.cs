@@ -1,4 +1,5 @@
 using Azure.Data.Tables;
+using Azure.Storage.Blobs;
 using Lantern.Core.Configuration;
 using Lantern.Core.Constants;
 using Lantern.Core.Models;
@@ -21,6 +22,8 @@ internal sealed class DevelopmentSeeder(
     ICryptoService crypto,
     TableServiceClient tables,
     IOptions<StorageOptions> storage,
+    IOptions<CatalogOptions> catalog,
+    BlobServiceClient blobs,
     TimeProvider clock
 )
 {
@@ -30,6 +33,9 @@ internal sealed class DevelopmentSeeder(
 
     public async Task SeedAsync(CancellationToken cancellationToken)
     {
+        // First: a Family registered while the stack is up copies from these, and the dev Children below get their slices.
+        await LocalBoardMasters.SeedAsync(blobs, catalog.Value, cancellationToken);
+
         var first = await families.FindParentAsync(ParentOneUid, cancellationToken) ?? await RegisterFirstAsync(cancellationToken);
 
         if (await families.FindParentAsync(ParentTwoUid, cancellationToken) is null)
@@ -84,6 +90,7 @@ internal sealed class DevelopmentSeeder(
         foreach (var child in children)
         {
             await workspaces.CreateAsync(family.FamilyId, child.ChildId, child.ClassLevel, cancellationToken);
+            await workspaces.CopyContentAsync(family.FamilyId, child.ChildId, child.ClassLevel, family.Board, cancellationToken);
         }
 
         await families.RegisterAsync(ParentOneUid, family, parent, children, cancellationToken);
