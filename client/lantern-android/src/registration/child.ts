@@ -10,7 +10,7 @@ const OLDEST_AGE = 18;
 const YOUNGEST_AGE = 3;
 const CLASS_COUNT: Record<Board, number> = { cbse: 10, ssc: 5 };
 
-// What the Parent has entered for one Child. The Class is a number, the rest is text.
+// What the Parent has entered for one Child.
 export type ChildDraft = {
   name: string;
   classLevel: number | null;

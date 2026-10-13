@@ -20,12 +20,12 @@ export function RegistrationFlow() {
   const backToRecovery = () => setStep('recovery');
 
   useEffect(() => {
-    if (step === 'about') return;
+    // The First child step handles its own Back, because it must ignore it while Finish runs.
+    if (step === 'about' || step === 'firstChild') return;
     const press = BackHandler.addEventListener('hardwareBackPress', () => {
       // The Recovery code is shown once, so Android's back button does nothing there.
       if (step === 'recovery') return true;
-      if (step === 'firstChild') backToRecovery();
-      else if (step === 'passphrase') backToBoard();
+      if (step === 'passphrase') backToBoard();
       else backToAbout();
       return true;
     });

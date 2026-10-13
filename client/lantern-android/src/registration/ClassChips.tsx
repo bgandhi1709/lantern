@@ -9,15 +9,13 @@ type Props = {
   hint?: string;
 };
 
-// A tick-free "pressed" look is not enough on its own, so the picked Class is also filled and heavier.
+// The picked Class is a filled chip with light text, and a radio that is checked for a screen reader.
 export function ClassChips({ levels, selected, onSelect, hint }: Props) {
   const strings = useStrings().registration.firstChild;
 
   return (
     <View>
-      <View className="flex-row items-center gap-1.5">
-        <Text className="font-inter-bold text-body text-ink">{strings.classLabel}</Text>
-      </View>
+      <Text className="font-inter-bold text-body text-ink">{strings.classLabel}</Text>
       <View
         accessibilityRole="radiogroup"
         accessibilityLabel={strings.classLabel}

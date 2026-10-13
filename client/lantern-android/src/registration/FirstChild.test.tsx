@@ -1,6 +1,6 @@
 import '@testing-library/react-native/matchers';
 import { act, fireEvent, render, screen, userEvent } from '@testing-library/react-native';
-import { Text } from 'react-native';
+import { BackHandler, Text } from 'react-native';
 
 import { AuthGate, AuthProvider } from '../auth';
 import { ApiError, api } from '../shared/api';
@@ -22,6 +22,16 @@ const addButton = () => screen.queryByRole('button', { name: 'Add another child'
 const nameField = (n: number) => screen.getByTestId(`child-${n}-name`);
 
 type User = ReturnType<typeof userEvent.setup>;
+
+const hardwareBack = () => {
+  const handlers: (() => boolean | null | undefined)[] = [];
+  jest.spyOn(BackHandler, 'addEventListener').mockImplementation((_event, handler) => {
+    const press = () => handler({ type: 'hardwareBackPress', timeStamp: 0 });
+    handlers.push(press);
+    return { remove: () => void handlers.splice(handlers.indexOf(press), 1) };
+  });
+  return () => handlers.at(-1)?.();
+};
 
 const renderChildStep = async (board: 'cbse' | 'ssc' = 'cbse') => {
   const user = userEvent.setup();
@@ -137,17 +147,30 @@ describe('More children', () => {
     expect(post.mock.calls[0][2].children).toHaveLength(1);
   });
 
-  it('blocks Finish with a message while an extra is half-filled, and lets it go once removed', async () => {
+  it('blocks Finish while an extra is half-filled, and says why once its card is closed', async () => {
     const user = await renderChildStep();
     await fillFirstChild(user);
     await addExtra(user);
     await user.type(nameField(2), 'Mira');
 
     expect(finishButton()).toBeDisabled();
+    expect(
+      screen.queryByText('Finish or remove the extra child to continue.'),
+    ).not.toBeOnTheScreen();
+
+    await user.press(screen.getByText('Mira'));
+
     expect(screen.getByText('Finish or remove the extra child to continue.')).toBeOnTheScreen();
     expect(screen.getByText('Needs name, class and birth year')).toBeOnTheScreen();
+  });
 
-    await user.press(screen.getByRole('button', { name: 'Remove this child' }));
+  it('lets Finish go once the half-filled extra is removed, and names the child on the button', async () => {
+    const user = await renderChildStep();
+    await fillFirstChild(user);
+    await addExtra(user);
+    await user.type(nameField(2), 'Mira');
+
+    await user.press(screen.getByRole('button', { name: 'Remove this child, Mira' }));
 
     expect(finishButton()).toBeEnabled();
     expect(
@@ -245,6 +268,46 @@ describe('Finish', () => {
 
     await user.press(screen.getByRole('button', { name: 'Try again' }));
     expect(await screen.findByText('Home')).toBeOnTheScreen();
+  });
+
+  it("ignores Android's Back while Finish runs, and goes back to the recovery code otherwise", async () => {
+    const back = hardwareBack();
+    let finishRequest: (value: unknown) => void = () => {};
+    post.mockReturnValue(new Promise((resolve) => (finishRequest = resolve)));
+    const user = await renderChildStep();
+    await fillFirstChild(user);
+
+    await user.press(finishButton());
+    await act(async () => void back());
+    expect(screen.getByRole('button', { name: 'Finishing…' })).toBeOnTheScreen();
+
+    await act(async () => finishRequest({ familyId: 'a-family' }));
+    expect(await screen.findByText('Home')).toBeOnTheScreen();
+  });
+
+  it("takes Android's Back to the recovery code when nothing is running", async () => {
+    const back = hardwareBack();
+    const user = await renderChildStep();
+    await fillFirstChild(user);
+
+    await act(async () => void back());
+
+    expect(
+      await screen.findByRole('header', { name: 'Save your recovery code' }),
+    ).toBeOnTheScreen();
+  });
+
+  it('clears the failure message as soon as the Parent changes an entry', async () => {
+    post.mockRejectedValueOnce(new ApiError('class-not-available', 400));
+    const user = await renderChildStep();
+    await fillFirstChild(user);
+    await user.press(finishButton());
+    await screen.findByRole('button', { name: 'Try again' });
+
+    await user.type(nameField(1), 'a');
+
+    expect(screen.queryByText(/books for one of these Classes/)).not.toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'Finish' })).toBeEnabled();
   });
 
   it('says it could not reach Lantern when there is no connection', async () => {

@@ -107,6 +107,7 @@ export const en = {
         statusReady: (level: number) => `Class ${level}, ready to add`,
         add: 'Add another child',
         remove: 'Remove this child',
+        removeNamed: (name: string) => `Remove this child, ${name}`,
         blocked: 'Finish or remove the extra child to continue.',
       },
       finish: 'Finish',

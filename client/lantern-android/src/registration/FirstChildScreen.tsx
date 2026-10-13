@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { BackHandler } from 'react-native';
 
-import { useMarkRegistered } from '../auth';
 import {
   blockingExtra,
   birthYearChoices,
@@ -10,38 +10,38 @@ import {
 } from './child';
 import type { ChildDraft } from './child';
 import { FirstChildView } from './FirstChildView';
-import { registerFamily } from './registerFamily';
-import { failureOf } from './registrationError';
-import type { RegisterFailure } from './registrationError';
 import { useRegistrationDraft } from './RegistrationDraft';
+import { useRegisterFamily } from './useRegisterFamily';
 
 // The year range is fixed for the visit: a Parent who is still here at midnight on New Year keeps the list.
 export function FirstChildScreen({ onBack }: { onBack: () => void }) {
   const { draft, update } = useRegistrationDraft();
-  const markRegistered = useMarkRegistered();
+  const { finishing, failure, finish, isBusy, clearFailure } = useRegisterFamily();
   const [openIndex, setOpenIndex] = useState<number | null>(null);
-  const [finishing, setFinishing] = useState(false);
-  const [failure, setFailure] = useState<RegisterFailure | null>(null);
   const now = useMemo(() => new Date(), []);
-  const busy = useRef(false);
-  const mounted = useRef(true);
-  useEffect(
-    () => () => {
-      mounted.current = false;
-    },
-    [],
-  );
+
+  // Android's Back button is this step's too, and it does nothing while Finish runs.
+  useEffect(() => {
+    const press = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (!isBusy()) onBack();
+      return true;
+    });
+    return () => press.remove();
+  });
 
   const { board, family } = draft;
   if (board === null || family === null)
     throw new Error('The First child step needs a Board and the Family keys.');
 
   const drafts = draft.children;
-  const extras = drafts.slice(1);
-  const extraBlocks = blockingExtra(extras, board, now) !== null;
+  const extraBlocks = blockingExtra(drafts.slice(1), board, now) !== null;
   const canFinish = isChildComplete(drafts[0], board, now) && !extraBlocks;
 
-  const setDrafts = (next: ChildDraft[]) => update({ children: next });
+  // Any edit clears the last failure, so the message never sits beside input the Parent has fixed.
+  const setDrafts = (next: ChildDraft[]) => {
+    clearFailure();
+    update({ children: next });
+  };
   const change = (index: number, changes: Partial<ChildDraft>) =>
     setDrafts(drafts.map((child, at) => (at === index ? { ...child, ...changes } : child)));
   const add = () => {
@@ -51,31 +51,6 @@ export function FirstChildScreen({ onBack }: { onBack: () => void }) {
   const remove = (index: number) => {
     setDrafts(drafts.filter((_, at) => at !== index));
     setOpenIndex(null);
-  };
-
-  // One Finish at a time, and a result that arrives after the Parent left the step is dropped.
-  const finish = async () => {
-    if (busy.current || !canFinish) return;
-    busy.current = true;
-    setFinishing(true);
-    setFailure(null);
-    try {
-      await registerFamily({
-        family,
-        parent: draft.parent,
-        region: draft.region,
-        board,
-        children: drafts.filter((child, index) => index === 0 || isChildTouched(child)),
-      });
-      if (!mounted.current) return;
-      markRegistered();
-    } catch (error) {
-      if (!mounted.current) return;
-      setFailure(failureOf(error));
-      setFinishing(false);
-    } finally {
-      busy.current = false;
-    }
   };
 
   return (
@@ -93,8 +68,16 @@ export function FirstChildScreen({ onBack }: { onBack: () => void }) {
       onToggle={(index) => setOpenIndex(openIndex === index ? null : index)}
       onAdd={add}
       onRemove={remove}
-      onFinish={finish}
-      onBack={() => (busy.current ? undefined : onBack())}
+      onFinish={() =>
+        finish({
+          family,
+          parent: draft.parent,
+          region: draft.region,
+          board,
+          children: drafts.filter((child, index) => index === 0 || isChildTouched(child)),
+        })
+      }
+      onBack={() => (isBusy() ? undefined : onBack())}
     />
   );
 }

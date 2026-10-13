@@ -3,6 +3,7 @@ import { Pressable, Text, View } from 'react-native';
 
 import { useStrings } from '../shared/i18n';
 import { ChevronDownIcon } from '../shared/ui/icons';
+import { OutlineButton } from '../shared/ui/OutlineButton';
 
 export type ChildCardStatus = 'optional' | 'needsMore' | 'ready';
 
@@ -37,11 +38,13 @@ export function ChildCard({
   children,
 }: Props) {
   const more = useStrings().registration.firstChild.more;
-  const statusText = {
-    optional: more.statusOptional,
-    needsMore: more.statusNeedsMore,
-    ready: more.statusReady(classLevel ?? 0),
-  }[status];
+  const title = name.trim() === '' ? more.untitled : name.trim();
+  const statusText =
+    status === 'ready' && classLevel !== null
+      ? more.statusReady(classLevel)
+      : status === 'optional'
+        ? more.statusOptional
+        : more.statusNeedsMore;
 
   return (
     <View className="overflow-hidden rounded-card border border-line bg-card">
@@ -58,9 +61,7 @@ export function ChildCard({
           <Text className="font-inter-bold text-body text-primary-deep">{number}</Text>
         </View>
         <View className="flex-1">
-          <Text className="font-inter-bold text-body text-ink">
-            {name.trim() === '' ? more.untitled : name.trim()}
-          </Text>
+          <Text className="font-inter-bold text-body text-ink">{title}</Text>
           <Text className={`font-inter-medium text-small ${STATUS_COLOR[status]}`}>
             {statusText}
           </Text>
@@ -72,13 +73,14 @@ export function ChildCard({
       {open ? (
         <View className="gap-3.5 px-4 pb-4">
           {children}
-          <Pressable
-            accessibilityRole="button"
-            onPress={onRemove}
-            className="min-h-12 items-center justify-center self-start rounded-control border-2 border-danger bg-card px-4"
-          >
-            <Text className="font-inter-bold text-small text-danger">{more.remove}</Text>
-          </Pressable>
+          <View className="self-start">
+            <OutlineButton
+              tone="danger"
+              label={more.remove}
+              accessibilityLabel={more.removeNamed(title)}
+              onPress={onRemove}
+            />
+          </View>
         </View>
       ) : null}
     </View>

@@ -40,12 +40,13 @@ export const SscBoard: Story = { args: { board: 'ssc', drafts: [aarav], canFinis
 export const ExtraNotStarted: Story = {
   args: { drafts: [aarav, emptyChild()], canFinish: true, openIndex: 1 },
 };
+// With the card closed the Parent has left it unfinished, so the message is said.
 export const ExtraHalfFilled: Story = {
-  args: {
-    drafts: [aarav, { ...mira, classLevel: null }],
-    openIndex: 1,
-    extraBlocks: true,
-  },
+  args: { drafts: [aarav, { ...mira, classLevel: null }], openIndex: null, extraBlocks: true },
+};
+// While the card is open the Parent is still typing, so Finish is off and nothing is said yet.
+export const ExtraHalfFilledOpen: Story = {
+  args: { drafts: [aarav, { ...mira, classLevel: null }], openIndex: 1, extraBlocks: true },
 };
 export const ExtraReady: Story = { args: { drafts: [aarav, mira], canFinish: true } };
 export const SixChildren: Story = {
