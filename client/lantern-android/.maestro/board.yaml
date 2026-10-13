@@ -5,9 +5,10 @@ appId: com.lantern.app
 - stopApp
 - clearState
 - openLink: 'lantern://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8081'
+# A cold start on the software-rendered emulator can take over a minute.
 - extendedWaitUntil:
     visible: 'Continue with Google'
-    timeout: 60000
+    timeout: 120000
 - tapOn: 'Continue with Google'
 - extendedWaitUntil:
     visible: 'Choose an account'

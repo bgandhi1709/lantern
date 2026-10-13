@@ -7,8 +7,8 @@ import { useRegistrationDraft } from './RegistrationDraft';
 
 type Props = { onCreated: () => void; onBack: () => void };
 
-// The Passphrase lives in this screen's state only: it is never put in the draft, so leaving the
-// step drops it.
+// The Passphrase is typed in this screen's state. Once the keys are made it moves to the draft (in
+// memory only), where Finish can use it again if the Family id turns out to be taken.
 export function PassphraseScreen({ onCreated, onBack }: Props) {
   const { update } = useRegistrationDraft();
   const [passphrase, setPassphrase] = useState('');
@@ -35,7 +35,7 @@ export function PassphraseScreen({ onCreated, onBack }: Props) {
       const id = makeFamilyId();
       const keys = await createFamilyKeys(id, passphrase);
       if (!mounted.current) return;
-      update({ family: { id, keys } });
+      update({ family: { id, keys, passphrase } });
       onCreated();
     } catch {
       if (!mounted.current) return;

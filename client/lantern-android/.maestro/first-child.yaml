@@ -1,0 +1,64 @@
+# Needs a Google account on the emulator and `scripts/verify-env.sh up` running. It walks the four
+# steps through passphrase.yaml, then adds a first and an extra Child, finishes, and lands on Home.
+# Run: maestro test .maestro/first-child.yaml
+appId: com.lantern.app
+---
+- runFlow: passphrase.yaml
+- scrollUntilVisible:
+    element: 'I have saved my recovery code somewhere safe.'
+- tapOn: 'I have saved my recovery code somewhere safe.'
+- tapOn: 'Continue'
+- assertVisible: 'Add your first child'
+- assertVisible: 'Step 4 of 4'
+- assertVisible:
+    text: 'Finish'
+    enabled: false
+- tapOn:
+    id: 'child-1-name'
+- inputText: 'Aarav'
+- hideKeyboard
+- tapOn: 'Class 4'
+- assertVisible:
+    text: 'Finish'
+    enabled: false
+- tapOn:
+    id: 'child-1-year'
+- tapOn: '2017'
+- assertVisible:
+    text: 'Finish'
+    enabled: true
+- scrollUntilVisible:
+    element: 'Add another child'
+- tapOn: 'Add another child'
+- scrollUntilVisible:
+    element:
+      id: 'child-2-name'
+- tapOn:
+    id: 'child-2-name'
+- inputText: 'Mira'
+- hideKeyboard
+- assertVisible: 'Needs name, class and birth year'
+- assertVisible: 'Finish or remove the extra child to continue.'
+- assertVisible:
+    text: 'Finish'
+    enabled: false
+- scrollUntilVisible:
+    element:
+      id: 'child-2-class'
+- tapOn:
+    id: 'child-2-class'
+- tapOn: 'Class 2'
+- scrollUntilVisible:
+    element:
+      id: 'child-2-year'
+- tapOn:
+    id: 'child-2-year'
+- tapOn: '2020'
+- assertVisible: 'Class 2, ready to add'
+- assertVisible:
+    text: 'Finish'
+    enabled: true
+- tapOn: 'Finish'
+- extendedWaitUntil:
+    visible: 'Signed in. Lantern knows your Family.'
+    timeout: 60000

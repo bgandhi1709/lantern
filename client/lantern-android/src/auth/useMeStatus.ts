@@ -42,5 +42,7 @@ export function useMeStatus() {
     setAttempt((n) => n + 1);
   }, []);
 
-  return { status, retry };
+  const markRegistered = useCallback(() => setStatus('registered'), []);
+
+  return { status, retry, markRegistered };
 }

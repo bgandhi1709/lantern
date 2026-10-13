@@ -5,6 +5,8 @@ import { getParent } from '../shared/session';
 import type { FamilyKeys } from '../shared/crypto';
 import type { Parent } from '../shared/session';
 import type { Board } from './board';
+import { emptyChild } from './child';
+import type { ChildDraft } from './child';
 
 // What the Parent has entered so far. It lives in memory only: closing the app or signing out drops
 // it, and nothing is stored on the device until Finish succeeds.
@@ -15,7 +17,11 @@ export type RegistrationDraft = {
   // null until the Parent picks one: a Family has no default Board.
   board: Board | null;
   // Made when the Passphrase is created. The keys hold the Recovery code until the Parent has saved it.
-  family: { id: string; keys: FamilyKeys } | null;
+  // The Passphrase stays here, in memory only, until Finish succeeds: a taken Family id means the
+  // keys are wrapped again under a new one, and that needs it.
+  family: { id: string; keys: FamilyKeys; passphrase: string } | null;
+  // The first Child, then up to five more. An extra that is still empty is left out at Finish.
+  children: ChildDraft[];
 };
 
 type DraftContext = {
@@ -32,6 +38,7 @@ export function RegistrationDraftProvider({ children }: { children: ReactNode })
     noticeAccepted: false,
     board: null,
     family: null,
+    children: [emptyChild()],
   }));
   const update = (changes: Partial<RegistrationDraft>) =>
     setDraft((current) => ({ ...current, ...changes }));

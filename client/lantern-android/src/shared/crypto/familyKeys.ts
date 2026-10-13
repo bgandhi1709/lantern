@@ -37,9 +37,12 @@ async function unwrap(familyId: string, secret: string, wrappedKey: string, salt
   return toBase64(unlockBytes(key, wrappedKey));
 }
 
-export async function createFamilyKeys(familyId: string, passphrase: string): Promise<FamilyKeys> {
-  const familyKey = makeFamilyKey();
-  const recoveryCode = makeRecoveryCode();
+async function wrapBoth(
+  familyId: string,
+  passphrase: string,
+  familyKey: string,
+  recoveryCode: string,
+): Promise<FamilyKeys> {
   const byPassphrase = await wrap(familyKey, familyId, passphrase);
   const byCode = await wrap(familyKey, familyId, recoveryCode);
   return {
@@ -51,6 +54,14 @@ export async function createFamilyKeys(familyId: string, passphrase: string): Pr
     recoveryCode,
   };
 }
+
+export const createFamilyKeys = (familyId: string, passphrase: string) =>
+  wrapBoth(familyId, passphrase, makeFamilyKey(), makeRecoveryCode());
+
+// The Family id is part of what locks the wrapped keys, so a new id needs new copies. The Family key
+// and the Recovery code stay as they were, so the code the Parent saved still opens the Family.
+export const rewrapFamilyKeys = (familyId: string, passphrase: string, keys: FamilyKeys) =>
+  wrapBoth(familyId, passphrase, keys.familyKey, keys.recoveryCode);
 
 // Both throw LockError when the secret is wrong; the secret is never part of the message.
 export const openWithPassphrase = unwrap;

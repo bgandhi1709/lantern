@@ -285,7 +285,7 @@ describe('the Recovery code step', () => {
     await user.press(continueButton());
 
     expect(screen.getByText('Step 4 of 4')).toBeOnTheScreen();
-    expect(screen.getByText('First child comes next')).toBeOnTheScreen();
+    expect(screen.getByRole('header', { name: 'Add your first child' })).toBeOnTheScreen();
 
     await user.press(backButton());
 

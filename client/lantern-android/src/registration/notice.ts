@@ -1,3 +1,4 @@
-// The version a Parent agrees to. Change it whenever the notice text in en.ts changes, so Consent
-// records which words were agreed (#120 sends it with the registration).
-export const NOTICE_VERSION = '2026-10';
+// Stands in for the real Notice version until the privacy notice is final. Consent records it with
+// the registration (#120), so a Family would be tied to words nobody has signed off: rename this to
+// NOTICE_VERSION and give it a real number when the notice is.
+export const PLACEHOLDER_NOTICE_VERSION = 'draft-2026-10';

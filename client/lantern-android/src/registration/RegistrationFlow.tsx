@@ -3,9 +3,9 @@ import { BackHandler } from 'react-native';
 
 import { AboutYouScreen } from './AboutYouScreen';
 import { BoardScreen } from './BoardScreen';
-import { NOTICE_VERSION } from './notice';
+import { PLACEHOLDER_NOTICE_VERSION } from './notice';
 import { NoticeView } from './NoticeView';
-import { FirstChildNextView } from './FirstChildNextView';
+import { FirstChildScreen } from './FirstChildScreen';
 import { PassphraseScreen } from './PassphraseScreen';
 import { RecoveryCodeScreen } from './RecoveryCodeScreen';
 import { RegistrationDraftProvider } from './RegistrationDraft';
@@ -36,11 +36,11 @@ export function RegistrationFlow() {
     about: (
       <AboutYouScreen onOpenNotice={() => setStep('notice')} onContinue={() => setStep('board')} />
     ),
-    notice: <NoticeView version={NOTICE_VERSION} onBack={backToAbout} />,
+    notice: <NoticeView version={PLACEHOLDER_NOTICE_VERSION} onBack={backToAbout} />,
     board: <BoardScreen onContinue={() => setStep('passphrase')} onBack={backToAbout} />,
     passphrase: <PassphraseScreen onCreated={() => setStep('recovery')} onBack={backToBoard} />,
     recovery: <RecoveryCodeScreen onContinue={() => setStep('firstChild')} />,
-    firstChild: <FirstChildNextView onBack={backToRecovery} />,
+    firstChild: <FirstChildScreen onBack={backToRecovery} />,
   };
 
   return <RegistrationDraftProvider>{steps[step]}</RegistrationDraftProvider>;
