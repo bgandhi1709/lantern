@@ -48,10 +48,10 @@ internal sealed partial class WorkspaceStore(
     private sealed record BoardRules(bool SkipsUnbuiltBooks, string[] BoardFiles, string[] BookFiles);
 
     // One Book's entry and the master blobs it needs, each with its ETag.
-    private sealed record BookPlan(string Book, JsonNode Entry, Dictionary<string, ETag> Files);
+    private sealed record BookManifest(string Book, JsonNode Entry, Dictionary<string, ETag> Files);
 
-    // Snapshot: every master blob the plan read, with its ETag, to check the master did not change during the copy.
-    private sealed record ContentPlan(IReadOnlyList<string> Files, byte[] Catalog, IReadOnlyList<string> Books, IReadOnlyDictionary<string, ETag> Snapshot);
+    // Snapshot: every master blob the manifest read, with its ETag, to check the master did not change during the copy.
+    private sealed record ContentManifest(IReadOnlyList<string> Files, byte[] Catalog, IReadOnlyList<string> Books, IReadOnlyDictionary<string, ETag> Snapshot);
 
     public async Task CreateAsync(Guid familyId, Guid childId, int classLevel, CancellationToken cancellationToken)
     {
@@ -86,14 +86,14 @@ internal sealed partial class WorkspaceStore(
         var master = boards.TryGetValue(board, out var found)
             ? found
             : throw new InvalidOperationException($"No master container is set for the {board} Board.");
-        var plan = await PlanAsync(master, Rules[board], classLevel, cancellationToken);
+        var manifest = await ReadManifestAsync(master, Rules[board], classLevel, cancellationToken);
 
-        await CopyFilesAsync(master, plan, prefix, cancellationToken);
-        await RemoveLeftoversAsync(plan, prefix, cancellationToken);
+        await CopyFilesAsync(master, manifest, prefix, cancellationToken);
+        await RemoveLeftoversAsync(manifest, prefix, cancellationToken);
 
-        // No lock on the master (a lease would make every Family wait on one writer): the plan made again must match the first.
-        var replanned = await PlanAsync(master, Rules[board], classLevel, cancellationToken);
-        if (!SameSnapshot(plan.Snapshot, replanned.Snapshot))
+        // No lock on the master (a lease would make every Family wait on one writer): the manifest read again must match the first.
+        var secondManifest = await ReadManifestAsync(master, Rules[board], classLevel, cancellationToken);
+        if (!SameSnapshot(manifest.Snapshot, secondManifest.Snapshot))
         {
             throw new InvalidOperationException($"The {board} Board's master changed while Class {classLevel} was being copied.");
         }
@@ -103,17 +103,17 @@ internal sealed partial class WorkspaceStore(
         {
             ["board"] = board.ToString().ToLowerInvariant(),
             ["class"] = classLevel,
-            ["books"] = new JsonArray([.. plan.Books.Select(book => (JsonNode)JsonValue.Create(book))]),
-            ["files"] = plan.Files.Count + 1,
+            ["books"] = new JsonArray([.. manifest.Books.Select(book => (JsonNode)JsonValue.Create(book))]),
+            ["files"] = manifest.Files.Count + 1,
             ["copiedAt"] = clock.GetUtcNow().ToString("O", CultureInfo.InvariantCulture),
         };
         await version.UploadAsync(BinaryData.FromString(made.ToJsonString(Pretty)), overwrite: true, cancellationToken);
     }
 
-    private async Task CopyFilesAsync(BlobContainerClient master, ContentPlan plan, string prefix, CancellationToken cancellationToken)
+    private async Task CopyFilesAsync(BlobContainerClient master, ContentManifest manifest, string prefix, CancellationToken cancellationToken)
     {
         await Parallel.ForEachAsync(
-            plan.Files,
+            manifest.Files,
             new ParallelOptions { MaxDegreeOfParallelism = MaxParallelCopies, CancellationToken = cancellationToken },
             async (name, token) =>
             {
@@ -131,13 +131,13 @@ internal sealed partial class WorkspaceStore(
                 }
             }
         );
-        await container.GetBlobClient(prefix + CatalogName).UploadAsync(BinaryData.FromBytes(plan.Catalog), overwrite: true, cancellationToken);
+        await container.GetBlobClient(prefix + CatalogName).UploadAsync(BinaryData.FromBytes(manifest.Catalog), overwrite: true, cancellationToken);
     }
 
     // version.json is never touched: a copy running beside this one may have just written it.
-    private async Task RemoveLeftoversAsync(ContentPlan plan, string prefix, CancellationToken cancellationToken)
+    private async Task RemoveLeftoversAsync(ContentManifest manifest, string prefix, CancellationToken cancellationToken)
     {
-        var wanted = new HashSet<string>([.. plan.Files, CatalogName, VersionName], StringComparer.Ordinal);
+        var wanted = new HashSet<string>([.. manifest.Files, CatalogName, VersionName], StringComparer.Ordinal);
         var leftovers = (await ListAsync(container, prefix, cancellationToken)).Keys.Where(name => !wanted.Contains(name[prefix.Length..]));
 
         await Parallel.ForEachAsync(
@@ -148,21 +148,21 @@ internal sealed partial class WorkspaceStore(
     }
 
     // Everything is checked before the first write, so a missing file leaves nothing behind.
-    private static async Task<ContentPlan> PlanAsync(BlobContainerClient master, BoardRules rules, int classLevel, CancellationToken cancellationToken)
+    private static async Task<ContentManifest> ReadManifestAsync(BlobContainerClient master, BoardRules rules, int classLevel, CancellationToken cancellationToken)
     {
         var catalogRead = (await master.GetBlobClient(CatalogName).DownloadContentAsync(cancellationToken)).Value;
         var catalog = JsonNode.Parse(catalogRead.Content) as JsonArray ?? throw new InvalidOperationException("The Board's catalog is not a list of Books.");
 
         // A Class has at most a handful of Books, so they are read together.
         var entries = catalog.OfType<JsonObject>().Where(entry => IsGrade(entry, classLevel));
-        var planned = (await Task.WhenAll(entries.Select(entry => PlanBookAsync(master, rules, entry, classLevel, cancellationToken)))).Where(book => book is not null).ToList();
-        if (planned.Count == 0)
+        var manifests = (await Task.WhenAll(entries.Select(entry => ReadBookManifestAsync(master, rules, entry, classLevel, cancellationToken)))).Where(book => book is not null).ToList();
+        if (manifests.Count == 0)
         {
             throw new InvalidOperationException($"The Board has no built Book for Class {classLevel}.");
         }
 
         var snapshot = new Dictionary<string, ETag>(StringComparer.Ordinal) { [CatalogName] = catalogRead.Details.ETag };
-        foreach (var (name, etag) in planned.SelectMany(book => book.Files))
+        foreach (var (name, etag) in manifests.SelectMany(book => book.Files))
         {
             snapshot[name] = etag;
         }
@@ -172,14 +172,14 @@ internal sealed partial class WorkspaceStore(
             snapshot[name] = etag;
         }
 
-        var kept = new JsonArray([.. planned.Select(book => book.Entry.DeepClone())]);
+        var kept = new JsonArray([.. manifests.Select(book => book.Entry.DeepClone())]);
         string[] files = [.. snapshot.Keys.Where(name => name != CatalogName).Order(StringComparer.Ordinal)];
 
-        return new ContentPlan(files, JsonSerializer.SerializeToUtf8Bytes(kept, Pretty), [.. planned.Select(book => book.Book)], snapshot);
+        return new ContentManifest(files, JsonSerializer.SerializeToUtf8Bytes(kept, Pretty), [.. manifests.Select(book => book.Book)], snapshot);
     }
 
     // Null for a Book NCERT lists and has not built; for SSC an unbuilt Book, or a missing file, is a broken master.
-    private static async Task<BookPlan> PlanBookAsync(
+    private static async Task<BookManifest> ReadBookManifestAsync(
         BlobContainerClient master,
         BoardRules rules,
         JsonObject entry,
@@ -216,7 +216,7 @@ internal sealed partial class WorkspaceStore(
             files[name] = etag;
         }
 
-        return new BookPlan(book, entry, files);
+        return new BookManifest(book, entry, files);
     }
 
     private static bool IsGrade(JsonObject entry, int classLevel) =>
