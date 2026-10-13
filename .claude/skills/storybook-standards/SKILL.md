@@ -28,7 +28,7 @@ Storybook (ADR-0012) is where the founder and the agent look at the same compone
 
 ## Review
 
-- A PR that adds or changes a component lists the stories and shows an emulator screenshot of each state. The founder reviews states, not only the happy path.
+- A PR that adds or changes a component lists its stories by name; the founder opens each state in Storybook on the emulator or a phone, so the states get reviewed, not only the happy path. Open each new or changed story yourself first, to see that it renders.
 - Stories check layout and state. They do not replace the Jest behaviour tests, and they do not check accessibility: labels, 48 px targets and contrast are still checked by hand.
 - Storybook must stay out of release builds. After a change to `metro.config.js`, `app/index.tsx` or `.rnstorybook/`, export the bundle without `EXPO_PUBLIC_STORYBOOK_ENABLED` and check that it holds no Storybook code.
 
