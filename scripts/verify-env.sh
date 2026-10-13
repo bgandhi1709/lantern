@@ -21,7 +21,7 @@ EMULATOR_BOOT_TIMEOUT_SECONDS=450
 METRO_TIMEOUT_SECONDS=120
 LOGS=${TMPDIR:-/tmp}/lantern-verify
 export ANDROID_HOME=${ANDROID_HOME:-$HOME/Android/Sdk}
-export PATH=$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH
+export PATH=$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$HOME/.local/maestro/bin:$PATH
 # shellcheck disable=SC1091
 [ -s "$HOME/.config/nvm/nvm.sh" ] && . "$HOME/.config/nvm/nvm.sh" >/dev/null
 [ -n "${JAVA_HOME:-}" ] || JAVA_HOME=$(ls -d "$HOME"/.local/jdk/jdk-17* 2>/dev/null | head -1 || true)

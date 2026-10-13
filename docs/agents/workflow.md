@@ -16,7 +16,7 @@ Work under `client/` (the Expo app) follows `docs/agents/app-workflow.md` instea
 | 7 | PR | `/pr` with the scenarios and acceptance criteria. Edit a PR description only after the commit it describes is pushed. | PR |
 | 8 | Doc sync | Root `README.md` (Status and runtime), `docs/ideation/decision-log.md`, ADRs, any README or skill the change touches. | Docs match the code |
 | 9 | Review | User reviews on GitHub. Fix, reply as Claude, resolve the threads. | Resolved threads |
-| 10 | Retro | `/retro` in the same session, before `/clear`. Mechanical misses become checks, judgement calls go to `CODING_STANDARDS.md`. | Environment fixes |
+| 10 | Retro | Ask the user to run `/retro` in the same session, before `/clear`; only the user can start it. Mechanical misses become checks, judgement calls go to `CODING_STANDARDS.md`. | Environment fixes |
 | 11 | Clean up | Once the PR exists, leave the machine as you found it (see below). | Nothing running, disk freed |
 
 Skip `/to-spec` and `/to-tickets` at this scope. Use them only when the work spans several sessions.
