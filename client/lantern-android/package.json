@@ -9,6 +9,7 @@
     "@react-native-firebase/app": "^26.4.0",
     "@react-native-firebase/auth": "^26.4.0",
     "@react-native-google-signin/google-signin": "^16.1.5",
+    "@react-native-picker/picker": "2.11.4",
     "@tailwindcss/postcss": "4.1.12",
     "expo": "~57.0.28",
     "expo-constants": "~57.0.20",

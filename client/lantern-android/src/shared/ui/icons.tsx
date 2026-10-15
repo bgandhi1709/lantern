@@ -92,6 +92,39 @@ export const BackIcon = () => (
   </LineIcon>
 );
 
+export const BookIcon = () => (
+  <LineIcon>
+    <Path d="M12 6c-2-1.5-5-2-8-2v14c3 0 6 .5 8 2 2-1.5 5-2 8-2V4c-3 0-6 .5-8 2z" />
+    <Path d="M12 6v14" />
+  </LineIcon>
+);
+
+export const CalendarIcon = () => (
+  <LineIcon>
+    <Rect x={3} y={5} width={18} height={16} rx={3} />
+    <Path d="M3 10h18M8 3v4M16 3v4" />
+  </LineIcon>
+);
+
+export const SchoolIcon = () => (
+  <LineIcon>
+    <Path d="M2 9l10-5 10 5-10 5z" />
+    <Path d="M6 11.5V16c0 1.5 3 3 6 3s6-1.5 6-3v-4.5M22 9v6" />
+  </LineIcon>
+);
+
+export const PlusIcon = () => (
+  <LineIcon strokeWidth={2.75}>
+    <Path d="M12 5v14M5 12h14" />
+  </LineIcon>
+);
+
+export const ChevronDownIcon = () => (
+  <LineIcon strokeWidth={2.75}>
+    <Path d="M6 9l6 6 6-6" />
+  </LineIcon>
+);
+
 const GOOGLE_G_SIZE = 20;
 
 export function GoogleG() {

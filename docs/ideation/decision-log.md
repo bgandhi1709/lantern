@@ -453,3 +453,20 @@ Read from `lanternuat`: NCERT lists 1,091 Books in 24 mediums and builds 45 (Cla
 ### D90. The copy takes no lock; it checks the master did not change (issue #147)
 The founder asked for care with concurrency, since many Families register together. The shared containers are only read, so no lease: a lease would serialise Families on one writer. After the copy the manifest (every blob read, with its ETag) is read again and must match, or the slice is not marked ready and the queue retries; a test with the master changing mid-copy proved a per-read `If-Match` redundant, so it was dropped. At most 32 Blob requests are in flight per process, over the host's 4 messages at a time. Each file is read whole and written with one Put Blob, because a streamed upload in blocks failed with `InvalidBlockList` when the same message ran twice at once (found by a test). The tables need no change: the handler adds two point reads, and the ledger rows are one per Child.
 
+## 2026-10-13: First child and registering the Family (issue #120)
+
+### D91. All Children go in the one `POST /v1/register`; there is no per-Child call from registration (issue #120)
+The First child step collects Child one to six on one screen and sends them all in the single register call, so a Family is never half made and the app has no partial-failure state to show. An extra Child the Parent opened and left empty is dropped; one that is half filled blocks Finish with a plain message. The API's `POST /v1/family/children` stays for adding a Child later from Home.
+
+### D92. Dropdowns use `@react-native-picker/picker` (issue #120)
+The birth year, and the Class of an extra Child (to keep its card short), are native Android dropdowns, so the phone shows its own list. The first Child's Class is a row of numbered buttons, which is quicker to tap. MIT licence, no advisory, supports Android and iOS.
+
+### D93. The Passphrase stays in memory so a taken Family id is retried without asking again (issue #120)
+`family-id-taken` makes the phone choose a new Family id, wrap the same Family key and Recovery code again under it (the wrapped keys depend on the id) and send once more. The Parent sees nothing and the code they saved still works. This needs the Passphrase in the registration draft until Finish, kept in memory only and never stored. Any other failure, or a second taken id, is shown with Try again.
+
+### D94. Registration tells the app it is done instead of asking `/v1/me` again (issue #120)
+After a successful register the screen calls `markRegistered`, so Home shows at once. The Family key is written to secure storage only then (D87). If this phone gets `already-registered` it shows Home and keeps no key: the Family exists, but this phone did not make it, or its answer was lost and the retry found it. The Passphrase opens the Family on the next start. A way to tell those two cases apart is not built.
+
+### D95. A failed register says what the Parent can do, not which Child (issue #120)
+`class-not-available` cannot happen for a Class the app offered, since the app's Class choices equal the API's, so it gets one plain message (check each Child's Class) rather than naming a Child as the ticket asked. Offline and timeout say "Couldn't reach Lantern"; anything else says the Family was not set up. The privacy notice version sent is a placeholder (`draft-2026-10`) until the notice text is final.
+

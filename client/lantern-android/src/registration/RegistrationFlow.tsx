@@ -3,9 +3,9 @@ import { BackHandler } from 'react-native';
 
 import { AboutYouScreen } from './AboutYouScreen';
 import { BoardScreen } from './BoardScreen';
-import { NOTICE_VERSION } from './notice';
+import { PLACEHOLDER_NOTICE_VERSION } from './notice';
 import { NoticeView } from './NoticeView';
-import { FirstChildNextView } from './FirstChildNextView';
+import { FirstChildScreen } from './FirstChildScreen';
 import { PassphraseScreen } from './PassphraseScreen';
 import { RecoveryCodeScreen } from './RecoveryCodeScreen';
 import { RegistrationDraftProvider } from './RegistrationDraft';
@@ -20,12 +20,12 @@ export function RegistrationFlow() {
   const backToRecovery = () => setStep('recovery');
 
   useEffect(() => {
-    if (step === 'about') return;
+    // The First child step handles its own Back, because it must ignore it while Finish runs.
+    if (step === 'about' || step === 'firstChild') return;
     const press = BackHandler.addEventListener('hardwareBackPress', () => {
       // The Recovery code is shown once, so Android's back button does nothing there.
       if (step === 'recovery') return true;
-      if (step === 'firstChild') backToRecovery();
-      else if (step === 'passphrase') backToBoard();
+      if (step === 'passphrase') backToBoard();
       else backToAbout();
       return true;
     });
@@ -36,11 +36,11 @@ export function RegistrationFlow() {
     about: (
       <AboutYouScreen onOpenNotice={() => setStep('notice')} onContinue={() => setStep('board')} />
     ),
-    notice: <NoticeView version={NOTICE_VERSION} onBack={backToAbout} />,
+    notice: <NoticeView version={PLACEHOLDER_NOTICE_VERSION} onBack={backToAbout} />,
     board: <BoardScreen onContinue={() => setStep('passphrase')} onBack={backToAbout} />,
     passphrase: <PassphraseScreen onCreated={() => setStep('recovery')} onBack={backToBoard} />,
     recovery: <RecoveryCodeScreen onContinue={() => setStep('firstChild')} />,
-    firstChild: <FirstChildNextView onBack={backToRecovery} />,
+    firstChild: <FirstChildScreen onBack={backToRecovery} />,
   };
 
   return <RegistrationDraftProvider>{steps[step]}</RegistrationDraftProvider>;

@@ -84,7 +84,42 @@ export const en = {
       message: (code: string) =>
         `Your Lantern recovery code is ${code}\n\nIf you forget your passphrase, this code is the only other way to open your family's details. Keep it somewhere safe. Lantern does not keep a copy.`,
     },
-    firstChildNext: 'First child comes next',
+    firstChild: {
+      heading: 'Add your first child',
+      intro: 'One child is needed to start. You can add more below or later.',
+      nameLabel: "Child's name",
+      namePlaceholder: 'First name',
+      classLabel: 'Class',
+      classOption: (level: number) => `Class ${level}`,
+      classPlaceholder: 'Select class',
+      sscHint: 'Classes 6 to 10 are not available on SSC yet.',
+      birthYearLabel: 'Birth year',
+      birthYearPlaceholder: 'Select year',
+      schoolLabel: 'School (optional)',
+      schoolPlaceholder: 'School name',
+      more: {
+        heading: 'More children (optional)',
+        intro:
+          'Teaching more than one child? Add them now, or skip this and add them from Home later.',
+        untitled: 'Another child',
+        statusOptional: 'Optional, skip if you like',
+        statusNeedsMore: 'Needs name, class and birth year',
+        statusReady: (level: number) => `Class ${level}, ready to add`,
+        add: 'Add another child',
+        remove: 'Remove this child',
+        removeNamed: (name: string) => `Remove this child, ${name}`,
+        blocked: 'Finish or remove the extra child to continue.',
+      },
+      finish: 'Finish',
+      finishing: 'Finishing…',
+      tryAgain: 'Try again',
+      failures: {
+        classNotAvailable:
+          "Lantern doesn't have books for one of these Classes on this board yet. Check each child's Class, then try again.",
+        unreachable: "Couldn't reach Lantern. Check your connection, then try again.",
+        other: 'Something went wrong, and your family was not set up. Please try again.',
+      },
+    },
     notice: {
       heading: 'Your privacy, in plain words',
       intro:

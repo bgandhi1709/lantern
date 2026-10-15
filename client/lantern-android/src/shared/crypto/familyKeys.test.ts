@@ -4,6 +4,7 @@ import {
   makeFamilyId,
   openWithPassphrase,
   openWithRecoveryCode,
+  rewrapFamilyKeys,
 } from './familyKeys';
 import { LockError, lockText, unlockText } from './lock';
 
@@ -15,6 +16,31 @@ describe('the Family id', () => {
 
     expect(id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
     expect(makeFamilyId()).not.toBe(id);
+  });
+});
+
+describe('the same keys under a new Family id', () => {
+  it('keep the Family key and the Recovery code the Parent saved, and open with the same Passphrase', async () => {
+    const oldId = makeFamilyId();
+    const newId = makeFamilyId();
+    const keys = await createFamilyKeys(oldId, PASSPHRASE);
+
+    const again = await rewrapFamilyKeys(newId, PASSPHRASE, keys);
+
+    expect(again.familyKey).toBe(keys.familyKey);
+    expect(again.recoveryCode).toBe(keys.recoveryCode);
+    expect(again.passphraseWrappedKey).not.toBe(keys.passphraseWrappedKey);
+    expect(
+      await openWithPassphrase(newId, PASSPHRASE, again.passphraseWrappedKey, again.passphraseSalt),
+    ).toBe(keys.familyKey);
+    expect(
+      await openWithRecoveryCode(
+        newId,
+        keys.recoveryCode,
+        again.recoveryWrappedKey,
+        again.recoverySalt,
+      ),
+    ).toBe(keys.familyKey);
   });
 });
 

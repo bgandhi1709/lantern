@@ -26,6 +26,9 @@ type Story = StoryObj<typeof meta>;
 
 export const WithIcon: Story = {};
 export const WithoutIcon: Story = { args: { withIcon: false } };
+export const Danger: Story = {
+  args: { tone: 'danger', withIcon: false, label: en.registration.firstChild.more.remove },
+};
 // Gujarati and Hindi labels run longer than English, so the label must wrap beside the icon.
 export const LongLabel: Story = {
   args: { label: 'મારા પોતાના ઇમેઇલ પર મારો પુનઃપ્રાપ્તિ કોડ મોકલો' },

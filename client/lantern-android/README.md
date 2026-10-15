@@ -60,7 +60,7 @@ mkdir -p ~/.local/maestro-2.10.0 && unzip -q maestro.zip -d ~/.local/maestro-2.1
 ln -sfn ~/.local/maestro-2.10.0/maestro ~/.local/maestro   # then put ~/.local/maestro/bin on PATH
 ```
 
-Start the app with `scripts/verify-env.sh up`, then `maestro test .maestro`. `about-you.yaml` needs a Google account on the emulator, added once in Settings. `maestro hierarchy --compact` prints the screen as text when you need to look.
+Start the app with `scripts/verify-env.sh up`, then `maestro test .maestro`. `about-you.yaml` needs a Google account on the emulator, added once in Settings. `first-child.yaml` registers a Family, so that Google account is a registered Parent afterwards and the next flow lands on Home; run `docker compose -f ../../deploy/local/docker-compose.yml restart auth-emulator` before it, and before any flow that starts at About you, to get a fresh account. The first launch after the emulator boots can take over a minute while Metro builds the bundle. `maestro hierarchy --compact` prints the screen as text when you need to look.
 
 ## Look at components and screen states (Storybook)
 

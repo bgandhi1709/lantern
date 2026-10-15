@@ -126,7 +126,7 @@ describe('moving between the steps', () => {
     await user.press(screen.getByRole('link', { name: 'privacy notice' }));
 
     expect(screen.getByRole('header', { name: 'Your privacy, in plain words' })).toBeOnTheScreen();
-    expect(screen.getByText('Notice version 2026-10')).toBeOnTheScreen();
+    expect(screen.getByText('Notice version draft-2026-10')).toBeOnTheScreen();
     expect(screen.queryByText('Step 1 of 4')).not.toBeOnTheScreen();
 
     await user.press(backButton());
