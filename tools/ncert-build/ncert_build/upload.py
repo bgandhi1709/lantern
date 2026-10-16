@@ -25,6 +25,7 @@ FOLDERS = [
     ("summaries", "*/*.json"),
     ("toc", "*.json"),
     ("guidance", "*.json"),
+    ("manifest", "*.json"),  # one Class manifest per Class (ADR-0014)
 ]
 FILES = ["catalog.json", "board.json"]
 

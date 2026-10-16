@@ -1,0 +1,74 @@
+{
+  "schema": "class-manifest-v1",
+  "board": "cbse",
+  "profileVersion": "cbse-v1",
+  "class": 7,
+  "subjects": [
+    {
+      "subjectId": "mathematics",
+      "name": "Mathematics",
+      "icon": "maths",
+      "chapterCount": 3,
+      "chapters": [
+        {
+          "chapterId": "gegp101",
+          "bookId": "gegp1",
+          "number": 1,
+          "title": "Integers",
+          "summary": "About gegp101."
+        },
+        {
+          "chapterId": "gegp102",
+          "bookId": "gegp1",
+          "number": 2,
+          "title": "Fractions",
+          "summary": "About gegp102."
+        },
+        {
+          "chapterId": "gegp201",
+          "bookId": "gegp2",
+          "number": 1,
+          "title": "Lines",
+          "summary": "About gegp201."
+        }
+      ]
+    },
+    {
+      "subjectId": "english",
+      "name": "English",
+      "icon": "english",
+      "chapterCount": 2,
+      "chapters": [
+        {
+          "chapterId": "gepr101",
+          "bookId": "gepr1",
+          "number": 1,
+          "title": "A Poem",
+          "summary": "About gepr101."
+        },
+        {
+          "chapterId": "gepr102",
+          "bookId": "gepr1",
+          "number": 2,
+          "title": "A Story",
+          "summary": "About gepr102."
+        }
+      ]
+    },
+    {
+      "subjectId": "art",
+      "name": "Art",
+      "icon": "book",
+      "chapterCount": 1,
+      "chapters": [
+        {
+          "chapterId": "gaa101",
+          "bookId": "gaa1",
+          "number": 1,
+          "title": "Colours",
+          "summary": "About gaa101."
+        }
+      ]
+    }
+  ]
+}

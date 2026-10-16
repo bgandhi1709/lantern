@@ -22,3 +22,13 @@ def test_uploads_each_stage_folder_and_the_board_files(tmp_path):
 
 def test_missing_stages_are_skipped(tmp_path):
     assert commands(tmp_path, "account", "ncert") == []
+
+
+def test_the_class_manifests_are_uploaded_with_the_other_stage_folders(tmp_path):
+    (tmp_path / "manifest").mkdir()
+
+    (manifest,) = commands(tmp_path, "lanternuat", "ncert")
+
+    assert manifest[3] == "upload-batch"
+    assert manifest[manifest.index("--destination-path") + 1] == "manifest"
+    assert manifest[manifest.index("--pattern") + 1] == "*.json"  # one file per Class

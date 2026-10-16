@@ -19,6 +19,7 @@ catalog ─► download ─► extract ─► segment ─► draft, pictures (lo
 | `check` | Validates a refined chapter against the refine-v1 contract | (prints one line per chapter) |
 | summaries | A few plain lines per Chapter for the Parent, written in a Claude Code session from the refined Chapter and saved by `scripts/write_summaries.py` (D71) | `summaries/<book>/<chapter>.json` |
 | `review` | The GPU's agreement per class and figure kind, and a sheet to mark readings right or wrong by hand | `review/report-*.txt`, `review/sheet-*.html`, `review/score.txt` |
+| `manifest` | Applies the Board's rules once and writes one unified file per Class: its Subjects (grouped, ordered and iconned by the Board profile), their built Chapter counts, and each Chapter's number, title and summary. It also rewrites `board.json` from the code first. The API copies the file into every Child's slice and never needs to know the Board (ADR-0014) | `manifest/class-<N>.json`, `board.json` |
 | `upload` | Copies all of the above, except the PDFs, to the Board's private blob container (`ncert`, `ssc`) | Azure Storage |
 
 Each stage skips chapters it has already done (`--force` redoes them), so an interrupted run resumes.
@@ -38,6 +39,37 @@ deployed by #19). Sign in with `az login`, then run `ncert-build [--board ssc] u
 can be downloaded again and nothing reads them from Azure. Your account needs Storage Blob Data
 Contributor, which the deployment grants to `DATA_UPLOADER_OBJECT_ID`
 (`az ad signed-in-user show --query id -o tsv` prints yours).
+
+### The Class manifests
+
+`ncert-build [--board ssc] manifest [--grades 1-10]` needs `catalog.json`, `refined/`, `summaries/` and (SSC) `toc/`. A Class
+either gets its whole manifest or none: a Chapter with no title or summary fails the Class, names the Chapter, and the command
+exits 1. Rules, all from the ADR and the real masters:
+
+- A Subject groups the Books with one `subject` name; its count is the Chapters **built** (a refined file exists), not the range
+  the catalog declares (NCERT `jewe2` declares 9 and has 7).
+- The Board profile (`board.json`; `cbse.PROFILE` and `ssc.PROFILE`) lists the Subjects in display order with their icon. A
+  Subject it does not list sorts last, by name, with the icon `book`.
+- Within a Subject the Books run by part, then Book id, and the Chapters by number. The number is the one at the end of the
+  Chapter id (`cesa101` in `cesa1`, `ssc3-maths-04` in `ssc3-maths`); SSC's contents file prints labels such as `s1` and
+  `No. 2`, so only its **title** is used (the longer refined title would show `Unit One (Lessons 1.1 to 1.10)`).
+- NCERT skips a Book it lists but has not built. An SSC Book listed with nothing built is a broken master and fails the Class.
+
+The build output lives in the container, not on every machine. To make the manifests from there, restore only what the stage
+reads into a folder outside the repository, run the stage, and upload:
+
+```sh
+export LANTERN_DATA_DIR=~/lantern-data     # ../lantern-data-ssc for --board ssc
+for p in catalog.json 'refined/*' 'summaries/*' 'toc/*'; do        # toc is SSC only
+  az storage blob download-batch --account-name <storage account> --source ncert --destination "$LANTERN_DATA_DIR" \
+    --pattern "$p" --auth-mode login --overwrite
+done
+ncert-build manifest                       # --board ssc for SSC
+ncert-build upload --account <storage account>
+```
+
+Do not run `catalog` on restored data: it fetches the book list again and replaces `catalog.json`. `manifest` writes the current
+`board.json` itself.
 
 ## Setup
 
