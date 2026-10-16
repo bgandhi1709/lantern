@@ -73,3 +73,7 @@ The upload runs only in a maintenance window, with the refresh after it. A Famil
 D82 for a Child's reads: the API no longer serves a Child from the shared catalog. The shared containers are read only by the copy and the refresh. D50 stays true in effect (one prompt prefix per Board) but is no longer served from one shared catalog.
 
 Considered and rejected: a whole-Board copy per Family (bytes no Child reads), one slice per Family shared by its Children (a refcount, and a Class change of one Child would touch another), reading the copy with a fallback to the shared container (it brings the shared dependency back and hides copy failures), refreshing every slice automatically on upload (it recreates the blast radius), a Table row or a `ContentReady` column for each slice (a second record to keep in step with the blob, as in ADR-0001 and ADR-0002), and a copy made inside the request (a long copy would fail the request, ADR-0004).
+
+## Amended by ADR-0014
+
+The copy list gains one required file for both Boards, `manifest/class-{N}.json`, copied as `content/manifest.json`. The Family manifest (`family/{familyId}/manifest.json`) is a derived index kept beside the slices; it does not replace `content/version.json` as the readiness marker, and it changes nothing else here.

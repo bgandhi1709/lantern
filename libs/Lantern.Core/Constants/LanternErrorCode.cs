@@ -10,9 +10,11 @@ public enum LanternErrorCode
     ChildLimitReached,
     ChildNotFound,
     ClassNotAvailable,
+    ContentNotReady,
     FamilyChanged,
     FamilyIdTaken,
     FamilyNotFound,
+    InvalidPage,
     InvalidRequest,
     NotRegistered,
 }

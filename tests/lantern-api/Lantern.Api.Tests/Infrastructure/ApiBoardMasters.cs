@@ -25,6 +25,7 @@ internal static class ApiBoardMasters
     public static string[] NcertSlice(int classLevel) =>
     [
         "catalog.json",
+        "manifest.json",
         $"refined/{NcertBook(classLevel)}/{NcertBook(classLevel)}01.json",
         $"refined/{NcertBook(classLevel)}/{NcertBook(classLevel)}02.json",
         $"summaries/{NcertBook(classLevel)}/{NcertBook(classLevel)}01.json",
@@ -43,6 +44,7 @@ internal static class ApiBoardMasters
             "catalog.json",
             $"guidance/{english}.json",
             $"guidance/{maths}.json",
+            "manifest.json",
             $"refined/{english}/{english}-01.json",
             $"refined/{maths}/{maths}-01.json",
             $"summaries/{english}/{english}-01.json",
@@ -91,10 +93,37 @@ internal static class ApiBoardMasters
             }
         }
 
+        for (var classLevel = 1; classLevel <= NcertClasses; classLevel++)
+        {
+            await PutAsync(ncert, $"manifest/class-{classLevel}.json", NcertManifest(classLevel));
+        }
+
+        for (var classLevel = 1; classLevel <= SscClasses; classLevel++)
+        {
+            await PutAsync(ssc, $"manifest/class-{classLevel}.json", SscManifest(classLevel));
+        }
+
         await PutAsync(ncert, "catalog.json", ncertCatalog.ToString().TrimEnd(',') + "]");
         await PutAsync(ssc, "catalog.json", sscCatalog.ToString().TrimEnd(',') + "]");
         await PutAsync(ssc, "board.json");
     }
+
+    public static string NcertManifest(int classLevel) =>
+        $$"""
+        {"schema":"class-manifest-v1","board":"cbse","profileVersion":"cbse-v1","class":{{classLevel}},"subjects":[
+          {"subjectId":"mathematics","name":"Mathematics","icon":"maths","chapterCount":2,"chapters":[
+            {"chapterId":"{{NcertBook(classLevel)}}01","bookId":"{{NcertBook(classLevel)}}","number":1,"title":"One","summary":"About one."},
+            {"chapterId":"{{NcertBook(classLevel)}}02","bookId":"{{NcertBook(classLevel)}}","number":2,"title":"Two","summary":"About two."}]}]}
+        """;
+
+    public static string SscManifest(int classLevel) =>
+        $$"""
+        {"schema":"class-manifest-v1","board":"ssc","profileVersion":"ssc-v2","class":{{classLevel}},"subjects":[
+          {"subjectId":"mathematics","name":"Mathematics","icon":"maths","chapterCount":1,"chapters":[
+            {"chapterId":"{{SscBooks(classLevel)[0]}}-01","bookId":"{{SscBooks(classLevel)[0]}}","number":1,"title":"One","summary":"About one."}]},
+          {"subjectId":"english","name":"English","icon":"english","chapterCount":1,"chapters":[
+            {"chapterId":"{{SscBooks(classLevel)[1]}}-01","bookId":"{{SscBooks(classLevel)[1]}}","number":1,"title":"One","summary":"About one."}]}]}
+        """;
 
     private static async Task PutAsync(BlobContainerClient container, string name, string content = null) =>
         await container.GetBlobClient(name).UploadAsync(BinaryData.FromString(content ?? $"{name} :: {Guid.NewGuid():N}"), overwrite: true);

@@ -1,4 +1,5 @@
 using Lantern.Core.Constants;
+using Lantern.Core.Models;
 
 namespace Lantern.Core.Repository;
 
@@ -17,7 +18,10 @@ public interface IWorkspaceStore
     /// </exception>
     Task CopyContentAsync(Guid familyId, Guid childId, int classLevel, BoardType board, CancellationToken cancellationToken);
 
-    /// <summary>Removes the Child's whole Workspace, every Class in it. Safe to repeat.</summary>
+    Task<IReadOnlyList<Subject>> SubjectsAsync(Guid familyId, Guid childId, CancellationToken cancellationToken);
+
+    Task AddToManifestAsync(Guid familyId, Guid childId, int classLevel, BoardType board, CancellationToken cancellationToken);
+
     Task RemoveAsync(Guid familyId, Guid childId, CancellationToken cancellationToken);
 
     /// <summary>Removes the Workspace of every Child of the Family. Safe to repeat.</summary>

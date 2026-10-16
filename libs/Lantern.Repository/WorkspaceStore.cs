@@ -1,13 +1,16 @@
-using System.Globalization;
-using System.Text.Encodings.Web;
+using System.Net.Mime;
+using System.Text;
 using System.Text.Json.Nodes;
-using System.Text.Json;
 using System.Text.RegularExpressions;
 using Azure.Storage.Blobs.Models;
 using Azure.Storage.Blobs;
 using Azure;
 using Lantern.Core.Constants;
+using Lantern.Core.Models;
 using Lantern.Core.Repository;
+using Lantern.Core.Service;
+using Lantern.Core.Storage;
+using MapsterMapper;
 
 namespace Lantern.Repository;
 
@@ -18,40 +21,59 @@ internal sealed partial class WorkspaceStore(
     BlobContainerClient container,
     IReadOnlyDictionary<BoardType, BlobContainerClient> boards,
     TimeProvider clock,
+    IJsonService json,
+    IMapper mapper,
+    ContentLayout layout,
     bool createContainer
 ) : IWorkspaceStore
 {
-    private const string MarkerName = "class.json";
-
     private const int MaxParallelDeletes = 16;
-
-    private const string CatalogName = "catalog.json";
-
-    private const string VersionName = "version.json";
-
     private const int MaxParallelCopies = 16;
-
-    // Caps Blob requests in flight across every copy in the process; the Azure SDK retries throttling with backoff.
+    private const int MaxManifestAttempts = 12;
     private const int MaxCopiesInFlight = 32;
-
     private static readonly SemaphoreSlim InFlight = new(MaxCopiesInFlight, MaxCopiesInFlight);
-
-    // What each Board's master holds, checked against UAT's `ncert` and `ssc` (ADR-0013).
-    private static readonly Dictionary<BoardType, BoardRules> Rules = new()
+    private Dictionary<BoardType, BoardRules> Rules { get; } = new()
     {
-        [BoardType.Cbse] = new(SkipsUnbuiltBooks: true, BoardFiles: [], BookFiles: []),
-        [BoardType.Ssc] = new(SkipsUnbuiltBooks: false, BoardFiles: ["board.json"], BookFiles: ["toc", "guidance"]),
+        [BoardType.Cbse] = new BoardRules(skipsUnbuiltBooks: true, boardFiles: [], bookFiles: []),
+        [BoardType.Ssc] = new BoardRules(skipsUnbuiltBooks: false, boardFiles: [layout.BoardProfileFile], bookFiles: [layout.TocFolder, layout.GuidanceFolder]),
     };
 
-    private static readonly JsonSerializerOptions Pretty = new() { WriteIndented = true, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
+    private sealed class BoardRules(bool skipsUnbuiltBooks, string[] boardFiles, string[] bookFiles)
+    {
+        public bool SkipsUnbuiltBooks { get; } = skipsUnbuiltBooks;
 
-    private sealed record BoardRules(bool SkipsUnbuiltBooks, string[] BoardFiles, string[] BookFiles);
+        public string[] BoardFiles { get; } = boardFiles;
 
-    // One Book's entry and the master blobs it needs, each with its ETag.
-    private sealed record BookManifest(string Book, JsonNode Entry, Dictionary<string, ETag> Files);
+        public string[] BookFiles { get; } = bookFiles;
+    }
 
-    // Snapshot: every master blob the manifest read, with its ETag, to check the master did not change during the copy.
-    private sealed record ContentManifest(IReadOnlyList<string> Files, byte[] Catalog, IReadOnlyList<string> Books, IReadOnlyDictionary<string, ETag> Snapshot);
+    private sealed class BookSnapshot(string book, JsonNode entry, Dictionary<string, ETag> files)
+    {
+        public string Book { get; } = book;
+
+        public JsonNode Entry { get; } = entry;
+
+        public Dictionary<string, ETag> Files { get; } = files;
+    }
+
+    private sealed class ContentSnapshot(
+        IReadOnlyList<string> files,
+        byte[] catalogBytes,
+        byte[] classManifestBytes,
+        IReadOnlyList<string> books,
+        IReadOnlyDictionary<string, ETag> etags
+    )
+    {
+        public IReadOnlyList<string> Files { get; } = files;
+
+        public byte[] CatalogBytes { get; } = catalogBytes;
+
+        public byte[] ClassManifestBytes { get; } = classManifestBytes;
+
+        public IReadOnlyList<string> Books { get; } = books;
+
+        public IReadOnlyDictionary<string, ETag> Etags { get; } = etags;
+    }
 
     public async Task CreateAsync(Guid familyId, Guid childId, int classLevel, CancellationToken cancellationToken)
     {
@@ -60,23 +82,22 @@ internal sealed partial class WorkspaceStore(
             await container.CreateIfNotExistsAsync(cancellationToken: cancellationToken);
         }
 
-        var path = string.Create(CultureInfo.InvariantCulture, $"{familyId:D}/{childId:D}/{classLevel}/{MarkerName}");
+        var path = layout.MarkerPath(familyId, childId, classLevel);
         var options = new BlobUploadOptions { Conditions = new BlobRequestConditions { IfNoneMatch = ETag.All } };
 
         try
         {
             await container.GetBlobClient(path).UploadAsync(BinaryData.Empty, options, cancellationToken);
         }
-        catch (RequestFailedException ex) when (ex.ErrorCode == BlobErrorCode.BlobAlreadyExists)
+        catch (RequestFailedException ex) when (IsAlreadyThere(ex))
         {
-            // Repeated Class: the space already exists.
         }
     }
 
     public async Task CopyContentAsync(Guid familyId, Guid childId, int classLevel, BoardType board, CancellationToken cancellationToken)
     {
-        var prefix = string.Create(CultureInfo.InvariantCulture, $"{familyId:D}/{childId:D}/{classLevel}/content/");
-        var version = container.GetBlobClient(prefix + VersionName);
+        var prefix = layout.ContentFolder(familyId, childId, classLevel);
+        var version = container.GetBlobClient(prefix + layout.VersionFile);
 
         if (await version.ExistsAsync(cancellationToken))
         {
@@ -86,34 +107,152 @@ internal sealed partial class WorkspaceStore(
         var master = boards.TryGetValue(board, out var found)
             ? found
             : throw new InvalidOperationException($"No master container is set for the {board} Board.");
-        var manifest = await ReadManifestAsync(master, Rules[board], classLevel, cancellationToken);
+        var snapshot = await ReadSnapshotAsync(master, Rules[board], classLevel, cancellationToken);
 
-        await CopyFilesAsync(master, manifest, prefix, cancellationToken);
-        await RemoveLeftoversAsync(manifest, prefix, cancellationToken);
+        await CopyFilesAsync(master, snapshot, prefix, cancellationToken);
+        await RemoveLeftoversAsync(snapshot, prefix, cancellationToken);
 
-        // No lock on the master (a lease would make every Family wait on one writer): the manifest read again must match the first.
-        var secondManifest = await ReadManifestAsync(master, Rules[board], classLevel, cancellationToken);
-        if (!SameSnapshot(manifest.Snapshot, secondManifest.Snapshot))
+        var secondSnapshot = await ReadSnapshotAsync(master, Rules[board], classLevel, cancellationToken);
+        if (!SameSnapshot(snapshot.Etags, secondSnapshot.Etags))
         {
             throw new InvalidOperationException($"The {board} Board's master changed while Class {classLevel} was being copied.");
         }
 
         // Last, so a half copy is never ready.
-        var made = new JsonObject
+        var made = new ContentVersion
         {
-            ["board"] = board.ToString().ToLowerInvariant(),
-            ["class"] = classLevel,
-            ["books"] = new JsonArray([.. manifest.Books.Select(book => (JsonNode)JsonValue.Create(book))]),
-            ["files"] = manifest.Files.Count + 1,
-            ["copiedAt"] = clock.GetUtcNow().ToString("O", CultureInfo.InvariantCulture),
+            Board = board.ToString().ToLowerInvariant(),
+            Class = classLevel,
+            Books = [.. snapshot.Books],
+            Files = snapshot.Files.Count + 2,
+            CopiedAt = clock.GetUtcNow(),
         };
-        await version.UploadAsync(BinaryData.FromString(made.ToJsonString(Pretty)), overwrite: true, cancellationToken);
+        await version.UploadAsync(BinaryData.FromString(json.SerializeIndented(made)), overwrite: true, cancellationToken);
     }
 
-    private async Task CopyFilesAsync(BlobContainerClient master, ContentManifest manifest, string prefix, CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<Subject>> SubjectsAsync(Guid familyId, Guid childId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var manifest = await container.GetBlobClient(layout.FamilyManifestPath(familyId)).DownloadContentAsync(cancellationToken);
+
+            return ParseFamilyManifest(manifest.Value.Content.ToString()).SubjectsOf(childId);
+        }
+        catch (RequestFailedException ex) when (IsMissing(ex))
+        {
+            return null;
+        }
+    }
+
+    public async Task AddToManifestAsync(Guid familyId, Guid childId, int classLevel, BoardType board, CancellationToken cancellationToken)
+    {
+        var slice = layout.ContentFolder(familyId, childId, classLevel);
+        if (!await container.GetBlobClient(slice + layout.VersionFile).ExistsAsync(cancellationToken))
+        {
+            throw new InvalidOperationException("The Child's Content slice is not ready, so the Child has no place in the Family manifest yet.");
+        }
+
+        var classManifest = ParseClassManifest((await container.GetBlobClient(slice + layout.ClassManifestFile).DownloadContentAsync(cancellationToken)).Value.Content.ToString());
+        var entry = mapper.Map<FamilyChild>(classManifest);
+        var whenMissing = FamilyManifest.Empty(layout.FamilyManifestSchema, board.ToString().ToLowerInvariant());
+
+        await UpdateManifestAsync(
+            familyId,
+            whenMissing,
+            manifest =>
+            {
+                if (manifest.Has(childId, entry))
+                {
+                    return false;
+                }
+
+                manifest.Add(childId, entry);
+
+                return true;
+            },
+            cancellationToken
+        );
+    }
+
+    private Task RemoveFromManifestAsync(Guid familyId, Guid childId, CancellationToken cancellationToken)
+    {
+        var nothingToRemove = FamilyManifest.Empty(layout.FamilyManifestSchema, board: string.Empty);
+
+        return UpdateManifestAsync(familyId, nothingToRemove, manifest => manifest.Remove(childId), cancellationToken);
+    }
+
+    private async Task UpdateManifestAsync(Guid familyId, FamilyManifest whenMissing, Func<FamilyManifest, bool> change, CancellationToken cancellationToken)
+    {
+        if (createContainer)
+        {
+            await container.CreateIfNotExistsAsync(cancellationToken: cancellationToken);
+        }
+
+        var blob = container.GetBlobClient(layout.FamilyManifestPath(familyId));
+        for (var attempt = 0; attempt < MaxManifestAttempts; attempt++)
+        {
+            var (stored, etag) = await DownloadFamilyManifestAsync(blob, cancellationToken);
+            var manifest = stored ?? whenMissing;
+            if (!change(manifest))
+            {
+                return;
+            }
+
+            var conditions = etag is { } found ? new BlobRequestConditions { IfMatch = found } : new BlobRequestConditions { IfNoneMatch = ETag.All };
+            var options = new BlobUploadOptions { Conditions = conditions, HttpHeaders = new BlobHttpHeaders { ContentType = MediaTypeNames.Application.Json } };
+            try
+            {
+                await blob.UploadAsync(BinaryData.FromString(json.Serialize(manifest)), options, cancellationToken);
+
+                return;
+            }
+            catch (RequestFailedException ex) when (IsLostRace(ex))
+            {
+            }
+        }
+
+        throw new InvalidOperationException($"The Family manifest kept changing; gave up after {MaxManifestAttempts} tries.");
+    }
+
+    private static bool IsLostRace(RequestFailedException ex) => ex.Status == 412 || IsAlreadyThere(ex);
+
+    private static bool IsAlreadyThere(RequestFailedException ex) => ex.ErrorCode == BlobErrorCode.BlobAlreadyExists;
+
+    private static bool IsMissing(RequestFailedException ex) => ex.Status == 404;
+
+    private static bool IsContainerMissing(RequestFailedException ex) => ex.ErrorCode == BlobErrorCode.ContainerNotFound;
+
+    private async Task<(FamilyManifest Manifest, ETag? ETag)> DownloadFamilyManifestAsync(BlobClient blob, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var read = (await blob.DownloadContentAsync(cancellationToken)).Value;
+
+            return (ParseFamilyManifest(read.Content.ToString()), read.Details.ETag);
+        }
+        catch (RequestFailedException ex) when (IsMissing(ex))
+        {
+            return (null, null);
+        }
+    }
+
+    private FamilyManifest ParseFamilyManifest(string text) => Parse<FamilyManifest>(text, layout.FamilyManifestSchema);
+
+    private ClassManifest ParseClassManifest(string text) => Parse<ClassManifest>(text, layout.ClassManifestSchema).EnsureChaptersMatchCounts();
+
+    private T Parse<T>(string text, string schema)
+        where T : Manifest
+    {
+        var manifest = json.Deserialize<T>(text) ?? throw new InvalidOperationException($"The {typeof(T).Name} is empty.");
+        manifest.EnsureSchema(schema);
+
+        return manifest;
+    }
+
+    private async Task CopyFilesAsync(BlobContainerClient master, ContentSnapshot snapshot, string prefix, CancellationToken cancellationToken)
     {
         await Parallel.ForEachAsync(
-            manifest.Files,
+            snapshot.Files,
             new ParallelOptions { MaxDegreeOfParallelism = MaxParallelCopies, CancellationToken = cancellationToken },
             async (name, token) =>
             {
@@ -131,13 +270,14 @@ internal sealed partial class WorkspaceStore(
                 }
             }
         );
-        await container.GetBlobClient(prefix + CatalogName).UploadAsync(BinaryData.FromBytes(manifest.Catalog), overwrite: true, cancellationToken);
+        await container.GetBlobClient(prefix + layout.CatalogFile).UploadAsync(BinaryData.FromBytes(snapshot.CatalogBytes), overwrite: true, cancellationToken);
+        await container.GetBlobClient(prefix + layout.ClassManifestFile).UploadAsync(BinaryData.FromBytes(snapshot.ClassManifestBytes), overwrite: true, cancellationToken);
     }
 
     // version.json is never touched: a copy running beside this one may have just written it.
-    private async Task RemoveLeftoversAsync(ContentManifest manifest, string prefix, CancellationToken cancellationToken)
+    private async Task RemoveLeftoversAsync(ContentSnapshot snapshot, string prefix, CancellationToken cancellationToken)
     {
-        var wanted = new HashSet<string>([.. manifest.Files, CatalogName, VersionName], StringComparer.Ordinal);
+        var wanted = new HashSet<string>([.. snapshot.Files, layout.CatalogFile, layout.ClassManifestFile, layout.VersionFile], StringComparer.Ordinal);
         var leftovers = (await ListAsync(container, prefix, cancellationToken)).Keys.Where(name => !wanted.Contains(name[prefix.Length..]));
 
         await Parallel.ForEachAsync(
@@ -148,38 +288,58 @@ internal sealed partial class WorkspaceStore(
     }
 
     // Everything is checked before the first write, so a missing file leaves nothing behind.
-    private static async Task<ContentManifest> ReadManifestAsync(BlobContainerClient master, BoardRules rules, int classLevel, CancellationToken cancellationToken)
+    private async Task<ContentSnapshot> ReadSnapshotAsync(BlobContainerClient master, BoardRules rules, int classLevel, CancellationToken cancellationToken)
     {
-        var catalogRead = (await master.GetBlobClient(CatalogName).DownloadContentAsync(cancellationToken)).Value;
-        var catalog = JsonNode.Parse(catalogRead.Content) as JsonArray ?? throw new InvalidOperationException("The Board's catalog is not a list of Books.");
+        var catalogRead = (await master.GetBlobClient(layout.CatalogFile).DownloadContentAsync(cancellationToken)).Value;
+        var catalog = json.Deserialize<JsonArray>(catalogRead.Content.ToString()) ?? throw new InvalidOperationException("The Board's catalog is not a list of Books.");
 
         // A Class has at most a handful of Books, so they are read together.
         var entries = catalog.OfType<JsonObject>().Where(entry => IsGrade(entry, classLevel));
-        var manifests = (await Task.WhenAll(entries.Select(entry => ReadBookManifestAsync(master, rules, entry, classLevel, cancellationToken)))).Where(book => book is not null).ToList();
-        if (manifests.Count == 0)
+        var books = (await Task.WhenAll(entries.Select(entry => ReadBookSnapshotAsync(master, rules, entry, classLevel, cancellationToken)))).Where(book => book is not null).ToList();
+        if (books.Count == 0)
         {
             throw new InvalidOperationException($"The Board has no built Book for Class {classLevel}.");
         }
 
-        var snapshot = new Dictionary<string, ETag>(StringComparer.Ordinal) { [CatalogName] = catalogRead.Details.ETag };
-        foreach (var (name, etag) in manifests.SelectMany(book => book.Files))
+        var (classManifestName, classManifest, classManifestEtag) = await DownloadMasterClassManifestAsync(master, classLevel, cancellationToken);
+        var etags = new Dictionary<string, ETag>(StringComparer.Ordinal) { [layout.CatalogFile] = catalogRead.Details.ETag, [classManifestName] = classManifestEtag };
+        foreach (var (name, etag) in books.SelectMany(book => book.Files))
         {
-            snapshot[name] = etag;
+            etags[name] = etag;
         }
 
         foreach (var (name, etag) in await Task.WhenAll(rules.BoardFiles.Select(name => RequiredAsync(master, name, cancellationToken))))
         {
-            snapshot[name] = etag;
+            etags[name] = etag;
         }
 
-        var kept = new JsonArray([.. manifests.Select(book => book.Entry.DeepClone())]);
-        string[] files = [.. snapshot.Keys.Where(name => name != CatalogName).Order(StringComparer.Ordinal)];
+        var kept = new JsonArray([.. books.Select(book => book.Entry.DeepClone())]);
+        string[] files = [.. etags.Keys.Where(name => name != layout.CatalogFile && name != classManifestName).Order(StringComparer.Ordinal)];
 
-        return new ContentManifest(files, JsonSerializer.SerializeToUtf8Bytes(kept, Pretty), [.. manifests.Select(book => book.Book)], snapshot);
+        return new ContentSnapshot(files, Encoding.UTF8.GetBytes(json.SerializeIndented(kept)), classManifest, [.. books.Select(book => book.Book)], etags);
+    }
+
+    private async Task<(string Name, byte[] Bytes, ETag ETag)> DownloadMasterClassManifestAsync(BlobContainerClient master, int classLevel, CancellationToken cancellationToken)
+    {
+        var name = layout.MasterClassManifest(classLevel);
+        try
+        {
+            var read = (await master.GetBlobClient(name).DownloadContentAsync(cancellationToken)).Value;
+            if (ParseClassManifest(read.Content.ToString()).Class != classLevel)
+            {
+                throw new InvalidOperationException($"The Board's {name} is for another Class.");
+            }
+
+            return (name, read.Content.ToArray(), read.Details.ETag);
+        }
+        catch (RequestFailedException ex) when (IsMissing(ex))
+        {
+            throw new InvalidOperationException($"The Board's master has no {name}.");
+        }
     }
 
     // Null for a Book NCERT lists and has not built; for SSC an unbuilt Book, or a missing file, is a broken master.
-    private static async Task<BookManifest> ReadBookManifestAsync(
+    private async Task<BookSnapshot> ReadBookSnapshotAsync(
         BlobContainerClient master,
         BoardRules rules,
         JsonObject entry,
@@ -187,14 +347,14 @@ internal sealed partial class WorkspaceStore(
         CancellationToken cancellationToken
     )
     {
-        var book = entry["book_id"]?.GetValue<string>();
+        var book = entry[layout.CatalogBookField]?.GetValue<string>();
         if (book is null || !BookId().IsMatch(book))
         {
             throw new InvalidOperationException("A catalog entry has no usable book_id.");
         }
 
-        var refinedTask = ListAsync(master, $"refined/{book}/", cancellationToken);
-        var summariesTask = ListAsync(master, $"summaries/{book}/", cancellationToken);
+        var refinedTask = ListAsync(master, layout.RefinedFolder(book), cancellationToken);
+        var summariesTask = ListAsync(master, layout.SummariesFolder(book), cancellationToken);
         var (refined, summaries) = (await refinedTask, await summariesTask);
 
         if (refined.Count == 0)
@@ -204,23 +364,23 @@ internal sealed partial class WorkspaceStore(
                 : throw new InvalidOperationException($"The Board lists Book {book} for Class {classLevel} but has no refined content for it.");
         }
 
-        var unsummarised = refined.Keys.FirstOrDefault(chapter => !summaries.ContainsKey("summaries/" + chapter["refined/".Length..]));
+        var unsummarised = refined.Keys.FirstOrDefault(chapter => !summaries.ContainsKey(layout.SummaryOf(chapter)));
         if (unsummarised is not null)
         {
             throw new InvalidOperationException($"Book {book} has refined content with no summary: {unsummarised}.");
         }
 
         var files = new Dictionary<string, ETag>(refined.Concat(summaries), StringComparer.Ordinal);
-        foreach (var (name, etag) in await Task.WhenAll(rules.BookFiles.Select(folder => RequiredAsync(master, $"{folder}/{book}.json", cancellationToken))))
+        foreach (var (name, etag) in await Task.WhenAll(rules.BookFiles.Select(folder => RequiredAsync(master, layout.BookFile(folder, book), cancellationToken))))
         {
             files[name] = etag;
         }
 
-        return new BookManifest(book, entry, files);
+        return new BookSnapshot(book, entry, files);
     }
 
-    private static bool IsGrade(JsonObject entry, int classLevel) =>
-        entry["grade"] is JsonValue grade && grade.TryGetValue<int>(out var value) && value == classLevel;
+    private bool IsGrade(JsonObject entry, int classLevel) =>
+        entry[layout.CatalogGradeField] is JsonValue grade && grade.TryGetValue<int>(out var value) && value == classLevel;
 
     private static bool SameSnapshot(IReadOnlyDictionary<string, ETag> first, IReadOnlyDictionary<string, ETag> second) =>
         first.Count == second.Count && first.All(pair => second.TryGetValue(pair.Key, out var etag) && etag == pair.Value);
@@ -231,7 +391,7 @@ internal sealed partial class WorkspaceStore(
         {
             return (name, (await master.GetBlobClient(name).GetPropertiesAsync(cancellationToken: cancellationToken)).Value.ETag);
         }
-        catch (RequestFailedException ex) when (ex.Status == 404)
+        catch (RequestFailedException ex) when (IsMissing(ex))
         {
             throw new InvalidOperationException($"The Board's master has no {name}.");
         }
@@ -255,10 +415,13 @@ internal sealed partial class WorkspaceStore(
 
     // The prefix comes from the ids alone, and the slash keeps it from matching a longer path.
     public Task RemoveAsync(Guid familyId, Guid childId, CancellationToken cancellationToken) =>
-        RemovePrefixAsync(string.Create(CultureInfo.InvariantCulture, $"{familyId:D}/{childId:D}/"), cancellationToken);
+        Task.WhenAll(
+            RemovePrefixAsync(layout.ChildFolder(familyId, childId), cancellationToken),
+            RemoveFromManifestAsync(familyId, childId, cancellationToken)
+        );
 
     public Task RemoveFamilyAsync(Guid familyId, CancellationToken cancellationToken) =>
-        RemovePrefixAsync(string.Create(CultureInfo.InvariantCulture, $"{familyId:D}/"), cancellationToken);
+        RemovePrefixAsync(layout.FamilyFolder(familyId), cancellationToken);
 
     private async Task RemovePrefixAsync(string prefix, CancellationToken cancellationToken)
     {
@@ -270,9 +433,8 @@ internal sealed partial class WorkspaceStore(
                 async (blob, token) => await container.DeleteBlobIfExistsAsync(blob.Name, cancellationToken: token)
             );
         }
-        catch (RequestFailedException ex) when (ex.ErrorCode == BlobErrorCode.ContainerNotFound)
+        catch (RequestFailedException ex) when (IsContainerMissing(ex))
         {
-            // No Workspace was ever started, so there is nothing to remove.
         }
     }
 }

@@ -20,6 +20,7 @@ public static class BaseModule
         services.TryAddSingleton<IValidator<Registration>, RegistrationValidator>();
         services.TryAddScoped<IFamilyService, FamilyService>();
         services.TryAddScoped<IChildService, ChildService>();
+        services.TryAddScoped<ISubjectService, SubjectService>();
 
         return services;
     }

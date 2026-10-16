@@ -2,6 +2,7 @@ using Lantern.Core.Actions;
 using Lantern.Core.Configuration;
 using Lantern.Core.Security;
 using Lantern.Core.Service;
+using Lantern.Core.Storage;
 using Mapster;
 using MapsterMapper;
 using Microsoft.Extensions.Configuration;
@@ -29,6 +30,9 @@ public static class CoreModule
         services.TryAddSingleton<ICryptoService, CryptoService>();
         services.TryAddSingleton<IServiceBusService, ServiceBusService>();
         services.TryAddScoped(typeof(IServiceBase<>), typeof(ServiceBase<>));
+        services.TryAddSingleton<IJsonService, JsonService>();
+        services.TryAddSingleton<ContentLayout>();
+        services.TryAddSingleton<IPageCalculator, PageCalculator>();
         services.TryAddSingleton<IActionPublisher, ActionPublisher>();
 
         services.TryAddSingleton(serviceProvider =>

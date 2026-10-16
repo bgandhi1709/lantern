@@ -2,7 +2,7 @@
 
 Layout under the data directory (outside the repository):
 
-    board.json                           the Board profile (SSC): how its Books are built
+    board.json                           the Board profile: how its Books are built and shown (ADR-0014)
     catalog.json                         every book the Board lists
     pdf/<book_id>/<chapter_id>.pdf       downloads, plus <book_id>ps.pdf (front matter, contents);
                                          for SSC the whole Book <book_id>.pdf, split into Chapters
@@ -15,6 +15,8 @@ Layout under the data directory (outside the repository):
     pictures/<book_id>/<chapter_id>/pN.png  the rendered picture pages (low_text)
     bundles/<book_id>/<chapter_id>.md    compact input for Claude refinement
     refined/<book_id>/<chapter_id>.json  concept cards and Q&A written by Claude (ncert-refine)
+    summaries/<book_id>/<chapter_id>.json the Chapter summary shown to the Parent
+    manifest/class-<N>.json              the Subjects and Chapters of a Class, made from the above (manifest stage)
 
 A stage skips a chapter whose output already exists unless forced, so an interrupted run resumes
 where it stopped. A chapter that fails is reported and the run carries on.
@@ -31,7 +33,7 @@ from typing import Callable
 
 from pypdf import PdfReader
 
-from . import bundle, catalog, draft, extract, guidance, http, refine_check, render, segment, split, ssc
+from . import bundle, catalog, cbse, draft, extract, guidance, http, refine_check, render, segment, split, ssc
 from .catalog import Book
 from .config import NCERT_BASE, Settings
 
@@ -81,6 +83,9 @@ class Layout:
     def refined(self, book_id: str, chapter_id: str) -> Path:
         return self.root / "refined" / book_id / f"{chapter_id}.json"
 
+    def manifest(self, grade: int) -> Path:
+        return self.root / "manifest" / f"class-{grade}.json"
+
 
 @dataclass
 class Report:
@@ -129,14 +134,24 @@ def _for_each_chapter(stage: str, books: list[Book], work: Callable[[Book, str],
     return report
 
 
+def profile_for(board: str) -> dict:
+    """The Board's profile as the code defines it: the one source of truth, whatever board.json an old run left behind."""
+    return ssc.PROFILE if board == "ssc" else cbse.PROFILE
+
+
+def write_profile(layout: Layout, board: str) -> None:
+    """Writes the Board's profile (board.json): the rules the build and the manifest stage read."""
+    layout.board_profile.parent.mkdir(parents=True, exist_ok=True)
+    layout.board_profile.write_text(json.dumps(profile_for(board), indent=2, ensure_ascii=False), encoding="utf-8")
+
+
 def refresh_catalog(layout: Layout, board: str) -> list[Book]:
     if board == "ssc":
         books = ssc.fetch_catalog()
-        layout.board_profile.parent.mkdir(parents=True, exist_ok=True)
-        layout.board_profile.write_text(json.dumps(ssc.PROFILE, indent=2, ensure_ascii=False), encoding="utf-8")
     else:
         html = http.fetch(f"{NCERT_BASE}/textbook.php").decode("utf-8", errors="replace")
         books = catalog.parse_textbook_page(html)
+    write_profile(layout, board)
     catalog.save(books, layout.catalog)
     return books
 

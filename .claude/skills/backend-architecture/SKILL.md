@@ -5,7 +5,7 @@ description: Lantern's .NET code map, a suffix glossary plus recipes. Use before
 
 # Backend architecture
 
-Lantern's .NET code mirrors the user's `wf` architecture (ADR-0005). Every class has a **suffix** that fixes its
+Lantern's .NET code follows the layered architecture of ADR-0005. Every class has a **suffix** that fixes its
 meaning, layer, base class and registration; every change follows a **recipe**.
 
 1. Read [`docs/architecture/recipes.md`](../../../docs/architecture/recipes.md) and pick the recipe(s) from its decision

@@ -49,10 +49,37 @@ internal static class LocalBoardMasters
             }
         }
 
+        for (var classLevel = 1; classLevel <= 10; classLevel++)
+        {
+            await PutAsync(ncert, $"manifest/class-{classLevel}.json", NcertManifest(classLevel), cancellationToken);
+        }
+
+        for (var classLevel = 1; classLevel <= 5; classLevel++)
+        {
+            await PutAsync(ssc, $"manifest/class-{classLevel}.json", SscManifest(classLevel), cancellationToken);
+        }
+
         await PutAsync(ncert, "catalog.json", $"[{ncertCatalog}]", cancellationToken);
         await PutAsync(ssc, "catalog.json", $"[{sscCatalog}]", cancellationToken);
         await PutAsync(ssc, "board.json", """{"board":"ssc","classes":[1,2,3,4,5],"medium":"English"}""", cancellationToken);
     }
+
+    private static string NcertManifest(int classLevel) =>
+        $$"""
+        {"schema":"class-manifest-v1","board":"cbse","profileVersion":"cbse-v1","class":{{classLevel}},"subjects":[
+          {"subjectId":"mathematics","name":"Mathematics","icon":"maths","chapterCount":2,"chapters":[
+            {"chapterId":"nbk{{classLevel}}101","bookId":"nbk{{classLevel}}1","number":1,"title":"One","summary":"About one."},
+            {"chapterId":"nbk{{classLevel}}102","bookId":"nbk{{classLevel}}1","number":2,"title":"Two","summary":"About two."}]}]}
+        """;
+
+    private static string SscManifest(int classLevel) =>
+        $$"""
+        {"schema":"class-manifest-v1","board":"ssc","profileVersion":"ssc-v2","class":{{classLevel}},"subjects":[
+          {"subjectId":"mathematics","name":"Mathematics","icon":"maths","chapterCount":1,"chapters":[
+            {"chapterId":"sbk{{classLevel}}-maths-01","bookId":"sbk{{classLevel}}-maths","number":1,"title":"One","summary":"About one."}]},
+          {"subjectId":"english","name":"English","icon":"english","chapterCount":1,"chapters":[
+            {"chapterId":"sbk{{classLevel}}-english-01","bookId":"sbk{{classLevel}}-english","number":1,"title":"One","summary":"About one."}]}]}
+        """;
 
     private static void Entry(StringBuilder catalog, string json) => catalog.Append(catalog.Length == 0 ? string.Empty : ",").Append(json);
 

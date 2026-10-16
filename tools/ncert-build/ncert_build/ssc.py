@@ -38,7 +38,15 @@ PROFILE = {
     "lessons_nested_in_chapter": {"English": True},
     "guidance": ["front_matter", "beside_lesson"],
     "language_rule": "simple English; no language Subjects in scope",
-    "profile_version": "ssc-v1",
+    # Serving rules (ADR-0014), beside the build rules above. Order and icons as cbse.PROFILE explains.
+    "subjects": [
+        {"name": "Mathematics", "icon": "maths"},
+        {"name": "English", "icon": "english"},
+        {"name": "Environmental Studies", "icon": "evs"},
+    ],
+    # SSC also has a small contents file per Book (split writes it), with each Chapter's number and title.
+    "chapter_titles": "toc",
+    "profile_version": "ssc-v2",
 }
 
 _BOOK = re.compile(r"openpdf\((\d+)\).*?DivTitle[^>]*>(.*?)</div>", re.S)

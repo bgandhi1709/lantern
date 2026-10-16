@@ -66,6 +66,8 @@ internal sealed class ProblemExceptionHandler(ILogger<ProblemExceptionHandler> l
             LanternErrorCode.ChildDeleting => (HttpStatusCode.Conflict, "child-deleting", "Child is being deleted", "This child is being deleted."),
             LanternErrorCode.FamilyIdTaken => (HttpStatusCode.Conflict, "family-id-taken", "Family id taken", "A family with this id already exists."),
             LanternErrorCode.ClassNotAvailable => (HttpStatusCode.BadRequest, "class-not-available", "Class not available", "Lantern does not have books for this Class on the Family's Board yet."),
+            LanternErrorCode.ContentNotReady => (HttpStatusCode.Conflict, "content-not-ready", "Content not ready", "This child's books are still being prepared. Try again shortly."),
+            LanternErrorCode.InvalidPage => (HttpStatusCode.BadRequest, "invalid-page", "Invalid page", "The limit must be 1 to 100 and the cursor must be one this API returned."),
             LanternErrorCode.FamilyChanged => (HttpStatusCode.Conflict, "family-changed", "Family changed", "The family changed at the same moment; try again."),
             _ => throw new InvalidOperationException($"No problem mapping for {failure.Code}."),
         };

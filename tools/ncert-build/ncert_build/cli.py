@@ -8,7 +8,7 @@ import logging
 import os
 import sys
 
-from . import catalog, draft, gpu, guidance, pipeline, refine_check, render, review, split, upload
+from . import catalog, draft, gpu, guidance, manifest, pipeline, refine_check, render, review, split, upload
 from .config import CORE_SUBJECTS, Settings
 from .ollama import Ollama
 
@@ -92,6 +92,8 @@ def _parser() -> argparse.ArgumentParser:
     stages = parser.add_subparsers(dest="stage", required=True)
 
     stages.add_parser("catalog", help="fetch the Board's book list into catalog.json")
+    making = stages.add_parser("manifest", help="write the Class manifests (manifest/class-N.json) from the Board profile and the build output")
+    making.add_argument("--grades", help="e.g. 1-3,10 (default: 1-10)", default="1-10")
     uploading = stages.add_parser("upload", help="copy the build output to the Board's private blob container")
     uploading.add_argument(
         "--account",
@@ -147,6 +149,11 @@ def _run(args: argparse.Namespace) -> int:
         books = pipeline.refresh_catalog(layout, args.board)
         print(f"{len(books)} books written to {layout.catalog}")
         return 0
+
+    if args.stage == "manifest":
+        report = manifest.write_all(layout, args.board, parse_grades(args.grades))
+        print(report.line())
+        return 1 if report.failed else 0
 
     if args.stage == "upload":
         if not args.account:

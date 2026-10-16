@@ -14,6 +14,22 @@ internal sealed class BoardMaster(BlobContainerClient container)
 {
     public BlobContainerClient Container { get; } = container;
 
+    public const string NcertClassThreeManifest = """
+        {"schema":"class-manifest-v1","board":"cbse","profileVersion":"cbse-v1","class":3,"subjects":[{"subjectId":"mathematics","name":"Mathematics","icon":"maths","chapterCount":1,"chapters":[{"chapterId":"cmat101","bookId":"cmat1","number":1,"title":"Title of cmat101","summary":"About cmat101."}]},{"subjectId":"english","name":"English","icon":"english","chapterCount":2,"chapters":[{"chapterId":"cxyz101","bookId":"cxyz1","number":1,"title":"Title of cxyz101","summary":"About cxyz101."},{"chapterId":"cxyz102","bookId":"cxyz1","number":2,"title":"Title of cxyz102","summary":"About cxyz102."}]}]}
+        """;
+
+    public const string NcertClassFourManifest = """
+        {"schema":"class-manifest-v1","board":"cbse","profileVersion":"cbse-v1","class":4,"subjects":[{"subjectId":"english","name":"English","icon":"english","chapterCount":2,"chapters":[{"chapterId":"cxyz1001","bookId":"cxyz10","number":1,"title":"Title of cxyz1001","summary":"About cxyz1001."},{"chapterId":"dxyz101","bookId":"dxyz1","number":2,"title":"Title of dxyz101","summary":"About dxyz101."}]}]}
+        """;
+
+    public const string SscClassThreeManifest = """
+        {"schema":"class-manifest-v1","board":"ssc","profileVersion":"ssc-v2","class":3,"subjects":[{"subjectId":"mathematics","name":"Mathematics","icon":"maths","chapterCount":2,"chapters":[{"chapterId":"ssc3-maths-01","bookId":"ssc3-maths","number":1,"title":"Title of ssc3-maths-01","summary":"About ssc3-maths-01."},{"chapterId":"ssc3-maths-02","bookId":"ssc3-maths","number":2,"title":"Title of ssc3-maths-02","summary":"About ssc3-maths-02."}]},{"subjectId":"english","name":"English","icon":"english","chapterCount":1,"chapters":[{"chapterId":"ssc3-english-01","bookId":"ssc3-english","number":1,"title":"Title of ssc3-english-01","summary":"About ssc3-english-01."}]},{"subjectId":"environmental-studies","name":"Environmental Studies","icon":"evs","chapterCount":1,"chapters":[{"chapterId":"ssc3-evs1-01","bookId":"ssc3-evs1","number":1,"title":"Title of ssc3-evs1-01","summary":"About ssc3-evs1-01."}]}]}
+        """;
+
+    public const string SscClassFourManifest = """
+        {"schema":"class-manifest-v1","board":"ssc","profileVersion":"ssc-v2","class":4,"subjects":[{"subjectId":"mathematics","name":"Mathematics","icon":"maths","chapterCount":1,"chapters":[{"chapterId":"ssc4-maths-01","bookId":"ssc4-maths","number":1,"title":"Title of ssc4-maths-01","summary":"About ssc4-maths-01."}]},{"subjectId":"environmental-studies","name":"Environmental Studies","icon":"evs","chapterCount":1,"chapters":[{"chapterId":"ssc3-evs12-01","bookId":"ssc3-evs12","number":1,"title":"Title of ssc3-evs12-01","summary":"About ssc3-evs12-01."}]}]}
+        """;
+
     public static async Task<BoardMaster> NcertAsync(AzuriteFixture azurite)
     {
         var master = await NewAsync(azurite, "ncert");
@@ -58,6 +74,9 @@ internal sealed class BoardMaster(BlobContainerClient container)
         await master.PutAsync("board.json");
         await master.PutAsync("toc/cxyz1.json");
         await master.PutAsync("guidance/cxyz1.json");
+
+        await master.PutAsync("manifest/class-3.json", NcertClassThreeManifest);
+        await master.PutAsync("manifest/class-4.json", NcertClassFourManifest);
 
         return master;
     }
@@ -106,6 +125,9 @@ internal sealed class BoardMaster(BlobContainerClient container)
             await master.PutAsync($"toc/{book}.json");
             await master.PutAsync($"guidance/{book}.json");
         }
+
+        await master.PutAsync("manifest/class-3.json", SscClassThreeManifest);
+        await master.PutAsync("manifest/class-4.json", SscClassFourManifest);
 
         await master.PutAsync("review/report-3.txt");
         await master.PutAsync("logs/run-1.log");

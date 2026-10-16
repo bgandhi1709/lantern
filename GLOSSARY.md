@@ -92,6 +92,18 @@ _Avoid_: Schema, template
 The copy of a Board's Books for one Child's Class, kept inside that Class's folder of the Child's Workspace. Plan, Ask and Check read it and never the shared Board container, so a Family needs nothing outside its own storage. It is made in the background when the Child is registered or changes Class, is ready once its `version.json` exists, and stays pinned to the version it was copied from until a refresh. Only the runtime JSON is copied.
 _Avoid_: Cache, snapshot, local copy
 
+**Board profile**:
+A Board's own `board.json` in its master container: how its Books are built and shown, such as the order and icon of its Subjects and where its Chapter titles come from. Read by the build when it makes the Class manifests, never by the API.
+_Avoid_: Board config, Board rules file
+
+**Class manifest**:
+The ready-made list of one Board's Subjects and Chapters for one Class, made once when the content is built and copied into each Child's Content slice. Every Board has the same shape, so the app never needs to know which Board it is showing.
+_Avoid_: Class index, Subject list
+
+**Family manifest**:
+One file in the Family's own storage listing each Child whose Content slice is ready, with the Child's Class and Subjects. It is derived from the slices and never the record of readiness, so it can always be rebuilt. The API reads it to show Home without opening each slice; only the background work writes it, when a Child is added or removed.
+_Avoid_: Cache, Family index, Child list
+
 **Chapter**:
 A numbered unit of a Book, and the unit a Concept belongs to.
 _Avoid_: Lesson, unit
