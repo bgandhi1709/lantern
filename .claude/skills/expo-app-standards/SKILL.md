@@ -31,7 +31,7 @@ Load the `expo` plugin skills that match the task (`expo-router` for routes, `ex
 - A single value is `const NAME = …` in SCREAMING_CASE, declared in the one file that uses it, with the unit in the name (`WAKING_AFTER_MS`) and a name that says what it is for (`MARK_SIZE`, not `SIZE`). Export it only when a second file needs it, and then import it; never copy it. A map from a fixed set to something else is a `Record<Union, T>`, so a new value without an entry fails the build.
 - Failure is an exception or a typed error, not a `boolean` or a magic `null`. The API client throws `ApiError` with the problem code; one place turns codes into messages for the Parent.
 - Short functions, one job each. Early return over nested `if`. Names say what, not how.
-- Comments: only a rare one-line why (a platform quirk, a security property). No comment that restates the code.
+- No comments. A comment means the code is too complicated: rename, extract or simplify. The reason for a decision goes in the ADR or decision log.
 - No hard-coded app text. Every word the Parent sees lives in `src/shared/i18n/en.ts` and is read with `useStrings()`; a new language is a copy of that file typed as `Strings`, so a missing key fails the build. Accessibility labels count as text.
 - No hard-coded environment value (URLs, keys, timeouts). Read it from `src/shared/config.ts`, which reads `EXPO_PUBLIC_*` and refuses to start when one is missing.
 - Remove unused imports and dead code in every file you touch. No `console.log` in committed code.

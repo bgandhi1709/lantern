@@ -2,7 +2,7 @@
 
 Read before writing code and again during review. The architecture rules below are **hard rules**: a change that breaks
 one is refused in review unless an ADR and a decision-log entry that change the rule land first (the divergence guard
-in `docs/agents/workflow.md`). The layering follows the user's `wf` architecture ([ADR-0005](docs/adr/0005-layered-like-wf.md)).
+in `docs/agents/workflow.md`). The layering follows [ADR-0005](docs/adr/0005-layered-api-generic-services.md).
 Anything a linter or CI check can enforce belongs there instead: the `Guardrails` step in `.github/workflows/api.yml`
 checks script modes and keeps test code out of `apps/` and `libs/`, and the architecture tests enforce the mechanical
 rules marked in section 7.
@@ -115,15 +115,16 @@ defaults, suffixes, one type per file, namespaces). Review the rest.
   in the host that uses it, so a missing setting stops the app instead of falling back silently.
 - GitHub Actions carries only per-run values (image tags, port) and its own sign-in.
 - **Never configurable**, by design: storage formats (row keys such as `profile`, `class.json`), the wire contract (action wire names, problem codes, routes, the
-  `x-api-version` header) and product rules (six Children, ages 3 to 18, body and text limits). These are constants or
-  enums (every enum lives in `Lantern.Core.Constants`); changing one is a code change with tests or a migration.
+  `x-api-version` header) and product rules (six Children, ages 3 to 18, body and text limits). These are enums
+  (every enum lives in `Lantern.Core.Constants`), or, for the Workspace and Board file and folder names and the manifest schema ids,
+  the injected `ContentLayout` (D105); changing one is a code change with tests or a migration.
 
 ### 9. Errors
 
 - A failure the caller must see is a `LanternException` carrying a `LanternErrorCode`, mapped to a problem code in
   `ProblemExceptionHandler`. A new condition is a new code, not a new exception class. Never a `bool`, a `null` or a status code from a service or repository.
-- Catch only a specific, expected condition, and say why in one line (a 409 that means "already recorded", a 404 that
-  means "already gone"). The only broad catches are the documented boundaries: the publisher's send, the resender, the
+- Catch only a specific, expected condition, and name it in the `when` filter (`when (IsLostRace(ex))`, `when (IsMissing(ex))`),
+  never in a comment. The only broad catches are the documented boundaries: the publisher's send, the resender, the
   Functions trigger.
 
 ### 10. State and concurrency
@@ -144,8 +145,8 @@ defaults, suffixes, one type per file, namespaces). Review the rest.
 - A fixed set of values is an enum, not a static class of string constants. A static class is only for constants and
   pure framework extension methods, never for logic: logic sits behind an injected interface.
 - Keep classes short and single-purpose.
-- Comments: only a rare one-line why (a security property, a platform quirk, a decision). No banner comments, no XML
-  summaries that restate the code.
+- No comments, in any language. A comment means the code is too complicated: rename, extract or simplify until a senior
+  engineer reads it without one. The reason for a decision goes in the ADR or the decision log, not in the code.
 - Do not add checks that the platform already enforces (for example, what JwtBearer validates).
 
 ## TypeScript app (`client/`)

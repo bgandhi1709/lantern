@@ -28,6 +28,8 @@ Reuse is the default. Create a class only when the reuse case fails.
 | Repository method | The base's single, collection, add, update or remove fits | Storage needs a rule the base lacks (ETag retry, a batch with another row, a status-only read): add to `I{Noun}Repository` |
 | Store | Blob data belongs to the Workspace: add a method to `IWorkspaceStore` | A new Blob area with its own paths: `{Noun}Store` |
 | Event | Never reuse a type for a different meaning | Each distinct outcome gets its own `ActionType` |
+| JSON | Always: inject `IJsonService`, deserialize into the class that has the JSON's shape, change the object and serialize it back | Never call `JsonSerializer` or walk a `JsonNode` (an architecture test fails) |
+| File or folder name | A Workspace or Board master name already in `ContentLayout` | A new name: add it to `ContentLayout` and its pinning test, never a literal in a store |
 | Error | An existing `LanternErrorCode` fits exactly (`ChildNotFound`) | A new condition the caller must tell apart: a new `LanternErrorCode` member and a new problem code |
 | Interactor | One service can do it with its own repository | Two or more services in a fixed order, see below |
 
@@ -101,7 +103,7 @@ would make that service depend on a peer. Until then, keep the logic in the serv
 3. Methods are named after the use case's verbs. It owns ordering and compensation, not rules: a rule stays in the
    service that owns the model.
 4. Register it scoped in `BaseModule`.
-5. The controller injects the interactor instead of the services (wf: `ReportController` → `ReportInteractor`).
+5. The controller injects the interactor instead of the services.
 6. Test it through its controller on Azurite, as the other in-process tests do; replace a collaborator only at the external seams.
 7. Add the interactor to `code-glossary.md`'s Service layer section as the reference example.
 
