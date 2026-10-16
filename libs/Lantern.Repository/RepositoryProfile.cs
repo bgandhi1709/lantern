@@ -5,8 +5,6 @@ using Mapster;
 
 namespace Lantern.Repository;
 
-// Service model <-> entity. Everything maps by name except the Board: it is stored as text, and a Family row written
-// before the Board existed has none, which reads as CBSE.
 internal sealed class RepositoryProfile : IRegister
 {
     public void Register(TypeAdapterConfig config)
@@ -17,5 +15,6 @@ internal sealed class RepositoryProfile : IRegister
         config
             .NewConfig<FamilyEntity, Family>()
             .Map(family => family.Board, entity => string.IsNullOrEmpty(entity.Board) ? BoardType.Cbse : Enum.Parse<BoardType>(entity.Board));
+        config.NewConfig<ClassSubject, Subject>().MapToConstructor(true);
     }
 }

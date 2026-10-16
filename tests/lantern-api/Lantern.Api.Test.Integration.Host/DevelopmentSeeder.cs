@@ -91,6 +91,7 @@ internal sealed class DevelopmentSeeder(
         {
             await workspaces.CreateAsync(family.FamilyId, child.ChildId, child.ClassLevel, cancellationToken);
             await workspaces.CopyContentAsync(family.FamilyId, child.ChildId, child.ClassLevel, family.Board, cancellationToken);
+            await workspaces.AddToManifestAsync(family.FamilyId, child.ChildId, child.ClassLevel, family.Board, cancellationToken);
         }
 
         await families.RegisterAsync(ParentOneUid, family, parent, children, cancellationToken);

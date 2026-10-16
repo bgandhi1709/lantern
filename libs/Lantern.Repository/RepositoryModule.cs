@@ -4,9 +4,12 @@ using Azure.Storage.Blobs;
 using Lantern.Core.Configuration;
 using Lantern.Core.Constants;
 using Lantern.Core.Repository;
+using Lantern.Core.Service;
+using Lantern.Core.Storage;
 using Lantern.Repository.Entities;
 using Lantern.Repository.UnitOfWork;
 using Mapster;
+using MapsterMapper;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -69,6 +72,9 @@ public static class RepositoryModule
                     [BoardType.Ssc] = blobs.GetBlobContainerClient(catalogs.SscContainer),
                 },
                 serviceProvider.GetRequiredService<TimeProvider>(),
+                serviceProvider.GetRequiredService<IJsonService>(),
+                serviceProvider.GetRequiredService<IMapper>(),
+                serviceProvider.GetRequiredService<ContentLayout>(),
                 createContainer: !string.IsNullOrWhiteSpace(Storage(serviceProvider).ConnectionString)
             );
         });

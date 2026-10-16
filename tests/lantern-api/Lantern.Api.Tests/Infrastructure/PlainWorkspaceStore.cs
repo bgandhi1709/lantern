@@ -8,5 +8,5 @@ namespace Lantern.Api.Tests.Infrastructure;
 internal static class PlainWorkspaceStore
 {
     public static WorkspaceStore Over(BlobContainerClient container, bool createContainer) =>
-        new(container, new Dictionary<BoardType, BlobContainerClient>(), TimeProvider.System, createContainer);
+        new(container, new Dictionary<BoardType, BlobContainerClient>(), TimeProvider.System, TestServices.Json, TestServices.Mapper, TestServices.Layout, createContainer);
 }

@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text.Json.Nodes;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 using Lantern.Api.Models;
@@ -79,10 +80,34 @@ public sealed class ContentSliceE2ETests
         }
     }
 
+    [Fact]
+    public async Task TheSeededFamily_HasAnEntryInTheFamilyManifestForEachOfItsTenChildren()
+    {
+        using var client = await NewParentAsync("dev-parent-1");
+        var seeded = (await client.GetFromJsonAsync<FamilyModel>(new Uri("/v1/me", UriKind.Relative)))!;
+
+        var manifest = JsonNode.Parse(await ManifestAsync(seeded.FamilyId))!;
+
+        Assert.Equal("family-manifest-v1", (string)manifest["schema"]!);
+        Assert.Equal(10, manifest["children"]!.AsObject().Count);
+        foreach (var child in seeded.Children)
+        {
+            var entry = manifest["children"]![child.ChildId.ToString("D")]!;
+            Assert.Equal(child.ClassLevel, (int)entry["class"]!);
+            Assert.Equal("cbse-v1", (string)entry["profileVersion"]!);
+            Assert.Equal(["mathematics"], entry["subjects"]!.AsArray().Select(subject => (string)subject!["subjectId"]!));
+            Assert.Equal(2, (int)entry["subjects"]![0]!["chapterCount"]!);
+        }
+    }
+
+    private static async Task<string> ManifestAsync(Guid familyId) =>
+        (await new BlobServiceClient(AzuriteBlobs).GetBlobContainerClient("family").GetBlobClient($"{familyId:D}/manifest.json").DownloadContentAsync()).Value.Content.ToString();
+
     // What a Child of this Class gets from the stack's NCERT container: its one built Book, nothing of the unbuilt Hindi Book.
     private static string[] NcertSlice(int classLevel) =>
     [
         "catalog.json",
+        "manifest.json",
         $"refined/nbk{classLevel}1/nbk{classLevel}101.json",
         $"refined/nbk{classLevel}1/nbk{classLevel}102.json",
         $"summaries/nbk{classLevel}1/nbk{classLevel}101.json",
@@ -97,6 +122,7 @@ public sealed class ContentSliceE2ETests
         "catalog.json",
         $"guidance/sbk{classLevel}-english.json",
         $"guidance/sbk{classLevel}-maths.json",
+        "manifest.json",
         $"refined/sbk{classLevel}-english/sbk{classLevel}-english-01.json",
         $"refined/sbk{classLevel}-maths/sbk{classLevel}-maths-01.json",
         $"summaries/sbk{classLevel}-english/sbk{classLevel}-english-01.json",

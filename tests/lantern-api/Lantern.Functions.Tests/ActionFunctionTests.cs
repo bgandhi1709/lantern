@@ -2,6 +2,7 @@ using System.Text.Json;
 using Azure.Messaging.ServiceBus;
 using Lantern.Core.Actions;
 using Lantern.Core.Constants;
+using Lantern.Core.Service;
 using Lantern.Functions.Handler;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -16,7 +17,7 @@ public sealed class ActionFunctionTests
     private readonly Mock<IActionDispatcher> dispatcher = new();
     private readonly Mock<ServiceBusMessageActions> actions = new();
 
-    private ActionFunction Function => new(dispatcher.Object, NullLogger<ActionFunction>.Instance);
+    private ActionFunction Function => new(dispatcher.Object, new JsonService(), NullLogger<ActionFunction>.Instance);
 
     [Fact]
     public async Task RunAsync_WhenTheHandlerSucceeds_CompletesTheMessage()

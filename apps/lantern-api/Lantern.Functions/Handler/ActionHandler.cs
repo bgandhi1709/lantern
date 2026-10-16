@@ -2,12 +2,13 @@ using System.Text.Json;
 using Lantern.Core.Actions;
 using Lantern.Core.Constants;
 using Lantern.Core.Repository;
+using Lantern.Core.Service;
 
 namespace Lantern.Functions.Handler;
 
 // Every handler gets the same guard: a message whose ledger row is gone (a repeat, or a redelivery after the action
 // finished) does nothing, and the row is removed only after the handler's own steps succeed.
-public abstract class ActionHandler<TPayload>(IActionLedger ledger) : IActionHandler
+public abstract class ActionHandler<TPayload>(IActionLedger ledger, IJsonService json) : IActionHandler
 {
     public abstract ActionType Type { get; }
 
@@ -21,7 +22,7 @@ public abstract class ActionHandler<TPayload>(IActionLedger ledger) : IActionHan
         }
 
         var payload =
-            JsonSerializer.Deserialize<TPayload>(message.Payload, JsonSerializerOptions.Web)
+            json.Deserialize<TPayload>(message.Payload)
             ?? throw new JsonException($"The {message.Type} payload is empty.");
 
         await HandleAsync(payload, cancellationToken);

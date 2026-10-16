@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Azure.Messaging.ServiceBus;
 using Lantern.Core.Actions;
+using Lantern.Core.Service;
 using Lantern.Functions.Handler;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
@@ -10,7 +11,7 @@ namespace Lantern.Functions;
 // The one trigger for every action type: it hands the message to the dispatcher, which picks the handler by type.
 // Messages are settled by hand. A failed one is left unsettled on purpose, so its lock expiring is the retry delay and
 // the queue's delivery limit moves a message that never succeeds to the dead-letter queue.
-public sealed class ActionFunction(IActionDispatcher dispatcher, ILogger<ActionFunction> logger)
+public sealed class ActionFunction(IActionDispatcher dispatcher, IJsonService json, ILogger<ActionFunction> logger)
 {
     [Function("DispatchAction")]
     public async Task RunAsync(
@@ -26,7 +27,7 @@ public sealed class ActionFunction(IActionDispatcher dispatcher, ILogger<ActionF
         ActionMessage action;
         try
         {
-            action = message.Body.ToObjectFromJson<ActionMessage>(JsonSerializerOptions.Web);
+            action = json.Deserialize<ActionMessage>(message.Body.ToString());
         }
         catch (JsonException)
         {

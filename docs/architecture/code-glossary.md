@@ -2,8 +2,7 @@
 
 Every kind of class in Lantern's .NET code, named by its **suffix**. The suffix is a contract: it says what the class
 does, where it lives, what it may depend on, and how it is registered. Pick the suffix first; the folder, base class and
-registration follow from it. The meanings come from the user's `wf` architecture (`E:\wf\wf`) and keep wf's context; where Lantern
-differs, the entry says so. Domain words (Family, Child, Workspace and so on) are in [`GLOSSARY.md`](../../GLOSSARY.md);
+registration follow from it. The meanings follow the layered architecture of [ADR-0005](../adr/0005-layered-api-generic-services.md). Domain words (Family, Child, Workspace and so on) are in [`GLOSSARY.md`](../../GLOSSARY.md);
 the steps for each kind of change are in [`recipes.md`](recipes.md).
 
 The architecture tests in `tests/lantern-api/Lantern.Api.Tests/Architecture` enforce the naming and placement rules that
@@ -26,9 +25,11 @@ HTTP ─▶ Controller ─▶ (Interactor) ─▶ Service ─▶ Repository / St
 **Controller** (`{Nouns}Controller`, `Controllers/V{n}/`) **(tested)**
 - Meaning: the HTTP surface of one resource. It binds an API model, maps it to a service model, calls one service (or
   interactor) method, maps the result back and picks the status code.
-- Base: `ResourceControllerBase<TModel, TServiceModel>` (wf: `ResourceControllerBase<TSaveModel, TModel, TServiceModel>`).
+- Base: `ResourceControllerBase<TModel, TServiceModel>`.
 - Never: business rules, `try`/`catch`, storage, a Family id read from the request.
 - Example: `ChildrenController`. A resource the caller has exactly one of is singular: `FamilyController`.
+- A read-only view with no service model of its own (`SubjectsController`) derives `ControllerBase` directly with the same
+  attributes (`[ApiController]`, `[Authorize]`, `[ApiVersion]`, the rate limit) and maps through `IMapper`. It calls its own service.
 
 **Model** (`Models/`) **(tested: only in `Lantern.Api.Models`)**
 - Meaning: the shape the app sees or sends. Every API model lives here and nowhere else.
@@ -40,15 +41,14 @@ HTTP ─▶ Controller ─▶ (Interactor) ─▶ Service ─▶ Repository / St
 
 **Profile** (`ApiProfile`, `Mapping/`)
 - Meaning: the one Mapster `IRegister` for API model ⇄ service model. Only a mapping that is not by name goes here.
-  `*Profile` names only these classes (wf: `ApiProfile`, `CoreApiMapperProfile`).
+  `*Profile` names only these classes.
 
 **Resolver** (`HttpIdentityResolver`, `Auth/`)
 - Meaning: resolves a value from the ambient context, here the caller from the token, behind a Core interface
-  (`IIdentityResolver`). wf uses Resolver both this way (`IdentityResolver`) and for per-type strategies
-  (`ResponseExportResolver`).
+  (`IIdentityResolver`).
 
 **ExceptionHandler** (`ProblemExceptionHandler`, `Exceptions/`)
-- Meaning: the one place a `LanternException` becomes an HTTP problem code (wf: `ExceptionMiddleware`). A new
+- Meaning: the one place a `LanternException` becomes an HTTP problem code. A new
   `LanternErrorCode` adds one line here.
 
 **Options** (`{Section}Options`, `Configuration/`) **(tested)**: see the Core layer. API-only settings
@@ -59,7 +59,7 @@ HTTP ─▶ Controller ─▶ (Interactor) ─▶ Service ─▶ Repository / St
 ## Function layer: `apps/lantern-api/Lantern.Functions`
 
 **Function** (`ActionFunction`)
-- Meaning: an Azure Functions entry point (wf: `*Trigger`). Lantern has one: it reads `workspace-events`, hands each message
+- Meaning: an Azure Functions entry point. Lantern has one: it reads `workspace-events`, hands each message
   to the dispatcher and settles it. A new event never adds a Function.
 
 **Dispatcher** (`ActionDispatcher`, `Handler/`)
@@ -83,15 +83,16 @@ HTTP ─▶ Controller ─▶ (Interactor) ─▶ Service ─▶ Repository / St
 - Never: Azure SDK types, row keys, ciphertext, HTTP types.
 - Registered scoped in `BaseModule`.
 - Example: `ChildService`, `FamilyService`.
+- A read-only view over a Child's own storage has no repository and so no `ServiceBase`: `SubjectService` looks the Child up
+  through `IServiceBase<Child>` (which scopes it to the caller's Family) and reads through `IWorkspaceStore`.
 
 **Interactor** (`I{UseCase}Interactor` / `{UseCase}Interactor`, `Lantern.Base/Interactors/`)
 - Meaning: one use case that orchestrates several services, when putting it in one service would make that service
-  depend on its peers or grow past one responsibility. In wf, `ReportInteractor` sits over the Request, Response,
-  Accessor, Notification and Inquiry services and is called by `ReportController`.
+  depend on its peers or grow past one responsibility, for example one use case over several services, called by its
+  controller.
 - Depends on services (and resolvers), never on repositories directly.
 - Lantern has none yet; see [`recipes.md`](recipes.md#interactor) for when to add the first.
-- Not this: wf also calls its validation strategies `*Interactor` (`EmailValidator : IValidationInteractor`); Lantern
-  names those `*Validator`.
+- Not this: validation strategies are named `*Validator`, never `*Interactor`.
 
 **Validator** (`{Noun}Validator : IValidator<{Noun}>`, `Validation/`) **(tested)**
 - Meaning: checks one service model against the product rules and throws a `LanternException` (`InvalidRequest`, or the specific code) on the first failure.
@@ -108,9 +109,14 @@ HTTP ─▶ Controller ─▶ (Interactor) ─▶ Service ─▶ Repository / St
 **Service model** (`{Noun}`, `Models/`)
 - Meaning: what services and repositories exchange. Plaintext, no storage detail. Implements `IFamilyModel` when it
   belongs to a Family. Examples: `Child`, `Family`, `Parent`, `Registration`.
+- A read-only view that is never a stored row (`Subject`, `Chapter`, `Page<T>`) is a sealed class with get-only properties and does not implement
+  `IFamilyModel`; the manifests that carry it are `FamilyManifest` and `ClassManifest`, both deriving `Manifest` (the schema check), and
+  made of `ClassSubject` (a Subject with its Chapters, as the build writes it) and `FamilyChild` (one Child's entry: Class,
+  profile and Subjects, which Mapster maps from a `ClassManifest`) (ADR-0014). `ContentVersion` is `version.json`, the
+  readiness marker (ADR-0013).
 
 **Base** (`ServiceBase<T>`, `IServiceBase<T>`, `IRepositoryBase<T>`)
-- Meaning: the generic behaviour every resource gets for free (wf: the same names). `*Base` marks a class meant only to
+- Meaning: the generic behaviour every resource gets for free. `*Base` marks a class meant only to
   be derived or a contract every type of its kind shares.
 
 **Repository contract** (`I{Noun}Repository`, `Repository/`)
@@ -118,6 +124,31 @@ HTTP ─▶ Controller ─▶ (Interactor) ─▶ Service ─▶ Repository / St
   class lives in `Lantern.Repository`.
 
 **Store contract** (`I{Noun}Store`, `Repository/`): the same for Blob storage (`IWorkspaceStore`).
+
+**Calculator** (`I{Noun}Calculator` / `{Noun}Calculator`, `Service/`)
+- Meaning: pure computation that more than one service shares, behind an interface. No storage, no
+  state, no I/O. It is how shared logic stays out of static helpers (CODING_STANDARDS.md).
+- Example: `PageCalculator` cuts a list into a page and issues and reads its cursor; `SubjectService` uses it now and the
+  Chapters service will. Registered as a singleton in `CoreModule`.
+
+**Json service** (`IJsonService` / `JsonService`, `Service/`) **(tested: the only code that calls the JSON serializer)**
+- Meaning: the one place that turns JSON text into a class and back, with one set of options (camelCase, any case on read,
+  compact; `SerializeIndented` for files people read). Null or empty text reads as null; bad JSON throws. Registered as a
+  singleton in `CoreModule`.
+- JSON is data: read it into the class that has its shape, change that object, and write it back (`FamilyManifest.Add`,
+  `Remove`). Never walk a `JsonNode` to copy values into a class. A document with no class of its own (the Board's catalog,
+  which is copied as the publisher wrote it) is read as a `JsonArray` through the same service.
+- Example: `WorkspaceStore` reads and writes the manifests and `version.json` through it; the publisher, the Service Bus
+  sender and the Functions handlers use it for the queue message.
+
+**Layout** (`ContentLayout`, `Lantern.Core/Storage/`) **(tested: pinned; the only code that names Workspace files and folders)**
+- Meaning: every file and folder name of the Workspace and the Board masters (`class.json`, `version.json`, `refined/`,
+  `summaries/`, `manifest/class-N.json` and the rest), every path built from them, and the two manifest schema ids. They are
+  a contract with `ncert-build` and with what is already stored, so they are not settings (D36) and they live in one class
+  instead of as literals in the store.
+- An instance registered as a singleton in `CoreModule`, injected into `WorkspaceStore`; a model that needs a schema id is
+  handed it (`EnsureValid(layout.ClassManifestSchema)`). Tests that pin the real names write them as literals on purpose.
+- Not for environment values (those are Options) and not for fixed sets of values (those are enums).
 
 **Ledger** (`IActionLedger`): the record of accepted events no handler has finished.
 
@@ -129,8 +160,7 @@ HTTP ─▶ Controller ─▶ (Interactor) ─▶ Service ─▶ Repository / St
   the queue and logs, never throws, on failure.
 
 **Generic external service** (`I{Resource}Service` / `{Resource}Service`, or `I{Resource}Client`)
-- Meaning: the one gateway to an external resource, knowing nothing of what it carries (wf: `IBusService<T>`, the
-  `*Client` libraries). `ServiceBusService` sends any model to any queue;
+- Meaning: the one gateway to an external resource, knowing nothing of what it carries. `ServiceBusService` sends any model to any queue;
   `CryptoService` holds the uid hash (Lantern holds no Family key, ADR-0010). **(tested: each Azure client has one owner)**
 
 **Resolver contract** (`IIdentityResolver`): the caller, resolved per request by the host.
@@ -143,14 +173,20 @@ HTTP ─▶ Controller ─▶ (Interactor) ─▶ Service ─▶ Repository / St
 
 **Options** (`{Section}Options` with `const string SectionName`, `Configuration/`) **(tested: no defaults)**
 - Meaning: one configuration section, bound and validated with DataAnnotations; the host calls `ValidateOnStart`.
-  Values come from the bicepparam ([D36](../ideation/decision-log.md)). wf calls these `*Configuration`.
+  Values come from the bicepparam ([D36](../ideation/decision-log.md)).
 
-**Module** (`{Layer}Module.AddLantern{Layer}()`): the one DI registration per project (wf: `*Module`,
-`DependencyInjection`). `CoreModule`, `RepositoryModule`, `BaseModule`, `FunctionsModule`.
+**Module** (`{Layer}Module.AddLantern{Layer}()`): the one DI registration per project. `CoreModule`, `RepositoryModule`, `BaseModule`, `FunctionsModule`.
 
 **Enum** (`{Noun}Type`, `{Noun}Status` or `{Noun}Code`, `Constants/`, namespace `Lantern.Core.Constants`): a fixed set of
-values (wf: `ActivationType`, `*Status`). `ActionType`, `ChildStatus`, `BoardType`, `LanternErrorCode`. Every enum is a
+values. `ActionType`, `ChildStatus`, `BoardType`, `LanternErrorCode`. Every enum is a
 constant, so every enum lives in `Lantern.Core.Constants`. Never a static class of string constants.
+
+**Manifest** (`{Noun}Manifest`, `Models/`)
+- Meaning: a derived, versioned JSON document that is read back as a model: `ClassManifest` (the Subjects and Chapters of one
+  Board and Class, made by the build and copied into each slice as `content/manifest.json`) and `FamilyManifest` (the index
+  of the Children whose slice is ready, kept in `{familyId}/manifest.json`). Both check their `schema` and refuse one they do
+  not know. A change to a manifest returns a new one, so a retry after a lost race starts again from what is stored (ADR-0014).
+- Never the record of readiness (that is `content/version.json`) and never a list of blobs (that is a Snapshot).
 
 ## Repository layer: `libs/Lantern.Repository` (storage only)
 
@@ -166,19 +202,19 @@ constant, so every enum lives in `Lantern.Core.Constants`. Never a static class 
 - Meaning: the stored row shape. Derives `TableEntityBase`; personal text is a `{Field}Locked` string the phone locked. Internal, never returned.
 
 **UnitOfWork** (`UnitOfWork<TEntity>`, `UnitOfWork/`) **(tested: the only `TableClient` holder)**
-- Meaning: the only class that sends table requests (wf: `UnitOfWork`, `GenericUnitOfWork`). One per entity type,
+- Meaning: the only class that sends table requests. One per entity type,
   registered in `RepositoryModule`.
 
 **Store** (`{Noun}Store`) **(tested: the only Blob client holder)**
 - Meaning: the Blob counterpart of a repository. `WorkspaceStore` owns the Workspace paths and marker.
 
-**Manifest** (`{Noun}Manifest`, a private record inside the Store that reads a master container)
+**Snapshot** (`{Noun}Snapshot`, a private record inside the Store that reads a master container)
 - Meaning: the blobs one copy will make, each with its ETag, read from the master before the copy and read again after it.
   A second read that differs means the master changed mid-copy, so the slice is not marked ready (ADR-0013, D90).
-- Examples: `ContentManifest` (one Class's slice), `BookManifest` (one Book's files).
+- Examples: `ContentSnapshot` (one Class's slice), `BookSnapshot` (one Book's files).
 - Never: a "plan". Plan is the Parent's intent to study a Chapter, the first step of Plan, Ask and Check (`GLOSSARY.md`), so
-  no class, method or comment names a copy's file list that. Also not for a build's file list or an app manifest: a
-  Manifest here is only a list of blobs with ETags that is read twice and compared.
+  no class, method or comment names a copy's file list that. Not a Manifest either: these were called `ContentManifest` and
+  `BookManifest` until ADR-0014 gave that word to the derived documents in Core.
 
 **Ledger** (`ActionLedger`): the action ledger's table operations.
 
@@ -189,23 +225,21 @@ here (the Board, stored as text; a row with no Board reads as CBSE).
 
 **Attribute** (`{Meaning}Attribute`)
 - Meaning: declarative metadata a framework class reads by reflection, so the rule sits on the thing it describes
-  (wf: `RoleAccessAttribute` on endpoints, `TranslationAttribute` and `AuditAttribute` on models). Lantern has none
+  (for example a role check on endpoints, or translation and audit markers on models). Lantern has none
   today. A new attribute lives beside the code that reads it.
 
-## Kinds wf has that Lantern does not use
+## Kinds Lantern does not use
 
 These are decided, not missing. Use the Lantern alternative.
 
-| wf kind | What it does in wf | Lantern instead |
+| Kind | What it would do | Lantern instead |
 |---|---|---|
-| `*Filter : BaseDataFilter<TEntity>` | Implicit tenant filter on every SQL query | The Family partition key: every read is already one partition |
-| `*Security : ServiceAccessControlBase<T>` | Per-model access checks before save or remove | Family scope in `ServiceBase`. Add a `{Noun}Security` only when a rule goes beyond "same Family" (for example, Parent roles) |
-| `*Job` (Quartz) | Scheduled work | An event and a handler; no timers (D31) |
-| `*Middleware` | HTTP pipeline concerns | ASP.NET's built-ins plus `ProblemExceptionHandler` |
-| `*Context` (EF `DbContext`) | SQL session | `UnitOfWork<TEntity>` |
-| `*Helper`, `*Utils` | Static grab-bags | An injected interface (CODING_STANDARDS.md: inversion of control) |
+| `*Filter : BaseDataFilter<TEntity>` | An implicit tenant filter on every SQL query | The Family partition key: every read is already one partition |
+| `*Security : ServiceAccessControlBase<T>` | Per-model access checks before a save or remove | Family scope in `ServiceBase`. Add a `{Noun}Security` only when a rule goes beyond "same Family" (for example, Parent roles) |
+| `*Job` (Quartz) | Runs scheduled work | An event and a handler; no timers (D31) |
+| `*Middleware` | Handles HTTP pipeline concerns | ASP.NET's built-ins plus `ProblemExceptionHandler` |
+| `*Context` (EF `DbContext`) | Holds a SQL session | `UnitOfWork<TEntity>` |
+| `*Helper`, `*Utils` | Collects static helpers | An injected interface (CODING_STANDARDS.md: inversion of control) |
 
-When one of the remaining wf kinds becomes necessary (`*Transformer` converts a set of models into another shape,
-`*Generator` produces a file, `*Calculator` does pure computation, `*Converter` converts one value, `*Result` is an
-operation's multi-part return, `*Factory` builds objects DI cannot), introduce it with wf's meaning, behind an
-interface, in the layer whose concern it is, and add it to this glossary in the same PR.
+When another conventional kind becomes necessary (`*Transformer`, `*Generator`, `*Converter`, `*Result`, `*Factory`),
+introduce it behind an interface, in the layer whose concern it is, and add it to this glossary in the same PR.

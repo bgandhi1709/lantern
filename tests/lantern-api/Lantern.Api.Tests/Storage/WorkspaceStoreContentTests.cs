@@ -22,6 +22,7 @@ public sealed class WorkspaceStoreContentTests(AzuriteFixture azurite)
     private static readonly string[] NcertClassThree =
     [
         "catalog.json",
+        "manifest.json",
         "refined/cmat1/cmat101.json",
         "refined/cxyz1/cxyz101.json",
         "refined/cxyz1/cxyz102.json",
@@ -39,6 +40,7 @@ public sealed class WorkspaceStoreContentTests(AzuriteFixture azurite)
         "guidance/ssc3-english.json",
         "guidance/ssc3-evs1.json",
         "guidance/ssc3-maths.json",
+        "manifest.json",
         "refined/ssc3-english/ssc3-english-01.json",
         "refined/ssc3-evs1/ssc3-evs1-01.json",
         "refined/ssc3-maths/ssc3-maths-01.json",
@@ -151,6 +153,8 @@ public sealed class WorkspaceStoreContentTests(AzuriteFixture azurite)
     [InlineData(BoardType.Ssc, "guidance/ssc3-evs1.json")]
     [InlineData(BoardType.Ssc, "summaries/ssc3-maths/ssc3-maths-02.json")]
     [InlineData(BoardType.Ssc, "refined/ssc3-english/ssc3-english-01.json")]
+    [InlineData(BoardType.Cbse, "manifest/class-3.json")]
+    [InlineData(BoardType.Ssc, "manifest/class-3.json")]
     [InlineData(BoardType.Cbse, "summaries/cxyz1/cxyz102.json")]
     [InlineData(BoardType.Cbse, "summaries/cmat1/cmat101.json")]
     public async Task CopyContentAsync_ARequiredFileIsMissing_Throws_AndLeavesNothingBehind(BoardType board, string missing)
@@ -472,6 +476,7 @@ public sealed class WorkspaceStoreContentTests(AzuriteFixture azurite)
             "catalog.json",
             "guidance/ssc3-evs12.json",
             "guidance/ssc4-maths.json",
+            "manifest.json",
             "refined/ssc3-evs12/ssc3-evs12-01.json",
             "refined/ssc4-maths/ssc4-maths-01.json",
             "summaries/ssc3-evs12/ssc3-evs12-01.json",
@@ -551,7 +556,7 @@ public sealed class WorkspaceStoreContentTests(AzuriteFixture azurite)
             masters[BoardType.Ssc] = ssc;
         }
 
-        return new WorkspaceStore(family, masters, TimeProvider.System, createContainer: true);
+        return new WorkspaceStore(family, masters, TimeProvider.System, TestServices.Json, TestServices.Mapper, TestServices.Layout, createContainer: true);
     }
 
     private static BlobClientOptions OptionsWith(HttpPipelinePolicy policy)
@@ -609,7 +614,8 @@ public sealed class WorkspaceStoreContentTests(AzuriteFixture azurite)
     {
         foreach (var name in names.Where(name => name is not ("catalog.json" or "version.json")))
         {
-            Assert.Equal(await master.BytesAsync(name), await ContentBytesAsync(familyId, childId, classLevel, name));
+            var source = name == "manifest.json" ? $"manifest/class-{classLevel}.json" : name;
+            Assert.Equal(await master.BytesAsync(source), await ContentBytesAsync(familyId, childId, classLevel, name));
         }
     }
 

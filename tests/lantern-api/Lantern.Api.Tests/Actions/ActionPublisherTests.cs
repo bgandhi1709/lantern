@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Lantern.Api.Tests.Infrastructure;
 using Lantern.Core.Actions;
 using Lantern.Core.Configuration;
 using Lantern.Core.Constants;
@@ -18,7 +19,7 @@ public sealed class ActionPublisherTests
     private readonly Mock<IActionLedger> ledger = new();
     private readonly FixedClock clock = new FixedClock(new DateTimeOffset(2026, 10, 1, 8, 0, 0, TimeSpan.Zero));
 
-    private ActionPublisher Publisher => new(serviceBus.Object, ledger.Object, Options.Create(new ActionOptions { Queue = "actions" }), clock, NullLogger<ActionPublisher>.Instance);
+    private ActionPublisher Publisher => new(serviceBus.Object, ledger.Object, TestServices.Json, Options.Create(new ActionOptions { Queue = "actions" }), clock, NullLogger<ActionPublisher>.Instance);
 
     [Fact]
     public async Task RecordAsync_WritesTheLedgerRow_WithTheWebJsonPayload()

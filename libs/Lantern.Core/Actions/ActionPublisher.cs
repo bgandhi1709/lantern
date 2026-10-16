@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Text.Json;
 using Lantern.Core.Configuration;
 using Lantern.Core.Constants;
 using Lantern.Core.Logging;
@@ -13,6 +12,7 @@ namespace Lantern.Core.Actions;
 internal sealed class ActionPublisher(
     IServiceBusService serviceBus,
     IActionLedger ledger,
+    IJsonService json,
     IOptions<ActionOptions> options,
     TimeProvider clock,
     ILogger<ActionPublisher> logger
@@ -25,7 +25,7 @@ internal sealed class ActionPublisher(
         CancellationToken cancellationToken
     )
     {
-        var message = new ActionMessage(id, type, JsonSerializer.Serialize(payload, JsonSerializerOptions.Web), Activity.Current?.Id);
+        var message = new ActionMessage(id, type, json.Serialize(payload), Activity.Current?.Id);
 
         await ledger.RecordAsync(message, clock.GetUtcNow(), cancellationToken);
 

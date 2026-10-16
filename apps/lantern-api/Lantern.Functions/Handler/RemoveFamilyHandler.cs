@@ -1,6 +1,7 @@
 using Lantern.Core.Actions;
 using Lantern.Core.Constants;
 using Lantern.Core.Repository;
+using Lantern.Core.Service;
 using Microsoft.Extensions.Logging;
 
 namespace Lantern.Functions.Handler;
@@ -9,10 +10,11 @@ namespace Lantern.Functions.Handler;
 // created at the same moment either sees its Child gone and removes itself or is caught by the sweep.
 internal sealed class RemoveFamilyHandler(
     IActionLedger ledger,
+    IJsonService json,
     IWorkspaceStore workspaces,
     IFamilyRepository families,
     ILogger<RemoveFamilyHandler> logger
-) : ActionHandler<RemoveFamilyPayload>(ledger)
+) : ActionHandler<RemoveFamilyPayload>(ledger, json)
 {
     public override ActionType Type => ActionType.RemoveFamily;
 
