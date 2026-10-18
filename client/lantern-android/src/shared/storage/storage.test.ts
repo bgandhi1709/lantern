@@ -24,6 +24,24 @@ describe('readValue', () => {
     expect(await readValue('welcomeDismissed')).toBe(false);
   });
 
+  it('returns the default look when a saved colour is one this app does not know', async () => {
+    await AsyncStorage.setItem('lantern.v1.colourScheme', JSON.stringify('purple'));
+
+    expect(await readValue('colourScheme')).toBe('teal');
+  });
+
+  it('saves the look in plain storage and clears it with everything else', async () => {
+    await writeValue('theme', 'dark');
+    await writeValue('textSize', 'large');
+    await writeValue('colourScheme', 'blue');
+
+    await clearAll();
+
+    expect(await readValue('theme')).toBe('system');
+    expect(await readValue('textSize')).toBe('default');
+    expect(await readValue('colourScheme')).toBe('teal');
+  });
+
   it('returns the default when the stored value does not match its schema', async () => {
     await AsyncStorage.setItem('lantern.v1.welcomeDismissed', JSON.stringify('yes'));
 

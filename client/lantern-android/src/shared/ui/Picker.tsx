@@ -2,7 +2,7 @@ import { Picker as NativePicker } from '@react-native-picker/picker';
 import type { ReactNode } from 'react';
 import { Text, View } from 'react-native';
 
-import { colors } from './theme';
+import { useColors } from '../theme';
 
 export type PickerOption = { value: string; label: string };
 
@@ -29,6 +29,7 @@ export function Picker({
   hint,
   testID,
 }: Props) {
+  const colors = useColors();
   return (
     <View>
       <Text importantForAccessibility="no" className="font-inter-bold text-body text-ink">

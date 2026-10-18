@@ -1,13 +1,14 @@
 import { Text, View } from 'react-native';
 
 import { useStrings } from '../shared/i18n';
-import { colors } from '../shared/ui/theme';
+import { useColors } from '../shared/theme';
 import { tabGlyphs } from './homeIcons';
 
 const LATER_TABS = ['teach', 'check', 'progress'] as const;
 
 export function HomeTabs() {
   const tabs = useStrings().home.tabs;
+  const colors = useColors();
 
   return (
     <View
@@ -21,8 +22,8 @@ export function HomeTabs() {
         accessibilityLabel={tabs.home}
         className="flex-1 items-center justify-center gap-0.5"
       >
-        {tabGlyphs.home(colors.primary)}
-        <Text className="font-inter-bold text-caption text-primary">{tabs.home}</Text>
+        {tabGlyphs.home(colors.accent)}
+        <Text className="font-inter-bold text-caption text-accent">{tabs.home}</Text>
       </View>
       {LATER_TABS.map((tab) => (
         <View

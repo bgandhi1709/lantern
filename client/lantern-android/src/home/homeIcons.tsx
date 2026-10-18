@@ -1,19 +1,33 @@
 import type { ReactNode } from 'react';
 import Svg, { Path, Rect } from 'react-native-svg';
 
-import { colors } from '../shared/ui/theme';
+import { useColors } from '../shared/theme';
 import type { SubjectIcon } from './homeApi';
 
-type GlyphProps = { children: ReactNode; size: number; color?: string; strokeWidth?: number };
+type Tone = 'accent' | 'muted' | 'deep' | 'onPrimary';
+type GlyphProps = {
+  children: ReactNode;
+  size: number;
+  tone?: Tone;
+  color?: string;
+  strokeWidth?: number;
+};
 
-function Glyph({ children, size, color = colors.primary, strokeWidth = 2.25 }: GlyphProps) {
+function Glyph({ children, size, tone = 'accent', color, strokeWidth = 2.25 }: GlyphProps) {
+  const colors = useColors();
+  const tones: Record<Tone, string> = {
+    accent: colors.accent,
+    muted: colors.textSecondary,
+    deep: colors.primaryDeep,
+    onPrimary: colors.onPrimary,
+  };
   return (
     <Svg
       width={size}
       height={size}
       viewBox="0 0 24 24"
       fill="none"
-      stroke={color}
+      stroke={color ?? tones[tone]}
       strokeWidth={strokeWidth}
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -62,25 +76,25 @@ export const SignOutIcon = () => (
 );
 
 export const ChevronDownIcon = () => (
-  <Glyph size={18} color={colors.textSecondary} strokeWidth={2.5}>
+  <Glyph size={18} tone="muted" strokeWidth={2.5}>
     <Path d="M6 9l6 6 6-6" />
   </Glyph>
 );
 
 export const ChevronRightIcon = () => (
-  <Glyph size={20} color={colors.textSecondary} strokeWidth={2.5}>
+  <Glyph size={20} tone="muted" strokeWidth={2.5}>
     <Path d="M9 5l7 7-7 7" />
   </Glyph>
 );
 
 export const PlusIcon = () => (
-  <Glyph size={22} color={colors.primaryDeep} strokeWidth={2.75}>
+  <Glyph size={22} tone="deep" strokeWidth={2.75}>
     <Path d="M12 5v14M5 12h14" />
   </Glyph>
 );
 
 export const TickIcon = () => (
-  <Glyph size={18} color={colors.onPrimary} strokeWidth={3.5}>
+  <Glyph size={18} tone="onPrimary" strokeWidth={3.5}>
     <Path d="M5 12.5l4.5 4.5L19 7.5" />
   </Glyph>
 );

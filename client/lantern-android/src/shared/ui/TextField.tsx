@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Text, TextInput, View } from 'react-native';
 
-import { colors } from './theme';
+import { useColors } from '../theme';
 
 type Props = {
   label: string;
@@ -31,6 +31,7 @@ export function TextField({
   error,
   testID,
 }: Props) {
+  const colors = useColors();
   return (
     <View>
       <Text importantForAccessibility="no" className="font-inter-bold text-body text-ink">

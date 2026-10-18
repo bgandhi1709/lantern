@@ -2,27 +2,20 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { colors } from './theme';
+import { COLOUR_TOKENS, SCALED_TEXT_PX, paletteFor } from '../theme/palettes';
 
 const css = fs.readFileSync(path.resolve(__dirname, '../../../global.css'), 'utf8');
-const cssColor = (name: string) =>
-  new RegExp(`--color-${name}:\\s*(#[0-9a-fA-F]{6})`).exec(css)?.[1]?.toLowerCase();
+const fallback = (property: string, name: string) =>
+  new RegExp(`--${property}-${name}:\\s*var\\(--app-${name},\\s*([^)]+)\\)`).exec(css)?.[1]?.trim();
 
-const cssNames: Record<keyof typeof colors, string> = {
-  primary: 'primary',
-  primaryDeep: 'primary-deep',
-  text: 'ink',
-  textSecondary: 'muted',
-  ground: 'ground',
-  card: 'card',
-  border: 'line',
-  iconTile: 'tile',
-  onPrimary: 'on-primary',
-  error: 'danger',
-};
+describe('palettes.ts and global.css', () => {
+  it.each(COLOUR_TOKENS)('agree on the default colour %s', (token) => {
+    expect(fallback('color', token)).toBe(paletteFor('teal', false)[token]);
+  });
 
-describe('theme.ts and global.css', () => {
-  it.each(Object.entries(cssNames))('agree on the colour %s', (key, name) => {
-    expect(cssColor(name)).toBe(colors[key as keyof typeof colors].toLowerCase());
+  it.each(Object.entries(SCALED_TEXT_PX))('agree on the default text size %s', (name, px) => {
+    expect(new RegExp(`--text-${name}:\\s*var\\(--app-text-${name},\\s*${px}px\\)`).test(css)).toBe(
+      true,
+    );
   });
 });

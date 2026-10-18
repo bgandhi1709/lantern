@@ -36,7 +36,7 @@ function AgreementRow({
         ) : (
           <>
             {about.agreeBefore}
-            <Text className="font-inter-bold text-primary underline">{about.noticeLink}</Text>
+            <Text className="font-inter-bold text-accent underline">{about.noticeLink}</Text>
             {about.agreeAfter}
           </>
         )}

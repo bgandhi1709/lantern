@@ -143,6 +143,8 @@ const withoutStory: Record<string, string> = {
   'shared/ui/markParts.tsx': 'SVG parts of Mark',
   'home/HomeScreen.tsx': 'container for HomeView, which has the stories',
   'home/homeIcons.tsx': 'SVG parts used by the Home components',
+  'shared/theme/ThemeProvider.tsx':
+    'provider with nothing to draw; the Appearance stories show every look',
 };
 
 describe('the stories', () => {

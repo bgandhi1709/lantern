@@ -20,7 +20,7 @@ export function OpeningScreen({ intro, message, children }: OpeningScreenProps) 
     <View className="flex-1 items-center justify-center gap-4 bg-ground">
       <IntroMark values={intro.values} />
       <Animated.View style={{ opacity: word, transform: [{ translateY: rise }] }}>
-        <Text className="font-inter-bold text-display text-primary">{strings.appName}</Text>
+        <Text className="font-inter-bold text-display text-accent">{strings.appName}</Text>
       </Animated.View>
       {children ? null : (
         <View

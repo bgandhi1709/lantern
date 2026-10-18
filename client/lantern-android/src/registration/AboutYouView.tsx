@@ -56,7 +56,7 @@ export function AboutYouView({
           onPress={onChangeAccount}
           className="-my-4 min-h-12 flex-row items-center self-start"
         >
-          <Text className="font-inter-bold text-body text-primary underline">
+          <Text className="font-inter-bold text-body text-accent underline">
             {about.differentAccount}
           </Text>
         </Pressable>
@@ -80,7 +80,7 @@ export function AboutYouView({
             <Text
               accessibilityRole="link"
               onPress={onOpenNotice}
-              className="font-inter-bold text-primary underline"
+              className="font-inter-bold text-accent underline"
             >
               {about.noticeLink}
             </Text>

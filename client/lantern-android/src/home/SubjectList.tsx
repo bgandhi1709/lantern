@@ -1,8 +1,8 @@
 import { ActivityIndicator, Text, View } from 'react-native';
 
 import { useStrings } from '../shared/i18n';
+import { useColors } from '../shared/theme';
 import { PrimaryButton } from '../shared/ui/PrimaryButton';
-import { colors } from '../shared/ui/theme';
 import { SubjectRow } from './SubjectRow';
 import type { SubjectsState } from './useHome';
 
@@ -16,6 +16,7 @@ type Props = {
 
 export function SubjectList({ childName, classLevel, state, onOpenSubject, onTryAgain }: Props) {
   const home = useStrings().home;
+  const colors = useColors();
   const loadingLabel = home.subjectsLoading(childName);
 
   return (
@@ -39,7 +40,7 @@ export function SubjectList({ childName, classLevel, state, onOpenSubject, onTry
           accessibilityLabel={loadingLabel}
           className="flex-row items-center gap-3 py-4"
         >
-          <ActivityIndicator color={colors.primary} />
+          <ActivityIndicator color={colors.accent} />
           <Text className="shrink font-inter-medium text-small text-muted">{loadingLabel}</Text>
         </View>
       ) : null}
