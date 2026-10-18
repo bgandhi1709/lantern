@@ -4,10 +4,10 @@ import { Text } from 'react-native';
 
 import { AuthGate, AuthProvider } from '../auth';
 import { ApiError, api } from '../shared/api';
-import { clearAll, readValue } from '../shared/storage';
+import { clearAll, readFamilyKey, readValue } from '../shared/storage';
 import { lockText } from '../shared/crypto';
 import { AARYA, ROHAN, answerLikeTheApi, registerFamilyOnThisPhone } from '../test/fakeFamily';
-import { fakeRestoredSession } from '../test/fakeFirebaseAuth';
+import { FAKE_UID, fakeRestoredSession } from '../test/fakeFirebaseAuth';
 import { GoogleSignin } from '../test/fakeGoogleSignIn';
 import { HomeScreen } from './HomeScreen';
 
@@ -226,7 +226,7 @@ describe('Home', () => {
     expect(get).not.toHaveBeenCalled();
   });
 
-  it('signs out, clears everything stored and returns to Start', async () => {
+  it('signs out to Start and keeps this phone’s Family key and choices', async () => {
     answerLikeTheApi(get, await registerFamilyOnThisPhone());
     fakeRestoredSession();
     const user = userEvent.setup();
@@ -253,8 +253,8 @@ describe('Home', () => {
 
     expect(await screen.findByRole('button', { name: 'Continue with Google' })).toBeOnTheScreen();
     expect(GoogleSignin.signOut).toHaveBeenCalled();
-    expect(await readValue('activeChildId')).toBeNull();
-    expect(await readValue('welcomeDismissed')).toBe(false);
-    expect(await readValue('familyKey')).toBeNull();
+    expect(await readValue('activeChildId')).toBe(ROHAN);
+    expect(await readValue('welcomeDismissed')).toBe(true);
+    expect(await readFamilyKey(FAKE_UID)).not.toBeNull();
   });
 });

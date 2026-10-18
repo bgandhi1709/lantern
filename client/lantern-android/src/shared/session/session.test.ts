@@ -1,5 +1,5 @@
 import { failTokenRefresh, fakeRestoredSession } from '../../test/fakeFirebaseAuth';
-import { readValue, writeValue } from '../storage';
+import { keepFamilyKey, readFamilyKey, readValue, writeValue } from '../storage';
 import { endSession, getIdToken, getParent, onSessionChange, startSession } from './session';
 
 const flush = () => new Promise<void>((resolve) => setImmediate(resolve));
@@ -35,16 +35,16 @@ describe('session', () => {
     expect(await getIdToken()).toBe('google-token');
   });
 
-  it('wipes the device storage when the session ends', async () => {
+  it('ends only the sign-in, so the phone keeps its Family key and settings', async () => {
     await startSession('google-token');
     await writeValue('welcomeDismissed', true);
-    await writeValue('familyKey', 'key');
+    await keepFamilyKey('some-uid', 'key');
 
     await endSession();
 
     expect(await getIdToken()).toBeNull();
-    expect(await readValue('welcomeDismissed')).toBe(false);
-    expect(await readValue('familyKey')).toBeNull();
+    expect(await readValue('welcomeDismissed')).toBe(true);
+    expect(await readFamilyKey('some-uid')).toBe('key');
   });
 
   it.each([
@@ -64,7 +64,7 @@ describe('session', () => {
     await expect(getIdToken()).rejects.toThrow();
 
     expect(seen).toEqual([true, false]);
-    expect(await readValue('welcomeDismissed')).toBe(false);
+    expect(await readValue('welcomeDismissed')).toBe(true);
   });
 
   it('keeps the session when the token cannot be refreshed only because of the network', async () => {
@@ -82,7 +82,11 @@ describe('session', () => {
   it('names the Parent from the Google account', () => {
     fakeRestoredSession('abc', { displayName: 'Asha Verma', email: 'asha.verma@gmail.com' });
 
-    expect(getParent()).toEqual({ name: 'Asha Verma', email: 'asha.verma@gmail.com' });
+    expect(getParent()).toEqual({
+      uid: 'asha-uid',
+      name: 'Asha Verma',
+      email: 'asha.verma@gmail.com',
+    });
   });
 
   it('uses the email as the name when Google gives none, and has nothing when signed out', () => {

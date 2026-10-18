@@ -1,4 +1,4 @@
-import { act, render, screen, waitFor } from '@testing-library/react-native';
+import { act, render, screen } from '@testing-library/react-native';
 import * as ReactNative from 'react-native';
 import { Text } from 'react-native';
 
@@ -71,7 +71,7 @@ describe('the look of the app', () => {
     expect(await screen.findByText('dark')).toBeOnTheScreen();
   });
 
-  it('goes back to the defaults when the Parent signs out', async () => {
+  it('keeps the look when the Parent signs out', async () => {
     fakeRestoredSession();
     await writeValue('colourScheme', 'blue');
     await openProbe();
@@ -79,6 +79,7 @@ describe('the look of the app', () => {
 
     await act(async () => endSession());
 
-    await waitFor(() => expect(screen.getByText('system/default/teal')).toBeOnTheScreen());
+    expect(screen.getByText('system/default/blue')).toBeOnTheScreen();
+    expect(await readValue('colourScheme')).toBe('blue');
   });
 });

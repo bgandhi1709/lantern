@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { unlockText } from '../shared/crypto';
-import { readValue, writeValue } from '../shared/storage';
+import { getParent } from '../shared/session';
+import { readFamilyKey, readValue, writeValue } from '../shared/storage';
 import { fetchChildren } from './homeApi';
 import type { Subject } from './homeApi';
 import { subjectsOnceReady } from './subjectsOnceReady';
@@ -38,7 +39,7 @@ export function useHome() {
     loadSubjectsRef.current = loadSubjects;
 
     const load = async () => {
-      const familyKey = await readValue('familyKey');
+      const familyKey = await readFamilyKey(getParent().uid);
       if (!familyKey) {
         if (!cancelled) setLocked(true);
         return;

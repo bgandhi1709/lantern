@@ -85,7 +85,7 @@ describe('Appearance', () => {
     expect(screen.getByText('Preview')).toBeOnTheScreen();
     expect(screen.getByText('Transparent, translucent and opaque')).toBeOnTheScreen();
     expect(
-      screen.getByText('Saved on this phone only. Signing out resets these.'),
+      screen.getByText('Saved on this phone only. Signing out keeps these.'),
     ).toBeOnTheScreen();
   });
 

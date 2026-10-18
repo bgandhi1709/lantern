@@ -61,11 +61,13 @@ describe('readValue', () => {
   });
 
   it('reads a secure value from the secure store, not the plain one', async () => {
-    await writeValue('familyKey', 'k3y');
+    await writeValue('familyKeys', { 'parent-a': 'k3y' });
 
-    expect(secureStoreContents()).toEqual({ 'lantern.v1.familyKey': JSON.stringify('k3y') });
+    expect(secureStoreContents()).toEqual({
+      'lantern.v1.familyKeys': JSON.stringify({ 'parent-a': 'k3y' }),
+    });
     expect(await AsyncStorage.getAllKeys()).toEqual([]);
-    expect(await readValue('familyKey')).toBe('k3y');
+    expect(await readValue('familyKeys')).toEqual({ 'parent-a': 'k3y' });
   });
 });
 
@@ -73,7 +75,7 @@ describe('clearAll', () => {
   it('empties the plain and the secure store, including older versions', async () => {
     await writeValue('welcomeDismissed', true);
     await writeValue('activeChildId', 'child-1');
-    await writeValue('familyKey', 'k3y');
+    await writeValue('familyKeys', { 'parent-a': 'k3y' });
     await AsyncStorage.setItem('lantern.v0.welcomeDismissed', 'true');
     await AsyncStorage.setItem('someone.else', 'kept');
 

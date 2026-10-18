@@ -256,7 +256,7 @@ export const en = {
       body: 'Light passes fully through transparent materials, partly through translucent ones and not at all through opaque ones.',
       next: 'Next step',
     },
-    savedNote: 'Saved on this phone only. Signing out resets these.',
+    savedNote: 'Saved on this phone only. Signing out keeps these.',
   },
 };
 

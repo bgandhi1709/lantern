@@ -4,9 +4,9 @@ import { BackHandler, Text } from 'react-native';
 
 import { AuthGate, AuthProvider } from '../auth';
 import { ApiError, api } from '../shared/api';
-import { readValue } from '../shared/storage';
+import { readFamilyKey } from '../shared/storage';
 import { unlockText } from '../shared/crypto';
-import { fakeRestoredSession } from '../test/fakeFirebaseAuth';
+import { FAKE_UID, fakeRestoredSession } from '../test/fakeFirebaseAuth';
 import { RegistrationFlow } from '.';
 
 jest.mock('../shared/api', () => jest.requireActual('../test/fakeApiModule'));
@@ -211,7 +211,7 @@ describe('Finish', () => {
     expect(post).toHaveBeenCalledTimes(1);
     const [path, , body] = post.mock.calls[0];
     expect(path).toBe('/v1/register');
-    const key = await readValue('familyKey');
+    const key = await readFamilyKey(FAKE_UID);
     expect(key).not.toBeNull();
     expect(unlockText(key as string, body.children[0].name)).toBe('Aarav');
     expect(JSON.stringify(body)).not.toContain('Aarav');
@@ -239,7 +239,7 @@ describe('Finish', () => {
     await user.press(finishButton());
 
     expect(await screen.findByText('Home')).toBeOnTheScreen();
-    expect(await readValue('familyKey')).toBeNull();
+    expect(await readFamilyKey(FAKE_UID)).toBeNull();
   });
 
   it('tries again with a new Family id when the id is taken, without asking the Parent anything', async () => {
@@ -264,7 +264,7 @@ describe('Finish', () => {
         "Lantern doesn't have books for one of these Classes on this board yet. Check each child's Class, then try again.",
       ),
     ).toBeOnTheScreen();
-    expect(await readValue('familyKey')).toBeNull();
+    expect(await readFamilyKey(FAKE_UID)).toBeNull();
 
     await user.press(screen.getByRole('button', { name: 'Try again' }));
     expect(await screen.findByText('Home')).toBeOnTheScreen();

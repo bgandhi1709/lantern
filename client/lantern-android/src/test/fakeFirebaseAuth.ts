@@ -1,9 +1,12 @@
+export const FAKE_UID = 'asha-uid';
+
 type FakeUser = {
+  uid: string;
   getIdToken: jest.Mock<Promise<string>, []>;
   displayName: string | null;
   email: string | null;
 };
-type Profile = Pick<FakeUser, 'displayName' | 'email'>;
+type Profile = Pick<FakeUser, 'displayName' | 'email'> & { uid?: string };
 type Listener = (user: FakeUser | null) => void;
 
 let user: FakeUser | null = null;
@@ -12,6 +15,7 @@ const listeners = new Set<Listener>();
 const notify = () => listeners.forEach((listener) => listener(user));
 const asha: Profile = { displayName: 'Asha Verma', email: 'asha.verma@gmail.com' };
 const userWithToken = (token: string, profile: Profile = asha): FakeUser => ({
+  uid: profile.uid ?? FAKE_UID,
   getIdToken: jest.fn(async () => token),
   ...profile,
 });

@@ -121,6 +121,63 @@ export function paletteFor(scheme: ColourScheme, dark: boolean): Palette {
       };
 }
 
+type MarkTones = {
+  hair: string;
+  hairOnDark: string;
+  face: string;
+  childClothes: string;
+  arch: string;
+};
+
+const MARK_TONES: Record<ColourScheme, MarkTones> = {
+  teal: {
+    hair: '#134e4a',
+    hairOnDark: '#0d9488',
+    face: '#5eead4',
+    childClothes: '#2dd4bf',
+    arch: '#99f6e4',
+  },
+  blue: {
+    hair: '#1e3a8a',
+    hairOnDark: '#3b82f6',
+    face: '#93c5fd',
+    childClothes: '#60a5fa',
+    arch: '#bfdbfe',
+  },
+  gray: {
+    hair: '#1e293b',
+    hairOnDark: '#94a3b8',
+    face: '#cbd5e1',
+    childClothes: '#94a3b8',
+    arch: '#e2e8f0',
+  },
+  golden: {
+    hair: '#713f12',
+    hairOnDark: '#ca8a04',
+    face: '#fcd34d',
+    childClothes: '#eab308',
+    arch: '#fde68a',
+  },
+};
+
+export function markColorsFor(scheme: ColourScheme, dark: boolean) {
+  const tones = MARK_TONES[scheme];
+  const palette = paletteFor(scheme, dark);
+  return {
+    motherHair: dark ? tones.hairOnDark : tones.hair,
+    motherClothes: palette.primary,
+    face: tones.face,
+    childHair: palette['primary-deep'],
+    childClothes: tones.childClothes,
+    arch: tones.arch,
+    page: '#ffffff',
+    light: '#f59e0b',
+    glow: '#fde68a',
+  };
+}
+
+export type MarkColors = ReturnType<typeof markColorsFor>;
+
 export const TEXT_SCALE: Record<TextSize, number> = { default: 1, large: 1.15, largest: 1.3 };
 
 export const SCALED_TEXT_PX = { caption: 13, small: 15, body: 16, lead: 17, heading: 28 } as const;

@@ -9,7 +9,7 @@ import type { Appearance } from './appearance';
 import { AppearanceContext } from './appearanceContext';
 import type { AppearanceValue } from './appearanceContext';
 import { appearanceVariables } from './appearanceVariables';
-import { paletteFor } from './palettes';
+import { markColorsFor, paletteFor } from './palettes';
 
 type Actions = Pick<AppearanceValue, 'setTheme' | 'setTextSize' | 'setColourScheme'>;
 
@@ -27,6 +27,7 @@ export function LookProvider({ appearance, actions = NO_ACTIONS, children }: Pro
       appearance,
       dark,
       colors: colorsOf(paletteFor(appearance.colourScheme, dark)),
+      markColors: markColorsFor(appearance.colourScheme, dark),
       ...actions,
     };
   }, [appearance, phoneIsDark, actions]);

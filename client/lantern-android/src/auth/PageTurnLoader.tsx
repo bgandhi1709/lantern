@@ -2,8 +2,7 @@ import { useEffect, useState } from 'react';
 import { Animated, Easing, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
-import { useColors } from '../shared/theme';
-import { markColors } from '../shared/ui/theme';
+import { useColors, useMarkColors } from '../shared/theme';
 
 const WIDTH = 72;
 const HEIGHT = 48;
@@ -15,6 +14,7 @@ const SPARK = 'M24 0 L25 2.6 L27.6 3.6 L25 4.6 L24 7.2 L23 4.6 L20.4 3.6 L23 2.6
 // An open book whose right page keeps turning over to the left, shown while Lantern is still opening.
 export function PageTurnLoader({ still }: { still: boolean }) {
   const colors = useColors();
+  const markColors = useMarkColors();
   const pageOutline = {
     stroke: colors.accent,
     strokeWidth: 1.6,

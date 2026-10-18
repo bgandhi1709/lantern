@@ -1,7 +1,8 @@
 import type { z } from 'zod';
 
 import { createFamilyKeys, lockText, makeFamilyId } from '../shared/crypto';
-import { writeValue } from '../shared/storage';
+import { keepFamilyKey } from '../shared/storage';
+import { FAKE_UID, fakeRestoredSession } from './fakeFirebaseAuth';
 
 export const AARYA = '11111111-1111-4111-8111-111111111111';
 export const ROHAN = '22222222-2222-4222-8222-222222222222';
@@ -23,7 +24,8 @@ const SUBJECTS: Record<string, unknown> = { [AARYA]: AARYA_SUBJECTS, [ROHAN]: RO
 
 export async function registerFamilyOnThisPhone() {
   const { familyKey } = await createFamilyKeys(makeFamilyId(), 'blue lantern 2026');
-  await writeValue('familyKey', familyKey);
+  fakeRestoredSession();
+  await keepFamilyKey(FAKE_UID, familyKey);
   return familyKey;
 }
 

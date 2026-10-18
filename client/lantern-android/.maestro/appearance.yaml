@@ -15,7 +15,7 @@ appId: com.lantern.app
     text: 'Dark'
     checked: true
 - scrollUntilVisible:
-    element: 'Saved on this phone only. Signing out resets these.'
+    element: 'Saved on this phone only. Signing out keeps these.'
 - stopApp
 - openLink: 'lantern://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8081'
 - extendedWaitUntil:

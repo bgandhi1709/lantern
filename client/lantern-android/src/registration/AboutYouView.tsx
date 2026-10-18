@@ -12,7 +12,7 @@ import { StepHeader } from './StepHeader';
 import { REGISTRATION_STEP_COUNT } from './steps';
 
 type Props = {
-  parent: Parent;
+  parent: Pick<Parent, 'name' | 'email'>;
   region: string;
   noticeAccepted: boolean;
   canContinue: boolean;

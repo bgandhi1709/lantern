@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 
-import { onSessionChange } from '../session';
 import { readValue, writeValue } from '../storage';
 import { DEFAULT_APPEARANCE } from './appearance';
 import type { Appearance, ColourScheme, TextSize, ThemeChoice } from './appearance';
@@ -18,7 +17,6 @@ const readAppearance = async (): Promise<Appearance> => {
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [appearance, setAppearance] = useState<Appearance | null>(null);
-  const wasSignedIn = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -29,15 +27,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       cancelled = true;
     };
   }, []);
-
-  useEffect(
-    () =>
-      onSessionChange((signedIn) => {
-        if (wasSignedIn.current && !signedIn) setAppearance(DEFAULT_APPEARANCE);
-        wasSignedIn.current = signedIn;
-      }),
-    [],
-  );
 
   const setTheme = useCallback((theme: ThemeChoice) => {
     setAppearance((current) => ({ ...(current ?? DEFAULT_APPEARANCE), theme }));

@@ -3,10 +3,10 @@ import { act, render, screen, userEvent } from '@testing-library/react-native';
 import { BackHandler, Linking, Share, Text } from 'react-native';
 
 import { ApiError, api } from '../shared/api';
-import { readValue } from '../shared/storage';
+import { readFamilyKey } from '../shared/storage';
 import { AuthGate, AuthProvider } from '../auth';
 import * as fakeLibrary from '../test/fakeQuickCrypto';
-import { fakeRestoredSession } from '../test/fakeFirebaseAuth';
+import { FAKE_UID, fakeRestoredSession } from '../test/fakeFirebaseAuth';
 import { secureStoreContents } from '../test/fakeSecureStore';
 import { RegistrationFlow } from '.';
 
@@ -309,7 +309,7 @@ describe('what the Passphrase and Recovery code leave behind', () => {
     expect(api.post).not.toHaveBeenCalled();
     expect(JSON.stringify(secureStoreContents())).not.toContain(code);
     expect(JSON.stringify(secureStoreContents())).not.toContain(PASSPHRASE);
-    expect(await readValue('familyKey')).toBeNull();
+    expect(await readFamilyKey(FAKE_UID)).toBeNull();
     expect(secureStoreContents()).toEqual({});
     for (const log of logs) expect(log).not.toHaveBeenCalled();
     expect(screen.queryByText(new RegExp(`${PASSPHRASE}|${code}`))).not.toBeOnTheScreen();
