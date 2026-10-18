@@ -88,6 +88,7 @@ services:
       Kestrel__Certificates__Default__KeyPath: /certs/local.lantern.api.key
       Storage__ConnectionString: "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;TableEndpoint=http://azurite:10002/devstoreaccount1;BlobEndpoint=http://azurite:10000/devstoreaccount1;"
       Actions__Queue: workspace-events
+      Local__SeedBoardMasters: "${LANTERN_SEED_BOARD_MASTERS:-true}"
       ServiceBus__ConnectionString: "Endpoint=sb://servicebus;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true;"
     volumes:
       - ./certs:/certs:ro
