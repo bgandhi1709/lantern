@@ -64,11 +64,11 @@ appId: com.lantern.app
     enabled: true
 - tapOn: 'Finish'
 - extendedWaitUntil:
-    visible: 'Signed in. Lantern knows your Family.'
+    visible: "Aarav's Subjects, Class 4"
     timeout: 60000
 # A fresh start asks GET /v1/me, which must now find the Family and go to Home, not to About you.
 - stopApp
 - openLink: 'lantern://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8081'
 - extendedWaitUntil:
-    visible: 'Signed in. Lantern knows your Family.'
+    visible: "Aarav's Subjects, Class 4"
     timeout: 120000
