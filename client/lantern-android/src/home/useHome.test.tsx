@@ -2,7 +2,7 @@ import { act, renderHook, waitFor } from '@testing-library/react-native';
 
 import { ApiError, api } from '../shared/api';
 import { createFamilyKeys, lockText, makeFamilyId } from '../shared/crypto';
-import { writeValue } from '../shared/storage';
+import { clearAll, readValue, writeValue } from '../shared/storage';
 import { useHome } from './useHome';
 
 jest.mock('../shared/api', () => jest.requireActual('../test/fakeApiModule'));
@@ -48,7 +48,10 @@ function answerWith(familyKey: string) {
   });
 }
 
-beforeEach(() => get.mockReset());
+beforeEach(async () => {
+  get.mockReset();
+  await clearAll();
+});
 
 describe('opening Home', () => {
   it('shows the first Child by name with that Child’s Subjects', async () => {
@@ -74,7 +77,7 @@ describe('opening Home', () => {
     const answer = get.getMockImplementation();
     let subjectsCalls = 0;
     get.mockImplementation(async (path: string, schema: unknown) => {
-      if (path.endsWith('/subjects') && ++subjectsCalls === 1) {
+      if (path === `/v1/children/${AARYA}/subjects` && ++subjectsCalls === 1) {
         throw new ApiError('content-not-ready', 409);
       }
       return answer?.(path, schema);
@@ -95,7 +98,8 @@ describe('opening Home', () => {
     const answer = get.getMockImplementation();
     let subjectsCalls = 0;
     get.mockImplementation(async (path: string, schema: unknown) => {
-      if (path.endsWith('/subjects') && ++subjectsCalls === 1) throw new ApiError('network', null);
+      if (path === `/v1/children/${AARYA}/subjects` && ++subjectsCalls === 1)
+        throw new ApiError('network', null);
       return answer?.(path, schema);
     });
 
@@ -105,5 +109,51 @@ describe('opening Home', () => {
     await act(async () => result.current.retry());
     await waitFor(() => expect(result.current.subjects.status).toBe('ready'));
     expect(subjectsCalls).toBe(2);
+  });
+
+  it('asks the Parent to unlock the Family when this phone has no Family key', async () => {
+    answerWith('unused');
+
+    const { result } = await renderHook(() => useHome());
+
+    await waitFor(() => expect(result.current.locked).toBe(true));
+    expect(get).not.toHaveBeenCalled();
+  });
+
+  it('switches Child, remembers only the id, and opens on that Child next time', async () => {
+    answerWith(await registerFamilyOnThisPhone());
+    const { result } = await renderHook(() => useHome());
+    await waitFor(() => expect(result.current.subjects.status).toBe('ready'));
+
+    await act(async () => result.current.switchTo(ROHAN));
+
+    expect(result.current.activeChild?.name).toBe('Rohan');
+    expect(result.current.subjects).toEqual({
+      status: 'ready',
+      items: [{ subjectId: 'english', name: 'English', icon: 'english', chapterCount: 4 }],
+    });
+    expect(await readValue('activeChildId')).toBe(ROHAN);
+    const next = await renderHook(() => useHome());
+    await waitFor(() => expect(next.result.current.activeChild?.name).toBe('Rohan'));
+  });
+
+  it('shows a Child still being made as loading while the active Child is already shown', async () => {
+    jest.useFakeTimers();
+    answerWith(await registerFamilyOnThisPhone());
+    const answer = get.getMockImplementation();
+    get.mockImplementation(async (path: string, schema: unknown) => {
+      if (path === `/v1/children/${ROHAN}/subjects`) throw new ApiError('content-not-ready', 409);
+      return answer?.(path, schema);
+    });
+
+    const { result } = await renderHook(() => useHome());
+
+    await waitFor(() => expect(result.current.subjects.status).toBe('ready'));
+    expect(result.current.activeChild?.name).toBe('Aarya');
+    expect(result.current.children).toEqual([
+      { id: AARYA, name: 'Aarya', classLevel: 6, ready: true },
+      { id: ROHAN, name: 'Rohan', classLevel: 3, ready: false },
+    ]);
+    jest.useRealTimers();
   });
 });
