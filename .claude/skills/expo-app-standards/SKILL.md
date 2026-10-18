@@ -58,7 +58,7 @@ Everything on a phone can be read by whoever holds an unlocked phone, a backup, 
 | Data | Where | Rule |
 |---|---|---|
 | Sign-in session (tokens) | The native Firebase SDK's own store (D72); the app never writes a token itself | Never in AsyncStorage, files or `localStorage` |
-| Preferences that are not personal (welcome banner dismissed, active Child id) | AsyncStorage through the storage wrapper | The Child is stored as its opaque id, never its name |
+| Preferences that are not personal (welcome banner dismissed, active Child id, theme, text size, colour scheme) | AsyncStorage through the storage wrapper | The Child is stored as its opaque id, never its name; the look is three short words, cleared by `clearAll()` on sign out |
 | Intro seen (`introSeen`, D75) | AsyncStorage through the storage wrapper | A boolean so later launches play the short intro; cleared by `clearAll()` on sign out |
 | The Family key (made on the phone, wrapped by the Passphrase and the Recovery code, D66) | `expo-secure-store` (Android Keystore) | Founder-approved. It lets the phone lock and unlock personal details without asking for the Passphrase on every start. Written only once registration succeeds (D87) and cleared by `clearAll()`; the Passphrase and the Recovery code are never stored |
 | Child names, birth year, School, Region, email, Subjects, Chapters, answers | Nowhere on the device | Fetched from the API each time and unlocked with the Family key; held in memory only |

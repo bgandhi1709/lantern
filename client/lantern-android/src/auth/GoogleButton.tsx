@@ -16,7 +16,7 @@ export function GoogleButton({ busy, onPress }: Props) {
       onPress={onPress}
       className={`h-14 flex-row items-center justify-center gap-3 rounded-control bg-primary active:opacity-70 ${busy ? 'opacity-70' : ''}`}
     >
-      <View className="size-7.5 items-center justify-center rounded-tile bg-card">
+      <View className="size-7.5 items-center justify-center rounded-tile bg-white">
         <GoogleG />
       </View>
       <Text className="font-inter-bold text-body text-on-primary">
