@@ -24,3 +24,13 @@ export const OneChapter: Story = {
 export const LongName: Story = {
   args: { subject: { subjectId: 'evs', name: LONG_NAME, icon: 'evs', chapterCount: 25 } },
 };
+export const SocialScience: Story = {
+  args: {
+    subject: {
+      subjectId: 'social-science',
+      name: 'Social Science',
+      icon: 'book',
+      chapterCount: 20,
+    },
+  },
+};

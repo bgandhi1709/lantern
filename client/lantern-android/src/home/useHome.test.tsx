@@ -1,14 +1,9 @@
 import { act, renderHook, waitFor } from '@testing-library/react-native';
+import type { z } from 'zod';
 
 import { ApiError, api } from '../shared/api';
 import { clearAll, readValue } from '../shared/storage';
-import {
-  AARYA,
-  AARYA_SUBJECTS,
-  ROHAN,
-  answerLikeTheApi,
-  registerFamilyOnThisPhone,
-} from '../test/fakeFamily';
+import { AARYA, ROHAN, answerLikeTheApi, registerFamilyOnThisPhone } from '../test/fakeFamily';
 import { useHome } from './useHome';
 
 jest.mock('../shared/api', () => jest.requireActual('../test/fakeApiModule'));
@@ -122,5 +117,28 @@ describe('opening Home', () => {
       { id: ROHAN, name: 'Rohan', classLevel: 3, ready: false },
     ]);
     jest.useRealTimers();
+  });
+
+  it('still lists a Subject whose icon this app does not know yet', async () => {
+    answerLikeTheApi(get, await registerFamilyOnThisPhone());
+    const answer = get.getMockImplementation();
+    get.mockImplementation(async (path: string, schema: z.ZodType) => {
+      if (path !== `/v1/children/${AARYA}/subjects`) return answer?.(path, schema);
+      return schema.parse({
+        items: [
+          { subjectId: 'social-science', name: 'Social Science', icon: 'book', chapterCount: 20 },
+          { subjectId: 'art', name: 'Art', icon: 'brush-from-the-future', chapterCount: 5 },
+        ],
+        nextCursor: null,
+      });
+    });
+
+    const { result } = await renderHook(() => useHome());
+
+    await waitFor(() => expect(result.current.subjects.status).toBe('ready'));
+    expect(
+      result.current.subjects.status === 'ready' &&
+        result.current.subjects.items.map((s) => s.icon),
+    ).toEqual(['book', 'book']);
   });
 });

@@ -1,3 +1,5 @@
+import type { z } from 'zod';
+
 import { createFamilyKeys, lockText, makeFamilyId } from '../shared/crypto';
 import { writeValue } from '../shared/storage';
 
@@ -26,16 +28,17 @@ export async function registerFamilyOnThisPhone() {
   return familyKey;
 }
 
+// Parses with the schema the screen passes, as the real client does, so a response the screen could not read fails here too.
 export function answerLikeTheApi(get: jest.Mock, familyKey: string) {
-  get.mockImplementation(async (path: string) => {
+  get.mockImplementation(async (path: string, schema: z.ZodType) => {
     if (path === '/v1/me') {
-      return {
+      return schema.parse({
         children: [
           { childId: AARYA, name: lockText(familyKey, 'Aarya'), classLevel: 6 },
           { childId: ROHAN, name: lockText(familyKey, 'Rohan'), classLevel: 3 },
         ],
-      };
+      });
     }
-    return SUBJECTS[path.split('/')[3]];
+    return schema.parse(SUBJECTS[path.split('/')[3]]);
   });
 }

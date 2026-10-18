@@ -41,6 +41,11 @@ export const subjectGlyphs: Record<SubjectIcon, ReactNode> = {
       <Path d="M4 20L12 4l8 16M7.5 14h9" />
     </Glyph>
   ),
+  book: (
+    <Glyph size={SUBJECT_ICON_SIZE}>
+      <Path d="M12 6c-2-1.5-5-2-8-2v14c3 0 6 .5 8 2 2-1.5 5-2 8-2V4c-3 0-6 .5-8 2zM12 6v14" />
+    </Glyph>
+  ),
   evs: (
     <Glyph size={SUBJECT_ICON_SIZE}>
       <Path d="M5 19c0-8 5-14 15-14 0 10-6 15-14 15" />

@@ -102,7 +102,7 @@ const requiredStories: Record<string, string[]> = {
     'Locked',
   ],
   'home/SubjectList.stories.tsx': ['Ready', 'Loading', 'Failed'],
-  'home/SubjectRow.stories.tsx': ['Default', 'OneChapter', 'LongName'],
+  'home/SubjectRow.stories.tsx': ['Default', 'OneChapter', 'LongName', 'SocialScience'],
   'home/ChildSheet.stories.tsx': ['TwoChildren', 'OneStillBeingMade', 'SixChildren'],
   'home/ChildRow.stories.tsx': ['Unselected', 'Selected', 'GettingReady', 'LongName'],
   'home/ChildSwitcherButton.stories.tsx': ['Default', 'LongName'],

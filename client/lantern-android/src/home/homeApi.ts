@@ -8,7 +8,8 @@ const FamilyChildren = z.object({
   ),
 });
 
-const SUBJECT_ICONS = ['english', 'maths', 'science', 'evs'] as const;
+const SUBJECT_ICONS = ['english', 'maths', 'science', 'evs', 'book'] as const;
+const FALLBACK_ICON = 'book';
 export type SubjectIcon = (typeof SUBJECT_ICONS)[number];
 
 const SubjectsPage = z.object({
@@ -16,7 +17,7 @@ const SubjectsPage = z.object({
     z.object({
       subjectId: z.string(),
       name: z.string(),
-      icon: z.enum(SUBJECT_ICONS),
+      icon: z.enum(SUBJECT_ICONS).catch(FALLBACK_ICON),
       chapterCount: z.number().int(),
     }),
   ),
