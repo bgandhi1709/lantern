@@ -1,6 +1,6 @@
-import { renderHook, waitFor } from '@testing-library/react-native';
+import { act, renderHook, waitFor } from '@testing-library/react-native';
 
-import { api } from '../shared/api';
+import { ApiError, api } from '../shared/api';
 import { createFamilyKeys, lockText, makeFamilyId } from '../shared/crypto';
 import { writeValue } from '../shared/storage';
 import { useHome } from './useHome';
@@ -66,5 +66,27 @@ describe('opening Home', () => {
       ],
     });
     expect(get).toHaveBeenCalledWith(`/v1/children/${AARYA}/subjects`, expect.anything());
+  });
+
+  it('keeps loading and asks again when the Child’s content is still being made', async () => {
+    jest.useFakeTimers();
+    answerWith(await registerFamilyOnThisPhone());
+    const answer = get.getMockImplementation();
+    let subjectsCalls = 0;
+    get.mockImplementation(async (path: string, schema: unknown) => {
+      if (path.endsWith('/subjects') && ++subjectsCalls === 1) {
+        throw new ApiError('content-not-ready', 409);
+      }
+      return answer?.(path, schema);
+    });
+
+    const { result } = await renderHook(() => useHome());
+
+    await waitFor(() => expect(subjectsCalls).toBe(1));
+    expect(result.current.subjects).toEqual({ status: 'loading' });
+    await act(() => jest.advanceTimersByTimeAsync(3000));
+    await waitFor(() => expect(result.current.subjects.status).toBe('ready'));
+    expect(subjectsCalls).toBe(2);
+    jest.useRealTimers();
   });
 });
