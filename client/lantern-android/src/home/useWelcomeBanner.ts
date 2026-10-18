@@ -2,9 +2,8 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { readValue, writeValue } from '../shared/storage';
 
-// Hidden until storage has answered, so a Parent who dismissed it never sees it flash.
 export function useWelcomeBanner() {
-  const [dismissed, setDismissed] = useState<boolean | null>(null);
+  const [dismissed, setDismissed] = useState<boolean | 'unknown'>('unknown');
 
   useEffect(() => {
     let cancelled = false;

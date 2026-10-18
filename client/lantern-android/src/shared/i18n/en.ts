@@ -198,7 +198,7 @@ export const en = {
     classLabel: (classLevel: number) => `Class ${classLevel}`,
     gettingReady: (classLevel: number) => `Class ${classLevel} · getting ready`,
     addChild: 'Add a child',
-    addChildNote: 'A Family can have up to 6 Children.',
+    addChildNote: (max: number) => `A Family can have up to ${max} Children.`,
     banner: {
       title: 'Welcome to Lantern',
       text: (name: string) =>
@@ -222,7 +222,7 @@ export const en = {
       heading: 'Unlock your Family',
       text: 'This phone does not hold your Family yet. Opening your Family on a new phone is coming soon.',
     },
-    comingNext: { heading: 'Coming next', text: 'This screen is on its way.', back: 'Back' },
+    comingNext: { heading: 'Coming next', text: 'This screen is on its way.' },
   },
 };
 

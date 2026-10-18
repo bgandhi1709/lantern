@@ -108,6 +108,11 @@ const requiredStories: Record<string, string[]> = {
   'home/ChildSwitcherButton.stories.tsx': ['Default', 'LongName'],
   'home/WelcomeBanner.stories.tsx': ['Default', 'LongName'],
   'home/ChildAvatar.stories.tsx': ['Small', 'Large'],
+  'home/HomeHeader.stories.tsx': ['Default'],
+  'home/HomeTabs.stories.tsx': ['Default'],
+  'home/AddChildRow.stories.tsx': ['Default'],
+  'home/UnlockNotice.stories.tsx': ['Default'],
+  'home/ComingNextView.stories.tsx': ['Default'],
 };
 
 // A component file with no story of its own must say why, so the list stays short and honest.

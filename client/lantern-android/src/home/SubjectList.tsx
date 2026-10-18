@@ -16,6 +16,7 @@ type Props = {
 
 export function SubjectList({ childName, classLevel, state, onOpenSubject, onTryAgain }: Props) {
   const home = useStrings().home;
+  const loadingLabel = home.subjectsLoading(childName);
 
   return (
     <View className="gap-2">
@@ -35,13 +36,11 @@ export function SubjectList({ childName, classLevel, state, onOpenSubject, onTry
         <View
           accessible
           accessibilityLiveRegion="polite"
-          accessibilityLabel={home.subjectsLoading(childName)}
+          accessibilityLabel={loadingLabel}
           className="flex-row items-center gap-3 py-4"
         >
           <ActivityIndicator color={colors.primary} />
-          <Text className="shrink font-inter-medium text-small text-muted">
-            {home.subjectsLoading(childName)}
-          </Text>
+          <Text className="shrink font-inter-medium text-small text-muted">{loadingLabel}</Text>
         </View>
       ) : null}
       {state.status === 'failed' ? (

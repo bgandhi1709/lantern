@@ -24,7 +24,7 @@ type Story = StoryObj<typeof meta>;
 export const TwoChildren: Story = {};
 export const OneStillBeingMade: Story = {
   args: {
-    switcherChildren: [TWO_CHILDREN[0], { ...TWO_CHILDREN[1], ready: false }],
+    switcherChildren: [TWO_CHILDREN[0], { ...TWO_CHILDREN[1], stillBeingMade: true }],
   },
 };
 export const SixChildren: Story = {

@@ -1,5 +1,6 @@
 import { Pressable, Text, View } from 'react-native';
 
+import { MAX_CHILDREN } from '../registration';
 import { useStrings } from '../shared/i18n';
 import { PlusIcon } from './homeIcons';
 
@@ -19,7 +20,7 @@ export function AddChildRow({ onPress }: { onPress: () => void }) {
         <Text className="font-inter-bold text-body text-primary-deep">{home.addChild}</Text>
       </Pressable>
       <Text className="text-center font-inter-medium text-caption text-muted">
-        {home.addChildNote}
+        {home.addChildNote(MAX_CHILDREN)}
       </Text>
     </View>
   );

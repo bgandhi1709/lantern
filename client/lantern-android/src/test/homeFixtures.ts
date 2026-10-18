@@ -13,16 +13,16 @@ export const CLASS_SIX_SUBJECTS: Subject[] = [
 ];
 
 export const TWO_CHILDREN: SwitcherChild[] = [
-  { id: 'aarya', name: 'Aarya', classLevel: 6, ready: true },
-  { id: 'rohan', name: 'Rohan', classLevel: 3, ready: true },
+  { id: 'aarya', name: 'Aarya', classLevel: 6, stillBeingMade: false },
+  { id: 'rohan', name: 'Rohan', classLevel: 3, stillBeingMade: false },
 ];
 
 export const SIX_CHILDREN: SwitcherChild[] = [
   ...TWO_CHILDREN,
-  { id: 'mira', name: 'Mira', classLevel: 2, ready: true },
-  { id: 'dev', name: 'Dev', classLevel: 4, ready: true },
-  { id: 'isha', name: 'Isha', classLevel: 5, ready: true },
-  { id: 'kabir', name: 'Kabir', classLevel: 1, ready: true },
+  { id: 'mira', name: 'Mira', classLevel: 2, stillBeingMade: false },
+  { id: 'dev', name: 'Dev', classLevel: 4, stillBeingMade: false },
+  { id: 'isha', name: 'Isha', classLevel: 5, stillBeingMade: false },
+  { id: 'kabir', name: 'Kabir', classLevel: 1, stillBeingMade: false },
 ];
 
 export const LONG_NAME = 'Venkatasubramanian Raghunathan';

@@ -1,33 +1,14 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { ApiError } from '../shared/api';
 import { unlockText } from '../shared/crypto';
 import { readValue, writeValue } from '../shared/storage';
-import { fetchChildren, fetchSubjects } from './homeApi';
+import { fetchChildren } from './homeApi';
 import type { Subject } from './homeApi';
-
-const CONTENT_POLL_MS = 3_000;
-
-const isNotReady = (error: unknown) =>
-  error instanceof ApiError && error.code === 'content-not-ready';
-
-const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
-
-async function subjectsOnceReady(childId: string, isCancelled: () => boolean) {
-  for (;;) {
-    try {
-      return await fetchSubjects(childId);
-    } catch (error) {
-      if (!isNotReady(error) || isCancelled()) throw error;
-      await wait(CONTENT_POLL_MS);
-      if (isCancelled()) return [];
-    }
-  }
-}
+import { subjectsOnceReady } from './subjectsOnceReady';
 
 export type HomeChild = { id: string; name: string; classLevel: number };
 
-export type SwitcherChild = HomeChild & { ready: boolean };
+export type SwitcherChild = HomeChild & { stillBeingMade: boolean };
 
 export type SubjectsState =
   { status: 'loading' } | { status: 'failed' } | { status: 'ready'; items: Subject[] };
@@ -43,6 +24,7 @@ export function useHome() {
   const [locked, setLocked] = useState(false);
   const [listFailed, setListFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  const loadSubjectsRef = useRef<(child: HomeChild) => Promise<void>>(async () => undefined);
 
   useEffect(() => {
     let cancelled = false;
@@ -52,6 +34,8 @@ export function useHome() {
       const state = await subjectsOnceReady(child.id, isCancelled).then(ready, () => FAILED);
       if (!cancelled) setSubjectsByChild((current) => ({ ...current, [child.id]: state }));
     };
+
+    loadSubjectsRef.current = loadSubjects;
 
     const load = async () => {
       const familyKey = await readValue('familyKey');
@@ -85,12 +69,21 @@ export function useHome() {
   }, []);
 
   const retry = useCallback(() => {
-    setChildren([]);
-    setSubjectsByChild({});
-    setLocked(false);
-    setListFailed(false);
-    setAttempt((n) => n + 1);
-  }, []);
+    const failed = children.filter((child) => subjectsByChild[child.id]?.status === 'failed');
+    if (listFailed || locked || failed.length === 0) {
+      setChildren([]);
+      setSubjectsByChild({});
+      setLocked(false);
+      setListFailed(false);
+      setAttempt((n) => n + 1);
+      return;
+    }
+    setSubjectsByChild((current) => ({
+      ...current,
+      ...Object.fromEntries(failed.map((child) => [child.id, LOADING])),
+    }));
+    failed.forEach((child) => loadSubjectsRef.current(child));
+  }, [children, subjectsByChild, listFailed, locked]);
 
   const activeSubjects = activeId === null ? LOADING : (subjectsByChild[activeId] ?? LOADING);
   const subjects = listFailed ? FAILED : activeSubjects;
@@ -100,7 +93,7 @@ export function useHome() {
     activeChild: children.find((child) => child.id === activeId) ?? null,
     children: children.map((child) => ({
       ...child,
-      ready: subjectsByChild[child.id]?.status === 'ready',
+      stillBeingMade: (subjectsByChild[child.id] ?? LOADING).status === 'loading',
     })),
     subjects,
     switchTo,

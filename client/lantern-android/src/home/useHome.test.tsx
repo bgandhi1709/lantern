@@ -4,6 +4,7 @@ import type { z } from 'zod';
 import { ApiError, api } from '../shared/api';
 import { clearAll, readValue } from '../shared/storage';
 import { AARYA, ROHAN, answerLikeTheApi, registerFamilyOnThisPhone } from '../test/fakeFamily';
+import { MAX_CONTENT_POLLS, CONTENT_POLL_MS } from './subjectsOnceReady';
 import { useHome } from './useHome';
 
 jest.mock('../shared/api', () => jest.requireActual('../test/fakeApiModule'));
@@ -113,8 +114,8 @@ describe('opening Home', () => {
     await waitFor(() => expect(result.current.subjects.status).toBe('ready'));
     expect(result.current.activeChild?.name).toBe('Aarya');
     expect(result.current.children).toEqual([
-      { id: AARYA, name: 'Aarya', classLevel: 6, ready: true },
-      { id: ROHAN, name: 'Rohan', classLevel: 3, ready: false },
+      { id: AARYA, name: 'Aarya', classLevel: 6, stillBeingMade: false },
+      { id: ROHAN, name: 'Rohan', classLevel: 3, stillBeingMade: true },
     ]);
     jest.useRealTimers();
   });
@@ -140,5 +141,59 @@ describe('opening Home', () => {
       result.current.subjects.status === 'ready' &&
         result.current.subjects.items.map((s) => s.icon),
     ).toEqual(['book', 'book']);
+  });
+});
+
+describe('when a Child’s call fails', () => {
+  it('stops waiting for content that never arrives and shows a failure', async () => {
+    jest.useFakeTimers();
+    answerLikeTheApi(get, await registerFamilyOnThisPhone());
+    const answer = get.getMockImplementation();
+    get.mockImplementation(async (path: string, schema: unknown) => {
+      if (path === `/v1/children/${AARYA}/subjects`) throw new ApiError('content-not-ready', 409);
+      return answer?.(path, schema);
+    });
+
+    const { result } = await renderHook(() => useHome());
+    await act(() => jest.advanceTimersByTimeAsync(CONTENT_POLL_MS * (MAX_CONTENT_POLLS + 1)));
+
+    await waitFor(() => expect(result.current.subjects).toEqual({ status: 'failed' }));
+    jest.useRealTimers();
+  });
+
+  it('retries only the Child that failed, without asking for the Children again', async () => {
+    answerLikeTheApi(get, await registerFamilyOnThisPhone());
+    const answer = get.getMockImplementation();
+    let failOnce = true;
+    get.mockImplementation(async (path: string, schema: unknown) => {
+      if (path === `/v1/children/${AARYA}/subjects` && failOnce) {
+        failOnce = false;
+        throw new ApiError('network', null);
+      }
+      return answer?.(path, schema);
+    });
+    const { result } = await renderHook(() => useHome());
+    await waitFor(() => expect(result.current.subjects).toEqual({ status: 'failed' }));
+    get.mockClear();
+
+    await act(async () => result.current.retry());
+
+    await waitFor(() => expect(result.current.subjects.status).toBe('ready'));
+    expect(get.mock.calls.map(([path]) => path)).toEqual([`/v1/children/${AARYA}/subjects`]);
+  });
+
+  it('does not call a sibling whose Subjects failed one that is still being made', async () => {
+    answerLikeTheApi(get, await registerFamilyOnThisPhone());
+    const answer = get.getMockImplementation();
+    get.mockImplementation(async (path: string, schema: unknown) => {
+      if (path === `/v1/children/${ROHAN}/subjects`) throw new ApiError('network', null);
+      return answer?.(path, schema);
+    });
+
+    const { result } = await renderHook(() => useHome());
+
+    await waitFor(() =>
+      expect(result.current.children.map((child) => child.stillBeingMade)).toEqual([false, false]),
+    );
   });
 });

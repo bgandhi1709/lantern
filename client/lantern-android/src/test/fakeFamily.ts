@@ -21,14 +21,12 @@ export const ROHAN_SUBJECTS = {
 
 const SUBJECTS: Record<string, unknown> = { [AARYA]: AARYA_SUBJECTS, [ROHAN]: ROHAN_SUBJECTS };
 
-// A Family registered on this phone: the Family key is on the device and the API answers like the real one.
 export async function registerFamilyOnThisPhone() {
   const { familyKey } = await createFamilyKeys(makeFamilyId(), 'blue lantern 2026');
   await writeValue('familyKey', familyKey);
   return familyKey;
 }
 
-// Parses with the schema the screen passes, as the real client does, so a response the screen could not read fails here too.
 export function answerLikeTheApi(get: jest.Mock, familyKey: string) {
   get.mockImplementation(async (path: string, schema: z.ZodType) => {
     if (path === '/v1/me') {

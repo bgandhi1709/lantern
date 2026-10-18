@@ -31,7 +31,7 @@ export function HomeTabs() {
           accessibilityRole="tab"
           accessibilityState={{ disabled: true }}
           accessibilityLabel={tabs.later(tabs[tab])}
-          className="flex-1 items-center justify-center gap-0.5 opacity-70"
+          className="flex-1 items-center justify-center gap-0.5"
         >
           {tabGlyphs[tab](colors.textSecondary)}
           <Text className="font-inter-medium text-caption text-disabled-text">{tabs[tab]}</Text>
