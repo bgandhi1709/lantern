@@ -62,6 +62,12 @@ The API container seeds synthetic `ncert` and `ssc` containers into Azurite on s
 CI runs the same tests in its `e2e-docker` job on every PR and push, and the release waits for it, so what passes here
 is what gates the release. They do not run against real UAT.
 
+**The real masters.** The seeded `ncert` and `ssc` containers are synthetic so CI needs no Azure access. To run on the data UAT runs on,
+`deploy/local/load-uat-masters.sh` (after `az login`) empties the local Azurite and copies both containers whole from the UAT storage account
+(about 2 GB, mostly pictures; kept outside the repo in `LANTERN_MASTERS_DIR`, default `~/Work/lantern-data/uat-masters`), and the stack is then
+started with `LANTERN_SEED_BOARD_MASTERS=false` so the synthetic seeder leaves them alone. `scripts/verify-env.sh up` does both. `--force`
+loads again.
+
 None of this can reach another environment: the stand-ins are not in the API or its production image. The emulator's
 tokens are unsigned, so the local host relaxes signature checking; issuer, audience and expiry are still checked (the
 tests prove a wrong one gets 401).

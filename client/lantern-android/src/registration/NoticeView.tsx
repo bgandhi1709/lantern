@@ -1,7 +1,7 @@
 import { ScrollView, Text, View } from 'react-native';
 
 import { useStrings } from '../shared/i18n';
-import { BackButton } from './BackButton';
+import { BackButton } from '../shared/ui/BackButton';
 
 type Props = { version: string; onBack: () => void };
 

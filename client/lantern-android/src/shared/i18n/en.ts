@@ -185,8 +185,44 @@ export const en = {
       continue: 'Continue',
     },
   },
-  signedIn: {
-    message: 'Signed in. Lantern knows your Family.',
+  home: {
+    greeting: {
+      morning: (name: string) => `Good morning, ${name}`,
+      afternoon: (name: string) => `Good afternoon, ${name}`,
+      evening: (name: string) => `Good evening, ${name}`,
+    },
+    learningWith: 'Learning with',
+    switchChild: (name: string) => `Switch child, now ${name}`,
+    sheetTitle: 'Who is learning?',
+    close: 'Close',
+    classLabel: (classLevel: number) => `Class ${classLevel}`,
+    gettingReady: (classLevel: number) => `Class ${classLevel} · getting ready`,
+    addChild: 'Add a child',
+    addChildNote: (max: number) => `A Family can have up to ${max} Children.`,
+    banner: {
+      title: 'Welcome to Lantern',
+      text: (name: string) =>
+        `Let's get ${name} started. Pick a Subject below to see its Chapters.`,
+      dismiss: 'Got it',
+    },
+    subjectsTitle: (name: string, classLevel: number) => `${name}'s Subjects, Class ${classLevel}`,
+    chapterCount: (count: number) => (count === 1 ? '1 Chapter' : `${count} Chapters`),
+    subjectsLoading: (name: string) => `Getting ${name}'s Subjects ready…`,
+    subjectsFailed: "Can't load the Subjects",
+    tryAgain: 'Try again',
+    tabs: {
+      label: 'Main',
+      home: 'Home',
+      teach: 'Teach',
+      check: 'Check',
+      progress: 'Progress',
+      later: (name: string) => `${name}, available later`,
+    },
+    locked: {
+      heading: 'Unlock your Family',
+      text: 'This phone does not hold your Family yet. Opening your Family on a new phone is coming soon.',
+    },
+    comingNext: { heading: 'Coming next', text: 'This screen is on its way.' },
   },
 };
 

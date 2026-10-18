@@ -68,7 +68,9 @@ up() {
   down
   mkdir -p "$LOGS"
 
-  docker compose -f "$COMPOSE" up --build -d
+  # The local Azurite holds the real UAT masters (a no-op once loaded; needs az login the first time), and the synthetic seeder stays off.
+  "$ROOT/deploy/local/load-uat-masters.sh"
+  LANTERN_SEED_BOARD_MASTERS=false docker compose -f "$COMPOSE" up --build -d
   wait_for "the local API" "$API_TIMEOUT_SECONDS" api_live
 
   # -no-snapshot neither loads nor saves quick-boot state, which otherwise grows the AVD on every run.

@@ -5,19 +5,18 @@ import { fn } from 'storybook/test';
 
 import { en } from '../shared/i18n/en';
 import { fixedIntro } from '../test/fixedIntro';
-import { SignedInPlaceholder } from './SignedInPlaceholder';
 import { SignedInView } from './SignedInView';
 
 // Home and registration are nodes, and Storybook's args must stay plain data (it walks into a node's
 // internals and fails on React Navigation's context), so the story fixes them. Auth never imports the
-// registration flow, so a heading stands in for it.
+// registration flow, so a heading stands in for it, and the same for Home.
 function SignedInViewWithScreens(
   props: Omit<ComponentProps<typeof SignedInView>, 'home' | 'registration'>,
 ) {
   return (
     <SignedInView
       {...props}
-      home={<SignedInPlaceholder />}
+      home={<Text>{en.home.greeting.morning('Asha')}</Text>}
       registration={<Text>{en.registration.about.heading}</Text>}
     />
   );

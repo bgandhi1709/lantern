@@ -92,6 +92,27 @@ const requiredStories: Record<string, string[]> = {
   'registration/AboutYouView.stories.tsx': ['Empty', 'RegionOnly', 'AgreedOnly', 'Ready'],
   'registration/StepHeader.stories.tsx': ['Step1', 'Step2', 'Step3', 'Step4', 'Step3NoBack'],
   'registration/GoogleAccountCard.stories.tsx': ['Default', 'LongValues'],
+  'home/HomeView.stories.tsx': [
+    'Default',
+    'WithWelcomeBanner',
+    'Loading',
+    'Failed',
+    'SwitcherOpen',
+    'SixChildren',
+    'Locked',
+  ],
+  'home/SubjectList.stories.tsx': ['Ready', 'Loading', 'Failed'],
+  'home/SubjectRow.stories.tsx': ['Default', 'OneChapter', 'LongName', 'SocialScience'],
+  'home/ChildSheet.stories.tsx': ['TwoChildren', 'OneStillBeingMade', 'SixChildren'],
+  'home/ChildRow.stories.tsx': ['Unselected', 'Selected', 'GettingReady', 'LongName'],
+  'home/ChildSwitcherButton.stories.tsx': ['Default', 'LongName'],
+  'home/WelcomeBanner.stories.tsx': ['Default', 'LongName'],
+  'home/ChildAvatar.stories.tsx': ['Small', 'Large'],
+  'home/HomeHeader.stories.tsx': ['Default'],
+  'home/HomeTabs.stories.tsx': ['Default'],
+  'home/AddChildRow.stories.tsx': ['Default'],
+  'home/UnlockNotice.stories.tsx': ['Default'],
+  'home/ComingNextView.stories.tsx': ['Default'],
 };
 
 // A component file with no story of its own must say why, so the list stays short and honest.
@@ -108,7 +129,8 @@ const withoutStory: Record<string, string> = {
   'registration/FirstChildFooter.tsx': 'the Finish footer of FirstChildView, whose stories show it',
   'auth/RegisteredContext.tsx': 'context provider with no look of its own',
   'registration/RecoveryCodeScreen.tsx': 'container for RecoveryCodeView, which has the stories',
-  'registration/BackButton.tsx': 'the back arrow shown inside StepHeader and NoticeView',
+  'shared/ui/BackButton.tsx':
+    'the back arrow shown inside StepHeader, NoticeView and ComingNextView',
   'registration/RegistrationDraft.tsx': 'context provider with no look of its own',
   'registration/RegistrationFlow.tsx':
     'moves between the registration steps, which have the stories',
@@ -119,6 +141,8 @@ const withoutStory: Record<string, string> = {
   'shared/ui/FadeIn.tsx': 'animation wrapper with no look of its own',
   'shared/ui/icons.tsx': 'SVG parts used by the screens and their components',
   'shared/ui/markParts.tsx': 'SVG parts of Mark',
+  'home/HomeScreen.tsx': 'container for HomeView, which has the stories',
+  'home/homeIcons.tsx': 'SVG parts used by the Home components',
 };
 
 describe('the stories', () => {
@@ -195,7 +219,7 @@ describe('the stories', () => {
     expect(screen.getByRole('button', { name: en.opening.tryAgain })).toBeOnTheScreen();
 
     await render(<Registered />);
-    expect(screen.getByText(en.signedIn.message)).toBeOnTheScreen();
+    expect(screen.getByText(en.home.greeting.morning('Asha'))).toBeOnTheScreen();
   });
 
   it.each(storyFiles.map((file) => [relative(file), file]))(

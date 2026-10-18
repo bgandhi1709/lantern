@@ -7,6 +7,7 @@ using Lantern.Core.Repository;
 using Lantern.Core.Security;
 using Lantern.Repository;
 using Lantern.Repository.Entities;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 
 namespace Lantern.Api.Test.Integration.Host;
@@ -24,6 +25,7 @@ internal sealed class DevelopmentSeeder(
     IOptions<StorageOptions> storage,
     IOptions<CatalogOptions> catalog,
     BlobServiceClient blobs,
+    IConfiguration configuration,
     TimeProvider clock
 )
 {
@@ -34,7 +36,11 @@ internal sealed class DevelopmentSeeder(
     public async Task SeedAsync(CancellationToken cancellationToken)
     {
         // First: a Family registered while the stack is up copies from these, and the dev Children below get their slices.
-        await LocalBoardMasters.SeedAsync(blobs, catalog.Value, cancellationToken);
+        // deploy/local/load-uat-masters.sh puts the real masters in Azurite and turns this off, so they are not overwritten.
+        if (configuration.GetValue("Local:SeedBoardMasters", true))
+        {
+            await LocalBoardMasters.SeedAsync(blobs, catalog.Value, cancellationToken);
+        }
 
         var first = await families.FindParentAsync(ParentOneUid, cancellationToken) ?? await RegisterFirstAsync(cancellationToken);
 

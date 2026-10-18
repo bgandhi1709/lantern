@@ -1,0 +1,35 @@
+# Needs a Google account on the emulator and `scripts/verify-env.sh up` running. It registers Aarav (Class 4) and
+# Mira (Class 2) through first-child.yaml, which ends on Home after a restart, then walks Home.
+# Run: maestro test .maestro/home.yaml
+appId: com.lantern.app
+---
+- runFlow: first-child.yaml
+- assertVisible: "Aarav's Subjects, Class 4"
+- assertVisible: 'Mathematics'
+- assertVisible: 'Good (morning|afternoon|evening), .*'
+- assertVisible: 'Switch child, now Aarav'
+- assertVisible: 'Welcome to Lantern'
+- tapOn: 'Got it'
+- assertNotVisible: 'Welcome to Lantern'
+- assertVisible: 'Teach, available later'
+- assertVisible: 'Check, available later'
+- assertVisible: 'Progress, available later'
+- tapOn: 'Switch child, now Aarav'
+- assertVisible: 'Who is learning?'
+- assertVisible: 'Add a child'
+- assertVisible: 'A Family can have up to 6 Children.'
+- tapOn: 'Mira.*'
+- assertVisible: "Mira's Subjects, Class 2"
+- stopApp
+- openLink: 'lantern://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8081'
+- extendedWaitUntil:
+    visible: "Mira's Subjects, Class 2"
+    timeout: 120000
+- assertNotVisible: 'Welcome to Lantern'
+- tapOn: 'Mathematics.*'
+- assertVisible: 'Coming next'
+- back
+- tapOn: 'Sign out'
+- extendedWaitUntil:
+    visible: 'Continue with Google'
+    timeout: 30000

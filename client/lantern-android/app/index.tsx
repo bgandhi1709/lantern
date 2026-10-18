@@ -1,9 +1,25 @@
+import { useRouter } from 'expo-router';
+
 import Storybook from '../.rnstorybook';
-import { AuthGate, SignedInPlaceholder } from '../src/auth';
+import { AuthGate } from '../src/auth';
+import { HomeScreen } from '../src/home';
 import { RegistrationFlow } from '../src/registration';
 import { config } from '../src/shared/config';
 
 export default function Index() {
+  const router = useRouter();
   if (config.storybookEnabled) return <Storybook />;
-  return <AuthGate home={<SignedInPlaceholder />} registration={<RegistrationFlow />} />;
+  return (
+    <AuthGate
+      home={
+        <HomeScreen
+          onOpenSubject={(childId, subjectId) =>
+            router.push({ pathname: '/subject/[subjectId]', params: { subjectId, childId } })
+          }
+          onAddChild={() => router.push('/add-child')}
+        />
+      }
+      registration={<RegistrationFlow />}
+    />
+  );
 }

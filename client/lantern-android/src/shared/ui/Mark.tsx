@@ -4,14 +4,14 @@ import Svg from 'react-native-svg';
 import { useStrings } from '../i18n';
 import { MARK_GRID, markLayers } from './markParts';
 
-const MARK_SIZE = 120;
+const DEFAULT_MARK_SIZE = 120;
 
-export function Mark() {
+export function Mark({ size = DEFAULT_MARK_SIZE }: { size?: number }) {
   const label = useStrings().mark.label;
 
   return (
     <View accessible accessibilityRole="image" accessibilityLabel={label}>
-      <Svg width={MARK_SIZE} height={MARK_SIZE} viewBox={`0 0 ${MARK_GRID} ${MARK_GRID}`}>
+      <Svg width={size} height={size} viewBox={`0 0 ${MARK_GRID} ${MARK_GRID}`}>
         {markLayers.map(({ part, Draw }) => (
           <Draw key={part} />
         ))}
