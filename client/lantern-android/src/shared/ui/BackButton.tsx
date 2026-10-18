@@ -1,7 +1,7 @@
 import { Pressable } from 'react-native';
 
-import { useStrings } from '../shared/i18n';
-import { BackIcon } from '../shared/ui/icons';
+import { useStrings } from '../i18n';
+import { BackIcon } from './icons';
 
 export function BackButton({ onBack }: { onBack: () => void }) {
   return (

@@ -1,52 +1,19 @@
 import { act, renderHook, waitFor } from '@testing-library/react-native';
 
 import { ApiError, api } from '../shared/api';
-import { createFamilyKeys, lockText, makeFamilyId } from '../shared/crypto';
-import { clearAll, readValue, writeValue } from '../shared/storage';
+import { clearAll, readValue } from '../shared/storage';
+import {
+  AARYA,
+  AARYA_SUBJECTS,
+  ROHAN,
+  answerLikeTheApi,
+  registerFamilyOnThisPhone,
+} from '../test/fakeFamily';
 import { useHome } from './useHome';
 
 jest.mock('../shared/api', () => jest.requireActual('../test/fakeApiModule'));
 
 const get = api.get as jest.Mock;
-
-const AARYA = '11111111-1111-4111-8111-111111111111';
-const ROHAN = '22222222-2222-4222-8222-222222222222';
-
-const SUBJECTS: Record<string, unknown> = {
-  [AARYA]: {
-    items: [
-      { subjectId: 'science', name: 'Science', icon: 'science', chapterCount: 12 },
-      { subjectId: 'mathematics', name: 'Mathematics', icon: 'maths', chapterCount: 14 },
-    ],
-    nextCursor: null,
-  },
-  [ROHAN]: {
-    items: [{ subjectId: 'english', name: 'English', icon: 'english', chapterCount: 4 }],
-    nextCursor: null,
-  },
-};
-
-async function registerFamilyOnThisPhone() {
-  const id = makeFamilyId();
-  const { familyKey } = await createFamilyKeys(id, 'blue lantern 2026');
-  await writeValue('familyKey', familyKey);
-  return familyKey;
-}
-
-function answerWith(familyKey: string) {
-  get.mockImplementation(async (path: string) => {
-    if (path === '/v1/me') {
-      return {
-        children: [
-          { childId: AARYA, name: lockText(familyKey, 'Aarya'), classLevel: 6 },
-          { childId: ROHAN, name: lockText(familyKey, 'Rohan'), classLevel: 3 },
-        ],
-      };
-    }
-    const childId = path.split('/')[3];
-    return SUBJECTS[childId];
-  });
-}
 
 beforeEach(async () => {
   get.mockReset();
@@ -55,7 +22,7 @@ beforeEach(async () => {
 
 describe('opening Home', () => {
   it('shows the first Child by name with that Child’s Subjects', async () => {
-    answerWith(await registerFamilyOnThisPhone());
+    answerLikeTheApi(get, await registerFamilyOnThisPhone());
 
     const { result } = await renderHook(() => useHome());
 
@@ -73,7 +40,7 @@ describe('opening Home', () => {
 
   it('keeps loading and asks again when the Child’s content is still being made', async () => {
     jest.useFakeTimers();
-    answerWith(await registerFamilyOnThisPhone());
+    answerLikeTheApi(get, await registerFamilyOnThisPhone());
     const answer = get.getMockImplementation();
     let subjectsCalls = 0;
     get.mockImplementation(async (path: string, schema: unknown) => {
@@ -94,7 +61,7 @@ describe('opening Home', () => {
   });
 
   it('shows a failure when the call fails and loads again on retry', async () => {
-    answerWith(await registerFamilyOnThisPhone());
+    answerLikeTheApi(get, await registerFamilyOnThisPhone());
     const answer = get.getMockImplementation();
     let subjectsCalls = 0;
     get.mockImplementation(async (path: string, schema: unknown) => {
@@ -112,7 +79,7 @@ describe('opening Home', () => {
   });
 
   it('asks the Parent to unlock the Family when this phone has no Family key', async () => {
-    answerWith('unused');
+    answerLikeTheApi(get, 'unused');
 
     const { result } = await renderHook(() => useHome());
 
@@ -121,7 +88,7 @@ describe('opening Home', () => {
   });
 
   it('switches Child, remembers only the id, and opens on that Child next time', async () => {
-    answerWith(await registerFamilyOnThisPhone());
+    answerLikeTheApi(get, await registerFamilyOnThisPhone());
     const { result } = await renderHook(() => useHome());
     await waitFor(() => expect(result.current.subjects.status).toBe('ready'));
 
@@ -139,7 +106,7 @@ describe('opening Home', () => {
 
   it('shows a Child still being made as loading while the active Child is already shown', async () => {
     jest.useFakeTimers();
-    answerWith(await registerFamilyOnThisPhone());
+    answerLikeTheApi(get, await registerFamilyOnThisPhone());
     const answer = get.getMockImplementation();
     get.mockImplementation(async (path: string, schema: unknown) => {
       if (path === `/v1/children/${ROHAN}/subjects`) throw new ApiError('content-not-ready', 409);
