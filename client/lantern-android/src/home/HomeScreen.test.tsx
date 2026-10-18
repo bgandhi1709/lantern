@@ -17,12 +17,19 @@ const get = api.get as jest.Mock;
 
 const onOpenSubject = jest.fn();
 const onAddChild = jest.fn();
+const onOpenSettings = jest.fn();
 
 async function openHome() {
   answerLikeTheApi(get, await registerFamilyOnThisPhone());
   fakeRestoredSession();
   const user = userEvent.setup();
-  const view = await render(<HomeScreen onOpenSubject={onOpenSubject} onAddChild={onAddChild} />);
+  const view = await render(
+    <HomeScreen
+      onOpenSubject={onOpenSubject}
+      onAddChild={onAddChild}
+      onOpenSettings={onOpenSettings}
+    />,
+  );
   await screen.findByText('Science');
   return { user, view };
 }
@@ -32,6 +39,7 @@ beforeEach(async () => {
   get.mockReset();
   onOpenSubject.mockReset();
   onAddChild.mockReset();
+  onOpenSettings.mockReset();
 });
 
 describe('Home', () => {
@@ -42,6 +50,14 @@ describe('Home', () => {
     expect(screen.getByText("Aarya's Subjects, Class 6")).toBeOnTheScreen();
     expect(screen.getByRole('button', { name: 'Science, 12 Chapters' })).toBeOnTheScreen();
     expect(screen.getByRole('button', { name: 'Mathematics, 14 Chapters' })).toBeOnTheScreen();
+  });
+
+  it('opens Settings from the gear in the header', async () => {
+    const { user } = await openHome();
+
+    await user.press(screen.getByRole('button', { name: 'Settings' }));
+
+    expect(onOpenSettings).toHaveBeenCalledTimes(1);
   });
 
   it('opens a Subject with the Child and the Subject ids', async () => {
@@ -71,7 +87,13 @@ describe('Home', () => {
     await screen.findByText('English');
     await view.unmount();
 
-    await render(<HomeScreen onOpenSubject={onOpenSubject} onAddChild={onAddChild} />);
+    await render(
+      <HomeScreen
+        onOpenSubject={onOpenSubject}
+        onAddChild={onAddChild}
+        onOpenSettings={onOpenSettings}
+      />,
+    );
 
     expect(await screen.findByText('English')).toBeOnTheScreen();
   });
@@ -102,7 +124,13 @@ describe('Home', () => {
     });
     fakeRestoredSession();
     const user = userEvent.setup();
-    await render(<HomeScreen onOpenSubject={onOpenSubject} onAddChild={onAddChild} />);
+    await render(
+      <HomeScreen
+        onOpenSubject={onOpenSubject}
+        onAddChild={onAddChild}
+        onOpenSettings={onOpenSettings}
+      />,
+    );
 
     await user.press(await screen.findByRole('button', { name: 'Switch child, now Aarya' }));
 
@@ -118,7 +146,13 @@ describe('Home', () => {
 
     expect(screen.queryByText('Welcome to Lantern')).not.toBeOnTheScreen();
     await view.unmount();
-    await render(<HomeScreen onOpenSubject={onOpenSubject} onAddChild={onAddChild} />);
+    await render(
+      <HomeScreen
+        onOpenSubject={onOpenSubject}
+        onAddChild={onAddChild}
+        onOpenSettings={onOpenSettings}
+      />,
+    );
     await screen.findByText('Science');
     expect(screen.queryByText('Welcome to Lantern')).not.toBeOnTheScreen();
   });
@@ -142,7 +176,13 @@ describe('Home', () => {
     });
     fakeRestoredSession();
     const user = userEvent.setup();
-    await render(<HomeScreen onOpenSubject={onOpenSubject} onAddChild={onAddChild} />);
+    await render(
+      <HomeScreen
+        onOpenSubject={onOpenSubject}
+        onAddChild={onAddChild}
+        onOpenSettings={onOpenSettings}
+      />,
+    );
 
     await user.press(await screen.findByRole('button', { name: 'Try again' }));
     failing = false;
@@ -159,7 +199,13 @@ describe('Home', () => {
       return answer?.(path, schema);
     });
     fakeRestoredSession();
-    await render(<HomeScreen onOpenSubject={onOpenSubject} onAddChild={onAddChild} />);
+    await render(
+      <HomeScreen
+        onOpenSubject={onOpenSubject}
+        onAddChild={onAddChild}
+        onOpenSettings={onOpenSettings}
+      />,
+    );
 
     expect(await screen.findByText("Getting Aarya's Subjects ready…")).toBeOnTheScreen();
     expect(screen.queryByRole('button', { name: 'Try again' })).not.toBeOnTheScreen();
@@ -168,7 +214,13 @@ describe('Home', () => {
   it('asks the Parent to unlock the Family on a phone with no Family key', async () => {
     answerLikeTheApi(get, 'unused');
     fakeRestoredSession();
-    await render(<HomeScreen onOpenSubject={onOpenSubject} onAddChild={onAddChild} />);
+    await render(
+      <HomeScreen
+        onOpenSubject={onOpenSubject}
+        onAddChild={onAddChild}
+        onOpenSettings={onOpenSettings}
+      />,
+    );
 
     expect(await screen.findByText('Unlock your Family')).toBeOnTheScreen();
     expect(get).not.toHaveBeenCalled();
@@ -181,7 +233,13 @@ describe('Home', () => {
     await render(
       <AuthProvider>
         <AuthGate
-          home={<HomeScreen onOpenSubject={onOpenSubject} onAddChild={onAddChild} />}
+          home={
+            <HomeScreen
+              onOpenSubject={onOpenSubject}
+              onAddChild={onAddChild}
+              onOpenSettings={onOpenSettings}
+            />
+          }
           registration={<Text>Registration</Text>}
         />
       </AuthProvider>,

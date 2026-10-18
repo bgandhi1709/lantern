@@ -26,6 +26,9 @@
   --text-brand--line-height: calc(36 / 28);
   --text-display: 40px;
   --text-display--line-height: calc(48 / 40);
+  --text-aa-default: 15px;
+  --text-aa-large: 18px;
+  --text-aa-largest: 21px;
 }
 
 /* What the Appearance screen can change: each reads --app-<name> from the ThemeProvider, else the default. */

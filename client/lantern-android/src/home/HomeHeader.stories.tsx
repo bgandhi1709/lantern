@@ -6,7 +6,7 @@ import { HomeHeader } from './HomeHeader';
 const meta = {
   title: 'Home/HomeHeader',
   component: HomeHeader,
-  args: { onSignOut: fn() },
+  args: { onOpenSettings: fn(), onSignOut: fn() },
 } satisfies Meta<typeof HomeHeader>;
 
 export default meta;

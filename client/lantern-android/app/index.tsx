@@ -17,6 +17,7 @@ export default function Index() {
             router.push({ pathname: '/subject/[subjectId]', params: { subjectId, childId } })
           }
           onAddChild={() => router.push('/add-child')}
+          onOpenSettings={() => router.push('/settings')}
         />
       }
       registration={<RegistrationFlow />}

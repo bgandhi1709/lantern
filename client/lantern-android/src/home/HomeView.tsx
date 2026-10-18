@@ -26,6 +26,7 @@ type Props = {
   onPickChild: (childId: string) => void;
   onAddChild: () => void;
   onOpenSubject: (childId: string, subjectId: string) => void;
+  onOpenSettings: () => void;
   onDismissBanner: () => void;
   onTryAgain: () => void;
   onSignOut: () => void;
@@ -37,7 +38,7 @@ export function HomeView(props: Props) {
 
   return (
     <View className="flex-1 bg-ground pt-safe">
-      <HomeHeader onSignOut={props.onSignOut} />
+      <HomeHeader onOpenSettings={props.onOpenSettings} onSignOut={props.onSignOut} />
       <ScrollView contentContainerClassName="gap-4 px-4 pb-4 pt-1">
         <Text accessibilityRole="header" className="font-inter-bold text-heading text-ink">
           {greeting}

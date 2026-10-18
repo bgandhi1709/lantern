@@ -22,6 +22,7 @@ const meta = {
     onPickChild: fn(),
     onAddChild: fn(),
     onOpenSubject: fn(),
+    onOpenSettings: fn(),
     onDismissBanner: fn(),
     onTryAgain: fn(),
     onSignOut: fn(),

@@ -223,6 +223,40 @@ export const en = {
       text: 'This phone does not hold your Family yet. Opening your Family on a new phone is coming soon.',
     },
     comingNext: { heading: 'Coming next', text: 'This screen is on its way.' },
+    settings: 'Settings',
+  },
+  appearance: {
+    title: 'Appearance',
+    theme: {
+      heading: 'Theme',
+      system: 'Match phone',
+      light: 'Light',
+      dark: 'Dark',
+      note: 'Dark is easier on the eyes in the evening and in dim rooms.',
+    },
+    textSize: {
+      heading: 'Text size',
+      sample: 'Aa',
+      default: 'Normal text size',
+      large: 'Large text size',
+      largest: 'Largest text size',
+      note: 'Lantern also follows the text size set on your phone.',
+    },
+    colour: {
+      heading: 'Colour',
+      teal: { name: 'Teal', note: 'Default. Calm.' },
+      blue: { name: 'Blue', note: 'Classic.' },
+      gray: { name: 'Gray', note: 'Quiet.' },
+      golden: { name: 'Golden', note: 'Warm lamplight.' },
+    },
+    preview: {
+      label: 'Preview',
+      title: 'Transparent, translucent and opaque',
+      meta: 'Concept 3 of 5 · About 15 min',
+      body: 'Light passes fully through transparent materials, partly through translucent ones and not at all through opaque ones.',
+      next: 'Next step',
+    },
+    savedNote: 'Saved on this phone only. Signing out resets these.',
   },
 };
 

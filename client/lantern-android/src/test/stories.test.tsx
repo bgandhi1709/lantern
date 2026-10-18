@@ -109,6 +109,16 @@ const requiredStories: Record<string, string[]> = {
   'home/WelcomeBanner.stories.tsx': ['Default', 'LongName'],
   'home/ChildAvatar.stories.tsx': ['Small', 'Large'],
   'home/HomeHeader.stories.tsx': ['Default'],
+  'settings/OptionGroup.stories.tsx': ['Theme', 'TextSize', 'LongLabels'],
+  'settings/SchemeCard.stories.tsx': ['Unselected', 'Selected', 'LongNote'],
+  'settings/PreviewCard.stories.tsx': ['Default'],
+  'settings/AppearanceView.stories.tsx': [
+    'Default',
+    'DarkTeal',
+    'BlueLargeText',
+    'GrayDark',
+    'GoldenLargestText',
+  ],
   'home/HomeTabs.stories.tsx': ['Default'],
   'home/AddChildRow.stories.tsx': ['Default'],
   'home/UnlockNotice.stories.tsx': ['Default'],
@@ -143,6 +153,8 @@ const withoutStory: Record<string, string> = {
   'shared/ui/markParts.tsx': 'SVG parts of Mark',
   'home/HomeScreen.tsx': 'container for HomeView, which has the stories',
   'home/homeIcons.tsx': 'SVG parts used by the Home components',
+  'settings/AppearanceScreen.tsx': 'container for AppearanceView, which has the stories',
+  'shared/theme/LookProvider.tsx': 'provider with nothing to draw; the Appearance stories use it',
   'shared/theme/ThemeProvider.tsx':
     'provider with nothing to draw; the Appearance stories show every look',
 };

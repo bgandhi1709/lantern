@@ -11,9 +11,10 @@ import { useWelcomeBanner } from './useWelcomeBanner';
 type Props = {
   onOpenSubject: (childId: string, subjectId: string) => void;
   onAddChild: () => void;
+  onOpenSettings: () => void;
 };
 
-export function HomeScreen({ onOpenSubject, onAddChild }: Props) {
+export function HomeScreen({ onOpenSubject, onAddChild, onOpenSettings }: Props) {
   const home = useHome();
   const banner = useWelcomeBanner();
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -40,6 +41,7 @@ export function HomeScreen({ onOpenSubject, onAddChild }: Props) {
         onAddChild();
       }}
       onOpenSubject={onOpenSubject}
+      onOpenSettings={onOpenSettings}
       onDismissBanner={banner.dismiss}
       onTryAgain={home.retry}
       onSignOut={signOutOfLantern}

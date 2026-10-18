@@ -1,17 +1,11 @@
-import { VariableContextProvider } from 'nativewind';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import { useColorScheme } from 'react-native';
 
-import { colorsOf } from '../ui/theme';
 import { onSessionChange } from '../session';
 import { readValue, writeValue } from '../storage';
-import { DEFAULT_APPEARANCE, isDark } from './appearance';
+import { DEFAULT_APPEARANCE } from './appearance';
 import type { Appearance, ColourScheme, TextSize, ThemeChoice } from './appearance';
-import { AppearanceContext } from './appearanceContext';
-import type { AppearanceValue } from './appearanceContext';
-import { appearanceVariables } from './appearanceVariables';
-import { paletteFor } from './palettes';
+import { LookProvider } from './LookProvider';
 
 const readAppearance = async (): Promise<Appearance> => {
   const [theme, textSize, colourScheme] = await Promise.all([
@@ -24,7 +18,6 @@ const readAppearance = async (): Promise<Appearance> => {
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [appearance, setAppearance] = useState<Appearance | null>(null);
-  const phoneIsDark = useColorScheme() === 'dark';
   const wasSignedIn = useRef(false);
 
   useEffect(() => {
@@ -61,28 +54,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     writeValue('colourScheme', colourScheme).catch(() => undefined);
   }, []);
 
-  const value = useMemo<AppearanceValue | null>(() => {
-    if (appearance === null) return null;
-    const dark = isDark(appearance.theme, phoneIsDark);
-    return {
-      appearance,
-      dark,
-      colors: colorsOf(paletteFor(appearance.colourScheme, dark)),
-      setTheme,
-      setTextSize,
-      setColourScheme,
-    };
-  }, [appearance, phoneIsDark, setTheme, setTextSize, setColourScheme]);
-
-  const variables = useMemo(
-    () => (appearance ? appearanceVariables(appearance, phoneIsDark) : {}),
-    [appearance, phoneIsDark],
+  const actions = useMemo(
+    () => ({ setTheme, setTextSize, setColourScheme }),
+    [setTheme, setTextSize, setColourScheme],
   );
 
-  if (value === null) return null;
+  if (appearance === null) return null;
   return (
-    <AppearanceContext.Provider value={value}>
-      <VariableContextProvider value={variables}>{children}</VariableContextProvider>
-    </AppearanceContext.Provider>
+    <LookProvider appearance={appearance} actions={actions}>
+      {children}
+    </LookProvider>
   );
 }
