@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { ApiError } from '../shared/api';
 import { unlockText } from '../shared/crypto';
@@ -27,11 +27,13 @@ async function subjectsOnceReady(childId: string, isCancelled: () => boolean) {
 
 export type HomeChild = { id: string; name: string; classLevel: number };
 
-export type SubjectsState = { status: 'loading' } | { status: 'ready'; items: Subject[] };
+export type SubjectsState =
+  { status: 'loading' } | { status: 'failed' } | { status: 'ready'; items: Subject[] };
 
 export function useHome() {
   const [activeChild, setActiveChild] = useState<HomeChild | null>(null);
   const [subjects, setSubjects] = useState<SubjectsState>({ status: 'loading' });
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -49,11 +51,18 @@ export function useHome() {
       setActiveChild(child);
       setSubjects({ status: 'ready', items });
     };
-    load();
+    load().catch(() => {
+      if (!cancelled) setSubjects({ status: 'failed' });
+    });
     return () => {
       cancelled = true;
     };
+  }, [attempt]);
+
+  const retry = useCallback(() => {
+    setSubjects({ status: 'loading' });
+    setAttempt((n) => n + 1);
   }, []);
 
-  return { activeChild, subjects };
+  return { activeChild, subjects, retry };
 }

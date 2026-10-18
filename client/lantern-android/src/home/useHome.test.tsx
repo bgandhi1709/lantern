@@ -89,4 +89,21 @@ describe('opening Home', () => {
     expect(subjectsCalls).toBe(2);
     jest.useRealTimers();
   });
+
+  it('shows a failure when the call fails and loads again on retry', async () => {
+    answerWith(await registerFamilyOnThisPhone());
+    const answer = get.getMockImplementation();
+    let subjectsCalls = 0;
+    get.mockImplementation(async (path: string, schema: unknown) => {
+      if (path.endsWith('/subjects') && ++subjectsCalls === 1) throw new ApiError('network', null);
+      return answer?.(path, schema);
+    });
+
+    const { result } = await renderHook(() => useHome());
+
+    await waitFor(() => expect(result.current.subjects).toEqual({ status: 'failed' }));
+    await act(async () => result.current.retry());
+    await waitFor(() => expect(result.current.subjects.status).toBe('ready'));
+    expect(subjectsCalls).toBe(2);
+  });
 });
