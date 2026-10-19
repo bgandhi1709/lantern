@@ -1,7 +1,7 @@
 import { VariableContextProvider } from 'nativewind';
 import { useMemo } from 'react';
 import type { ReactNode } from 'react';
-import { useColorScheme } from 'react-native';
+import { useWindowDimensions } from 'react-native';
 
 import { colorsOf } from '../ui/theme';
 import { isDark } from './appearance';
@@ -19,10 +19,10 @@ const NO_ACTIONS: Actions = { setTheme: nothing, setTextSize: nothing, setColour
 type Props = { appearance: Appearance; actions?: Actions; children: ReactNode };
 
 export function LookProvider({ appearance, actions = NO_ACTIONS, children }: Props) {
-  const phoneIsDark = useColorScheme() === 'dark';
+  const { fontScale } = useWindowDimensions();
 
   const value = useMemo<AppearanceValue>(() => {
-    const dark = isDark(appearance.theme, phoneIsDark);
+    const dark = isDark(appearance.theme);
     return {
       appearance,
       dark,
@@ -30,11 +30,11 @@ export function LookProvider({ appearance, actions = NO_ACTIONS, children }: Pro
       markColors: markColorsFor(appearance.colourScheme, dark),
       ...actions,
     };
-  }, [appearance, phoneIsDark, actions]);
+  }, [appearance, actions]);
 
   const variables = useMemo(
-    () => appearanceVariables(appearance, phoneIsDark),
-    [appearance, phoneIsDark],
+    () => appearanceVariables(appearance, fontScale),
+    [appearance, fontScale],
   );
 
   return (

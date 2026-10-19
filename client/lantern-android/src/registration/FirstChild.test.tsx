@@ -225,6 +225,7 @@ describe('Finish', () => {
 
     await user.press(finishButton());
     expect(screen.getByRole('button', { name: 'Finishing…' })).toBeDisabled();
+    expect(screen.getByRole('progressbar', { name: 'Setting up your family…' })).toBeOnTheScreen();
     await user.press(screen.getByRole('button', { name: 'Finishing…' }));
     await act(async () => finishRequest({ familyId: 'a-family' }));
 

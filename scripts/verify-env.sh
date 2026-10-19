@@ -8,7 +8,7 @@ set -euo pipefail
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 APP=$ROOT/client/lantern-android
 COMPOSE=$ROOT/deploy/local/docker-compose.yml
-AVD=${LANTERN_AVD:-Lantern_34}
+AVD=${LANTERN_AVD:-Lantern_Pixel8}
 # Software rendering: the host GPU path (gpu mode host) left the emulator dead mid-verify.
 EMU_GPU=${LANTERN_EMU_GPU:-swiftshader_indirect}
 # PACKAGE and METRO_PORT are repeated in client/lantern-android/.maestro/*.yaml, which cannot read this file.

@@ -16,9 +16,8 @@ type Story = StoryObj<typeof meta>;
 export const Theme: Story = {
   args: {
     label: 'Theme',
-    value: 'system',
+    value: 'light',
     options: [
-      { value: 'system', label: 'Match phone', accessibilityLabel: 'Match phone' },
       { value: 'light', label: 'Light', accessibilityLabel: 'Light' },
       { value: 'dark', label: 'Dark', accessibilityLabel: 'Dark' },
     ],
@@ -52,7 +51,6 @@ export const LongLabels: Story = {
     label: 'Theme',
     value: 'dark',
     options: [
-      { value: 'system', label: 'ફોનની જેમ', accessibilityLabel: 'ફોનની જેમ' },
       { value: 'light', label: 'પ્રકાશિત', accessibilityLabel: 'પ્રકાશિત' },
       { value: 'dark', label: 'ઘેરો રંગ', accessibilityLabel: 'ઘેરો રંગ' },
     ],

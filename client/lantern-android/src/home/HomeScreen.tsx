@@ -12,9 +12,10 @@ type Props = {
   onOpenSubject: (childId: string, subjectId: string) => void;
   onAddChild: () => void;
   onOpenSettings: () => void;
+  onOpenTab: () => void;
 };
 
-export function HomeScreen({ onOpenSubject, onAddChild, onOpenSettings }: Props) {
+export function HomeScreen({ onOpenSubject, onAddChild, onOpenSettings, onOpenTab }: Props) {
   const home = useHome();
   const banner = useWelcomeBanner();
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -42,6 +43,7 @@ export function HomeScreen({ onOpenSubject, onAddChild, onOpenSettings }: Props)
       }}
       onOpenSubject={onOpenSubject}
       onOpenSettings={onOpenSettings}
+      onOpenTab={onOpenTab}
       onDismissBanner={banner.dismiss}
       onTryAgain={home.retry}
       onSignOut={signOutOfLantern}

@@ -3,7 +3,7 @@ import { Animated, Text, View } from 'react-native';
 
 import { useStrings } from '../shared/i18n';
 import { IntroMark } from './IntroMark';
-import { PageTurnLoader } from './PageTurnLoader';
+import { PageTurnLoader } from '../shared/ui/PageTurnLoader';
 import type { Intro } from './useIntro';
 
 type OpeningScreenProps = { intro: Intro; message?: string; children?: ReactNode };

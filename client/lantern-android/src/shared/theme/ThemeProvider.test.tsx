@@ -34,10 +34,10 @@ beforeEach(async () => {
 });
 
 describe('the look of the app', () => {
-  it('starts as Match phone, the normal text size and Teal', async () => {
+  it('starts as Light, the normal text size and Teal', async () => {
     await openProbe();
 
-    expect(await screen.findByText('system/default/teal')).toBeOnTheScreen();
+    expect(await screen.findByText('light/default/teal')).toBeOnTheScreen();
   });
 
   it('opens with what the Parent chose last time', async () => {
@@ -63,23 +63,23 @@ describe('the look of the app', () => {
     expect(await readValue('theme')).toBe('dark');
   });
 
-  it('follows the phone while the theme is Match phone', async () => {
+  it('ignores the phone being dark, because the Parent picks Light or Dark', async () => {
     jest.spyOn(ReactNative, 'useColorScheme').mockReturnValue('dark');
 
     await openProbe();
 
-    expect(await screen.findByText('dark')).toBeOnTheScreen();
+    expect(await screen.findByText('light/default/teal')).toBeOnTheScreen();
   });
 
   it('keeps the look when the Parent signs out', async () => {
     fakeRestoredSession();
     await writeValue('colourScheme', 'blue');
     await openProbe();
-    await screen.findByText('system/default/blue');
+    await screen.findByText('light/default/blue');
 
     await act(async () => endSession());
 
-    expect(screen.getByText('system/default/blue')).toBeOnTheScreen();
+    expect(screen.getByText('light/default/blue')).toBeOnTheScreen();
     expect(await readValue('colourScheme')).toBe('blue');
   });
 });

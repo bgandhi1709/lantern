@@ -40,30 +40,34 @@ describe.each(combos)('the %s colours, dark %s', (scheme, dark) => {
 describe('appearance variables', () => {
   const teal = { theme: 'light', textSize: 'default', colourScheme: 'teal' } as const;
 
-  it('follow the phone when the theme is Match phone', () => {
-    const system = { ...teal, theme: 'system' } as const;
-
-    expect(appearanceVariables(system, true)['--app-ground']).toBe('#0e1716');
-    expect(appearanceVariables(system, false)['--app-ground']).toBe('#f2faf9');
-  });
-
-  it('ignore the phone when the theme is chosen', () => {
-    expect(appearanceVariables({ ...teal, theme: 'dark' }, false)['--app-ground']).toBe('#0e1716');
-    expect(appearanceVariables({ ...teal, theme: 'light' }, true)['--app-ground']).toBe('#f2faf9');
+  it('use the chosen theme', () => {
+    expect(appearanceVariables({ ...teal, theme: 'dark' })['--app-ground']).toBe('#0e1716');
+    expect(appearanceVariables({ ...teal, theme: 'light' })['--app-ground']).toBe('#f2faf9');
   });
 
   it('carry the chosen colour scheme', () => {
-    expect(appearanceVariables({ ...teal, colourScheme: 'blue' }, false)['--app-primary']).toBe(
-      '#2563eb',
-    );
+    expect(appearanceVariables({ ...teal, colourScheme: 'blue' })['--app-primary']).toBe('#2563eb');
   });
 
   it('scale the text in three steps', () => {
     expect(scaledPx('body', 'default')).toBe(16);
     expect(scaledPx('body', 'large')).toBe(18.4);
     expect(scaledPx('body', 'largest')).toBe(20.8);
-    expect(appearanceVariables({ ...teal, textSize: 'largest' }, false)['--app-text-body']).toBe(
-      '20.8px',
+    expect(appearanceVariables({ ...teal, textSize: 'largest' })['--app-text-body']).toBe('20.8px');
+  });
+
+  it('leaves the phone text size alone while the two together stay within the limit', () => {
+    expect(appearanceVariables(teal, 1.15)['--app-text-body']).toBe('16px');
+    expect(appearanceVariables({ ...teal, textSize: 'large' }, 1.15)['--app-text-body']).toBe(
+      '18.4px',
     );
+  });
+
+  it('holds the phone and in-app text sizes together to 1.4 times the designed size', () => {
+    const largestOnLargePhone = appearanceVariables({ ...teal, textSize: 'largest' }, 1.15);
+    const defaultOnHugePhone = appearanceVariables(teal, 2);
+
+    expect(largestOnLargePhone['--app-text-body']).toBe('19.5px');
+    expect(defaultOnHugePhone['--app-text-body']).toBe('11.2px');
   });
 });

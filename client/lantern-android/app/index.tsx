@@ -18,6 +18,7 @@ export default function Index() {
           }
           onAddChild={() => router.push('/add-child')}
           onOpenSettings={() => router.push('/settings')}
+          onOpenTab={() => router.push('/coming-next')}
         />
       }
       registration={<RegistrationFlow />}

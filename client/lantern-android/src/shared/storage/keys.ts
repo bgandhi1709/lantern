@@ -27,7 +27,7 @@ export const storedValues: { [N in StoredName]: Definition<Values[N]> } = {
   introSeen: { schema: z.boolean(), fallback: false, secure: false },
   activeChildId: { schema: z.string().nullable(), fallback: null, secure: false },
   familyKeys: { schema: z.record(z.string(), z.string()), fallback: {}, secure: true },
-  theme: { schema: z.enum(THEME_CHOICES), fallback: 'system', secure: false },
+  theme: { schema: z.enum(THEME_CHOICES), fallback: 'light', secure: false },
   textSize: { schema: z.enum(TEXT_SIZES), fallback: 'default', secure: false },
   colourScheme: { schema: z.enum(COLOUR_SCHEMES), fallback: 'teal', secure: false },
 };

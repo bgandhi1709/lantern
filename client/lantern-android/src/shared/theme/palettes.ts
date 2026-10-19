@@ -184,5 +184,9 @@ export const SCALED_TEXT_PX = { caption: 13, small: 15, body: 16, lead: 17, head
 
 export type ScaledText = keyof typeof SCALED_TEXT_PX;
 
-export const scaledPx = (name: ScaledText, size: TextSize) =>
-  Math.round(SCALED_TEXT_PX[name] * TEXT_SCALE[size] * 10) / 10;
+export const MAX_TEXT_MULTIPLIER = 1.4;
+
+export const scaledPx = (name: ScaledText, size: TextSize, phoneFontScale = 1) => {
+  const shown = Math.min(TEXT_SCALE[size] * phoneFontScale, MAX_TEXT_MULTIPLIER);
+  return Math.round(((SCALED_TEXT_PX[name] * shown) / phoneFontScale) * 10) / 10;
+};

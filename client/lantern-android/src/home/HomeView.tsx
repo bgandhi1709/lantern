@@ -27,6 +27,7 @@ type Props = {
   onAddChild: () => void;
   onOpenSubject: (childId: string, subjectId: string) => void;
   onOpenSettings: () => void;
+  onOpenTab: () => void;
   onDismissBanner: () => void;
   onTryAgain: () => void;
   onSignOut: () => void;
@@ -68,7 +69,7 @@ export function HomeView(props: Props) {
           </>
         ) : null}
       </ScrollView>
-      <HomeTabs />
+      <HomeTabs onOpenTab={props.onOpenTab} />
     </View>
   );
 }

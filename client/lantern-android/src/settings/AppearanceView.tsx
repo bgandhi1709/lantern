@@ -30,7 +30,7 @@ export function AppearanceView(props: Props) {
   const text = useStrings().appearance;
 
   return (
-    <View className="flex-1 bg-ground pt-safe">
+    <View className="flex-1 bg-ground pb-safe pt-safe">
       <View className="h-16 flex-row items-center gap-1 pl-4 pr-3">
         <BackButton onBack={props.onBack} />
         <Text accessibilityRole="header" className="font-inter-bold text-lead text-ink">

@@ -67,6 +67,7 @@ export const en = {
       understood: "I understand Lantern can't reset or change it, and I will keep it safe.",
       create: 'Create passphrase',
       creating: 'Creating…',
+      working: 'Creating your passphrase…',
       failed: "Couldn't create the passphrase. Try again.",
     },
     recovery: {
@@ -112,6 +113,7 @@ export const en = {
       },
       finish: 'Finish',
       finishing: 'Finishing…',
+      working: 'Setting up your family…',
       tryAgain: 'Try again',
       failures: {
         classNotAvailable:
@@ -216,7 +218,6 @@ export const en = {
       teach: 'Teach',
       check: 'Check',
       progress: 'Progress',
-      later: (name: string) => `${name}, available later`,
     },
     locked: {
       heading: 'Unlock your Family',
@@ -229,7 +230,6 @@ export const en = {
     title: 'Appearance',
     theme: {
       heading: 'Theme',
-      system: 'Match phone',
       light: 'Light',
       dark: 'Dark',
       note: 'Dark is easier on the eyes in the evening and in dim rooms.',

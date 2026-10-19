@@ -166,6 +166,9 @@ describe('the Passphrase step', () => {
     await user.press(createButton());
 
     expect(screen.getByRole('button', { name: 'Creating…' })).toBeDisabled();
+    expect(
+      screen.getByRole('progressbar', { name: 'Creating your passphrase…' }),
+    ).toBeOnTheScreen();
     await act(async () => finish());
   });
 

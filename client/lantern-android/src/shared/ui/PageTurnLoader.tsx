@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Animated, Easing, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
-import { useColors, useMarkColors } from '../shared/theme';
+import { useColors, useMarkColors } from '../theme';
 
 const WIDTH = 72;
 const HEIGHT = 48;

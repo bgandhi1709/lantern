@@ -18,6 +18,7 @@ const get = api.get as jest.Mock;
 const onOpenSubject = jest.fn();
 const onAddChild = jest.fn();
 const onOpenSettings = jest.fn();
+const onOpenTab = jest.fn();
 
 async function openHome() {
   answerLikeTheApi(get, await registerFamilyOnThisPhone());
@@ -28,6 +29,7 @@ async function openHome() {
       onOpenSubject={onOpenSubject}
       onAddChild={onAddChild}
       onOpenSettings={onOpenSettings}
+      onOpenTab={onOpenTab}
     />,
   );
   await screen.findByText('Science');
@@ -40,6 +42,7 @@ beforeEach(async () => {
   onOpenSubject.mockReset();
   onAddChild.mockReset();
   onOpenSettings.mockReset();
+  onOpenTab.mockReset();
 });
 
 describe('Home', () => {
@@ -92,6 +95,7 @@ describe('Home', () => {
         onOpenSubject={onOpenSubject}
         onAddChild={onAddChild}
         onOpenSettings={onOpenSettings}
+        onOpenTab={onOpenTab}
       />,
     );
 
@@ -129,6 +133,7 @@ describe('Home', () => {
         onOpenSubject={onOpenSubject}
         onAddChild={onAddChild}
         onOpenSettings={onOpenSettings}
+        onOpenTab={onOpenTab}
       />,
     );
 
@@ -151,19 +156,23 @@ describe('Home', () => {
         onOpenSubject={onOpenSubject}
         onAddChild={onAddChild}
         onOpenSettings={onOpenSettings}
+        onOpenTab={onOpenTab}
       />,
     );
     await screen.findByText('Science');
     expect(screen.queryByText('Welcome to Lantern')).not.toBeOnTheScreen();
   });
 
-  it('shows Teach, Check and Progress disabled', async () => {
-    await openHome();
+  it('opens the Coming next screen from Teach, Check and Progress, and stays on Home for Home', async () => {
+    const { user } = await openHome();
 
-    ['Teach', 'Check', 'Progress'].forEach((tab) =>
-      expect(screen.getByLabelText(`${tab}, available later`)).toBeDisabled(),
-    );
-    expect(screen.getByLabelText('Home')).not.toBeDisabled();
+    await user.press(screen.getByRole('tab', { name: 'Teach' }));
+    await user.press(screen.getByRole('tab', { name: 'Check' }));
+    await user.press(screen.getByRole('tab', { name: 'Progress' }));
+    await user.press(screen.getByRole('tab', { name: 'Home' }));
+
+    expect(onOpenTab).toHaveBeenCalledTimes(3);
+    expect(screen.getByRole('tab', { name: 'Home' })).toBeSelected();
   });
 
   it('shows Try again when the Subjects cannot be loaded, and loads them on pressing it', async () => {
@@ -181,6 +190,7 @@ describe('Home', () => {
         onOpenSubject={onOpenSubject}
         onAddChild={onAddChild}
         onOpenSettings={onOpenSettings}
+        onOpenTab={onOpenTab}
       />,
     );
 
@@ -204,6 +214,7 @@ describe('Home', () => {
         onOpenSubject={onOpenSubject}
         onAddChild={onAddChild}
         onOpenSettings={onOpenSettings}
+        onOpenTab={onOpenTab}
       />,
     );
 
@@ -219,6 +230,7 @@ describe('Home', () => {
         onOpenSubject={onOpenSubject}
         onAddChild={onAddChild}
         onOpenSettings={onOpenSettings}
+        onOpenTab={onOpenTab}
       />,
     );
 
@@ -238,6 +250,7 @@ describe('Home', () => {
               onOpenSubject={onOpenSubject}
               onAddChild={onAddChild}
               onOpenSettings={onOpenSettings}
+              onOpenTab={onOpenTab}
             />
           }
           registration={<Text>Registration</Text>}

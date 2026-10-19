@@ -147,7 +147,7 @@ const withoutStory: Record<string, string> = {
   'auth/SignedInRoute.tsx': 'container for SignedInView, which has the stories',
   'auth/IntroLayer.tsx': 'animation layer shown inside OpeningScreen',
   'auth/IntroMark.tsx': 'animation of Mark, shown inside OpeningScreen',
-  'auth/PageTurnLoader.tsx': 'loader shown inside OpeningScreen',
+  'shared/ui/PageTurnLoader.tsx': 'loader shown inside OpeningScreen and LoadingOverlay',
   'shared/ui/FadeIn.tsx': 'animation wrapper with no look of its own',
   'shared/ui/icons.tsx': 'SVG parts used by the screens and their components',
   'shared/ui/markParts.tsx': 'SVG parts of Mark',

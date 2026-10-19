@@ -32,7 +32,8 @@ describe('Appearance', () => {
     expect(screen.getByLabelText('Theme')).toBeOnTheScreen();
     expect(screen.getByLabelText('Text size')).toBeOnTheScreen();
     expect(screen.getByLabelText('Colour')).toBeOnTheScreen();
-    expect(choice('Match phone')).toBeChecked();
+    expect(choice('Light')).toBeChecked();
+    expect(screen.queryByLabelText('Match phone')).not.toBeOnTheScreen();
     expect(choice('Normal text size')).toBeChecked();
     expect(choice('Teal. Default. Calm.')).toBeChecked();
     expect(choice('Dark')).not.toBeChecked();
@@ -56,7 +57,7 @@ describe('Appearance', () => {
     await user.press(choice('Dark'));
 
     expect(choice('Dark')).toBeChecked();
-    expect(choice('Match phone')).not.toBeChecked();
+    expect(choice('Light')).not.toBeChecked();
     expect(await readValue('theme')).toBe('dark');
   });
 
