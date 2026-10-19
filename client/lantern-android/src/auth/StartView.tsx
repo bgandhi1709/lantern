@@ -14,7 +14,7 @@ export function StartView({ status, onSignIn }: Props) {
   return (
     <View className="flex-1 bg-ground pb-safe pt-safe">
       <ScrollView contentContainerClassName="gap-3 p-6 pb-3">
-        <Text className="text-center font-inter-bold text-brand text-primary">
+        <Text className="text-center font-inter-bold text-brand text-accent">
           {strings.appName}
         </Text>
         <View className="items-center">

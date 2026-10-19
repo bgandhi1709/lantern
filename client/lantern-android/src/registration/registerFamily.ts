@@ -4,7 +4,7 @@ import { ApiError, api } from '../shared/api';
 import { lockText, makeFamilyId, rewrapFamilyKeys } from '../shared/crypto';
 import type { FamilyKeys } from '../shared/crypto';
 import type { Parent } from '../shared/session';
-import { writeValue } from '../shared/storage';
+import { keepFamilyKey } from '../shared/storage';
 import type { Board } from './board';
 import type { ChildDraft } from './child';
 import { PLACEHOLDER_NOTICE_VERSION } from './notice';
@@ -53,9 +53,9 @@ const hasCode = (error: unknown, code: string) => error instanceof ApiError && e
 
 // A phone that registered must be able to open its Family again, but a phone with no working
 // storage still has the Passphrase, so a failed write does not undo the registration.
-async function keepFamilyKey(familyKey: string) {
+async function keepKeyForParent(uid: string, familyKey: string) {
   try {
-    await writeValue('familyKey', familyKey);
+    await keepFamilyKey(uid, familyKey);
   } catch {
     // The Passphrase opens the Family on the next start.
   }
@@ -71,7 +71,7 @@ export async function registerFamily(input: RegisterInput): Promise<RegisterResu
   const { id, keys, passphrase } = input.family;
   try {
     await send(input, id, keys);
-    await keepFamilyKey(keys.familyKey);
+    await keepKeyForParent(input.parent.uid, keys.familyKey);
     return 'registered';
   } catch (error) {
     if (hasCode(error, 'already-registered')) return 'alreadyRegistered';
@@ -86,6 +86,6 @@ export async function registerFamily(input: RegisterInput): Promise<RegisterResu
     if (hasCode(error, 'already-registered')) return 'alreadyRegistered';
     throw error;
   }
-  await keepFamilyKey(newKeys.familyKey);
+  await keepKeyForParent(input.parent.uid, newKeys.familyKey);
   return 'registered';
 }

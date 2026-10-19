@@ -1,6 +1,6 @@
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
-import { colors } from './theme';
+import { useColors } from '../theme';
 
 function LineIcon({
   children,
@@ -9,6 +9,7 @@ function LineIcon({
   children: React.ReactNode;
   strokeWidth?: number;
 }) {
+  const colors = useColors();
   return (
     <Svg
       width={26}

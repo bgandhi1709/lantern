@@ -5,7 +5,7 @@ import { useStrings } from '../shared/i18n';
 import type { Parent } from '../shared/session';
 import { GoogleG, MailIcon, UserIcon } from '../shared/ui/icons';
 
-type Props = Parent;
+type Props = Pick<Parent, 'name' | 'email'>;
 
 function Row({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
   return (

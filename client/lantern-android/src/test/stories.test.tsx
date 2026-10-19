@@ -109,6 +109,16 @@ const requiredStories: Record<string, string[]> = {
   'home/WelcomeBanner.stories.tsx': ['Default', 'LongName'],
   'home/ChildAvatar.stories.tsx': ['Small', 'Large'],
   'home/HomeHeader.stories.tsx': ['Default'],
+  'settings/OptionGroup.stories.tsx': ['Theme', 'TextSize', 'LongLabels'],
+  'settings/SchemeCard.stories.tsx': ['Unselected', 'Selected', 'LongNote'],
+  'settings/PreviewCard.stories.tsx': ['Default'],
+  'settings/AppearanceView.stories.tsx': [
+    'Default',
+    'DarkTeal',
+    'BlueLargeText',
+    'GrayDark',
+    'GoldenLargestText',
+  ],
   'home/HomeTabs.stories.tsx': ['Default'],
   'home/AddChildRow.stories.tsx': ['Default'],
   'home/UnlockNotice.stories.tsx': ['Default'],
@@ -137,12 +147,16 @@ const withoutStory: Record<string, string> = {
   'auth/SignedInRoute.tsx': 'container for SignedInView, which has the stories',
   'auth/IntroLayer.tsx': 'animation layer shown inside OpeningScreen',
   'auth/IntroMark.tsx': 'animation of Mark, shown inside OpeningScreen',
-  'auth/PageTurnLoader.tsx': 'loader shown inside OpeningScreen',
+  'shared/ui/PageTurnLoader.tsx': 'loader shown inside OpeningScreen and LoadingOverlay',
   'shared/ui/FadeIn.tsx': 'animation wrapper with no look of its own',
   'shared/ui/icons.tsx': 'SVG parts used by the screens and their components',
   'shared/ui/markParts.tsx': 'SVG parts of Mark',
   'home/HomeScreen.tsx': 'container for HomeView, which has the stories',
   'home/homeIcons.tsx': 'SVG parts used by the Home components',
+  'settings/AppearanceScreen.tsx': 'container for AppearanceView, which has the stories',
+  'shared/theme/LookProvider.tsx': 'provider with nothing to draw; the Appearance stories use it',
+  'shared/theme/ThemeProvider.tsx':
+    'provider with nothing to draw; the Appearance stories show every look',
 };
 
 describe('the stories', () => {

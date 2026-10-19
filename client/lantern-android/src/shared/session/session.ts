@@ -8,7 +8,6 @@ import {
 } from '@react-native-firebase/auth';
 
 import { config } from '../config';
-import { clearAll } from '../storage';
 
 const auth = getAuth();
 
@@ -41,12 +40,12 @@ export async function getIdToken() {
   }
 }
 
-export type Parent = { name: string; email: string };
+export type Parent = { uid: string; name: string; email: string };
 
 // The name and email on the Google account. Google always sends an email; the name falls back to it.
 export function getParent(): Parent {
   const email = auth.currentUser?.email ?? '';
-  return { name: auth.currentUser?.displayName || email, email };
+  return { uid: auth.currentUser?.uid ?? '', name: auth.currentUser?.displayName || email, email };
 }
 
 export function onSessionChange(listener: (signedIn: boolean) => void) {
@@ -58,9 +57,5 @@ export async function startSession(googleIdToken: string) {
 }
 
 export async function endSession() {
-  try {
-    await signOut(auth);
-  } finally {
-    await clearAll();
-  }
+  await signOut(auth);
 }

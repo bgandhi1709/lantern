@@ -1,6 +1,7 @@
 import { ApiError, api } from '../shared/api';
 import { createFamilyKeys, makeFamilyId, openWithPassphrase, unlockText } from '../shared/crypto';
-import { readValue } from '../shared/storage';
+import { readFamilyKey } from '../shared/storage';
+import { FAKE_UID } from '../test/fakeFirebaseAuth';
 import { emptyChild } from './child';
 import { PLACEHOLDER_NOTICE_VERSION } from './notice';
 import { registerFamily } from './registerFamily';
@@ -16,7 +17,7 @@ const makeInput = async (): Promise<RegisterInput> => {
   const id = makeFamilyId();
   return {
     family: { id, keys: await createFamilyKeys(id, PASSPHRASE), passphrase: PASSPHRASE },
-    parent: { name: 'Meera Shah', email: 'meera@example.com' },
+    parent: { uid: FAKE_UID, name: 'Meera Shah', email: 'meera@example.com' },
     region: 'Pune, Maharashtra',
     board: 'ssc',
     children: [
@@ -75,7 +76,7 @@ describe('registering the Family', () => {
 
     expect(await registerFamily(input)).toBe('registered');
 
-    expect(await readValue('familyKey')).toBe(input.family.keys.familyKey);
+    expect(await readFamilyKey(FAKE_UID)).toBe(input.family.keys.familyKey);
   });
 
   it('goes on to Home when the Family key cannot be stored', async () => {
@@ -91,7 +92,7 @@ describe('registering the Family', () => {
 
     expect(await registerFamily(await makeInput())).toBe('alreadyRegistered');
 
-    expect(await readValue('familyKey')).toBeNull();
+    expect(await readFamilyKey(FAKE_UID)).toBeNull();
   });
 
   it('tries once more with a new Family id when the id is taken, and the Passphrase still opens it', async () => {
@@ -111,7 +112,7 @@ describe('registering the Family', () => {
         retry.passphraseSalt,
       ),
     ).toBe(input.family.keys.familyKey);
-    expect(await readValue('familyKey')).toBe(input.family.keys.familyKey);
+    expect(await readFamilyKey(FAKE_UID)).toBe(input.family.keys.familyKey);
   });
 
   it('gives up after one retry when the new id is taken too', async () => {
@@ -129,7 +130,7 @@ describe('registering the Family', () => {
       post.mockRejectedValue(new ApiError(code, 400));
 
       await expect(registerFamily(await makeInput())).rejects.toMatchObject({ code });
-      expect(await readValue('familyKey')).toBeNull();
+      expect(await readFamilyKey(FAKE_UID)).toBeNull();
     },
   );
 

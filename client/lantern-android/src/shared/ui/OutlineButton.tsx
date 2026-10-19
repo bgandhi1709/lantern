@@ -14,7 +14,7 @@ type Props = {
 };
 
 const TONE_CLASSES: Record<OutlineTone, { border: string; text: string }> = {
-  primary: { border: 'border-primary', text: 'text-primary' },
+  primary: { border: 'border-primary', text: 'text-accent' },
   danger: { border: 'border-danger', text: 'text-danger' },
 };
 

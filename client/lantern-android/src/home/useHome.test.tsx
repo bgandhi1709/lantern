@@ -3,6 +3,7 @@ import type { z } from 'zod';
 
 import { ApiError, api } from '../shared/api';
 import { clearAll, readValue } from '../shared/storage';
+import { fakeRestoredSession } from '../test/fakeFirebaseAuth';
 import { AARYA, ROHAN, answerLikeTheApi, registerFamilyOnThisPhone } from '../test/fakeFamily';
 import { MAX_CONTENT_POLLS, CONTENT_POLL_MS } from './subjectsOnceReady';
 import { useHome } from './useHome';
@@ -118,6 +119,16 @@ describe('opening Home', () => {
       { id: ROHAN, name: 'Rohan', classLevel: 3, stillBeingMade: true },
     ]);
     jest.useRealTimers();
+  });
+
+  it('asks another account on this phone to unlock its own Family, not read this one', async () => {
+    answerLikeTheApi(get, await registerFamilyOnThisPhone());
+    fakeRestoredSession('token', { uid: 'someone-else', displayName: 'Meera', email: 'm@x.in' });
+
+    const { result } = await renderHook(() => useHome());
+
+    await waitFor(() => expect(result.current.locked).toBe(true));
+    expect(get).not.toHaveBeenCalled();
   });
 
   it('still lists a Subject whose icon this app does not know yet', async () => {

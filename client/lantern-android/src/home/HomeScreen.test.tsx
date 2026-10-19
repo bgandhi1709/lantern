@@ -4,10 +4,10 @@ import { Text } from 'react-native';
 
 import { AuthGate, AuthProvider } from '../auth';
 import { ApiError, api } from '../shared/api';
-import { clearAll, readValue } from '../shared/storage';
+import { clearAll, readFamilyKey, readValue } from '../shared/storage';
 import { lockText } from '../shared/crypto';
 import { AARYA, ROHAN, answerLikeTheApi, registerFamilyOnThisPhone } from '../test/fakeFamily';
-import { fakeRestoredSession } from '../test/fakeFirebaseAuth';
+import { FAKE_UID, fakeRestoredSession } from '../test/fakeFirebaseAuth';
 import { GoogleSignin } from '../test/fakeGoogleSignIn';
 import { HomeScreen } from './HomeScreen';
 
@@ -17,12 +17,21 @@ const get = api.get as jest.Mock;
 
 const onOpenSubject = jest.fn();
 const onAddChild = jest.fn();
+const onOpenSettings = jest.fn();
+const onOpenTab = jest.fn();
 
 async function openHome() {
   answerLikeTheApi(get, await registerFamilyOnThisPhone());
   fakeRestoredSession();
   const user = userEvent.setup();
-  const view = await render(<HomeScreen onOpenSubject={onOpenSubject} onAddChild={onAddChild} />);
+  const view = await render(
+    <HomeScreen
+      onOpenSubject={onOpenSubject}
+      onAddChild={onAddChild}
+      onOpenSettings={onOpenSettings}
+      onOpenTab={onOpenTab}
+    />,
+  );
   await screen.findByText('Science');
   return { user, view };
 }
@@ -32,6 +41,8 @@ beforeEach(async () => {
   get.mockReset();
   onOpenSubject.mockReset();
   onAddChild.mockReset();
+  onOpenSettings.mockReset();
+  onOpenTab.mockReset();
 });
 
 describe('Home', () => {
@@ -42,6 +53,14 @@ describe('Home', () => {
     expect(screen.getByText("Aarya's Subjects, Class 6")).toBeOnTheScreen();
     expect(screen.getByRole('button', { name: 'Science, 12 Chapters' })).toBeOnTheScreen();
     expect(screen.getByRole('button', { name: 'Mathematics, 14 Chapters' })).toBeOnTheScreen();
+  });
+
+  it('opens Settings from the gear in the header', async () => {
+    const { user } = await openHome();
+
+    await user.press(screen.getByRole('button', { name: 'Settings' }));
+
+    expect(onOpenSettings).toHaveBeenCalledTimes(1);
   });
 
   it('opens a Subject with the Child and the Subject ids', async () => {
@@ -71,7 +90,14 @@ describe('Home', () => {
     await screen.findByText('English');
     await view.unmount();
 
-    await render(<HomeScreen onOpenSubject={onOpenSubject} onAddChild={onAddChild} />);
+    await render(
+      <HomeScreen
+        onOpenSubject={onOpenSubject}
+        onAddChild={onAddChild}
+        onOpenSettings={onOpenSettings}
+        onOpenTab={onOpenTab}
+      />,
+    );
 
     expect(await screen.findByText('English')).toBeOnTheScreen();
   });
@@ -102,7 +128,14 @@ describe('Home', () => {
     });
     fakeRestoredSession();
     const user = userEvent.setup();
-    await render(<HomeScreen onOpenSubject={onOpenSubject} onAddChild={onAddChild} />);
+    await render(
+      <HomeScreen
+        onOpenSubject={onOpenSubject}
+        onAddChild={onAddChild}
+        onOpenSettings={onOpenSettings}
+        onOpenTab={onOpenTab}
+      />,
+    );
 
     await user.press(await screen.findByRole('button', { name: 'Switch child, now Aarya' }));
 
@@ -118,18 +151,28 @@ describe('Home', () => {
 
     expect(screen.queryByText('Welcome to Lantern')).not.toBeOnTheScreen();
     await view.unmount();
-    await render(<HomeScreen onOpenSubject={onOpenSubject} onAddChild={onAddChild} />);
+    await render(
+      <HomeScreen
+        onOpenSubject={onOpenSubject}
+        onAddChild={onAddChild}
+        onOpenSettings={onOpenSettings}
+        onOpenTab={onOpenTab}
+      />,
+    );
     await screen.findByText('Science');
     expect(screen.queryByText('Welcome to Lantern')).not.toBeOnTheScreen();
   });
 
-  it('shows Teach, Check and Progress disabled', async () => {
-    await openHome();
+  it('opens the Coming next screen from Teach, Check and Progress, and stays on Home for Home', async () => {
+    const { user } = await openHome();
 
-    ['Teach', 'Check', 'Progress'].forEach((tab) =>
-      expect(screen.getByLabelText(`${tab}, available later`)).toBeDisabled(),
-    );
-    expect(screen.getByLabelText('Home')).not.toBeDisabled();
+    await user.press(screen.getByRole('tab', { name: 'Teach' }));
+    await user.press(screen.getByRole('tab', { name: 'Check' }));
+    await user.press(screen.getByRole('tab', { name: 'Progress' }));
+    await user.press(screen.getByRole('tab', { name: 'Home' }));
+
+    expect(onOpenTab).toHaveBeenCalledTimes(3);
+    expect(screen.getByRole('tab', { name: 'Home' })).toBeSelected();
   });
 
   it('shows Try again when the Subjects cannot be loaded, and loads them on pressing it', async () => {
@@ -142,7 +185,14 @@ describe('Home', () => {
     });
     fakeRestoredSession();
     const user = userEvent.setup();
-    await render(<HomeScreen onOpenSubject={onOpenSubject} onAddChild={onAddChild} />);
+    await render(
+      <HomeScreen
+        onOpenSubject={onOpenSubject}
+        onAddChild={onAddChild}
+        onOpenSettings={onOpenSettings}
+        onOpenTab={onOpenTab}
+      />,
+    );
 
     await user.press(await screen.findByRole('button', { name: 'Try again' }));
     failing = false;
@@ -159,7 +209,14 @@ describe('Home', () => {
       return answer?.(path, schema);
     });
     fakeRestoredSession();
-    await render(<HomeScreen onOpenSubject={onOpenSubject} onAddChild={onAddChild} />);
+    await render(
+      <HomeScreen
+        onOpenSubject={onOpenSubject}
+        onAddChild={onAddChild}
+        onOpenSettings={onOpenSettings}
+        onOpenTab={onOpenTab}
+      />,
+    );
 
     expect(await screen.findByText("Getting Aarya's Subjects ready…")).toBeOnTheScreen();
     expect(screen.queryByRole('button', { name: 'Try again' })).not.toBeOnTheScreen();
@@ -168,20 +225,34 @@ describe('Home', () => {
   it('asks the Parent to unlock the Family on a phone with no Family key', async () => {
     answerLikeTheApi(get, 'unused');
     fakeRestoredSession();
-    await render(<HomeScreen onOpenSubject={onOpenSubject} onAddChild={onAddChild} />);
+    await render(
+      <HomeScreen
+        onOpenSubject={onOpenSubject}
+        onAddChild={onAddChild}
+        onOpenSettings={onOpenSettings}
+        onOpenTab={onOpenTab}
+      />,
+    );
 
     expect(await screen.findByText('Unlock your Family')).toBeOnTheScreen();
     expect(get).not.toHaveBeenCalled();
   });
 
-  it('signs out, clears everything stored and returns to Start', async () => {
+  it('signs out to Start and keeps this phone’s Family key and choices', async () => {
     answerLikeTheApi(get, await registerFamilyOnThisPhone());
     fakeRestoredSession();
     const user = userEvent.setup();
     await render(
       <AuthProvider>
         <AuthGate
-          home={<HomeScreen onOpenSubject={onOpenSubject} onAddChild={onAddChild} />}
+          home={
+            <HomeScreen
+              onOpenSubject={onOpenSubject}
+              onAddChild={onAddChild}
+              onOpenSettings={onOpenSettings}
+              onOpenTab={onOpenTab}
+            />
+          }
           registration={<Text>Registration</Text>}
         />
       </AuthProvider>,
@@ -195,8 +266,8 @@ describe('Home', () => {
 
     expect(await screen.findByRole('button', { name: 'Continue with Google' })).toBeOnTheScreen();
     expect(GoogleSignin.signOut).toHaveBeenCalled();
-    expect(await readValue('activeChildId')).toBeNull();
-    expect(await readValue('welcomeDismissed')).toBe(false);
-    expect(await readValue('familyKey')).toBeNull();
+    expect(await readValue('activeChildId')).toBe(ROHAN);
+    expect(await readValue('welcomeDismissed')).toBe(true);
+    expect(await readFamilyKey(FAKE_UID)).not.toBeNull();
   });
 });

@@ -58,9 +58,9 @@ Everything on a phone can be read by whoever holds an unlocked phone, a backup, 
 | Data | Where | Rule |
 |---|---|---|
 | Sign-in session (tokens) | The native Firebase SDK's own store (D72); the app never writes a token itself | Never in AsyncStorage, files or `localStorage` |
-| Preferences that are not personal (welcome banner dismissed, active Child id) | AsyncStorage through the storage wrapper | The Child is stored as its opaque id, never its name |
-| Intro seen (`introSeen`, D75) | AsyncStorage through the storage wrapper | A boolean so later launches play the short intro; cleared by `clearAll()` on sign out |
-| The Family key (made on the phone, wrapped by the Passphrase and the Recovery code, D66) | `expo-secure-store` (Android Keystore) | Founder-approved. It lets the phone lock and unlock personal details without asking for the Passphrase on every start. Written only once registration succeeds (D87) and cleared by `clearAll()`; the Passphrase and the Recovery code are never stored |
+| Preferences that are not personal (welcome banner dismissed, active Child id, theme, text size, colour scheme) | AsyncStorage through the storage wrapper | The Child is stored as its opaque id, never its name; the look is three short words, cleared by `clearAll()` |
+| Intro seen (`introSeen`, D75) | AsyncStorage through the storage wrapper | A boolean so later launches play the short intro; cleared by `clearAll()` |
+| The Family key (made on the phone, wrapped by the Passphrase and the Recovery code, D66) | `expo-secure-store` (Android Keystore) | Founder-approved. It lets the phone lock and unlock personal details without asking for the Passphrase on every start. Kept per signed-in account as a map from uid to key, written only once registration succeeds (D87) and cleared by `clearAll()` (not by Sign out, D109); the Passphrase and the Recovery code are never stored |
 | Child names, birth year, School, Region, email, Subjects, Chapters, answers | Nowhere on the device | Fetched from the API each time and unlocked with the Family key; held in memory only |
 | Secrets, API keys, the UAT address as a credential | Nowhere | The UAT address is baked in at build time (D61); there are no other secrets in the app |
 
@@ -69,7 +69,7 @@ Everything on a phone can be read by whoever holds an unlocked phone, a backup, 
 1. One module, `src/shared/storage`, is the only code that imports AsyncStorage or SecureStore. Lint forbids the import anywhere else.
 2. Keys are typed and versioned, `lantern.v1.<name>`. A value has a schema; reading validates it and returns the default when the value is missing, corrupt or from an old version. Storage can throw or return nothing, so the app always works without it.
 3. Values are small and plain (a string, a flag, an id). No object graphs, no blobs, no cache of API responses.
-4. Sign out, Family delete and Child delete call one `clearAll()` that wipes secure and plain storage together. It is tested.
+4. Family delete and Child delete call one `clearAll()` that wipes secure and plain storage together. It is tested. Sign out does not: it only ends the sign-in, and the phone keeps its Family key and settings until the app is deleted (D109).
 5. Android backup is off (`android.allowBackup: false` in `app.json`), so no storage leaves the phone through cloud backup or `adb backup`.
 6. No file writes to shared or external storage and no storage permission. If a file is ever needed, it goes in the app's own document directory.
 7. A new thing stored on the device needs a line in the PR saying what, why, where and when it is cleared, and the founder's approval, because it changes what the Consent covers.
