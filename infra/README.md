@@ -15,7 +15,7 @@ infra/bootstrap.sh rg-lantern-dev uat
 
 Needs Owner or User Access Administrator on the resource group. Safe to run again. It creates the
 identity `id-lantern-uat`, the Key Vault `kv-lantern-uat`, the roles the identity needs (Storage Table
-Data Contributor, Storage Blob Data Contributor, Storage Blob Data Owner (the Functions host's own state), Azure Service Bus Data Sender and Azure Service Bus Data Receiver and Monitoring Metrics Publisher (telemetry export) on the resource group, Key Vault Secrets User on the vault),
+Data Contributor, Storage Blob Data Contributor, Storage Blob Data Owner (the Functions host's own state), Azure Service Bus Data Owner (the API sends, the Functions app receives, and the KEDA rule that wakes it reads the queue's message count) and Monitoring Metrics Publisher (telemetry export) on the resource group, Key Vault Secrets User on the vault),
 a Storage Blob Data Contributor role on the resource group for whoever runs it (so `ncert-build upload`
 works once the container exists), and the secret `security-key`, only if missing.
 

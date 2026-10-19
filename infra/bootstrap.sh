@@ -52,9 +52,10 @@ assign "Storage Table Data Contributor" "$RG_ID" "$PRINCIPAL_ID" ServicePrincipa
 assign "Storage Blob Data Contributor" "$RG_ID" "$PRINCIPAL_ID" ServicePrincipal
 # The Functions host keeps its own state (leases) in the storage account, which needs Blob Data Owner.
 assign "Storage Blob Data Owner" "$RG_ID" "$PRINCIPAL_ID" ServicePrincipal
-# The API sends actions and the Functions app receives them.
-assign "Azure Service Bus Data Sender" "$RG_ID" "$PRINCIPAL_ID" ServicePrincipal
-assign "Azure Service Bus Data Receiver" "$RG_ID" "$PRINCIPAL_ID" ServicePrincipal
+# The API sends actions and the Functions app receives them. The KEDA scale rule that wakes the Functions app reads the
+# queue's message count with this identity, which needs more than send and receive: with only those two roles the app
+# never scaled up from zero (#161). Data Owner covers sending, receiving and that read.
+assign "Azure Service Bus Data Owner" "$RG_ID" "$PRINCIPAL_ID" ServicePrincipal
 # Both apps export telemetry to Application Insights with this identity: the resource has no ingestion key.
 assign "Monitoring Metrics Publisher" "$RG_ID" "$PRINCIPAL_ID" ServicePrincipal
 assign "Key Vault Secrets User" "$VAULT_ID" "$PRINCIPAL_ID" ServicePrincipal
