@@ -25,6 +25,19 @@ internal sealed class ProgressRepository(
         return [.. rows.Select(ToModel)];
     }
 
+    public async Task<ChapterProgress> ChapterAsync(ChapterRef chapter, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(chapter);
+
+        var row = await chapters.SingleOrNullAsync(
+            keys.FamilyPartition(chapter.FamilyId),
+            keys.ChapterProgressRowKey(chapter.ChildId, chapter.ClassLevel, chapter.ChapterId),
+            cancellationToken
+        );
+
+        return row is null ? null : ToModel(row);
+    }
+
     public async Task<IReadOnlyList<Attempt>> AttemptsAsync(ChapterRef chapter, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(chapter);

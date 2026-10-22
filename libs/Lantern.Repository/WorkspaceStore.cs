@@ -144,6 +144,21 @@ internal sealed partial class WorkspaceStore(
         }
     }
 
+    public async Task<ClassManifest> ClassManifestAsync(Guid familyId, Guid childId, int classLevel, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var path = layout.ContentFolder(familyId, childId, classLevel) + layout.ClassManifestFile;
+            var manifest = await container.GetBlobClient(path).DownloadContentAsync(cancellationToken);
+
+            return ParseClassManifest(manifest.Value.Content.ToString());
+        }
+        catch (RequestFailedException ex) when (IsMissing(ex))
+        {
+            return null;
+        }
+    }
+
     public async Task<IReadOnlyList<Chapter>> ChaptersAsync(Guid familyId, Guid childId, int classLevel, string subjectId, CancellationToken cancellationToken)
     {
         try

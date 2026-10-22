@@ -231,5 +231,16 @@ public sealed class ProgressRepositoryTests(AzuriteFixture azurite) : IDisposabl
         Assert.Equal(["gegp10", "gegp103"], (await Repository.ChaptersAsync(FamilyId, ChildId, 6, CancellationToken.None)).Select(chapter => chapter.ChapterId).Order());
     }
 
+    [Fact]
+    public async Task ChapterAsync_AStartedChapter_ReturnsItsSummary_AndAnUnstartedOneNothing()
+    {
+        await Repository.StartAttemptAsync(NumberPlay, Guid.NewGuid(), 5, "v1", Day, CancellationToken.None);
+
+        var started = await Repository.ChapterAsync(NumberPlay, CancellationToken.None);
+
+        Assert.Equal((ChapterState.Planned, 1), (started.State, started.AttemptCount));
+        Assert.Null(await Repository.ChapterAsync(new ChapterRef(FamilyId, ChildId, 6, "gegp104"), CancellationToken.None));
+    }
+
     public void Dispose() => harness.Dispose();
 }

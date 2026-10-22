@@ -21,5 +21,19 @@ public sealed class ClassManifest : Manifest
         return this;
     }
 
+    public ChapterPlace PlaceOf(string chapterId)
+    {
+        foreach (var subject in Subjects)
+        {
+            var index = subject.Chapters.FindIndex(chapter => chapter.ChapterId == chapterId);
+            if (index >= 0)
+            {
+                return new ChapterPlace(subject, subject.Chapters[index], index + 1);
+            }
+        }
+
+        return null;
+    }
+
     public IReadOnlyList<Chapter> ChaptersOf(string subjectId) => Subjects.Find(subject => subject.SubjectId == subjectId)?.Chapters;
 }

@@ -15,5 +15,7 @@ internal sealed class ApiProfile : IRegister
             .NewConfig<FamilyRegisterRequest, Registration>()
             .Map(registration => registration.ConsentAccepted, request => request.Consent.Accepted)
             .Map(registration => registration.ConsentNoticeVersion, request => request.Consent.NoticeVersion);
+
+        config.NewConfig<Check, CheckModel>().Map(model => model.Wrong, check => check.Results.Where(result => !result.Right));
     }
 }

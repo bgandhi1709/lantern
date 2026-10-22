@@ -386,6 +386,9 @@ public sealed class FamilyManifestFlowTests(AzuriteFixture azurite) : IDisposabl
         public Task<IReadOnlyList<Subject>> SubjectsAsync(Guid familyId, Guid childId, CancellationToken cancellationToken) =>
             inner.SubjectsAsync(familyId, childId, cancellationToken);
 
+        public Task<ClassManifest> ClassManifestAsync(Guid familyId, Guid childId, int classLevel, CancellationToken cancellationToken) =>
+            inner.ClassManifestAsync(familyId, childId, classLevel, cancellationToken);
+
         public Task<IReadOnlyList<Chapter>> ChaptersAsync(Guid familyId, Guid childId, int classLevel, string subjectId, CancellationToken cancellationToken) =>
             inner.ChaptersAsync(familyId, childId, classLevel, subjectId, cancellationToken);
 

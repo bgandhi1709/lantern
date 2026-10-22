@@ -47,6 +47,22 @@ internal sealed class SubjectService(IServiceBase<Child> children, IWorkspaceSto
         return new SubjectChapters(pages.Slice(matching, limit, cursor), new SubjectProgress(entries));
     }
 
+    public async Task<ChapterAttempts> AttemptsAsync(Guid childId, string chapterId, int? limit, string cursor, CancellationToken cancellationToken)
+    {
+        var child = await ActiveChildAsync(childId, cancellationToken);
+        await ReadyAsync(child, cancellationToken);
+
+        var manifest =
+            await workspaces.ClassManifestAsync(child.FamilyId, child.ChildId, child.ClassLevel, cancellationToken)
+            ?? throw new LanternException(LanternErrorCode.ContentNotReady);
+        var place = manifest.PlaceOf(chapterId) ?? throw new LanternException(LanternErrorCode.ChapterNotFound);
+        var reference = new ChapterRef(child.FamilyId, child.ChildId, child.ClassLevel, chapterId);
+        var summary = await progress.ChapterAsync(reference, cancellationToken);
+        var history = await progress.AttemptsAsync(reference, cancellationToken);
+
+        return new ChapterAttempts(new ChapterHeader(place, summary), pages.Slice(history, limit, cursor));
+    }
+
     private async Task<Child> ActiveChildAsync(Guid childId, CancellationToken cancellationToken)
     {
         var child = await children.SingleAsync(childId, cancellationToken);
