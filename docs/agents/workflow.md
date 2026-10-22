@@ -14,7 +14,7 @@ Work under `client/` (the Expo app) follows `docs/agents/app-workflow.md` instea
 | 5 | Verify | Start from a clean slate (see below). `/verify` against local Docker, in the real working tree: a scratch copy proves nothing about what the user builds. Old files a restructure leaves behind move to `~/lantern-stale/` before the build. The full suite includes the architecture tests (`Lantern.Api.Tests/Architecture`). Write down every test scenario. | Scenario list |
 | 6 | Security | `/security-review` on the branch diff, before the PR. Fix findings in the same branch. Check the security rules in `CODING_STANDARDS.md`. | Findings fixed or recorded |
 | 7 | PR | `/pr` with the scenarios and acceptance criteria. Edit a PR description only after the commit it describes is pushed. | PR |
-| 8 | Doc sync | Root `README.md` (Status and runtime), `docs/ideation/decision-log.md`, ADRs, any README or skill the change touches. | Docs match the code |
+| 8 | Doc sync | Root `README.md` (Status: one line per area, the whole file under 5,000 characters; detail goes in the ADRs, the decision log and the area READMEs), `docs/ideation/decision-log.md`, ADRs, any README or skill the change touches. | Docs match the code |
 | 9 | Review | User reviews on GitHub. Fix, reply as Claude, resolve the threads. | Resolved threads |
 | 10 | Retro | Ask the user to run `/retro` in the same session, before `/clear`; only the user can start it. Mechanical misses become checks, judgement calls go to `CODING_STANDARDS.md`. | Environment fixes |
 | 11 | Clean up | Once the PR exists, leave the machine as you found it (see below). | Nothing running, disk freed |

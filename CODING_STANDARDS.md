@@ -188,7 +188,7 @@ An Azure role or resource the API needs lands and is confirmed before the API re
 
 A shell script run by CI or Docker is committed `100755`. Editing on the Windows-mounted drive drops the mode; `git ls-files -s` shows it, and CI checks `deploy/` and `infra/`.
 
-A change to the API, infra or data layout updates, in the same PR: the root `README.md` (Status and runtime sections), the decision log, the ADR it touches, `GLOSSARY.md` for any new or renamed domain word, and any README or skill that describes it.
+A change to the API, infra or data layout updates, in the same PR: the root `README.md` (one line in Status, and the whole file stays under 5,000 characters), the decision log, the ADR it touches, `GLOSSARY.md` for any new or renamed domain word, and any README or skill that describes it.
 
 ## Direct Anthropic API calls
 
