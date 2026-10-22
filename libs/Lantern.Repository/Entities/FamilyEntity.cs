@@ -10,8 +10,6 @@ internal sealed class FamilyEntity : TableEntityBase
     // Missing on a row written before Board existed: read as CBSE.
     public string Board { get; set; }
 
-    // The Family key wrapped on the phone by the Recovery code (ADR-0015). Lantern cannot open it; clearing it makes
-    // the locked fields unreadable forever (crypto-shredding).
     public string RecoveryWrappedKey { get; set; }
 
     public string RecoverySalt { get; set; }

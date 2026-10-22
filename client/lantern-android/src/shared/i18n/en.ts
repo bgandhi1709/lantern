@@ -135,7 +135,7 @@ export const en = {
         {
           title: 'What stays on your phone',
           text: [
-            "Your Google sign-in, kept by the phone itself. A secret key for your Family, kept in the phone's secure store so you do not have to type your passphrase every time. Nothing else about you is saved on the phone.",
+            "Your Google sign-in, kept by the phone itself. A secret key for your Family, kept in the phone's secure store so you do not have to type your recovery code every time. Nothing else about you is saved on the phone.",
           ],
         },
         {
@@ -146,9 +146,9 @@ export const en = {
           ],
         },
         {
-          title: 'Your passphrase and your data',
+          title: 'Your recovery code and your data',
           text: [
-            'You will choose a passphrase for your Family. It cannot be reset. If you lose it and its recovery code, nobody, including Lantern, can open the locked details.',
+            'Your phone makes a recovery code for your Family, and you email it to yourself. It cannot be reset. If you lose the email and this phone, nobody, including Lantern, can open the locked details.',
             'Deleting your Family erases everything stored for it.',
           ],
         },

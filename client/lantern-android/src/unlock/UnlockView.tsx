@@ -6,7 +6,7 @@ import { OutlineButton } from '../shared/ui/OutlineButton';
 import { PrimaryButton } from '../shared/ui/PrimaryButton';
 import { TextField } from '../shared/ui/TextField';
 
-export const UNLOCK_FIELD_MAX_LENGTH = 100;
+const UNLOCK_FIELD_MAX_LENGTH = 100;
 
 export type UnlockPhase = 'loading' | 'failed' | 'ready';
 

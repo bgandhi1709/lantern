@@ -32,7 +32,6 @@ export function useSessionState() {
   return state;
 }
 
-// Start again deletes the Family, so the app has to ask the API who the Parent is once more.
 export function useRegistrationCheck() {
   const check = useContext(RegistrationCheckContext);
   if (check === null) throw new Error('useRegistrationCheck needs an AuthProvider above it.');

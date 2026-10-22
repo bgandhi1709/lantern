@@ -22,7 +22,6 @@ public sealed class FamilyRegisterRequest
     [EnumDataType(typeof(BoardType))]
     public BoardType Board { get; set; }
 
-    // The Family key wrapped on the phone by the Recovery code, with its salt (ADR-0015).
     [Required]
     [StringLength(400, MinimumLength = 1)]
     public string RecoveryWrappedKey { get; set; }

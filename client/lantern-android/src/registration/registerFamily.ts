@@ -49,22 +49,13 @@ function bodyFor(input: RegisterInput, familyId: string, keys: FamilyKeys) {
 
 const hasCode = (error: unknown, code: string) => error instanceof ApiError && error.code === code;
 
-// A phone that registered must be able to open its Family again, but a phone with no working
-// storage still has the Recovery code in the Parent's inbox, so a failed write does not undo the registration.
-async function keepKeyForParent(uid: string, familyKey: string) {
-  try {
-    await keepFamilyKey(uid, familyKey);
-  } catch {
-    // The Recovery code opens the Family on the next start.
-  }
-}
+const keepKeyForParent = (uid: string, familyKey: string) =>
+  keepFamilyKey(uid, familyKey).catch(() => undefined);
 
 async function send(input: RegisterInput, familyId: string, keys: FamilyKeys) {
   await api.post('/v1/register', Registered, bodyFor(input, familyId, keys));
 }
 
-// One call carries the Family and every Child, so a Family is never half made. A taken Family id
-// is tried once more with a new one; the Recovery code is still in the draft, so the Parent sees nothing.
 export async function registerFamily(input: RegisterInput): Promise<RegisterResult> {
   const { id, keys } = input.family;
   try {

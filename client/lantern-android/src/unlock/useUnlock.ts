@@ -11,7 +11,6 @@ import { useIsMounted } from './useIsMounted';
 const TICK_MS = 1000;
 const MS_PER_SECOND = 1000;
 
-// The secrets are typed into this state only. They are never stored, logged or sent.
 export function useUnlock(onOpened: () => void) {
   const [phase, setPhase] = useState<UnlockPhase>('loading');
   const [value, setValue] = useState('');

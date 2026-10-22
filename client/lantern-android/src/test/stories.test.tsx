@@ -142,6 +142,8 @@ const withoutStory: Record<string, string> = {
   'auth/StartScreen.tsx': 'container for StartView, which has the stories',
   'registration/AboutYouScreen.tsx': 'container for AboutYouView, which has the stories',
   'registration/BoardScreen.tsx': 'container for BoardView, which has the stories',
+  'settings/FamilyRows.tsx':
+    'the Unlock and Start again rows of AppearanceView, whose stories show them',
   'unlock/UnlockScreen.tsx': 'container for UnlockView, which has the stories',
   'unlock/StartAgainScreen.tsx': 'container for StartAgainView, which has the stories',
   'registration/FirstChildScreen.tsx': 'container for FirstChildView, which has the stories',
