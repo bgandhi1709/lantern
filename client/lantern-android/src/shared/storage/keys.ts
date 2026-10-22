@@ -15,6 +15,7 @@ type Values = {
   theme: ThemeChoice;
   textSize: TextSize;
   colourScheme: ColourScheme;
+  unlockWait: { failures: number; until: number };
 };
 
 type Definition<T> = { schema: z.ZodType<T>; fallback: T; secure: boolean };
@@ -30,6 +31,11 @@ export const storedValues: { [N in StoredName]: Definition<Values[N]> } = {
   theme: { schema: z.enum(THEME_CHOICES), fallback: 'light', secure: false },
   textSize: { schema: z.enum(TEXT_SIZES), fallback: 'default', secure: false },
   colourScheme: { schema: z.enum(COLOUR_SCHEMES), fallback: 'teal', secure: false },
+  unlockWait: {
+    schema: z.object({ failures: z.number().int().min(0), until: z.number().min(0) }),
+    fallback: { failures: 0, until: 0 },
+    secure: false,
+  },
 };
 
 export const storageKey = (name: StoredName) => `${KEY_PREFIX}v${STORAGE_VERSION}.${name}`;

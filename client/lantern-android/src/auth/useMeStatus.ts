@@ -8,9 +8,14 @@ export type MeStatus = 'checking' | 'waking' | 'registered' | 'notRegistered' | 
 // UAT scales to zero: after this long the screen says so instead of looking stuck.
 const WAKING_AFTER_MS = 3_000;
 
-export function useMeStatus() {
+export function useMeStatus(epoch: number) {
   const [status, setStatus] = useState<MeStatus>('checking');
   const [attempt, setAttempt] = useState(0);
+  const [seenEpoch, setSeenEpoch] = useState(epoch);
+  if (seenEpoch !== epoch) {
+    setSeenEpoch(epoch);
+    setStatus('checking');
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -35,7 +40,7 @@ export function useMeStatus() {
       cancelled = true;
       clearTimeout(waking);
     };
-  }, [attempt]);
+  }, [attempt, epoch]);
 
   const retry = useCallback(() => {
     setStatus('checking');

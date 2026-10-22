@@ -24,6 +24,7 @@ const meta = {
     onOpenSubject: fn(),
     onOpenSettings: fn(),
     onOpenTab: fn(),
+    onUnlock: fn(),
     onDismissBanner: fn(),
     onTryAgain: fn(),
     onSignOut: fn(),

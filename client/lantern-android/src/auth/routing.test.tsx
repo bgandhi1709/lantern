@@ -4,7 +4,7 @@ import { AccessibilityInfo, Text } from 'react-native';
 
 import { ApiError, api } from '../shared/api';
 import { fakeRestoredSession } from '../test/fakeFirebaseAuth';
-import { AuthGate, AuthProvider } from '.';
+import { AuthGate, AuthProvider, useRegistrationCheck } from '.';
 
 jest.mock('../shared/api', () => jest.requireActual('../test/fakeApiModule'));
 
@@ -125,6 +125,44 @@ describe('where the Opening screen sends the Parent', () => {
 
     expect(screen.queryByText("Can't reach Lantern")).not.toBeOnTheScreen();
     expect(screen.getByLabelText('Opening Lantern')).toBeOnTheScreen();
+  });
+});
+
+describe('after Start again deletes the Family', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+    get.mockReset();
+    jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(true);
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  function StartAgainDone() {
+    const { recheck } = useRegistrationCheck();
+    return <Text onPress={recheck}>Deleted</Text>;
+  }
+
+  it('asks the API again and sends the Parent to registration, not Home', async () => {
+    fakeRestoredSession();
+    get.mockResolvedValueOnce({}).mockRejectedValueOnce(new ApiError('not-registered', 404));
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    await render(
+      <AuthProvider>
+        <StartAgainDone />
+        <AuthGate home={<Text>Home</Text>} registration={<Text>Registration</Text>} />
+      </AuthProvider>,
+    );
+    await wait(0);
+    expect(screen.getByText('Home')).toBeOnTheScreen();
+
+    await user.press(screen.getByText('Deleted'));
+    await wait(0);
+
+    expect(get).toHaveBeenCalledTimes(2);
+    expect(screen.getByText('Registration')).toBeOnTheScreen();
+    expect(screen.queryByText('Home')).not.toBeOnTheScreen();
   });
 });
 

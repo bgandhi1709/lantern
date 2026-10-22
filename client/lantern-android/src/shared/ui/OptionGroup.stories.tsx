@@ -4,7 +4,7 @@ import { fn } from 'storybook/test';
 import { OptionGroup } from './OptionGroup';
 
 const meta = {
-  title: 'Settings/OptionGroup',
+  title: 'Shared/OptionGroup',
   component: OptionGroup,
   args: { onPick: fn() },
 } satisfies Meta<typeof OptionGroup>;

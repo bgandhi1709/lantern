@@ -12,6 +12,7 @@ import { GoogleSignin } from '../test/fakeGoogleSignIn';
 import { HomeScreen } from './HomeScreen';
 
 jest.mock('../shared/api', () => jest.requireActual('../test/fakeApiModule'));
+jest.mock('expo-router', () => ({ useIsFocused: () => true }));
 
 const get = api.get as jest.Mock;
 
@@ -19,6 +20,7 @@ const onOpenSubject = jest.fn();
 const onAddChild = jest.fn();
 const onOpenSettings = jest.fn();
 const onOpenTab = jest.fn();
+const onUnlock = jest.fn();
 
 async function openHome() {
   answerLikeTheApi(get, await registerFamilyOnThisPhone());
@@ -30,6 +32,7 @@ async function openHome() {
       onAddChild={onAddChild}
       onOpenSettings={onOpenSettings}
       onOpenTab={onOpenTab}
+      onUnlock={onUnlock}
     />,
   );
   await screen.findByText('Science');
@@ -43,6 +46,7 @@ beforeEach(async () => {
   onAddChild.mockReset();
   onOpenSettings.mockReset();
   onOpenTab.mockReset();
+  onUnlock.mockReset();
 });
 
 describe('Home', () => {
@@ -96,6 +100,7 @@ describe('Home', () => {
         onAddChild={onAddChild}
         onOpenSettings={onOpenSettings}
         onOpenTab={onOpenTab}
+        onUnlock={onUnlock}
       />,
     );
 
@@ -134,6 +139,7 @@ describe('Home', () => {
         onAddChild={onAddChild}
         onOpenSettings={onOpenSettings}
         onOpenTab={onOpenTab}
+        onUnlock={onUnlock}
       />,
     );
 
@@ -157,6 +163,7 @@ describe('Home', () => {
         onAddChild={onAddChild}
         onOpenSettings={onOpenSettings}
         onOpenTab={onOpenTab}
+        onUnlock={onUnlock}
       />,
     );
     await screen.findByText('Science');
@@ -191,6 +198,7 @@ describe('Home', () => {
         onAddChild={onAddChild}
         onOpenSettings={onOpenSettings}
         onOpenTab={onOpenTab}
+        onUnlock={onUnlock}
       />,
     );
 
@@ -215,6 +223,7 @@ describe('Home', () => {
         onAddChild={onAddChild}
         onOpenSettings={onOpenSettings}
         onOpenTab={onOpenTab}
+        onUnlock={onUnlock}
       />,
     );
 
@@ -222,19 +231,23 @@ describe('Home', () => {
     expect(screen.queryByRole('button', { name: 'Try again' })).not.toBeOnTheScreen();
   });
 
-  it('asks the Parent to unlock the Family on a phone with no Family key', async () => {
+  it('offers Unlock your Family on a phone with no Family key, and asks the API for nothing', async () => {
     answerLikeTheApi(get, 'unused');
     fakeRestoredSession();
+    const user = userEvent.setup();
     await render(
       <HomeScreen
         onOpenSubject={onOpenSubject}
         onAddChild={onAddChild}
         onOpenSettings={onOpenSettings}
         onOpenTab={onOpenTab}
+        onUnlock={onUnlock}
       />,
     );
 
-    expect(await screen.findByText('Unlock your Family')).toBeOnTheScreen();
+    expect(await screen.findByRole('header', { name: 'Unlock your Family' })).toBeOnTheScreen();
+    await user.press(screen.getByRole('button', { name: 'Unlock your Family' }));
+    expect(onUnlock).toHaveBeenCalledTimes(1);
     expect(get).not.toHaveBeenCalled();
   });
 
@@ -251,6 +264,7 @@ describe('Home', () => {
               onAddChild={onAddChild}
               onOpenSettings={onOpenSettings}
               onOpenTab={onOpenTab}
+              onUnlock={onUnlock}
             />
           }
           registration={<Text>Registration</Text>}

@@ -2,16 +2,18 @@ import '@testing-library/react-native/matchers';
 import { render, screen, userEvent } from '@testing-library/react-native';
 
 import { ThemeProvider } from '../shared/theme';
-import { clearAll, readValue, writeValue } from '../shared/storage';
+import { clearAll, keepFamilyKey, readValue, writeValue } from '../shared/storage';
+import { FAKE_UID, fakeRestoredSession } from '../test/fakeFirebaseAuth';
 import { AppearanceScreen } from './AppearanceScreen';
 
 const onBack = jest.fn();
+const onUnlock = jest.fn();
 
 async function openAppearance() {
   const user = userEvent.setup();
   await render(
     <ThemeProvider>
-      <AppearanceScreen onBack={onBack} />
+      <AppearanceScreen onBack={onBack} onUnlock={onUnlock} />
     </ThemeProvider>,
   );
   await screen.findByRole('header', { name: 'Appearance' });
@@ -23,6 +25,8 @@ const choice = (name: string) => screen.getByRole('radio', { name });
 beforeEach(async () => {
   await clearAll();
   onBack.mockReset();
+  onUnlock.mockReset();
+  fakeRestoredSession();
 });
 
 describe('Appearance', () => {
@@ -96,5 +100,29 @@ describe('Appearance', () => {
     await user.press(screen.getByRole('button', { name: 'Back' }));
 
     expect(onBack).toHaveBeenCalledTimes(1);
+  });
+
+  it('offers Unlock your Family while this phone has no Family key, and opens it', async () => {
+    const user = await openAppearance();
+
+    await user.press(await screen.findByRole('button', { name: 'Unlock your Family' }));
+
+    expect(onUnlock).toHaveBeenCalledTimes(1);
+  });
+
+  it('offers nothing to unlock once this phone holds the Family key', async () => {
+    await keepFamilyKey(FAKE_UID, 'key');
+
+    await openAppearance();
+
+    expect(screen.queryByRole('button', { name: 'Unlock your Family' })).not.toBeOnTheScreen();
+  });
+
+  it('offers nothing to unlock for an account whose Family key is another account’s', async () => {
+    await keepFamilyKey('someone-else', 'key');
+
+    await openAppearance();
+
+    expect(await screen.findByRole('button', { name: 'Unlock your Family' })).toBeOnTheScreen();
   });
 });

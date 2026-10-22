@@ -1,8 +1,19 @@
+import { useEffect, useState } from 'react';
+
+import { getParent } from '../shared/session';
+import { readFamilyKey } from '../shared/storage';
 import { useAppearance } from '../shared/theme';
 import { AppearanceView } from './AppearanceView';
 
-export function AppearanceScreen({ onBack }: { onBack: () => void }) {
+type Props = { onBack: () => void; onUnlock: () => void };
+
+export function AppearanceScreen({ onBack, onUnlock }: Props) {
   const { appearance, setTheme, setTextSize, setColourScheme } = useAppearance();
+  const [locked, setLocked] = useState(false);
+
+  useEffect(() => {
+    readFamilyKey(getParent().uid).then((key) => setLocked(key === null));
+  }, []);
 
   return (
     <AppearanceView
@@ -13,6 +24,7 @@ export function AppearanceScreen({ onBack }: { onBack: () => void }) {
       onTextSize={setTextSize}
       onColourScheme={setColourScheme}
       onBack={onBack}
+      onUnlock={locked ? onUnlock : undefined}
     />
   );
 }

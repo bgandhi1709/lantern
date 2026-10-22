@@ -221,13 +221,57 @@ export const en = {
     },
     locked: {
       heading: 'Unlock your Family',
-      text: 'This phone does not hold your Family yet. Opening your Family on a new phone is coming soon.',
+      text: 'This phone does not hold your Family yet. Open it with your passphrase or your recovery code.',
+      unlock: 'Unlock your Family',
     },
     comingNext: { heading: 'Coming next', text: 'This screen is on its way.' },
     settings: 'Settings',
   },
+  unlock: {
+    heading: 'Unlock your Family',
+    intro:
+      'This phone does not hold your Family yet. Enter your passphrase or your recovery code to open it. The phone checks it; nothing is sent to Lantern.',
+    choiceLabel: 'How to unlock',
+    passphrase: {
+      choice: 'Passphrase',
+      label: 'Passphrase',
+      hint: 'The one you chose when you registered.',
+      wrong: 'That passphrase is not right. Check it and try again.',
+    },
+    recoveryCode: {
+      choice: 'Recovery code',
+      label: 'Recovery code',
+      hint: 'Letters and numbers in groups of four, like K7QM-4TDX-92HB-WEPN.',
+      wrong: 'That recovery code is not right. Check it and try again.',
+    },
+    open: 'Open my Family',
+    opening: 'Opening…',
+    waitFor: (seconds: number) => `Try again in ${seconds} seconds`,
+    loading: 'Getting your Family…',
+    loadFailed: "Can't reach Lantern. Check your connection and try again.",
+    tryAgain: 'Try again',
+    failed: 'Something went wrong. Try again.',
+    lostBoth: 'Lost both? Nothing can be read without one of them.',
+    startAgain: 'Start again',
+    again: {
+      heading: 'Start again?',
+      intro:
+        "Lantern never sees your passphrase or recovery code, so without one of them your Family's names and details can never be opened again, by you or by us.",
+      warningHeading: 'This deletes your Family',
+      warning:
+        'Starting again deletes this Family and its Children from Lantern, then takes you to registration to make a new one. This cannot be undone.',
+      delete: 'Delete my Family and start again',
+      deleting: 'Deleting…',
+      keep: 'Keep my Family',
+      failed: 'Could not delete your Family. Nothing was changed. Try again.',
+    },
+  },
   appearance: {
     title: 'Appearance',
+    unlockRow: {
+      title: 'Unlock your Family',
+      text: 'This phone does not hold your Family yet.',
+    },
     theme: {
       heading: 'Theme',
       light: 'Light',

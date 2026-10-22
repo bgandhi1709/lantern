@@ -4,9 +4,10 @@ import { useStrings } from '../shared/i18n';
 import { COLOUR_SCHEMES, TEXT_SIZES, THEME_CHOICES, paletteFor } from '../shared/theme';
 import type { ColourScheme, TextSize, ThemeChoice } from '../shared/theme';
 import { BackButton } from '../shared/ui/BackButton';
-import { OptionGroup } from './OptionGroup';
+import { OptionGroup } from '../shared/ui/OptionGroup';
 import { PreviewCard } from './PreviewCard';
 import { SchemeCard } from './SchemeCard';
+import { UnlockRow } from './UnlockRow';
 
 const SAMPLE_CLASS: Record<TextSize, string> = {
   default: 'text-aa-default',
@@ -24,6 +25,7 @@ type Props = {
   onTextSize: (textSize: TextSize) => void;
   onColourScheme: (colourScheme: ColourScheme) => void;
   onBack: () => void;
+  onUnlock?: () => void;
 };
 
 export function AppearanceView(props: Props) {
@@ -38,6 +40,7 @@ export function AppearanceView(props: Props) {
         </Text>
       </View>
       <ScrollView contentContainerClassName="gap-6 px-4 pb-8 pt-1">
+        {props.onUnlock ? <UnlockRow onPress={props.onUnlock} /> : null}
         <View className="gap-2.5">
           <Text className="font-inter-bold text-lead text-ink">{text.theme.heading}</Text>
           <OptionGroup
