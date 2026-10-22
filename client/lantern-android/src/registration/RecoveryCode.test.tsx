@@ -221,6 +221,8 @@ describe('the Recovery code step', () => {
 
     expect(screen.getByRole('header', { name: 'Save your recovery code' })).toBeOnTheScreen();
     expect(codeText()).toBe(code);
+    expect(continueButton()).toBeEnabled();
+    expect(savedBox()).toBeChecked();
   });
 });
 

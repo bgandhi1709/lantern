@@ -11,8 +11,8 @@ type Props = { onContinue: () => void; onBack: () => void };
 export function RecoveryCodeScreen({ onContinue, onBack }: Props) {
   const strings = useStrings().registration.recovery;
   const { draft, update } = useRegistrationDraft();
-  const [saved, setSaved] = useState(false);
-  const [emailed, setEmailed] = useState(false);
+  const [saved, setSaved] = useState(draft.codeSent);
+  const [emailed, setEmailed] = useState(draft.codeSent);
   const [shareFailed, setShareFailed] = useState(false);
   const [makeFailed, setMakeFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
@@ -73,7 +73,10 @@ export function RecoveryCodeScreen({ onContinue, onBack }: Props) {
       onSave={() =>
         code === null ? undefined : send(() => shareRecoveryCode(strings.message(code)))
       }
-      onContinue={onContinue}
+      onContinue={() => {
+        update({ codeSent: true });
+        onContinue();
+      }}
       onBack={onBack}
     />
   );

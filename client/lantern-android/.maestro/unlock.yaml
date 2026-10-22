@@ -1,0 +1,52 @@
+# Needs a Google account on the emulator, and a Family already registered for it whose Recovery code is passed in.
+# It plays a new phone: it clears the app, signs in again, sees Unlock your Family on Home, tries a wrong code, waits, and
+# opens the Family with the right one. After `scripts/verify-env.sh up`: run recovery-code.yaml, read the code off the
+# screen, run first-child-steps.yaml, then:
+# Run: maestro test -e CODE=ABCD-EFGH-JKLM-NPQR .maestro/unlock.yaml
+appId: com.lantern.app
+---
+- stopApp
+- clearState
+- openLink: 'lantern://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8081'
+- extendedWaitUntil:
+    visible: 'Continue with Google'
+    timeout: 240000
+- tapOn: 'Continue with Google'
+- extendedWaitUntil:
+    visible: 'Choose an account'
+    timeout: 15000
+- tapOn:
+    id: 'com.google.android.gms:id/account_display_name'
+- extendedWaitUntil:
+    visible: 'This phone does not hold your Family yet.*'
+    timeout: 60000
+- tapOn:
+    text: 'Unlock your Family'
+    index: 1
+- extendedWaitUntil:
+    visible: 'Recovery code'
+    timeout: 15000
+- assertNotVisible: 'Start again'
+- tapOn:
+    id: 'unlock-field'
+- inputText: 'ABCD-EFGH-JKLM-NPQR'
+- hideKeyboard
+- tapOn: 'Open my Family'
+- assertVisible: 'That recovery code is not right. Check it and try again.'
+- assertVisible: 'Try again in.*seconds'
+# A tap at the right edge puts the cursor at the end, so the erase takes the whole wrong code.
+- tapOn:
+    id: 'unlock-field'
+    point: '95%,50%'
+- eraseText: 30
+- inputText: ${CODE}
+- hideKeyboard
+- extendedWaitUntil:
+    visible:
+      text: 'Open my Family'
+      enabled: true
+    timeout: 20000
+- tapOn: 'Open my Family'
+- extendedWaitUntil:
+    visible: "Aarav's Subjects, Class 4"
+    timeout: 60000
