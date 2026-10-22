@@ -10,9 +10,19 @@ type Props = {
   onBack: () => void;
   onOpenTab: () => void;
   onAddChild: () => void;
+  onAction: () => void;
+  onOpenHistory: (childId: string, chapterId: string) => void;
 };
 
-export function ChaptersScreen({ childId, subjectId, onBack, onOpenTab, onAddChild }: Props) {
+export function ChaptersScreen({
+  childId,
+  subjectId,
+  onBack,
+  onOpenTab,
+  onAddChild,
+  onAction,
+  onOpenHistory,
+}: Props) {
   const chapters = useChapters(childId, subjectId);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [subjectSheetOpen, setSubjectSheetOpen] = useState(false);
@@ -23,7 +33,8 @@ export function ChaptersScreen({ childId, subjectId, onBack, onOpenTab, onAddChi
       switcherChildren={chapters.children}
       subjects={chapters.subjects}
       subjectId={chapters.subjectId}
-      chapters={chapters.state}
+      chapters={chapters.chapters}
+      query={chapters.query}
       sheetOpen={sheetOpen}
       subjectSheetOpen={subjectSheetOpen}
       canAddChild={chapters.children.length < MAX_CHILDREN}
@@ -44,6 +55,11 @@ export function ChaptersScreen({ childId, subjectId, onBack, onOpenTab, onAddChi
         chapters.selectSubject(id);
         setSubjectSheetOpen(false);
       }}
+      onChangeQuery={chapters.setQuery}
+      onAction={onAction}
+      onOpenHistory={(chapterId) => onOpenHistory(chapters.childId, chapterId)}
+      onLoadMore={chapters.loadMore}
+      onRetryMore={chapters.retryMore}
       onOpenTab={onOpenTab}
       onTryAgain={chapters.retry}
     />

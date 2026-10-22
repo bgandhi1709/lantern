@@ -13,6 +13,13 @@ export default function SubjectRoute() {
       onBack={router.back}
       onOpenTab={() => router.push('/coming-next')}
       onAddChild={() => router.push('/add-child')}
+      onAction={() => router.push('/coming-next')}
+      onOpenHistory={(historyChildId, chapterId) =>
+        router.push({
+          pathname: '/chapter/[chapterId]/history',
+          params: { chapterId, childId: historyChildId },
+        })
+      }
     />
   );
 }
