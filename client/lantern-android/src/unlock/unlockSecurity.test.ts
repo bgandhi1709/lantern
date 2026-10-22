@@ -128,6 +128,37 @@ describe('opening the Family on this phone', () => {
   });
 });
 
+describe('a Recovery code from someone else’s Family', () => {
+  it('does not open this Parent’s own Family and keeps no key', async () => {
+    const strangerFamilyId = makeFamilyId();
+    const stranger = await createFamilyKeys(strangerFamilyId);
+
+    const error = await failedWith(
+      unlockFamily(lock, { uid: UID, typed: stranger.recoveryCode, now: NOW }),
+    );
+
+    expect(error).toBeInstanceOf(LockError);
+    expect(await readFamilyKey(UID)).toBeNull();
+    expect(await readValue('unlockWait')).toEqual({ failures: 1, until: NOW + 5_000 });
+  });
+
+  it('does not open this Family from another Family’s wrapped key and salt either', async () => {
+    const stranger = await createFamilyKeys(makeFamilyId());
+    const strangerLock = {
+      familyId: lock.familyId,
+      recoveryWrappedKey: stranger.recoveryWrappedKey,
+      recoverySalt: stranger.recoverySalt,
+    };
+
+    const error = await failedWith(
+      unlockFamily(strangerLock, { uid: UID, typed: recoveryCode, now: NOW }),
+    );
+
+    expect(error).toBeInstanceOf(LockError);
+    expect(await readFamilyKey(UID)).toBeNull();
+  });
+});
+
 describe('what a locked phone sends to the API', () => {
   it('sends nothing at all while the Parent tries values, right or wrong', async () => {
     await failedWith(unlockFamily(lock, { uid: UID, typed: WRONG, now: NOW }));
