@@ -175,6 +175,7 @@ The rules are in `.claude/skills/expo-app-standards/SKILL.md` (the cycle is `doc
 
 Every new endpoint follows these. `/security-review` checks them before the PR (step 6 of `docs/agents/workflow.md`).
 
+- **Every controller says `[Authorize]` itself.** The attribute sits on the controller class, not only on a base class, and the fallback policy in `Program.cs` is a safety net, never the gate. `AuthorizationTests` fails a controller with neither `[Authorize]` nor `[AllowAnonymous]` of its own, and `AuthenticationTests` calls every controller endpoint without a token and expects 401. An anonymous endpoint needs an ADR and a decision-log entry first.
 - **No cross-family reads.** Every read and write is scoped to the caller's own Family, taken from the caller's identity and never from a request field. A caller who sends another Family's id gets nothing back (404, not 403). Never build a query, path or filter by concatenating request text; use typed parameters and the repository's fixed keys.
 - **Stateless and idempotent.** No per-instance in-memory state, because the app can run more than one replica. A repeated call is safe, as creating a Workspace folder twice is.
 - **Bounded.** Set a maximum body size, maximum lengths and counts on every input, and page every list response.
