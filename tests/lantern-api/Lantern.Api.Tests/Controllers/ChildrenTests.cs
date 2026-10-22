@@ -662,8 +662,6 @@ public sealed class ChildrenTests(AzuriteFixture azurite) : IDisposable
             Language = "gu",
             ParentName = "locked-parent-name",
             ParentEmail = "locked-parent-email",
-            PassphraseWrappedKey = "locked-passphrase-key",
-            PassphraseSalt = "salt-1",
             RecoveryWrappedKey = "locked-recovery-key",
             RecoverySalt = "salt-2",
             Consent = new ConsentModel { Accepted = true, NoticeVersion = "2026-09" },

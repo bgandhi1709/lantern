@@ -22,15 +22,7 @@ public sealed class FamilyRegisterRequest
     [EnumDataType(typeof(BoardType))]
     public BoardType Board { get; set; }
 
-    // The Family key wrapped on the phone, once by the Passphrase and once by the Recovery code, with their salts.
-    [Required]
-    [StringLength(400, MinimumLength = 1)]
-    public string PassphraseWrappedKey { get; set; }
-
-    [Required]
-    [StringLength(400, MinimumLength = 1)]
-    public string PassphraseSalt { get; set; }
-
+    // The Family key wrapped on the phone by the Recovery code, with its salt (ADR-0015).
     [Required]
     [StringLength(400, MinimumLength = 1)]
     public string RecoveryWrappedKey { get; set; }

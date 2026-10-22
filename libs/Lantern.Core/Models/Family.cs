@@ -10,11 +10,7 @@ public sealed class Family : IFamilyModel
 
     public BoardType Board { get; set; }
 
-    // The Family key, wrapped on the phone twice (D66): Lantern holds the copies and cannot open them.
-    public string PassphraseWrappedKey { get; set; }
-
-    public string PassphraseSalt { get; set; }
-
+    // The Family key, wrapped on the phone by the Recovery code (ADR-0015): Lantern holds the copy and cannot open it.
     public string RecoveryWrappedKey { get; set; }
 
     public string RecoverySalt { get; set; }

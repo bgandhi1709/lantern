@@ -45,8 +45,6 @@ internal sealed class FamilyService(
             FamilyId = registration.FamilyId,
             Region = registration.Region.Trim(),
             Board = registration.Board,
-            PassphraseWrappedKey = registration.PassphraseWrappedKey,
-            PassphraseSalt = registration.PassphraseSalt,
             RecoveryWrappedKey = registration.RecoveryWrappedKey,
             RecoverySalt = registration.RecoverySalt,
             CreatedAt = now,
