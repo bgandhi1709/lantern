@@ -6,6 +6,10 @@ public interface IProgressRepository
 {
     Task<IReadOnlyList<ChapterProgress>> ChaptersAsync(Guid familyId, Guid childId, int classLevel, CancellationToken cancellationToken);
 
+    Task RemoveChildAsync(Guid familyId, Guid childId, CancellationToken cancellationToken);
+
+    Task RemoveFamilyAsync(Guid familyId, CancellationToken cancellationToken);
+
     Task<ChapterProgress> ChapterAsync(ChapterRef chapter, CancellationToken cancellationToken);
 
     Task<IReadOnlyList<Attempt>> AttemptsAsync(ChapterRef chapter, CancellationToken cancellationToken);

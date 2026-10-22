@@ -242,5 +242,25 @@ public sealed class ProgressRepositoryTests(AzuriteFixture azurite) : IDisposabl
         Assert.Null(await Repository.ChapterAsync(new ChapterRef(FamilyId, ChildId, 6, "gegp104"), CancellationToken.None));
     }
 
+    [Fact]
+    public async Task RemoveChildAsync_MoreRowsThanOneTransactionHolds_RemovesAllOfThemAndOnlyThatChilds()
+    {
+        var sibling = Guid.NewGuid();
+        await Repository.StartAttemptAsync(new ChapterRef(FamilyId, sibling, 6, "gegp101"), Guid.NewGuid(), 3, "v1", Day, CancellationToken.None);
+        foreach (var n in Enumerable.Range(1, 120))
+        {
+            var chapter = new ChapterRef(FamilyId, ChildId, 6, $"ch{n:000}");
+            await Repository.StartAttemptAsync(chapter, Guid.NewGuid(), 3, "v1", Day, CancellationToken.None);
+            await Repository.RecordCheckAsync(chapter, Guid.NewGuid(), Day, Marks(true), "v1", CancellationToken.None);
+        }
+
+        await Repository.RemoveChildAsync(FamilyId, ChildId, CancellationToken.None);
+        await Repository.RemoveChildAsync(FamilyId, ChildId, CancellationToken.None);
+
+        Assert.Empty(await Repository.ChaptersAsync(FamilyId, ChildId, 6, CancellationToken.None));
+        Assert.Empty(await Repository.AttemptsAsync(new ChapterRef(FamilyId, ChildId, 6, "ch001"), CancellationToken.None));
+        Assert.Single(await Repository.ChaptersAsync(FamilyId, sibling, 6, CancellationToken.None));
+    }
+
     public void Dispose() => harness.Dispose();
 }

@@ -17,6 +17,10 @@ internal interface IRowKeyService
 
     string MembershipRowKey(string uidHash);
 
+    IReadOnlyList<string> ProgressRowPrefixes { get; }
+
+    IReadOnlyList<string> ProgressRowPrefixesOf(Guid childId);
+
     string ChapterProgressRowPrefix(Guid childId, int classLevel);
 
     string ChapterProgressRowKey(Guid childId, int classLevel, string chapterId);

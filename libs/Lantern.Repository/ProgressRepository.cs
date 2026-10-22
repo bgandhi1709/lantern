@@ -17,6 +17,7 @@ internal sealed class ProgressRepository(
 ) : IProgressRepository
 {
     private const int MaxWriteAttempts = 12;
+    private const int MaxTransactionRows = 100;
 
     public async Task<IReadOnlyList<ChapterProgress>> ChaptersAsync(Guid familyId, Guid childId, int classLevel, CancellationToken cancellationToken)
     {
@@ -24,6 +25,12 @@ internal sealed class ProgressRepository(
 
         return [.. rows.Select(ToModel)];
     }
+
+    public Task RemoveChildAsync(Guid familyId, Guid childId, CancellationToken cancellationToken) =>
+        RemoveAsync(familyId, keys.ProgressRowPrefixesOf(childId), cancellationToken);
+
+    public Task RemoveFamilyAsync(Guid familyId, CancellationToken cancellationToken) =>
+        RemoveAsync(familyId, keys.ProgressRowPrefixes, cancellationToken);
 
     public async Task<ChapterProgress> ChapterAsync(ChapterRef chapter, CancellationToken cancellationToken)
     {
@@ -256,6 +263,36 @@ internal sealed class ProgressRepository(
             if (written)
             {
                 return;
+            }
+        }
+
+        throw LostTheRace();
+    }
+
+    private async Task RemoveAsync(Guid familyId, IReadOnlyList<string> prefixes, CancellationToken cancellationToken)
+    {
+        var partition = keys.FamilyPartition(familyId);
+
+        for (var attempt = 0; attempt < MaxWriteAttempts; attempt++)
+        {
+            List<ITableEntity> rows =
+            [
+                .. await chapters.PartitionAsync(partition, prefixes[0], cancellationToken),
+                .. await attempts.PartitionAsync(partition, prefixes[1], cancellationToken),
+                .. await checks.PartitionAsync(partition, prefixes[2], cancellationToken),
+            ];
+
+            try
+            {
+                foreach (var batch in rows.Chunk(MaxTransactionRows))
+                {
+                    await chapters.SubmitAsync(batch.Select(row => new TableTransactionAction(TableTransactionActionType.Delete, row, ETag.All)), cancellationToken);
+                }
+
+                return;
+            }
+            catch (RequestFailedException ex) when (ex.Status is 404 or 412)
+            {
             }
         }
 
