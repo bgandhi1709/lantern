@@ -10,17 +10,34 @@ internal sealed class SubjectService(IServiceBase<Child> children, IWorkspaceSto
 {
     public async Task<Page<Subject>> SubjectsAsync(Guid childId, int? limit, string cursor, CancellationToken cancellationToken)
     {
-        var child = await children.SingleAsync(childId, cancellationToken);
+        var child = await ActiveChildAsync(childId, cancellationToken);
 
-        if (child.Status == ChildStatus.Deleting)
+        return pages.Slice(await ReadyAsync(child, cancellationToken), limit, cursor);
+    }
+
+    public async Task<Page<Chapter>> ChaptersAsync(Guid childId, string subjectId, int? limit, string cursor, CancellationToken cancellationToken)
+    {
+        var child = await ActiveChildAsync(childId, cancellationToken);
+        if (!(await ReadyAsync(child, cancellationToken)).Any(subject => subject.SubjectId == subjectId))
         {
-            throw new LanternException(LanternErrorCode.ChildNotFound);
+            throw new LanternException(LanternErrorCode.SubjectNotFound);
         }
 
-        var subjects =
-            await workspaces.SubjectsAsync(child.FamilyId, child.ChildId, cancellationToken)
+        var chapters =
+            await workspaces.ChaptersAsync(child.FamilyId, child.ChildId, child.ClassLevel, subjectId, cancellationToken)
             ?? throw new LanternException(LanternErrorCode.ContentNotReady);
 
-        return pages.Slice(subjects, limit, cursor);
+        return pages.Slice([.. chapters.Select((chapter, index) => chapter.WithNumber(index + 1))], limit, cursor);
     }
+
+    private async Task<Child> ActiveChildAsync(Guid childId, CancellationToken cancellationToken)
+    {
+        var child = await children.SingleAsync(childId, cancellationToken);
+
+        return child.Status == ChildStatus.Deleting ? throw new LanternException(LanternErrorCode.ChildNotFound) : child;
+    }
+
+    private async Task<IReadOnlyList<Subject>> ReadyAsync(Child child, CancellationToken cancellationToken) =>
+        await workspaces.SubjectsAsync(child.FamilyId, child.ChildId, cancellationToken)
+        ?? throw new LanternException(LanternErrorCode.ContentNotReady);
 }

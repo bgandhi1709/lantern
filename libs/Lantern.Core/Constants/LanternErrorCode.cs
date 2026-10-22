@@ -17,4 +17,5 @@ public enum LanternErrorCode
     InvalidPage,
     InvalidRequest,
     NotRegistered,
+    SubjectNotFound,
 }
