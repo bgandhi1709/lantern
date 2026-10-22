@@ -19,6 +19,8 @@ internal sealed class LocalApiFactory(string contentRoot) : WebApplicationFactor
         builder.ConfigureTestServices(services =>
         {
             services.AddScoped<DevelopmentSeeder>();
+            services.AddScoped<SampleProgress>();
+            services.AddTransient<IStartupFilter, SeedProgressEndpoint>();
             services.AddHostedService<SeedOnStartup>();
             services.PostConfigure<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme, AcceptEmulatorTokens);
         });
