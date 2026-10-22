@@ -6,13 +6,13 @@ The founder is new to Android and React Native, so the cycle front-loads rules a
 
 ## One story, one working slice
 
-A story with a screen or a flow works end to end when it is done: real data, real calls, no inert buttons. The API and Azure changes it needs are sub-issues of the story and ship in the same PR train. A screen is a sub-issue of its story. Do not start a screen whose API sub-issue is not in the plan.
+A story with a screen or a flow works end to end when it is done: real data, real calls, no inert buttons. The API and Azure changes it needs are part of the same issue and ship in the same PR: one issue per screen, no sub-issues below it.
 
 ## Steps
 
 | # | Step | How | Output |
 |---|---|---|---|
-| 0 | Ticket | Pick the screen sub-issue. Read its **Screens** section and the canvas board it names (read the canvas with the Artifact tool; it is private). The ticket's acceptance criteria are the spec; if the canvas and the ticket disagree, stop and ask. Then list the components that exist (`storybook-standards`: the Storybook MCP or the `*.stories.tsx` files). | Issue, board and component list read |
+| 0 | Ticket | Pick the screen issue. Read its **Screens** section and the canvas board it names (read the canvas with the Artifact tool; it is private). The ticket's acceptance criteria are the spec; if the canvas and the ticket disagree, stop and ask. Then list the components that exist (`storybook-standards`: the Storybook MCP or the `*.stories.tsx` files). | Issue, board and component list read |
 | 1 | Grill | Only if the ticket leaves a behaviour open. `/grill-with-docs`, at most 5 questions. New terms to `GLOSSARY.md`, hard-to-reverse calls to an ADR. | Decisions |
 | 2 | Tech pass | Load `expo-app-standards` (and `storybook-standards` for any UI), then only the matching `expo` plugin skills: `expo-router` (routes), `expo-data-fetching` (API calls), `expo-dev-client` (native modules, Firebase). Load `ponytail` for any new dependency. For the API sub-issue follow `docs/agents/workflow.md` and the C# skills it routes to. | Skills loaded |
 | 3 | Plan | In chat: the files to add or change under `app/` and `src/`, which existing file each copies its shape from, which existing components it reuses and which new ones it needs, each with the states it will have a story for, every new library with its reason, what is stored on the device (usually nothing), the API calls, and the behaviours to test. A new library, a new stored value or a new native permission needs the founder's yes before step 4. | Plan approved |
