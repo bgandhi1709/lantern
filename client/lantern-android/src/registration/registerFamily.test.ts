@@ -67,6 +67,18 @@ describe('registering the Family', () => {
     }
   });
 
+  it('never puts the Recovery code or the Family key in the body', async () => {
+    const input = await makeInput();
+
+    await registerFamily(input);
+
+    const text = JSON.stringify(sentBody());
+    const { recoveryCode, familyKey } = input.family.keys;
+    for (const secret of [recoveryCode, recoveryCode.replace(/-/g, ''), familyKey]) {
+      expect(text).not.toContain(secret);
+    }
+  });
+
   it('keeps the Family key on the phone once the Family is registered', async () => {
     const input = await makeInput();
 
