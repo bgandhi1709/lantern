@@ -72,7 +72,6 @@ export function UnlockView(props: Props) {
             value={props.value}
             onChangeText={props.onChange}
             maxLength={UNLOCK_FIELD_MAX_LENGTH}
-            error={props.wrong ? text.wrong : undefined}
           />
           {props.phase === 'failed' ? (
             <View className="gap-3">
@@ -95,6 +94,14 @@ export function UnlockView(props: Props) {
           ) : null}
         </ScrollView>
         <View className="gap-1 pb-4 pt-2">
+          {props.wrong ? (
+            <Text
+              accessibilityLiveRegion="polite"
+              className="pb-2 font-inter-semibold text-small text-danger"
+            >
+              {text.wrong}
+            </Text>
+          ) : null}
           <PrimaryButton
             label={props.phase === 'loading' ? strings.loading : buttonLabel}
             onPress={props.onOpen}
