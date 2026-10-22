@@ -16,4 +16,16 @@ internal interface IRowKeyService
     string ChildRowKey(Guid childId);
 
     string MembershipRowKey(string uidHash);
+
+    string ChapterProgressRowPrefix(Guid childId, int classLevel);
+
+    string ChapterProgressRowKey(Guid childId, int classLevel, string chapterId);
+
+    string AttemptRowPrefix(Guid childId, int classLevel, string chapterId);
+
+    string AttemptRowKey(Guid childId, int classLevel, string chapterId, int attemptNumber);
+
+    string CheckRowPrefix(Guid childId, int classLevel, string chapterId);
+
+    string CheckRowKey(Guid childId, int classLevel, string chapterId, int attemptNumber, Guid checkId);
 }
