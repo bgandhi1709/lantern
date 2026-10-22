@@ -1,0 +1,34 @@
+# Needs a Google account on the emulator and `scripts/verify-env.sh up` running. It signs in and
+# walks About you and Board through board.yaml first.
+# Run: maestro test .maestro/recovery-code.yaml
+appId: com.lantern.app
+---
+- runFlow: board.yaml
+- assertVisible: 'Step 3 of 4'
+- assertVisible: 'RECOVERY CODE'
+- assertVisible:
+    text: 'Continue'
+    enabled: false
+- scrollUntilVisible:
+    element: 'Email it to myself'
+- tapOn: 'Email it to myself'
+- pressKey: back
+- runFlow:
+    when:
+      visible: 'Compose'
+    commands:
+      - pressKey: back
+- scrollUntilVisible:
+    element: 'I have sent the email to myself.'
+- tapOn: 'I have sent the email to myself.'
+- assertVisible:
+    text: 'Continue'
+    enabled: true
+- tapOn: 'Continue'
+- assertVisible: 'Add your first child'
+- assertVisible: 'Step 4 of 4'
+- tapOn: 'Back'
+- assertVisible: 'Save your recovery code'
+- assertVisible:
+    text: 'Continue'
+    enabled: true

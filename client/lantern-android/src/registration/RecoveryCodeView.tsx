@@ -3,6 +3,7 @@ import { ScrollView, Text, View } from 'react-native';
 import { useStrings } from '../shared/i18n';
 import { CheckRow } from '../shared/ui/CheckRow';
 import { MailIcon, ShareIcon } from '../shared/ui/icons';
+import { LoadingOverlay } from '../shared/ui/LoadingOverlay';
 import { OutlineButton } from '../shared/ui/OutlineButton';
 import { PrimaryButton } from '../shared/ui/PrimaryButton';
 import { RecoveryCodeCard } from './RecoveryCodeCard';
@@ -10,30 +11,37 @@ import { StepHeader } from './StepHeader';
 import { REGISTRATION_STEP_COUNT } from './steps';
 
 type Props = {
-  code: string;
+  code: string | null;
   saved: boolean;
+  emailed: boolean;
   shareFailed?: boolean;
+  makeFailed?: boolean;
+  onMakeAgain: () => void;
   onSavedToggle: () => void;
   onEmail: () => void;
   onSave: () => void;
   onContinue: () => void;
+  onBack: () => void;
 };
 
-// No Back here: the code is shown once, and leaving would lose it.
 export function RecoveryCodeView({
   code,
   saved,
+  emailed,
   shareFailed = false,
+  makeFailed = false,
+  onMakeAgain,
   onSavedToggle,
   onEmail,
   onSave,
   onContinue,
+  onBack,
 }: Props) {
   const strings = useStrings().registration.recovery;
 
   return (
     <View className="flex-1 bg-ground px-6 pb-safe pt-safe">
-      <StepHeader step={3} total={REGISTRATION_STEP_COUNT} />
+      <StepHeader step={3} total={REGISTRATION_STEP_COUNT} onBack={onBack} />
       <ScrollView contentContainerClassName="gap-4 pb-3">
         <View className="mt-5 gap-2">
           <Text accessibilityRole="header" className="font-inter-bold text-heading text-ink">
@@ -41,7 +49,18 @@ export function RecoveryCodeView({
           </Text>
           <Text className="font-inter-medium text-body text-muted">{strings.intro}</Text>
         </View>
-        <RecoveryCodeCard code={code} />
+        {code === null ? null : <RecoveryCodeCard code={code} />}
+        {makeFailed ? (
+          <View className="gap-3">
+            <Text
+              accessibilityLiveRegion="polite"
+              className="font-inter-semibold text-small text-danger"
+            >
+              {strings.makeFailed}
+            </Text>
+            <OutlineButton label={strings.tryAgain} onPress={onMakeAgain} />
+          </View>
+        ) : null}
         <OutlineButton label={strings.email} onPress={onEmail} icon={<MailIcon />} />
         <OutlineButton label={strings.save} onPress={onSave} icon={<ShareIcon />} />
         {shareFailed ? (
@@ -58,8 +77,18 @@ export function RecoveryCodeView({
         </CheckRow>
       </ScrollView>
       <View className="pb-6 pt-2">
-        <PrimaryButton label={strings.continue} onPress={onContinue} disabled={!saved} />
+        {emailed ? null : (
+          <Text className="pb-2 text-center font-inter-medium text-small text-muted">
+            {strings.emailFirst}
+          </Text>
+        )}
+        <PrimaryButton
+          label={strings.continue}
+          onPress={onContinue}
+          disabled={!saved || !emailed || code === null}
+        />
       </View>
+      {code === null && !makeFailed ? <LoadingOverlay label={strings.working} /> : null}
     </View>
   );
 }

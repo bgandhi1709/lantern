@@ -54,36 +54,24 @@ export const en = {
         },
       },
     },
-    passphrase: {
-      heading: 'Choose a family passphrase',
-      intro:
-        "Your children's names and your details are private. This passphrase locks them on your phone before they are sent, so nobody at Lantern, and nobody who broke into our systems, could read them. It is there to protect you and your children.",
-      noteTitle: 'Please keep it safe',
-      note: "Lantern never sees your passphrase, so we can't reset or change it for you. That is what keeps your family's details safe: if we could open them, someone else could too. If you lose it and your recovery code, they can't be opened again, so pick something you will remember.",
-      passphraseLabel: 'Passphrase',
-      passphraseHint: 'At least 8 characters. A few words are easier to remember.',
-      againLabel: 'Type it again',
-      mismatch: 'The two passphrases are not the same.',
-      understood: "I understand Lantern can't reset or change it, and I will keep it safe.",
-      create: 'Create passphrase',
-      creating: 'Creating…',
-      working: 'Creating your passphrase…',
-      failed: "Couldn't create the passphrase. Try again.",
-    },
     recovery: {
       heading: 'Save your recovery code',
       intro:
-        "If you forget the passphrase, this code is the only other way to open your family's details. We show it once because we don't keep a copy: that is what keeps it private to you.",
+        "This code is the only way to open your family's details on a new phone. Lantern never sees it and can't reset it: that is what keeps your family's details private. Email it to yourself now, so it is always in your inbox.",
+      working: 'Making your recovery code…',
+      makeFailed: "Couldn't make your recovery code. Try again.",
+      tryAgain: 'Try again',
       codeLabel: 'RECOVERY CODE',
       email: 'Email it to myself',
       save: 'Save elsewhere',
-      hint: "Email opens your mail app with a message to your Google address, and you send it yourself. Save elsewhere opens your phone's share sheet, for example to keep it in a notes app. Lantern never sends or sees it.",
+      hint: "Email it to myself opens your mail app with a message to your Google address, and you send it yourself, so the code is always in your inbox. Save elsewhere opens your phone's share sheet, for example to keep it in a notes app too. Lantern never sends or sees it.",
+      emailFirst: 'Send the email to yourself first. Then the code is always in your inbox.',
       shareFailed: "Couldn't open that. Try the other button, or write the code down.",
-      saved: 'I have saved my recovery code somewhere safe.',
+      saved: 'I have sent the email to myself.',
       continue: 'Continue',
       mailSubject: 'Your Lantern recovery code',
       message: (code: string) =>
-        `Your Lantern recovery code is ${code}\n\nIf you forget your passphrase, this code is the only other way to open your family's details. Keep it somewhere safe. Lantern does not keep a copy.`,
+        `Your Lantern recovery code is ${code}\n\nThis code is the only way to open your family's details on a new phone. Keep this email. Lantern does not keep a copy.`,
     },
     firstChild: {
       heading: 'Add your first child',
@@ -147,7 +135,7 @@ export const en = {
         {
           title: 'What stays on your phone',
           text: [
-            "Your Google sign-in, kept by the phone itself. A secret key for your Family, kept in the phone's secure store so you do not have to type your passphrase every time. Nothing else about you is saved on the phone.",
+            "Your Google sign-in, kept by the phone itself. A secret key for your Family, kept in the phone's secure store so you do not have to type your recovery code every time. Nothing else about you is saved on the phone.",
           ],
         },
         {
@@ -158,9 +146,9 @@ export const en = {
           ],
         },
         {
-          title: 'Your passphrase and your data',
+          title: 'Your recovery code and your data',
           text: [
-            'You will choose a passphrase for your Family. It cannot be reset. If you lose it and its recovery code, nobody, including Lantern, can open the locked details.',
+            'Your phone makes a recovery code for your Family, and you email it to yourself. It cannot be reset. If you lose the email and this phone, nobody, including Lantern, can open the locked details.',
             'Deleting your Family erases everything stored for it.',
           ],
         },
@@ -221,13 +209,49 @@ export const en = {
     },
     locked: {
       heading: 'Unlock your Family',
-      text: 'This phone does not hold your Family yet. Opening your Family on a new phone is coming soon.',
+      text: 'This phone does not hold your Family yet. Open it with the recovery code that was emailed to you.',
+      unlock: 'Unlock your Family',
     },
     comingNext: { heading: 'Coming next', text: 'This screen is on its way.' },
     settings: 'Settings',
   },
+  unlock: {
+    heading: 'Unlock your Family',
+    intro:
+      'This phone does not hold your Family yet. Enter your recovery code to open it. The phone checks it; nothing is sent to Lantern.',
+    label: 'Recovery code',
+    hint: 'It was emailed to you when you registered: look for "Your Lantern recovery code". Letters and numbers in groups of four.',
+    wrong: 'That recovery code is not right. Check it and try again.',
+    open: 'Open my Family',
+    opening: 'Opening…',
+    waitFor: (seconds: number) => `Try again in ${seconds} seconds`,
+    loading: 'Getting your Family…',
+    loadFailed: "Can't reach Lantern. Check your connection and try again.",
+    tryAgain: 'Try again',
+    failed: 'Something went wrong. Try again.',
+  },
+  startAgain: {
+    heading: 'Start again?',
+    intro:
+      "Lantern never sees your recovery code, so without it your Family's names and details can never be opened again, by you or by us.",
+    warningHeading: 'This deletes your Family',
+    warning:
+      'Starting again deletes this Family and its Children from Lantern, then takes you to registration to make a new one. This cannot be undone.',
+    delete: 'Delete my Family and start again',
+    deleting: 'Deleting…',
+    keep: 'Keep my Family',
+    failed: 'Could not delete your Family. Nothing was changed. Try again.',
+  },
   appearance: {
     title: 'Appearance',
+    unlockRow: {
+      title: 'Unlock your Family',
+      text: 'This phone does not hold your Family yet.',
+    },
+    startAgainRow: {
+      title: 'Start again',
+      text: 'Lost your recovery code? Delete your Family and register a new one.',
+    },
     theme: {
       heading: 'Theme',
       light: 'Light',

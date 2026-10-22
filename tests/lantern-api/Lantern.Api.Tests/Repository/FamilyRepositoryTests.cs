@@ -29,7 +29,7 @@ public sealed class FamilyRepositoryTests(AzuriteFixture azurite) : IDisposable
 
         Assert.Equal(("locked:Meena", "locked:meena@example.test", family.FamilyId), (parent!.Name, parent.Email, parent.FamilyId));
         Assert.Equal(("Gujarat", BoardType.Ssc), (stored.Region, stored.Board));
-        Assert.Equal(("passphrase-key", "passphrase-salt", "recovery-key", "recovery-salt"), (stored.PassphraseWrappedKey, stored.PassphraseSalt, stored.RecoveryWrappedKey, stored.RecoverySalt));
+        Assert.Equal(("recovery-key", "recovery-salt"), (stored.RecoveryWrappedKey, stored.RecoverySalt));
         Assert.Equal(["Aarav", "Diya"], children.Select(child => child.Name));
     }
 
@@ -88,7 +88,7 @@ public sealed class FamilyRepositoryTests(AzuriteFixture azurite) : IDisposable
         rows.AddRange(await harness.Parents.QueryAsync<TableEntity>().ToListAsync());
         var values = rows.SelectMany(row => ((IDictionary<string, object>)row).Values).OfType<string>().ToList();
 
-        foreach (var sent in new[] { parent.Name, parent.Email, child.Name, child.BirthYear, family.PassphraseWrappedKey, family.RecoveryWrappedKey })
+        foreach (var sent in new[] { parent.Name, parent.Email, child.Name, child.BirthYear, family.RecoveryWrappedKey })
         {
             Assert.Contains(sent, values);
         }
@@ -105,7 +105,7 @@ public sealed class FamilyRepositoryTests(AzuriteFixture azurite) : IDisposable
         var intruderUid = NewUid();
         var intruder = NewFamily();
         intruder.FamilyId = family.FamilyId;
-        intruder.PassphraseWrappedKey = "intruder-key";
+        intruder.RecoveryWrappedKey = "intruder-key";
 
         await Errors.ThrowsAsync(LanternErrorCode.FamilyIdTaken, () =>
             harness.FamilyRepository().RegisterAsync(intruderUid, intruder, NewParent(intruder), [NewChild(intruder, 0, "Intruder")], CancellationToken.None)
@@ -113,7 +113,7 @@ public sealed class FamilyRepositoryTests(AzuriteFixture azurite) : IDisposable
 
         Assert.Null(await harness.FamilyRepository().FindParentAsync(intruderUid, CancellationToken.None));
         var stored = await harness.FamilyRepository().SingleAsync(family.FamilyId, family.FamilyId, CancellationToken.None);
-        Assert.Equal("passphrase-key", stored.PassphraseWrappedKey);
+        Assert.Equal("recovery-key", stored.RecoveryWrappedKey);
         Assert.Equal(["Aarav"], (await harness.ChildRepository().CollectionAsync(family.FamilyId, CancellationToken.None)).Select(child => child.Name));
     }
 
@@ -268,8 +268,6 @@ public sealed class FamilyRepositoryTests(AzuriteFixture azurite) : IDisposable
             FamilyId = Guid.NewGuid(),
             Region = "Gujarat",
             Board = BoardType.Ssc,
-            PassphraseWrappedKey = "passphrase-key",
-            PassphraseSalt = "passphrase-salt",
             RecoveryWrappedKey = "recovery-key",
             RecoverySalt = "recovery-salt",
             CreatedAt = DateTimeOffset.UtcNow,

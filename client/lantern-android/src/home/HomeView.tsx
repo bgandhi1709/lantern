@@ -28,6 +28,7 @@ type Props = {
   onOpenSubject: (childId: string, subjectId: string) => void;
   onOpenSettings: () => void;
   onOpenTab: () => void;
+  onUnlock: () => void;
   onDismissBanner: () => void;
   onTryAgain: () => void;
   onSignOut: () => void;
@@ -44,7 +45,7 @@ export function HomeView(props: Props) {
         <Text accessibilityRole="header" className="font-inter-bold text-heading text-ink">
           {greeting}
         </Text>
-        {locked ? <UnlockNotice onSignOut={props.onSignOut} /> : null}
+        {locked ? <UnlockNotice onUnlock={props.onUnlock} /> : null}
         {activeChild ? (
           <>
             <ChildSwitcherButton name={activeChild.name} onPress={props.onOpenSheet} />

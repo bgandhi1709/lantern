@@ -13,7 +13,6 @@ using Lantern.Core.Configuration;
 using Lantern.Core.Identity;
 using Mapster;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -90,10 +89,6 @@ builder
             };
         }
     );
-
-// [Authorize] on each controller is the primary gate. This fallback policy is a safety net for any
-// future endpoint that forgets one — both require an authenticated caller either way.
-builder.Services.AddAuthorizationBuilder().SetFallbackPolicy(new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
 
 builder
     .Services.AddControllers()

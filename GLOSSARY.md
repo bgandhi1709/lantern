@@ -11,20 +11,16 @@ The overarching group that holds Parents and Children, like a resource group in 
 _Avoid_: Household, account, user
 
 **Parent**:
-A guardian who belongs to a Family and signs in, with their own settings (Language, Consent). A Parent maintains the Family's Children. The POC allows exactly one Parent per Family; later a second Parent (at most two) can join and shares the Family's Passphrase. "Mother" is only the persona used in the docs, not a role in the model.
+A guardian who belongs to a Family and signs in, with their own settings (Language, Consent). A Parent maintains the Family's Children. The POC allows exactly one Parent per Family; later a second Parent (at most two) can join and shares the Family's Recovery code. "Mother" is only the persona used in the docs, not a role in the model.
 _Avoid_: User, Admin, Owner, Mother, Father, caregiver
-
-**Passphrase**:
-The secret a Parent chooses once for the Family, before any Child is saved. The phone uses it to lock the Parent's and Children's personal details, so Lantern holds no key and cannot read them. It belongs to the Family, not to one Parent, and it can never be changed or reset: keeping it is the Parent's responsibility, and the app says so. Class, Board and Region are not locked.
-_Avoid_: Password, PIN, key
 
 **Locked value**:
 A personal detail the phone has locked with the Family key before sending it, so Lantern stores and returns it without being able to read it. The Parent's name and email and each Child's name, birth year and School are locked values; the API keeps their plain names, and only the content is locked.
 _Avoid_: Encrypted field (the server does not encrypt), ciphertext
 
 **Recovery code**:
-A one-time code shown right after the Passphrase is set, the only other way back in if the Passphrase is forgotten. The Parent saves it themselves, by emailing it to their own Google address from the phone's mail app or by the share sheet; Lantern never sends or sees it. A Family that loses both starts again as a new Family.
-_Avoid_: Backup key, reset code
+The one secret that opens a Family, made by the phone and shown once at registration. The phone uses it to wrap the Family key, so Lantern holds no key and cannot read the locked values. The Parent must email it to their own address from the phone's mail app before registration continues (the share sheet is the fallback); Lantern never sends or sees it. A Parent who loses it and the phone starts the Family again as a new Family. There is no Passphrase (ADR-0015).
+_Avoid_: Passphrase, backup key, reset code
 
 **Child**:
 A person in a Family who attends school and whose learning the Parent supports. Never signs in; Lantern serves the Parent, not the Child. "Kid" is only the persona used in the docs.

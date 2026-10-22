@@ -175,11 +175,13 @@ The rules are in `.claude/skills/expo-app-standards/SKILL.md` (the cycle is `doc
 
 Every new endpoint follows these. `/security-review` checks them before the PR (step 6 of `docs/agents/workflow.md`).
 
+- **Every controller says `[Authorize]` itself.** The attribute sits on the controller class, not only on a base class, and there is no fallback policy in `Program.cs`, so a controller that forgets the attribute fails the tests instead of being quietly protected. `AuthorizationTests` fails a controller with neither `[Authorize]` nor `[AllowAnonymous]` of its own, and `AuthenticationTests` calls every controller endpoint without a token and expects 401. An anonymous endpoint needs an ADR and a decision-log entry first.
 - **No cross-family reads.** Every read and write is scoped to the caller's own Family, taken from the caller's identity and never from a request field. A caller who sends another Family's id gets nothing back (404, not 403). Never build a query, path or filter by concatenating request text; use typed parameters and the repository's fixed keys.
 - **Stateless and idempotent.** No per-instance in-memory state, because the app can run more than one replica. A repeated call is safe, as creating a Workspace folder twice is.
 - **Bounded.** Set a maximum body size, maximum lengths and counts on every input, and page every list response.
 - **Rate limited per caller**, keyed by the caller's uid hash, never by raw uid or IP alone.
 - **Cancellable.** Every I/O call takes the `CancellationToken`. No unbounded waits.
+- **Abuse cases are walked, not just the happy path.** A change that touches sign-in, keys, a Family, a Child or a route that returns a Family's data lists who holds what and says what each may get, for each of these: a stranger's Google account holding the Parent's secret; the Parent's Google account without the secret; the secret without the account; both (a stolen inbox); an unlocked or shared phone; a second phone the Parent does not know of; two accounts on one phone; a deleted or re-registered Family; and the logs, errors, crash and analytics reports, URLs and backups. Each row either has a test that fails when the answer is wrong, or a recorded accepted cost in the ADR, and a Child's data never appears in a log, URL or error. The table lives in the ADR or the PR; a new exposure with no row blocks the PR.
 - **Crypto ships with its tests.** Code that hashes or handles keys has tests for stability, a different key giving a different result, and isolation between Families; a locked value is tested as stored exactly as sent. Never invent a primitive; use the platform's.
 
 ## Changes that need more than code
@@ -188,7 +190,7 @@ An Azure role or resource the API needs lands and is confirmed before the API re
 
 A shell script run by CI or Docker is committed `100755`. Editing on the Windows-mounted drive drops the mode; `git ls-files -s` shows it, and CI checks `deploy/` and `infra/`.
 
-A change to the API, infra or data layout updates, in the same PR: the root `README.md` (Status and runtime sections), the decision log, the ADR it touches, `GLOSSARY.md` for any new or renamed domain word, and any README or skill that describes it.
+A change to the API, infra or data layout updates, in the same PR: the root `README.md` (one line in Status, and the whole file stays under 5,000 characters), the decision log, the ADR it touches, `GLOSSARY.md` for any new or renamed domain word, and any README or skill that describes it.
 
 ## Direct Anthropic API calls
 

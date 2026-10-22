@@ -143,7 +143,6 @@ internal sealed class FamilyRepository(
             await UnitOfWork.UpdateAsync(
                 new TableEntity(partition, KeyService.FamilyRowKey)
                 {
-                    [nameof(FamilyEntity.PassphraseWrappedKey)] = string.Empty,
                     [nameof(FamilyEntity.RecoveryWrappedKey)] = string.Empty,
                 },
                 ETag.All,

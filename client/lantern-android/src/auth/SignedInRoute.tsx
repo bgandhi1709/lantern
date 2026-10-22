@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 
+import { useRegistrationCheck } from './AuthProvider';
 import { RegisteredProvider } from './RegisteredContext';
 import { SignedInView } from './SignedInView';
 import type { Intro } from './useIntro';
@@ -9,7 +10,7 @@ type Props = { intro: Intro; home: ReactNode; registration: ReactNode };
 
 // Asks the API who the Parent is. Opening stays up until it answers, so Start never flashes.
 export function SignedInRoute({ intro, home, registration }: Props) {
-  const { status, retry, markRegistered } = useMeStatus();
+  const { status, retry, markRegistered } = useMeStatus(useRegistrationCheck().epoch);
 
   return (
     <RegisteredProvider value={markRegistered}>

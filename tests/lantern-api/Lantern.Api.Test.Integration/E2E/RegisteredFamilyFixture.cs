@@ -47,8 +47,6 @@ public sealed class RegisteredFamilyFixture : IAsyncLifetime
             Language = "gu",
             ParentName = "e2e-locked-parent-name",
             ParentEmail = "e2e-locked-parent-email",
-            PassphraseWrappedKey = "e2e-passphrase-wrapped-key",
-            PassphraseSalt = "e2e-passphrase-salt",
             RecoveryWrappedKey = "e2e-recovery-wrapped-key",
             RecoverySalt = "e2e-recovery-salt",
             Consent = new ConsentModel { Accepted = true, NoticeVersion = "e2e" },

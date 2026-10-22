@@ -58,8 +58,6 @@ internal sealed class DevelopmentSeeder(
             FamilyId = Guid.NewGuid(),
             Region = "Gujarat",
             Board = BoardType.Cbse,
-            PassphraseWrappedKey = "dev-passphrase-wrapped-key",
-            PassphraseSalt = "dev-passphrase-salt",
             RecoveryWrappedKey = "dev-recovery-wrapped-key",
             RecoverySalt = "dev-recovery-salt",
             CreatedAt = now,

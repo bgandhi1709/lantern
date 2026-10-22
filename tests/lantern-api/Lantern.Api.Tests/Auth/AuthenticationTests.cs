@@ -1,5 +1,9 @@
 using System.Net;
+using System.Text.RegularExpressions;
 using Lantern.Api.Tests.Infrastructure;
+using Microsoft.AspNetCore.Mvc.Controllers;
+using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Lantern.Api.Tests.Auth;
 
@@ -62,6 +66,28 @@ public sealed class AuthenticationTests(AzuriteFixture azurite) : IDisposable
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         Assert.DoesNotContain("error", response.Headers.WwwAuthenticate.ToString(), StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task EveryControllerEndpoint_WithoutToken_Returns401()
+    {
+        var endpoints = factory
+            .Services.GetRequiredService<EndpointDataSource>()
+            .Endpoints.OfType<RouteEndpoint>()
+            .Where(endpoint => endpoint.Metadata.GetMetadata<ControllerActionDescriptor>() is not null)
+            .ToList();
+        Assert.NotEmpty(endpoints);
+        using var client = factory.CreateClient();
+
+        foreach (var endpoint in endpoints)
+        {
+            var method = endpoint.Metadata.GetMetadata<HttpMethodMetadata>()!.HttpMethods[0];
+            var path = "/" + Regex.Replace(endpoint.RoutePattern.RawText!, @"\{[^}]+\}", Guid.NewGuid().ToString());
+
+            var response = await client.SendAsync(new HttpRequestMessage(new HttpMethod(method), path));
+
+            Assert.True(response.StatusCode == HttpStatusCode.Unauthorized, $"{method} {endpoint.RoutePattern.RawText} returned {response.StatusCode}");
+        }
     }
 
     private static string NewUid() => $"uid-{Guid.NewGuid():N}";

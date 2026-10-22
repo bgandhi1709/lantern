@@ -21,7 +21,7 @@ public sealed class RegistrationE2ETests(RegisteredFamilyFixture fixture) : ICla
         Assert.Equal("Gujarat", fixture.Family.Region);
         Assert.Single(fixture.Family.Children);
         Assert.Equal(BoardType.Cbse, fixture.Family.Board);
-        Assert.Equal("e2e-passphrase-wrapped-key", fixture.Family.PassphraseWrappedKey);
+        Assert.Equal("e2e-recovery-wrapped-key", fixture.Family.RecoveryWrappedKey);
     }
 
     [Fact]

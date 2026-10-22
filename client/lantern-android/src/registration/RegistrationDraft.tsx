@@ -16,10 +16,8 @@ export type RegistrationDraft = {
   noticeAccepted: boolean;
   // null until the Parent picks one: a Family has no default Board.
   board: Board | null;
-  // Made when the Passphrase is created. The keys hold the Recovery code until the Parent has saved it.
-  // The Passphrase stays here, in memory only, until Finish succeeds: a taken Family id means the
-  // keys are wrapped again under a new one, and that needs it.
-  family: { id: string; keys: FamilyKeys; passphrase: string } | null;
+  family: { id: string; keys: FamilyKeys } | null;
+  codeSent: boolean;
   // The first Child, then up to five more. An extra that is still empty is left out at Finish.
   children: ChildDraft[];
 };
@@ -38,6 +36,7 @@ export function RegistrationDraftProvider({ children }: { children: ReactNode })
     noticeAccepted: false,
     board: null,
     family: null,
+    codeSent: false,
     children: [emptyChild()],
   }));
   const update = (changes: Partial<RegistrationDraft>) =>

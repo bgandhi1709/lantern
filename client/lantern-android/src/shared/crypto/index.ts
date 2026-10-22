@@ -1,7 +1,6 @@
 export {
   createFamilyKeys,
   makeFamilyId,
-  openWithPassphrase,
   openWithRecoveryCode,
   rewrapFamilyKeys,
 } from './familyKeys';

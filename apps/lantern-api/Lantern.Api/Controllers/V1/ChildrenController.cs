@@ -4,11 +4,13 @@ using Lantern.Api.Models;
 using Lantern.Base.Services;
 using Lantern.Core.Models;
 using MapsterMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 
 namespace Lantern.Api.Controllers.V1;
 
+[Authorize]
 [ApiVersion("1.0")]
 [Route("v1/family/children")]
 [EnableRateLimiting(RateLimits.Children)]

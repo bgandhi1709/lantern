@@ -74,7 +74,6 @@ public sealed class FamilyTests(AzuriteFixture azurite) : IDisposable
         using var second = Client(NewUid());
         var firstBody = ValidBody();
         var secondBody = ValidBody();
-        secondBody.PassphraseWrappedKey = Locked("other-passphrase-key");
         secondBody.RecoveryWrappedKey = Locked("other-recovery-key");
         await first.RegisterAsync(firstBody);
         await second.RegisterAsync(secondBody);
@@ -82,12 +81,9 @@ public sealed class FamilyTests(AzuriteFixture azurite) : IDisposable
         var meFirst = await first.GetFromJsonAsync<FamilyModel>(ApiClientExtensions.Me);
         var meSecond = await second.GetFromJsonAsync<FamilyModel>(ApiClientExtensions.Me);
 
-        Assert.Equal(firstBody.PassphraseWrappedKey, meFirst!.PassphraseWrappedKey);
-        Assert.Equal(firstBody.PassphraseSalt, meFirst.PassphraseSalt);
-        Assert.Equal(firstBody.RecoveryWrappedKey, meFirst.RecoveryWrappedKey);
+        Assert.Equal(firstBody.RecoveryWrappedKey, meFirst!.RecoveryWrappedKey);
         Assert.Equal(firstBody.RecoverySalt, meFirst.RecoverySalt);
-        Assert.Equal(secondBody.PassphraseWrappedKey, meSecond!.PassphraseWrappedKey);
-        Assert.NotEqual(meFirst.PassphraseWrappedKey, meSecond.PassphraseWrappedKey);
+        Assert.Equal(secondBody.RecoveryWrappedKey, meSecond!.RecoveryWrappedKey);
         Assert.NotEqual(meFirst.RecoveryWrappedKey, meSecond.RecoveryWrappedKey);
     }
 
@@ -107,7 +103,7 @@ public sealed class FamilyTests(AzuriteFixture azurite) : IDisposable
         Assert.Equal("family-id-taken", await response.ProblemCodeAsync());
         Assert.Equal(HttpStatusCode.NotFound, (await second.GetAsync(ApiClientExtensions.Me)).StatusCode);
         var me = await first.GetFromJsonAsync<FamilyModel>(ApiClientExtensions.Me);
-        Assert.Equal(firstBody.PassphraseWrappedKey, me!.PassphraseWrappedKey);
+        Assert.Equal(firstBody.RecoveryWrappedKey, me!.RecoveryWrappedKey);
         Assert.Equal(firstBody.Children.Count, me.Children.Count);
     }
 
@@ -220,7 +216,7 @@ public sealed class FamilyTests(AzuriteFixture azurite) : IDisposable
     [InlineData("class-eleven")]
     [InlineData("board-missing")]
     [InlineData("family-id-missing")]
-    [InlineData("passphrase-key-missing")]
+    [InlineData("recovery-key-missing")]
     [InlineData("recovery-salt-missing")]
     [InlineData("parent-name-missing")]
     [InlineData("language-not-offered")]
@@ -266,7 +262,7 @@ public sealed class FamilyTests(AzuriteFixture azurite) : IDisposable
 
         foreach (var sent in new[]
         {
-            body.ParentName, body.ParentEmail, body.PassphraseWrappedKey, body.PassphraseSalt,
+            body.ParentName, body.ParentEmail,
             body.RecoveryWrappedKey, body.RecoverySalt, body.Children[0].Name, body.Children[0].BirthYear,
             body.Children[0].School,
         })
@@ -523,8 +519,6 @@ public sealed class FamilyTests(AzuriteFixture azurite) : IDisposable
             Language = "gu",
             ParentName = Locked("Meena Patel"),
             ParentEmail = Locked("meena@example.test"),
-            PassphraseWrappedKey = Locked("passphrase-key"),
-            PassphraseSalt = Locked("passphrase-salt"),
             RecoveryWrappedKey = Locked("recovery-key"),
             RecoverySalt = Locked("recovery-salt"),
             Consent = new ConsentModel { Accepted = true, NoticeVersion = "2026-09" },
@@ -546,7 +540,7 @@ public sealed class FamilyTests(AzuriteFixture azurite) : IDisposable
             case "class-eleven": request.Children[0].ClassLevel = 11; break;
             case "board-missing": request.Board = default; break;
             case "family-id-missing": request.FamilyId = Guid.Empty; break;
-            case "passphrase-key-missing": request.PassphraseWrappedKey = ""; break;
+            case "recovery-key-missing": request.RecoveryWrappedKey = ""; break;
             case "recovery-salt-missing": request.RecoverySalt = ""; break;
             case "parent-name-missing": request.ParentName = ""; break;
             case "language-not-offered": request.Language = "fr"; break;

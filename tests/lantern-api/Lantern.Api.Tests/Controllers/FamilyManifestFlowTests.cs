@@ -324,8 +324,6 @@ public sealed class FamilyManifestFlowTests(AzuriteFixture azurite) : IDisposabl
             Language = "gu",
             ParentName = Locked("Meena Patel"),
             ParentEmail = Locked("meena@example.test"),
-            PassphraseWrappedKey = Locked("passphrase-key"),
-            PassphraseSalt = Locked("passphrase-salt"),
             RecoveryWrappedKey = Locked("recovery-key"),
             RecoverySalt = Locked("recovery-salt"),
             Consent = new ConsentModel { Accepted = true, NoticeVersion = "2026-09" },

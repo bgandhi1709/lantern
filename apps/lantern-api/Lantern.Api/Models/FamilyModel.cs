@@ -10,10 +10,6 @@ public sealed class FamilyModel
 
     public BoardType Board { get; set; }
 
-    public string PassphraseWrappedKey { get; set; }
-
-    public string PassphraseSalt { get; set; }
-
     public string RecoveryWrappedKey { get; set; }
 
     public string RecoverySalt { get; set; }
