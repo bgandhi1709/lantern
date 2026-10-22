@@ -17,11 +17,12 @@ namespace Lantern.Api.Controllers.V1;
 public sealed class ChaptersController(ISubjectService subjects, IMapper mapper) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<PageModel<ChapterModel>>> Get(
+    public async Task<ActionResult<ChaptersPageModel>> Get(
         Guid childId,
         string subjectId,
+        [FromQuery(Name = "q")] string query,
         [FromQuery] int? limit,
         [FromQuery] string cursor,
         CancellationToken cancellationToken
-    ) => Ok(mapper.Map<PageModel<ChapterModel>>(await subjects.ChaptersAsync(childId, subjectId, limit, cursor, cancellationToken)));
+    ) => Ok(mapper.Map<ChaptersPageModel>(await subjects.ChaptersAsync(childId, subjectId, query, limit, cursor, cancellationToken)));
 }

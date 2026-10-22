@@ -1,3 +1,5 @@
+using Lantern.Core.Constants;
+
 namespace Lantern.Api.Models;
 
 public sealed class ChapterModel
@@ -9,4 +11,12 @@ public sealed class ChapterModel
     public string Title { get; set; }
 
     public string Summary { get; set; }
+
+    public ChapterState State { get; set; }
+
+    public int AttemptCount { get; set; }
+
+    public int? ConceptsDone { get; set; }
+
+    public int? ConceptCount { get; set; }
 }

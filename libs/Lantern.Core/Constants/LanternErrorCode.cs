@@ -16,6 +16,7 @@ public enum LanternErrorCode
     FamilyNotFound,
     InvalidPage,
     InvalidRequest,
+    InvalidSearch,
     NotRegistered,
     SubjectNotFound,
 }

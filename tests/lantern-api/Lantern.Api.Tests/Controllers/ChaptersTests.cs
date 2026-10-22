@@ -6,6 +6,8 @@ using Lantern.Api.Models;
 using Lantern.Api.Tests.Infrastructure;
 using Lantern.Core.Constants;
 using Lantern.Core.Models;
+using Lantern.Core.Repository;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Lantern.Api.Tests.Controllers;
 
@@ -48,10 +50,11 @@ public sealed class ChaptersTests(AzuriteFixture azurite) : IDisposable
             """
             {
               "items": [
-                { "chapterId": "gepr101", "number": 1, "title": "A Bottle of Dew",      "summary": "A story that starts from a small, ordinary thing." },
-                { "chapterId": "gepr102", "number": 2, "title": "A Tale of Two Birds", "summary": "Two birds, two ways of living." }
+                { "chapterId": "gepr101", "number": 1, "title": "A Bottle of Dew",     "summary": "A story that starts from a small, ordinary thing.", "state": "not-started", "attemptCount": 0, "conceptsDone": null, "conceptCount": null },
+                { "chapterId": "gepr102", "number": 2, "title": "A Tale of Two Birds", "summary": "Two birds, two ways of living.",                    "state": "not-started", "attemptCount": 0, "conceptsDone": null, "conceptCount": null }
               ],
-              "nextCursor": null
+              "nextCursor": null,
+              "progress": { "notStarted": 2, "planned": 0, "taught": 0, "checked": 0, "states": ["not-started", "not-started"] }
             }
             """,
             await response.Content.ReadAsStringAsync()
@@ -257,7 +260,142 @@ public sealed class ChaptersTests(AzuriteFixture azurite) : IDisposable
         Assert.NotEqual(HttpStatusCode.TooManyRequests, (await quiet.GetAsync(ChaptersOf((Guid.NewGuid(), Guid.NewGuid()), "english"))).StatusCode);
     }
 
+    [Fact]
+    public async Task Get_ChaptersTheChildHasWorkedOn_CarryTheirStateAndConceptCounts_AndTheProgressCoversTheSubject()
+    {
+        using var client = Client(NewUid());
+        var child = await ReadyChildAsync(client, BoardType.Cbse, 7);
+        await StartAsync(child, "gegp101", concepts: 3);
+        await DoneAsync(child, "gegp101", "c1", "c2", "c3");
+        await CheckAsync(child, "gegp101");
+        await StartAsync(child, "gegp102", concepts: 3);
+        await DoneAsync(child, "gegp102", "c1", "c2", "c3");
+        await StartAsync(child, "gegp201", concepts: 4);
+        await DoneAsync(child, "gegp201", "c1");
+
+        var page = (await client.GetFromJsonAsync<JsonNode>(ChaptersOf(child, "mathematics")))!;
+
+        Assert.Equal(
+            [("checked", 1, 3, 3), ("taught", 1, 3, 3), ("planned", 1, 1, 4)],
+            page["items"]!.AsArray().Select(item => ((string)item!["state"]!, (int)item["attemptCount"]!, (int)item["conceptsDone"]!, (int)item["conceptCount"]!))
+        );
+        AssertJson(
+            """{ "notStarted": 0, "planned": 1, "taught": 1, "checked": 1, "states": ["checked", "taught", "planned"] }""",
+            page["progress"]!.ToJsonString()
+        );
+    }
+
+    [Fact]
+    public async Task Get_AChapterPlannedASecondTime_ShowsPlannedAgain_WithTwoAttempts()
+    {
+        using var client = Client(NewUid());
+        var child = await ReadyChildAsync(client, BoardType.Cbse, 7);
+        await StartAsync(child, "gepr101", concepts: 2);
+        await CheckAsync(child, "gepr101");
+        await StartAsync(child, "gepr101", concepts: 2);
+
+        var first = (await client.GetFromJsonAsync<JsonNode>(ChaptersOf(child, "english")))!["items"]![0]!;
+
+        Assert.Equal(("planned", 2, 0), ((string)first["state"]!, (int)first["attemptCount"]!, (int)first["conceptsDone"]!));
+    }
+
+    [Fact]
+    public async Task Get_AnotherChildsProgress_IsNeverShown()
+    {
+        using var client = Client(NewUid());
+        var child = await ReadyChildAsync(client, BoardType.Cbse, 7);
+        await StartAsync((child.FamilyId, Guid.NewGuid()), "gepr101", concepts: 2);
+        await StartAsync((Guid.NewGuid(), child.ChildId), "gepr101", concepts: 2);
+
+        var first = (await client.GetFromJsonAsync<JsonNode>(ChaptersOf(child, "english")))!["items"]![0]!;
+
+        Assert.Equal("not-started", (string)first["state"]!);
+    }
+
+    [Fact]
+    public async Task Get_WithAQuery_ListsTheChaptersWhoseNameContainsIt_AnyCase_KeepingTheirNumbers_AndTheProgressStaysWhole()
+    {
+        using var client = Client(NewUid());
+        var child = await ReadyChildAsync(client, BoardType.Cbse, 7);
+        await StartAsync(child, "gegp201", concepts: 2);
+
+        var page = (await client.GetFromJsonAsync<JsonNode>(ChaptersOf(child, "mathematics", "?q=%20SHAPE")))!;
+
+        Assert.Equal([("gegp201", 3)], page["items"]!.AsArray().Select(item => ((string)item!["chapterId"]!, (int)item["number"]!)));
+        Assert.Equal(3, page["progress"]!["states"]!.AsArray().Count);
+        Assert.Equal(1, (int)page["progress"]!["planned"]!);
+    }
+
+    [Fact]
+    public async Task Get_AQueryThatMatchesNothing_IsAnEmptyPage()
+    {
+        using var client = Client(NewUid());
+        var child = await ReadyChildAsync(client, BoardType.Cbse, 7);
+
+        var page = (await client.GetFromJsonAsync<JsonNode>(ChaptersOf(child, "mathematics", "?q=zebra")))!;
+
+        Assert.Empty(page["items"]!.AsArray());
+        Assert.Null(page["nextCursor"]);
+    }
+
+    [Fact]
+    public async Task Get_AQuery_IsPagedAfterTheFilter()
+    {
+        using var client = Client(NewUid());
+        var child = await ReadyChildAsync(client, BoardType.Cbse, 7);
+
+        var first = (await client.GetFromJsonAsync<JsonNode>(ChaptersOf(child, "mathematics", "?q=a&limit=1")))!;
+        var cursor = first["nextCursor"]!.GetValue<string>();
+        var second = (await client.GetFromJsonAsync<JsonNode>(ChaptersOf(child, "mathematics", $"?q=a&limit=1&cursor={Uri.EscapeDataString(cursor)}")))!;
+
+        Assert.Equal(["gegp101"], first["items"]!.AsArray().Select(item => (string)item!["chapterId"]!));
+        Assert.Equal(["gegp102"], second["items"]!.AsArray().Select(item => (string)item!["chapterId"]!));
+    }
+
+    [Fact]
+    public async Task Get_AQueryLongerThan64Characters_Is400InvalidSearch()
+    {
+        using var client = Client(NewUid());
+        var child = await ReadyChildAsync(client, BoardType.Cbse, 7);
+
+        var response = await client.GetAsync(ChaptersOf(child, "mathematics", "?q=" + new string('a', 65)));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal("invalid-search", await response.ProblemCodeAsync());
+    }
+
     public void Dispose() => factory.Dispose();
+
+    private async Task StartAsync((Guid FamilyId, Guid ChildId) child, string chapterId, int concepts)
+    {
+        using var scope = factory.Services.CreateScope();
+        await scope.ServiceProvider.GetRequiredService<IProgressRepository>()
+            .StartAttemptAsync(new ChapterRef(child.FamilyId, child.ChildId, 7, chapterId), Guid.NewGuid(), concepts, "v1", DateTimeOffset.UtcNow, CancellationToken.None);
+    }
+
+    private async Task DoneAsync((Guid FamilyId, Guid ChildId) child, string chapterId, params string[] conceptIds)
+    {
+        using var scope = factory.Services.CreateScope();
+        var progress = scope.ServiceProvider.GetRequiredService<IProgressRepository>();
+        foreach (var conceptId in conceptIds)
+        {
+            await progress.MarkConceptDoneAsync(new ChapterRef(child.FamilyId, child.ChildId, 7, chapterId), conceptId, DateTimeOffset.UtcNow, CancellationToken.None);
+        }
+    }
+
+    private async Task CheckAsync((Guid FamilyId, Guid ChildId) child, string chapterId)
+    {
+        using var scope = factory.Services.CreateScope();
+        await scope.ServiceProvider.GetRequiredService<IProgressRepository>()
+            .RecordCheckAsync(
+                new ChapterRef(child.FamilyId, child.ChildId, 7, chapterId),
+                Guid.NewGuid(),
+                DateTimeOffset.UtcNow,
+                [new CheckedConcept { ConceptId = "c1", Title = "Concept 1", Right = true }, new CheckedConcept { ConceptId = "c2", Title = "Concept 2", Right = false }],
+                "v1",
+                CancellationToken.None
+            );
+    }
 
     private static Uri ChaptersOf((Guid FamilyId, Guid ChildId) child, string subjectId, string query = "") =>
         new($"/v1/children/{child.ChildId}/subjects/{subjectId}/chapters{query}", UriKind.Relative);

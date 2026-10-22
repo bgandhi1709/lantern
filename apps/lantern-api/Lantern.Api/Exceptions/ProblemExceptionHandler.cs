@@ -62,6 +62,7 @@ internal sealed class ProblemExceptionHandler(ILogger<ProblemExceptionHandler> l
             LanternErrorCode.CallerNotIdentified => (HttpStatusCode.Unauthorized, "caller-not-identified", "Not signed in", "The token does not identify a caller."),
             LanternErrorCode.ChildNotFound => (HttpStatusCode.NotFound, "child-not-found", "Child not found", "No such child in this family."),
             LanternErrorCode.FamilyNotFound => (HttpStatusCode.NotFound, "family-not-found", "Family not found", "No such family."),
+            LanternErrorCode.InvalidSearch => (HttpStatusCode.BadRequest, "invalid-search", "Invalid search", "The search text must be at most 64 characters."),
             LanternErrorCode.SubjectNotFound => (HttpStatusCode.NotFound, "subject-not-found", "Subject not found", "No such subject for this child."),
             LanternErrorCode.ChildLimitReached => (HttpStatusCode.Conflict, "child-limit-reached", "Child limit reached", "A family holds at most six children."),
             LanternErrorCode.ChildDeleting => (HttpStatusCode.Conflict, "child-deleting", "Child is being deleted", "This child is being deleted."),
