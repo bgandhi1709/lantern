@@ -13,7 +13,9 @@ const meta = {
     onSavedToggle: fn(),
     onEmail: fn(),
     onSave: fn(),
+    onMakeAgain: fn(),
     onContinue: fn(),
+    onBack: fn(),
   },
 } satisfies Meta<typeof RecoveryCodeView>;
 
@@ -21,6 +23,8 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
+export const MakingTheCode: Story = { args: { code: null } };
+export const CouldNotMakeTheCode: Story = { args: { code: null, makeFailed: true } };
 export const NotSavedYet: Story = {};
 export const ShareFailed: Story = { args: { shareFailed: true } };
 export const EmailedNotTicked: Story = { args: { emailed: true } };

@@ -1,5 +1,5 @@
 import { ApiError, api } from '../shared/api';
-import { createFamilyKeys, makeFamilyId, openWithPassphrase, unlockText } from '../shared/crypto';
+import { createFamilyKeys, makeFamilyId, openWithRecoveryCode, unlockText } from '../shared/crypto';
 import { readFamilyKey } from '../shared/storage';
 import { FAKE_UID } from '../test/fakeFirebaseAuth';
 import { emptyChild } from './child';
@@ -11,12 +11,10 @@ jest.mock('../shared/api', () => jest.requireActual('../test/fakeApiModule'));
 
 const post = api.post as jest.Mock;
 
-const PASSPHRASE = 'blue lantern 2026';
-
 const makeInput = async (): Promise<RegisterInput> => {
   const id = makeFamilyId();
   return {
-    family: { id, keys: await createFamilyKeys(id, PASSPHRASE), passphrase: PASSPHRASE },
+    family: { id, keys: await createFamilyKeys(id) },
     parent: { uid: FAKE_UID, name: 'Meera Shah', email: 'meera@example.com' },
     region: 'Pune, Maharashtra',
     board: 'ssc',
@@ -46,8 +44,6 @@ describe('registering the Family', () => {
       region: 'Pune, Maharashtra',
       board: 'ssc',
       consent: { accepted: true, noticeVersion: PLACEHOLDER_NOTICE_VERSION },
-      passphraseWrappedKey: input.family.keys.passphraseWrappedKey,
-      passphraseSalt: input.family.keys.passphraseSalt,
       recoveryWrappedKey: input.family.keys.recoveryWrappedKey,
       recoverySalt: input.family.keys.recoverySalt,
     });
@@ -95,7 +91,7 @@ describe('registering the Family', () => {
     expect(await readFamilyKey(FAKE_UID)).toBeNull();
   });
 
-  it('tries once more with a new Family id when the id is taken, and the Passphrase still opens it', async () => {
+  it('tries once more with a new Family id when the id is taken, and the Recovery code still opens it', async () => {
     const input = await makeInput();
     post.mockRejectedValueOnce(new ApiError('family-id-taken', 409));
 
@@ -105,11 +101,11 @@ describe('registering the Family', () => {
     const retry = sentBody(1);
     expect(retry.familyId).not.toBe(input.family.id);
     expect(
-      await openWithPassphrase(
+      await openWithRecoveryCode(
         retry.familyId,
-        PASSPHRASE,
-        retry.passphraseWrappedKey,
-        retry.passphraseSalt,
+        input.family.keys.recoveryCode,
+        retry.recoveryWrappedKey,
+        retry.recoverySalt,
       ),
     ).toBe(input.family.keys.familyKey);
     expect(await readFamilyKey(FAKE_UID)).toBe(input.family.keys.familyKey);

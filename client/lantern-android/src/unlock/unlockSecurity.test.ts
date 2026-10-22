@@ -23,8 +23,7 @@ const put = api.put as jest.Mock;
 const del = api.delete as jest.Mock;
 
 const UID = 'parent-a';
-const PASSPHRASE = 'blue lantern 2026';
-const WRONG = 'green lantern 2027';
+const WRONG = 'ABCD-EFGH-JKLM-NPQR';
 const NOW = 1_000_000;
 
 let lock: FamilyLock;
@@ -33,13 +32,11 @@ let familyKey: string;
 
 beforeAll(async () => {
   const familyId = makeFamilyId();
-  const keys = await createFamilyKeys(familyId, PASSPHRASE);
+  const keys = await createFamilyKeys(familyId);
   recoveryCode = keys.recoveryCode;
   familyKey = keys.familyKey;
   lock = {
     familyId,
-    passphraseWrappedKey: keys.passphraseWrappedKey,
-    passphraseSalt: keys.passphraseSalt,
     recoveryWrappedKey: keys.recoveryWrappedKey,
     recoverySalt: keys.recoverySalt,
   };
@@ -108,8 +105,8 @@ describe('asking the API for the locked Family', () => {
 });
 
 describe('opening the Family on this phone', () => {
-  it('opens with the Passphrase and keeps only the Family key, for this account', async () => {
-    await unlockFamily(lock, { uid: UID, kind: 'passphrase', typed: PASSPHRASE, now: NOW });
+  it('opens with the Recovery code and keeps only the Family key, for this account', async () => {
+    await unlockFamily(lock, { uid: UID, typed: recoveryCode, now: NOW });
 
     expect(await readFamilyKey(UID)).toBe(familyKey);
     expect(await readFamilyKey('someone-else')).toBeNull();
@@ -118,47 +115,25 @@ describe('opening the Family on this phone', () => {
   it('opens with the Recovery code however it is typed', async () => {
     const typed = recoveryCode.replace(/-/g, ' ').toLowerCase();
 
-    await unlockFamily(lock, { uid: UID, kind: 'recoveryCode', typed, now: NOW });
+    await unlockFamily(lock, { uid: UID, typed, now: NOW });
 
     expect(await readFamilyKey(UID)).toBe(familyKey);
   });
 
-  it('rejects a wrong Passphrase with a LockError and keeps nothing', async () => {
-    const error = await failedWith(
-      unlockFamily(lock, { uid: UID, kind: 'passphrase', typed: WRONG, now: NOW }),
-    );
+  it('rejects a wrong code with a LockError and keeps nothing', async () => {
+    const error = await failedWith(unlockFamily(lock, { uid: UID, typed: WRONG, now: NOW }));
 
     expect(error).toBeInstanceOf(LockError);
-    expect(await readFamilyKey(UID)).toBeNull();
-  });
-
-  it('does not open the Family with the Recovery code typed as a Passphrase, or the reverse', async () => {
-    const asPassphrase = unlockFamily(lock, {
-      uid: UID,
-      kind: 'passphrase',
-      typed: recoveryCode,
-      now: NOW,
-    });
-    expect(await failedWith(asPassphrase)).toBeInstanceOf(LockError);
-
-    const asCode = unlockFamily(lock, {
-      uid: UID,
-      kind: 'recoveryCode',
-      typed: PASSPHRASE,
-      now: NOW + 600_000,
-    });
-    expect(await failedWith(asCode)).toBeInstanceOf(LockError);
     expect(await readFamilyKey(UID)).toBeNull();
   });
 });
 
 describe('what a locked phone sends to the API', () => {
   it('sends nothing at all while the Parent tries values, right or wrong', async () => {
-    await failedWith(unlockFamily(lock, { uid: UID, kind: 'passphrase', typed: WRONG, now: NOW }));
+    await failedWith(unlockFamily(lock, { uid: UID, typed: WRONG, now: NOW }));
     await unlockFamily(lock, {
       uid: UID,
-      kind: 'passphrase',
-      typed: PASSPHRASE,
+      typed: recoveryCode,
       now: NOW + 600_000,
     });
 
@@ -170,17 +145,11 @@ describe('what a locked phone sends to the API', () => {
     del.mockResolvedValue(undefined);
 
     await fetchFamilyLock();
-    await unlockFamily(lock, { uid: UID, kind: 'recoveryCode', typed: recoveryCode, now: NOW });
+    await unlockFamily(lock, { uid: UID, typed: recoveryCode, now: NOW });
     await startAgain();
 
     const sent = apiCalls().join('\n');
-    for (const secret of [
-      PASSPHRASE,
-      WRONG,
-      recoveryCode,
-      recoveryCode.replace(/-/g, ''),
-      familyKey,
-    ]) {
+    for (const secret of [WRONG, recoveryCode, recoveryCode.replace(/-/g, ''), familyKey]) {
       expect(sent).not.toContain(secret);
     }
     expect(apiCalls()).toEqual(['["/v1/me"]', '["/v1/family"]']);
@@ -189,40 +158,36 @@ describe('what a locked phone sends to the API', () => {
 
 describe('what a locked phone writes down', () => {
   it('stores the Family key and the wait, and never a typed value or a code', async () => {
-    await failedWith(unlockFamily(lock, { uid: UID, kind: 'passphrase', typed: WRONG, now: NOW }));
+    await failedWith(unlockFamily(lock, { uid: UID, typed: WRONG, now: NOW }));
     await unlockFamily(lock, {
       uid: UID,
-      kind: 'recoveryCode',
       typed: recoveryCode,
       now: NOW + 600_000,
     });
 
     const stored = await everythingOnThePhone();
-    for (const secret of [PASSPHRASE, WRONG, recoveryCode, recoveryCode.replace(/-/g, '')]) {
+    for (const secret of [WRONG, recoveryCode, recoveryCode.replace(/-/g, '')]) {
       expect(stored).not.toContain(secret);
     }
     expect(stored).toContain(familyKey);
   });
 
   it('never logs a typed value, a code or the Family key, on success or on failure', async () => {
-    await failedWith(unlockFamily(lock, { uid: UID, kind: 'passphrase', typed: WRONG, now: NOW }));
+    await failedWith(unlockFamily(lock, { uid: UID, typed: WRONG, now: NOW }));
     await unlockFamily(lock, {
       uid: UID,
-      kind: 'passphrase',
-      typed: PASSPHRASE,
+      typed: recoveryCode,
       now: NOW + 600_000,
     });
 
     const logged = everythingLogged();
-    for (const secret of [PASSPHRASE, WRONG, recoveryCode, familyKey]) {
+    for (const secret of [WRONG, recoveryCode, familyKey]) {
       expect(logged).not.toContain(secret);
     }
   });
 
   it('puts no typed value or key in an error message', async () => {
-    const error = await failedWith(
-      unlockFamily(lock, { uid: UID, kind: 'passphrase', typed: WRONG, now: NOW }),
-    );
+    const error = await failedWith(unlockFamily(lock, { uid: UID, typed: WRONG, now: NOW }));
 
     expect(String(error)).not.toContain(WRONG);
     expect(String(error)).not.toContain(familyKey);
@@ -238,10 +203,10 @@ describe('guessing from a phone that holds the Parent’s Family', () => {
   });
 
   it('refuses a try during the wait without working out a key, even with the right value', async () => {
-    await failedWith(unlockFamily(lock, { uid: UID, kind: 'passphrase', typed: WRONG, now: NOW }));
+    await failedWith(unlockFamily(lock, { uid: UID, typed: WRONG, now: NOW }));
 
     const error = await failedWith(
-      unlockFamily(lock, { uid: UID, kind: 'passphrase', typed: PASSPHRASE, now: NOW + 4_000 }),
+      unlockFamily(lock, { uid: UID, typed: recoveryCode, now: NOW + 4_000 }),
     );
 
     expect(error).toBeInstanceOf(UnlockWaitError);
@@ -250,27 +215,25 @@ describe('guessing from a phone that holds the Parent’s Family', () => {
   });
 
   it('lets the Parent try again once the wait is over, and the next wait is twice as long', async () => {
-    await failedWith(unlockFamily(lock, { uid: UID, kind: 'passphrase', typed: WRONG, now: NOW }));
-    await failedWith(
-      unlockFamily(lock, { uid: UID, kind: 'passphrase', typed: WRONG, now: NOW + 5_000 }),
-    );
+    await failedWith(unlockFamily(lock, { uid: UID, typed: WRONG, now: NOW }));
+    await failedWith(unlockFamily(lock, { uid: UID, typed: WRONG, now: NOW + 5_000 }));
 
     expect(await readValue('unlockWait')).toEqual({ failures: 2, until: NOW + 5_000 + 10_000 });
   });
 
   it('keeps the wait when the app is closed and opened again', async () => {
-    await failedWith(unlockFamily(lock, { uid: UID, kind: 'passphrase', typed: WRONG, now: NOW }));
+    await failedWith(unlockFamily(lock, { uid: UID, typed: WRONG, now: NOW }));
 
     const stillWaiting = await failedWith(
-      unlockFamily(lock, { uid: UID, kind: 'recoveryCode', typed: recoveryCode, now: NOW + 1_000 }),
+      unlockFamily(lock, { uid: UID, typed: recoveryCode, now: NOW + 1_000 }),
     );
 
     expect(stillWaiting).toBeInstanceOf(UnlockWaitError);
   });
 
   it('clears the wait once the Family is open', async () => {
-    await failedWith(unlockFamily(lock, { uid: UID, kind: 'passphrase', typed: WRONG, now: NOW }));
-    await unlockFamily(lock, { uid: UID, kind: 'passphrase', typed: PASSPHRASE, now: NOW + 5_000 });
+    await failedWith(unlockFamily(lock, { uid: UID, typed: WRONG, now: NOW }));
+    await unlockFamily(lock, { uid: UID, typed: recoveryCode, now: NOW + 5_000 });
 
     expect(await readValue('unlockWait')).toEqual({ failures: 0, until: 0 });
   });
@@ -279,7 +242,7 @@ describe('guessing from a phone that holds the Parent’s Family', () => {
 describe('Start again', () => {
   it('deletes the Family with one DELETE /v1/family, then wipes this phone', async () => {
     del.mockResolvedValue(undefined);
-    await unlockFamily(lock, { uid: UID, kind: 'passphrase', typed: PASSPHRASE, now: NOW });
+    await unlockFamily(lock, { uid: UID, typed: recoveryCode, now: NOW });
     await AsyncStorage.setItem('lantern.v1.theme', JSON.stringify('dark'));
 
     await startAgain();
@@ -293,7 +256,7 @@ describe('Start again', () => {
 
   it('leaves the phone as it was when the API cannot delete, and says so', async () => {
     del.mockRejectedValue(new ApiError('unreachable', null));
-    await unlockFamily(lock, { uid: UID, kind: 'passphrase', typed: PASSPHRASE, now: NOW });
+    await unlockFamily(lock, { uid: UID, typed: recoveryCode, now: NOW });
 
     const error = await failedWith(startAgain());
 
@@ -303,7 +266,7 @@ describe('Start again', () => {
 
   it('also clears a wait left by wrong tries, so a new Family starts with none', async () => {
     del.mockResolvedValue(undefined);
-    await failedWith(unlockFamily(lock, { uid: UID, kind: 'passphrase', typed: WRONG, now: NOW }));
+    await failedWith(unlockFamily(lock, { uid: UID, typed: WRONG, now: NOW }));
 
     await startAgain();
 

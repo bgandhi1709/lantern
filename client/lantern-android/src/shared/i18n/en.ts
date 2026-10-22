@@ -54,26 +54,13 @@ export const en = {
         },
       },
     },
-    passphrase: {
-      heading: 'Choose a family passphrase',
-      intro:
-        "Your children's names and your details are private. This passphrase locks them on your phone before they are sent, so nobody at Lantern, and nobody who broke into our systems, could read them. It is there to protect you and your children.",
-      noteTitle: 'Please keep it safe',
-      note: "Lantern never sees your passphrase, so we can't reset or change it for you. That is what keeps your family's details safe: if we could open them, someone else could too. If you lose it and your recovery code, they can't be opened again, so pick something you will remember.",
-      passphraseLabel: 'Passphrase',
-      passphraseHint: 'At least 8 characters. A few words are easier to remember.',
-      againLabel: 'Type it again',
-      mismatch: 'The two passphrases are not the same.',
-      understood: "I understand Lantern can't reset or change it, and I will keep it safe.",
-      create: 'Create passphrase',
-      creating: 'Creating…',
-      working: 'Creating your passphrase…',
-      failed: "Couldn't create the passphrase. Try again.",
-    },
     recovery: {
       heading: 'Save your recovery code',
       intro:
-        "If you forget the passphrase, this code is the only other way to open your family's details. We show it once because we don't keep a copy: that is what keeps it private to you.",
+        "This code is the only way to open your family's details on a new phone. Lantern never sees it and can't reset it: that is what keeps your family's details private. Email it to yourself now, so it is always in your inbox.",
+      working: 'Making your recovery code…',
+      makeFailed: "Couldn't make your recovery code. Try again.",
+      tryAgain: 'Try again',
       codeLabel: 'RECOVERY CODE',
       email: 'Email it to myself',
       save: 'Save elsewhere',
@@ -84,7 +71,7 @@ export const en = {
       continue: 'Continue',
       mailSubject: 'Your Lantern recovery code',
       message: (code: string) =>
-        `Your Lantern recovery code is ${code}\n\nIf you forget your passphrase, this code is the only other way to open your family's details. Keep it somewhere safe. Lantern does not keep a copy.`,
+        `Your Lantern recovery code is ${code}\n\nThis code is the only way to open your family's details on a new phone. Keep this email. Lantern does not keep a copy.`,
     },
     firstChild: {
       heading: 'Add your first child',
@@ -222,7 +209,7 @@ export const en = {
     },
     locked: {
       heading: 'Unlock your Family',
-      text: 'This phone does not hold your Family yet. Open it with your passphrase or your recovery code.',
+      text: 'This phone does not hold your Family yet. Open it with the recovery code that was emailed to you.',
       unlock: 'Unlock your Family',
     },
     comingNext: { heading: 'Coming next', text: 'This screen is on its way.' },
@@ -231,20 +218,10 @@ export const en = {
   unlock: {
     heading: 'Unlock your Family',
     intro:
-      'This phone does not hold your Family yet. Enter your passphrase or your recovery code to open it. The phone checks it; nothing is sent to Lantern.',
-    choiceLabel: 'How to unlock',
-    passphrase: {
-      choice: 'Passphrase',
-      label: 'Passphrase',
-      hint: 'The one you chose when you registered.',
-      wrong: 'That passphrase is not right. Check it and try again.',
-    },
-    recoveryCode: {
-      choice: 'Recovery code',
-      label: 'Recovery code',
-      hint: 'Letters and numbers in groups of four, like K7QM-4TDX-92HB-WEPN.',
-      wrong: 'That recovery code is not right. Check it and try again.',
-    },
+      'This phone does not hold your Family yet. Enter your recovery code to open it. The phone checks it; nothing is sent to Lantern.',
+    label: 'Recovery code',
+    hint: 'It was emailed to you when you registered: look for "Your Lantern recovery code". Letters and numbers in groups of four.',
+    wrong: 'That recovery code is not right. Check it and try again.',
     open: 'Open my Family',
     opening: 'Opening…',
     waitFor: (seconds: number) => `Try again in ${seconds} seconds`,
@@ -252,26 +229,28 @@ export const en = {
     loadFailed: "Can't reach Lantern. Check your connection and try again.",
     tryAgain: 'Try again',
     failed: 'Something went wrong. Try again.',
-    lostBoth: 'Lost both? Nothing can be read without one of them.',
-    startAgain: 'Start again',
-    again: {
-      heading: 'Start again?',
-      intro:
-        "Lantern never sees your passphrase or recovery code, so without one of them your Family's names and details can never be opened again, by you or by us.",
-      warningHeading: 'This deletes your Family',
-      warning:
-        'Starting again deletes this Family and its Children from Lantern, then takes you to registration to make a new one. This cannot be undone.',
-      delete: 'Delete my Family and start again',
-      deleting: 'Deleting…',
-      keep: 'Keep my Family',
-      failed: 'Could not delete your Family. Nothing was changed. Try again.',
-    },
+  },
+  startAgain: {
+    heading: 'Start again?',
+    intro:
+      "Lantern never sees your recovery code, so without it your Family's names and details can never be opened again, by you or by us.",
+    warningHeading: 'This deletes your Family',
+    warning:
+      'Starting again deletes this Family and its Children from Lantern, then takes you to registration to make a new one. This cannot be undone.',
+    delete: 'Delete my Family and start again',
+    deleting: 'Deleting…',
+    keep: 'Keep my Family',
+    failed: 'Could not delete your Family. Nothing was changed. Try again.',
   },
   appearance: {
     title: 'Appearance',
     unlockRow: {
       title: 'Unlock your Family',
       text: 'This phone does not hold your Family yet.',
+    },
+    startAgainRow: {
+      title: 'Start again',
+      text: 'Lost your recovery code? Delete your Family and register a new one.',
     },
     theme: {
       heading: 'Theme',

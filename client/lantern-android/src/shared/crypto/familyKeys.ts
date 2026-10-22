@@ -11,17 +11,15 @@ const SALT_BYTES = 16;
 export type FamilyKeys = {
   // Kept on the phone (and only after registering). The other fields go to /v1/register.
   familyKey: string;
-  passphraseWrappedKey: string;
-  passphraseSalt: string;
   recoveryWrappedKey: string;
   recoverySalt: string;
-  // Shown to the Parent once. Never stored and never sent.
+  // Shown to the Parent once and emailed by them to themself. Never stored and never sent.
   recoveryCode: string;
 };
 
 export const makeFamilyId = () => randomUUID();
 
-// The Family id is part of the input, so two Families with the same Passphrase get different keys.
+// The Family id is part of the input, so two Families with the same Recovery code get different keys.
 // NFC makes an accented letter the same bytes whichever keyboard typed it.
 const wrappingKey = (familyId: string, secret: string, salt: Uint8Array) =>
   deriveKey(`${familyId}_${secret.normalize('NFC')}`, salt, WRAP_COST);
@@ -32,43 +30,30 @@ async function wrap(familyKey: string, familyId: string, secret: string) {
   return { wrappedKey: lockBytes(key, fromBase64(familyKey)), salt: toBase64(salt) };
 }
 
-async function unwrap(familyId: string, secret: string, wrappedKey: string, salt: string) {
-  const key = await wrappingKey(familyId, secret, fromBase64(salt));
-  return toBase64(unlockBytes(key, wrappedKey));
-}
-
-async function wrapBoth(
+async function wrapWithCode(
   familyId: string,
-  passphrase: string,
   familyKey: string,
   recoveryCode: string,
 ): Promise<FamilyKeys> {
-  const byPassphrase = await wrap(familyKey, familyId, passphrase);
-  const byCode = await wrap(familyKey, familyId, recoveryCode);
-  return {
-    familyKey,
-    passphraseWrappedKey: byPassphrase.wrappedKey,
-    passphraseSalt: byPassphrase.salt,
-    recoveryWrappedKey: byCode.wrappedKey,
-    recoverySalt: byCode.salt,
-    recoveryCode,
-  };
+  const { wrappedKey, salt } = await wrap(familyKey, familyId, recoveryCode);
+  return { familyKey, recoveryWrappedKey: wrappedKey, recoverySalt: salt, recoveryCode };
 }
 
-export const createFamilyKeys = (familyId: string, passphrase: string) =>
-  wrapBoth(familyId, passphrase, makeFamilyKey(), makeRecoveryCode());
+export const createFamilyKeys = (familyId: string) =>
+  wrapWithCode(familyId, makeFamilyKey(), makeRecoveryCode());
 
-// The Family id is part of what locks the wrapped keys, so a new id needs new copies. The Family key
-// and the Recovery code stay as they were, so the code the Parent saved still opens the Family.
-export const rewrapFamilyKeys = (familyId: string, passphrase: string, keys: FamilyKeys) =>
-  wrapBoth(familyId, passphrase, keys.familyKey, keys.recoveryCode);
+// The Family id is part of what locks the wrapped key, so a new id needs a new copy. The Family key
+// and the Recovery code stay as they were, so the code the Parent emailed still opens the Family.
+export const rewrapFamilyKeys = (familyId: string, keys: FamilyKeys) =>
+  wrapWithCode(familyId, keys.familyKey, keys.recoveryCode);
 
-// Both throw LockError when the secret is wrong; the secret is never part of the message.
-export const openWithPassphrase = unwrap;
-
-export const openWithRecoveryCode = (
+// Throws LockError when the code is wrong; the code is never part of the message.
+export async function openWithRecoveryCode(
   familyId: string,
   typedCode: string,
   wrappedKey: string,
   salt: string,
-) => unwrap(familyId, formatRecoveryCode(typedCode), wrappedKey, salt);
+) {
+  const key = await wrappingKey(familyId, formatRecoveryCode(typedCode), fromBase64(salt));
+  return toBase64(unlockBytes(key, wrappedKey));
+}

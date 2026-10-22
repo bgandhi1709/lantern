@@ -1,22 +1,18 @@
 import { z } from 'zod';
 
 import { api } from '../shared/api';
-import { LockError, openWithPassphrase, openWithRecoveryCode } from '../shared/crypto';
+import { LockError, openWithRecoveryCode } from '../shared/crypto';
 import { keepFamilyKey, readValue, writeValue } from '../shared/storage';
 import { waitSeconds } from './unlockWait';
 
 const FamilyLockSchema = z.object({
   familyId: z.string(),
-  passphraseWrappedKey: z.string(),
-  passphraseSalt: z.string(),
   recoveryWrappedKey: z.string(),
   recoverySalt: z.string(),
 });
 
 export type FamilyLock = z.infer<typeof FamilyLockSchema>;
-export type UnlockKind = 'passphrase' | 'recoveryCode';
-
-type Attempt = { uid: string; kind: UnlockKind; typed: string; now?: number };
+type Attempt = { uid: string; typed: string; now?: number };
 
 export class UnlockWaitError extends Error {
   constructor(readonly secondsLeft: number) {
@@ -43,11 +39,8 @@ async function recordWrongTry(now: number) {
   });
 }
 
-function open(lock: FamilyLock, { kind, typed }: Attempt) {
-  return kind === 'passphrase'
-    ? openWithPassphrase(lock.familyId, typed, lock.passphraseWrappedKey, lock.passphraseSalt)
-    : openWithRecoveryCode(lock.familyId, typed, lock.recoveryWrappedKey, lock.recoverySalt);
-}
+const open = (lock: FamilyLock, { typed }: Attempt) =>
+  openWithRecoveryCode(lock.familyId, typed, lock.recoveryWrappedKey, lock.recoverySalt);
 
 export async function unlockFamily(lock: FamilyLock, attempt: Attempt) {
   const now = attempt.now ?? Date.now();

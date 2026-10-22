@@ -8,12 +8,13 @@ import { AppearanceScreen } from './AppearanceScreen';
 
 const onBack = jest.fn();
 const onUnlock = jest.fn();
+const onStartAgain = jest.fn();
 
 async function openAppearance() {
   const user = userEvent.setup();
   await render(
     <ThemeProvider>
-      <AppearanceScreen onBack={onBack} onUnlock={onUnlock} />
+      <AppearanceScreen onBack={onBack} onUnlock={onUnlock} onStartAgain={onStartAgain} />
     </ThemeProvider>,
   );
   await screen.findByRole('header', { name: 'Appearance' });
@@ -26,6 +27,7 @@ beforeEach(async () => {
   await clearAll();
   onBack.mockReset();
   onUnlock.mockReset();
+  onStartAgain.mockReset();
   fakeRestoredSession();
 });
 
@@ -124,5 +126,21 @@ describe('Appearance', () => {
     await openAppearance();
 
     expect(await screen.findByRole('button', { name: 'Unlock your Family' })).toBeOnTheScreen();
+  });
+
+  it('offers Start again in Settings while this phone has no Family key, and opens it', async () => {
+    const user = await openAppearance();
+
+    await user.press(await screen.findByRole('button', { name: 'Start again' }));
+
+    expect(onStartAgain).toHaveBeenCalledTimes(1);
+  });
+
+  it('offers no Start again once this phone holds the Family key', async () => {
+    await keepFamilyKey(FAKE_UID, 'key');
+
+    await openAppearance();
+
+    expect(screen.queryByRole('button', { name: 'Start again' })).not.toBeOnTheScreen();
   });
 });

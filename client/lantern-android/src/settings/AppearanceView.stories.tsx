@@ -37,4 +37,4 @@ export const BlueLargeText: Story = { args: { colourScheme: 'blue', textSize: 'l
 export const GrayDark: Story = { args: { colourScheme: 'gray', theme: 'dark' } };
 export const GoldenLargestText: Story = { args: { colourScheme: 'golden', textSize: 'largest' } };
 
-export const FamilyLocked: Story = { args: { onUnlock: fn() } };
+export const FamilyLocked: Story = { args: { onUnlock: fn(), onStartAgain: fn() } };

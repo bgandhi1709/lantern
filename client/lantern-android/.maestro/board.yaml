@@ -59,5 +59,7 @@ appId: com.lantern.app
     text: 'Maharashtra State Board.*'
     checked: true
 - tapOn: 'Continue'
-- assertVisible: 'Choose a family passphrase'
+- extendedWaitUntil:
+    visible: 'Save your recovery code'
+    timeout: 30000
 - assertVisible: 'Step 3 of 4'

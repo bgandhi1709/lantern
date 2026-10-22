@@ -7,7 +7,7 @@ import { BackButton } from '../shared/ui/BackButton';
 import { OptionGroup } from '../shared/ui/OptionGroup';
 import { PreviewCard } from './PreviewCard';
 import { SchemeCard } from './SchemeCard';
-import { UnlockRow } from './UnlockRow';
+import { FamilyRow } from './FamilyRow';
 
 const SAMPLE_CLASS: Record<TextSize, string> = {
   default: 'text-aa-default',
@@ -26,6 +26,7 @@ type Props = {
   onColourScheme: (colourScheme: ColourScheme) => void;
   onBack: () => void;
   onUnlock?: () => void;
+  onStartAgain?: () => void;
 };
 
 export function AppearanceView(props: Props) {
@@ -40,7 +41,10 @@ export function AppearanceView(props: Props) {
         </Text>
       </View>
       <ScrollView contentContainerClassName="gap-6 px-4 pb-8 pt-1">
-        {props.onUnlock ? <UnlockRow onPress={props.onUnlock} /> : null}
+        {props.onUnlock ? <FamilyRow {...text.unlockRow} onPress={props.onUnlock} /> : null}
+        {props.onStartAgain ? (
+          <FamilyRow {...text.startAgainRow} onPress={props.onStartAgain} />
+        ) : null}
         <View className="gap-2.5">
           <Text className="font-inter-bold text-lead text-ink">{text.theme.heading}</Text>
           <OptionGroup

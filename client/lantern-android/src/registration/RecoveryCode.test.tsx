@@ -16,15 +16,6 @@ const get = api.get as jest.Mock;
 
 afterEach(() => jest.restoreAllMocks());
 
-const PASSPHRASE = 'blue lantern 2026';
-
-const passphraseField = () => screen.getByLabelText('Passphrase');
-const againField = () => screen.getByLabelText('Type it again');
-const understoodBox = () =>
-  screen.getByRole('checkbox', {
-    name: "I understand Lantern can't reset or change it, and I will keep it safe.",
-  });
-const createButton = () => screen.getByRole('button', { name: 'Create passphrase' });
 const savedBox = () => screen.getByRole('checkbox', { name: 'I have sent the email to myself.' });
 const emailTheCode = async (user: ReturnType<typeof userEvent.setup>) => {
   jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
@@ -44,7 +35,7 @@ const hardwareBack = () => {
   return () => handlers.at(-1)?.();
 };
 
-const renderPassphraseStep = async () => {
+const renderRecoveryStep = async () => {
   const user = userEvent.setup();
   fakeRestoredSession('restored-id-token');
   get.mockRejectedValue(new ApiError('not-registered', 404));
@@ -58,168 +49,76 @@ const renderPassphraseStep = async () => {
   await user.press(continueButton());
   await user.press(screen.getByRole('radio', { name: /^CBSE/ }));
   await user.press(continueButton());
-  return user;
-};
-
-const fillPassphrase = async (user: Awaited<ReturnType<typeof renderPassphraseStep>>) => {
-  await user.type(passphraseField(), PASSPHRASE);
-  await user.type(againField(), PASSPHRASE);
-  await user.press(understoodBox());
-};
-
-const renderRecoveryStep = async () => {
-  const user = await renderPassphraseStep();
-  await fillPassphrase(user);
-  await user.press(createButton());
   await screen.findByRole('header', { name: 'Save your recovery code' });
+  await screen.findByTestId('recovery-code');
   return user;
 };
 
-describe('the Passphrase step', () => {
-  it('asks for a family passphrase, explains why in calm words, and sits at step 3 of 4', async () => {
-    await renderPassphraseStep();
-
-    expect(screen.getByRole('header', { name: 'Choose a family passphrase' })).toBeOnTheScreen();
-    expect(
-      screen.getByText(
-        "Your children's names and your details are private. This passphrase locks them on your phone before they are sent, so nobody at Lantern, and nobody who broke into our systems, could read them. It is there to protect you and your children.",
-      ),
-    ).toBeOnTheScreen();
-    expect(screen.getByText('Please keep it safe')).toBeOnTheScreen();
-    expect(
-      screen.getByText(
-        "Lantern never sees your passphrase, so we can't reset or change it for you. That is what keeps your family's details safe: if we could open them, someone else could too. If you lose it and your recovery code, they can't be opened again, so pick something you will remember.",
-      ),
-    ).toBeOnTheScreen();
-    expect(screen.getByText('At least 8 characters. A few words are easier to remember.'));
-    expect(screen.getByText('Step 3 of 4')).toBeOnTheScreen();
-  });
-
-  it('hides what is typed in both fields', async () => {
-    await renderPassphraseStep();
-
-    expect(passphraseField().props.secureTextEntry).toBe(true);
-    expect(againField().props.secureTextEntry).toBe(true);
-  });
-
-  it('keeps Create passphrase a real disabled button until the Passphrase is long enough, typed twice and ticked', async () => {
-    const user = await renderPassphraseStep();
-    expect(createButton()).toBeDisabled();
-
-    await user.type(passphraseField(), '1234567');
-    await user.type(againField(), '1234567');
-    await user.press(understoodBox());
-    expect(createButton()).toBeDisabled();
-
-    await user.type(passphraseField(), '8');
-    expect(createButton()).toBeDisabled();
-    await user.type(againField(), '8');
-    expect(createButton()).toBeEnabled();
-
-    await user.press(understoodBox());
-    expect(createButton()).toBeDisabled();
-  });
-
-  it('says the two typings differ only once the second goes a different way, and gives no other error', async () => {
-    const user = await renderPassphraseStep();
-    expect(screen.queryByText('The two passphrases are not the same.')).not.toBeOnTheScreen();
-
-    await user.type(passphraseField(), 'short');
-    expect(screen.queryByText(/not the same|too short/)).not.toBeOnTheScreen();
-
-    await user.type(againField(), 'shor');
-    expect(screen.queryByText('The two passphrases are not the same.')).not.toBeOnTheScreen();
-
-    await user.type(againField(), 'x');
-    expect(screen.getByText('The two passphrases are not the same.')).toBeOnTheScreen();
-
-    await user.clear(againField());
-    await user.type(againField(), 'short');
-    expect(screen.queryByText('The two passphrases are not the same.')).not.toBeOnTheScreen();
-  });
-
-  it('does not take spaces alone as a passphrase', async () => {
-    const user = await renderPassphraseStep();
-    await user.type(passphraseField(), '        ');
-    await user.type(againField(), '        ');
-    await user.press(understoodBox());
-
-    expect(createButton()).toBeDisabled();
-  });
-
-  it('goes back to the Board with the pick kept', async () => {
-    const user = await renderPassphraseStep();
-
-    await user.press(backButton());
-
-    expect(
-      screen.getByRole('header', { name: 'Which board does your child follow?' }),
-    ).toBeOnTheScreen();
-    expect(screen.getByRole('radio', { name: /^CBSE/ })).toBeChecked();
-  });
-
-  it('shows a wait state while the key is made, and cannot be pressed twice', async () => {
-    let finish: () => void = () => {};
-    jest.spyOn(fakeLibrary, 'argon2').mockImplementation((_a, params, callback) => {
-      finish = () => callback(null, fakeLibrary.Buffer.alloc(params.tagLength, 7));
-    });
-    const user = await renderPassphraseStep();
-    await fillPassphrase(user);
-
-    await user.press(createButton());
-
-    expect(screen.getByRole('button', { name: 'Creating…' })).toBeDisabled();
-    expect(
-      screen.getByRole('progressbar', { name: 'Creating your passphrase…' }),
-    ).toBeOnTheScreen();
-    await act(async () => finish());
-  });
-
-  it('makes the keys once when the button is pressed twice, and drops them when the Parent has gone back', async () => {
+describe('the Recovery code step', () => {
+  it('makes the code when the step opens, with a wait state, and only once', async () => {
     let finish: () => void = () => {};
     const derive = jest.spyOn(fakeLibrary, 'argon2').mockImplementation((_a, params, callback) => {
       finish = () => callback(null, fakeLibrary.Buffer.alloc(params.tagLength, 7));
     });
-    const user = await renderPassphraseStep();
-    await fillPassphrase(user);
+    const user = userEvent.setup();
+    fakeRestoredSession('restored-id-token');
+    get.mockRejectedValue(new ApiError('not-registered', 404));
+    await render(
+      <AuthProvider>
+        <AuthGate home={<Text>Home</Text>} registration={<RegistrationFlow />} />
+      </AuthProvider>,
+    );
+    await user.type(await screen.findByLabelText('Where do you live?'), 'Pune, Maharashtra');
+    await user.press(screen.getByRole('checkbox', { name: 'I agree to the privacy notice' }));
+    await user.press(continueButton());
+    await user.press(screen.getByRole('radio', { name: /^CBSE/ }));
+    await user.press(continueButton());
 
-    await user.press(createButton());
-    await user.press(screen.getByRole('button', { name: 'Creating…' }));
-    await user.press(backButton());
-
-    expect(derive).toHaveBeenCalledTimes(1);
-    expect(screen.getByRole('header', { name: 'Choose a family passphrase' })).toBeOnTheScreen();
+    expect(
+      await screen.findByRole('progressbar', { name: 'Making your recovery code…' }),
+    ).toBeOnTheScreen();
+    expect(continueButton()).toBeDisabled();
     await act(async () => finish());
+    expect(derive).toHaveBeenCalledTimes(1);
   });
 
-  it('says it could not create the passphrase, without the passphrase, and lets the Parent try again', async () => {
+  it('says it could not make the code, and lets the Parent try again', async () => {
     jest.spyOn(fakeLibrary, 'argon2').mockImplementationOnce((_a, _params, callback) => {
-      callback(new Error(`failed for ${PASSPHRASE}`), fakeLibrary.Buffer.alloc(0));
+      callback(new Error('failed'), fakeLibrary.Buffer.alloc(0));
     });
-    const user = await renderPassphraseStep();
-    await fillPassphrase(user);
+    const user = userEvent.setup();
+    fakeRestoredSession('restored-id-token');
+    get.mockRejectedValue(new ApiError('not-registered', 404));
+    await render(
+      <AuthProvider>
+        <AuthGate home={<Text>Home</Text>} registration={<RegistrationFlow />} />
+      </AuthProvider>,
+    );
+    await user.type(await screen.findByLabelText('Where do you live?'), 'Pune, Maharashtra');
+    await user.press(screen.getByRole('checkbox', { name: 'I agree to the privacy notice' }));
+    await user.press(continueButton());
+    await user.press(screen.getByRole('radio', { name: /^CBSE/ }));
+    await user.press(continueButton());
 
-    await user.press(createButton());
+    expect(
+      await screen.findByText("Couldn't make your recovery code. Try again."),
+    ).toBeOnTheScreen();
+    await user.press(screen.getByRole('button', { name: 'Try again' }));
 
-    expect(await screen.findByText("Couldn't create the passphrase. Try again.")).toBeOnTheScreen();
-    expect(screen.queryByText(new RegExp(PASSPHRASE))).not.toBeOnTheScreen();
-    expect(createButton()).toBeEnabled();
+    expect(await screen.findByTestId('recovery-code')).toBeOnTheScreen();
   });
-});
 
-describe('the Recovery code step', () => {
-  it('shows the code once, in groups of four, with its explanation, and no Back', async () => {
+  it('shows the code in groups of four, with its explanation', async () => {
     await renderRecoveryStep();
 
     expect(codeText()).toMatch(/^[A-HJ-NP-Z2-9]{4}(-[A-HJ-NP-Z2-9]{4}){3}$/);
     expect(screen.getByText('RECOVERY CODE')).toBeOnTheScreen();
     expect(
       screen.getByText(
-        "If you forget the passphrase, this code is the only other way to open your family's details. We show it once because we don't keep a copy: that is what keeps it private to you.",
+        "This code is the only way to open your family's details on a new phone. Lantern never sees it and can't reset it: that is what keeps your family's details private. Email it to yourself now, so it is always in your inbox.",
       ),
     ).toBeOnTheScreen();
     expect(screen.getByText('Step 3 of 4')).toBeOnTheScreen();
-    expect(screen.queryByRole('button', { name: 'Back' })).not.toBeOnTheScreen();
   });
 
   it('keeps Continue a real disabled button until the Parent has opened the email and ticked that they sent it', async () => {
@@ -251,13 +150,19 @@ describe('the Recovery code step', () => {
     expect(continueButton()).toBeDisabled();
   });
 
-  it("ignores Android's back button, so the code cannot be left behind by accident", async () => {
+  it('goes back to the Board with Back or Android back, and shows the same code when it returns', async () => {
     const back = hardwareBack();
-    await renderRecoveryStep();
+    const user = await renderRecoveryStep();
+    const code = codeText();
 
     expect(await act(async () => back())).toBe(true);
+    expect(
+      screen.getByRole('header', { name: 'Which board does your child follow?' }),
+    ).toBeOnTheScreen();
+    await user.press(continueButton());
 
-    expect(screen.getByRole('header', { name: 'Save your recovery code' })).toBeOnTheScreen();
+    expect(await screen.findByTestId('recovery-code')).toBeOnTheScreen();
+    expect(codeText()).toBe(code);
   });
 
   it("opens the phone's mail app with a message to the Google address, and sends nothing to the API", async () => {
@@ -319,7 +224,7 @@ describe('the Recovery code step', () => {
   });
 });
 
-describe('what the Passphrase and Recovery code leave behind', () => {
+describe('what the Recovery code leaves behind', () => {
   it('never reaches the API, storage, a log line or the screen after it is made', async () => {
     const logs = [
       jest.spyOn(console, 'log'),
@@ -334,10 +239,9 @@ describe('what the Passphrase and Recovery code leave behind', () => {
 
     expect(api.post).not.toHaveBeenCalled();
     expect(JSON.stringify(secureStoreContents())).not.toContain(code);
-    expect(JSON.stringify(secureStoreContents())).not.toContain(PASSPHRASE);
     expect(await readFamilyKey(FAKE_UID)).toBeNull();
     expect(secureStoreContents()).toEqual({});
     for (const log of logs) expect(log).not.toHaveBeenCalled();
-    expect(screen.queryByText(new RegExp(`${PASSPHRASE}|${code}`))).not.toBeOnTheScreen();
+    expect(screen.queryByText(new RegExp(code))).not.toBeOnTheScreen();
   });
 });

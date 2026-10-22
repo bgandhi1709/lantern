@@ -45,7 +45,7 @@ export function HomeView(props: Props) {
         <Text accessibilityRole="header" className="font-inter-bold text-heading text-ink">
           {greeting}
         </Text>
-        {locked ? <UnlockNotice onUnlock={props.onUnlock} onSignOut={props.onSignOut} /> : null}
+        {locked ? <UnlockNotice onUnlock={props.onUnlock} /> : null}
         {activeChild ? (
           <>
             <ChildSwitcherButton name={activeChild.name} onPress={props.onOpenSheet} />

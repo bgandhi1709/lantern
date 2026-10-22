@@ -114,8 +114,10 @@ describe('the Board step', () => {
 
     await user.press(continueButton());
 
-    expect(screen.getByText('Step 3 of 4')).toBeOnTheScreen();
-    expect(screen.getByRole('header', { name: 'Choose a family passphrase' })).toBeOnTheScreen();
+    expect(await screen.findByText('Step 3 of 4')).toBeOnTheScreen();
+    expect(
+      await screen.findByRole('header', { name: 'Save your recovery code' }),
+    ).toBeOnTheScreen();
 
     await user.press(backButton());
 

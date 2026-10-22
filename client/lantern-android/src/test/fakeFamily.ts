@@ -23,7 +23,7 @@ export const ROHAN_SUBJECTS = {
 const SUBJECTS: Record<string, unknown> = { [AARYA]: AARYA_SUBJECTS, [ROHAN]: ROHAN_SUBJECTS };
 
 export async function registerFamilyOnThisPhone() {
-  const { familyKey } = await createFamilyKeys(makeFamilyId(), 'blue lantern 2026');
+  const { familyKey } = await createFamilyKeys(makeFamilyId());
   fakeRestoredSession();
   await keepFamilyKey(FAKE_UID, familyKey);
   return familyKey;

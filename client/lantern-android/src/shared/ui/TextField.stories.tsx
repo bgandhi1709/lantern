@@ -48,20 +48,20 @@ export const Secret: Story = {
   args: {
     bare: true,
     secret: true,
-    label: en.registration.passphrase.passphraseLabel,
-    hint: en.registration.passphrase.passphraseHint,
+    label: en.unlock.label,
+    hint: en.unlock.hint,
     placeholder: undefined,
-    value: 'blue lantern 2026',
+    value: 'K7QM-4TDX-92HB-WEPN',
   },
 };
 export const WithError: Story = {
   args: {
     bare: true,
     secret: true,
-    label: en.registration.passphrase.againLabel,
+    label: en.unlock.label,
     hint: undefined,
     placeholder: undefined,
-    error: en.registration.passphrase.mismatch,
-    value: 'blue lantern',
+    error: en.unlock.wrong,
+    value: 'K7QM-4TDX',
   },
 };

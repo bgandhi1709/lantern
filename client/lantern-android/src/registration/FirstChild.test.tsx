@@ -14,7 +14,6 @@ jest.mock('../shared/api', () => jest.requireActual('../test/fakeApiModule'));
 const get = api.get as jest.Mock;
 const post = api.post as jest.Mock;
 
-const PASSPHRASE = 'blue lantern 2026';
 const THIS_YEAR = new Date().getFullYear();
 
 const finishButton = () => screen.getByRole('button', { name: /^(Finish|Finishing…|Try again)$/ });
@@ -49,14 +48,6 @@ const renderChildStep = async (board: 'cbse' | 'ssc' = 'cbse') => {
     screen.getByRole('radio', { name: board === 'cbse' ? /^CBSE/ : /^Maharashtra/ }),
   );
   await user.press(screen.getByRole('button', { name: 'Continue' }));
-  await user.type(screen.getByLabelText('Passphrase'), PASSPHRASE);
-  await user.type(screen.getByLabelText('Type it again'), PASSPHRASE);
-  await user.press(
-    screen.getByRole('checkbox', {
-      name: "I understand Lantern can't reset or change it, and I will keep it safe.",
-    }),
-  );
-  await user.press(screen.getByRole('button', { name: 'Create passphrase' }));
   jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
   await user.press(await screen.findByRole('button', { name: 'Email it to myself' }));
   await user.press(screen.getByRole('checkbox', { name: 'I have sent the email to myself.' }));

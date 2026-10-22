@@ -5,9 +5,9 @@ import { readFamilyKey } from '../shared/storage';
 import { useAppearance } from '../shared/theme';
 import { AppearanceView } from './AppearanceView';
 
-type Props = { onBack: () => void; onUnlock: () => void };
+type Props = { onBack: () => void; onUnlock: () => void; onStartAgain: () => void };
 
-export function AppearanceScreen({ onBack, onUnlock }: Props) {
+export function AppearanceScreen({ onBack, onUnlock, onStartAgain }: Props) {
   const { appearance, setTheme, setTextSize, setColourScheme } = useAppearance();
   const [locked, setLocked] = useState(false);
 
@@ -25,6 +25,7 @@ export function AppearanceScreen({ onBack, onUnlock }: Props) {
       onColourScheme={setColourScheme}
       onBack={onBack}
       onUnlock={locked ? onUnlock : undefined}
+      onStartAgain={locked ? onStartAgain : undefined}
     />
   );
 }

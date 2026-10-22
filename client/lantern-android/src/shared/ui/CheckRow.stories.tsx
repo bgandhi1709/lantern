@@ -59,5 +59,5 @@ export const Unchecked: Story = {};
 export const Checked: Story = { args: { checked: true } };
 // Gujarati and Hindi run longer than English, so the row must grow instead of squeezing the box.
 export const LongLabel: Story = { args: { checked: true, long: true } };
-// The Passphrase steps draw the row with no icon, just the sentence and the box.
+// The Recovery code step draws the row with no icon, just the sentence and the box.
 export const WithoutIcon: Story = { args: { bare: true } };

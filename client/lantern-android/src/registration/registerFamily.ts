@@ -12,7 +12,7 @@ import { PLACEHOLDER_NOTICE_VERSION } from './notice';
 const Registered = z.object({ familyId: z.string() });
 
 export type RegisterInput = {
-  family: { id: string; keys: FamilyKeys; passphrase: string };
+  family: { id: string; keys: FamilyKeys };
   parent: Parent;
   region: string;
   board: Board;
@@ -41,8 +41,6 @@ function bodyFor(input: RegisterInput, familyId: string, keys: FamilyKeys) {
     board: input.board,
     parentName: lockText(keys.familyKey, input.parent.name),
     parentEmail: lockText(keys.familyKey, input.parent.email),
-    passphraseWrappedKey: keys.passphraseWrappedKey,
-    passphraseSalt: keys.passphraseSalt,
     recoveryWrappedKey: keys.recoveryWrappedKey,
     recoverySalt: keys.recoverySalt,
     children: input.children.map((child) => lockedChild(keys.familyKey, child)),
@@ -52,12 +50,12 @@ function bodyFor(input: RegisterInput, familyId: string, keys: FamilyKeys) {
 const hasCode = (error: unknown, code: string) => error instanceof ApiError && error.code === code;
 
 // A phone that registered must be able to open its Family again, but a phone with no working
-// storage still has the Passphrase, so a failed write does not undo the registration.
+// storage still has the Recovery code in the Parent's inbox, so a failed write does not undo the registration.
 async function keepKeyForParent(uid: string, familyKey: string) {
   try {
     await keepFamilyKey(uid, familyKey);
   } catch {
-    // The Passphrase opens the Family on the next start.
+    // The Recovery code opens the Family on the next start.
   }
 }
 
@@ -66,9 +64,9 @@ async function send(input: RegisterInput, familyId: string, keys: FamilyKeys) {
 }
 
 // One call carries the Family and every Child, so a Family is never half made. A taken Family id
-// is tried once more with a new one; the Passphrase is still in the draft, so the Parent sees nothing.
+// is tried once more with a new one; the Recovery code is still in the draft, so the Parent sees nothing.
 export async function registerFamily(input: RegisterInput): Promise<RegisterResult> {
-  const { id, keys, passphrase } = input.family;
+  const { id, keys } = input.family;
   try {
     await send(input, id, keys);
     await keepKeyForParent(input.parent.uid, keys.familyKey);
@@ -79,7 +77,7 @@ export async function registerFamily(input: RegisterInput): Promise<RegisterResu
   }
 
   const newId = makeFamilyId();
-  const newKeys = await rewrapFamilyKeys(newId, passphrase, keys);
+  const newKeys = await rewrapFamilyKeys(newId, keys);
   try {
     await send(input, newId, newKeys);
   } catch (error) {

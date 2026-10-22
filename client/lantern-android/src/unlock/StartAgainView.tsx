@@ -7,7 +7,7 @@ import { PrimaryButton } from '../shared/ui/PrimaryButton';
 type Props = { deleting: boolean; failed: boolean; onDelete: () => void; onKeep: () => void };
 
 export function StartAgainView({ deleting, failed, onDelete, onKeep }: Props) {
-  const strings = useStrings().unlock.again;
+  const strings = useStrings().startAgain;
 
   return (
     <View className="flex-1 bg-ground px-6 pb-safe pt-safe">

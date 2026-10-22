@@ -2,11 +2,9 @@ import { KeyboardAvoidingView, ScrollView, Text, View } from 'react-native';
 
 import { useStrings } from '../shared/i18n';
 import { BackButton } from '../shared/ui/BackButton';
-import { OptionGroup } from '../shared/ui/OptionGroup';
 import { OutlineButton } from '../shared/ui/OutlineButton';
 import { PrimaryButton } from '../shared/ui/PrimaryButton';
 import { TextField } from '../shared/ui/TextField';
-import type { UnlockKind } from './unlockFamily';
 
 export const UNLOCK_FIELD_MAX_LENGTH = 100;
 
@@ -14,25 +12,19 @@ export type UnlockPhase = 'loading' | 'failed' | 'ready';
 
 type Props = {
   phase: UnlockPhase;
-  kind: UnlockKind;
   value: string;
   opening: boolean;
   wrong: boolean;
   somethingWentWrong: boolean;
   secondsLeft: number;
-  onKind: (kind: UnlockKind) => void;
   onChange: (text: string) => void;
   onOpen: () => void;
   onLoadAgain: () => void;
-  onStartAgain: () => void;
   onBack: () => void;
 };
 
-const KINDS: UnlockKind[] = ['passphrase', 'recoveryCode'];
-
 export function UnlockView(props: Props) {
   const strings = useStrings().unlock;
-  const text = strings[props.kind];
   const waiting = props.secondsLeft > 0;
   const ready = props.phase === 'ready';
   const buttonLabel = waiting
@@ -54,21 +46,11 @@ export function UnlockView(props: Props) {
             </Text>
             <Text className="font-inter-medium text-body text-muted">{strings.intro}</Text>
           </View>
-          <OptionGroup
-            label={strings.choiceLabel}
-            value={props.kind}
-            onPick={props.onKind}
-            options={KINDS.map((kind) => ({
-              value: kind,
-              label: strings[kind].choice,
-              accessibilityLabel: strings[kind].choice,
-            }))}
-          />
           <TextField
             secret
             testID="unlock-field"
-            label={text.label}
-            hint={text.hint}
+            label={strings.label}
+            hint={strings.hint}
             value={props.value}
             onChangeText={props.onChange}
             maxLength={UNLOCK_FIELD_MAX_LENGTH}
@@ -99,7 +81,7 @@ export function UnlockView(props: Props) {
               accessibilityLiveRegion="polite"
               className="pb-2 font-inter-semibold text-small text-danger"
             >
-              {text.wrong}
+              {strings.wrong}
             </Text>
           ) : null}
           <PrimaryButton
@@ -107,12 +89,6 @@ export function UnlockView(props: Props) {
             onPress={props.onOpen}
             disabled={!ready || props.value.length === 0 || props.opening || waiting}
           />
-          <Text className="mt-4 text-center font-inter-medium text-small text-muted">
-            {strings.lostBoth}
-          </Text>
-          <View className="self-center">
-            <OutlineButton label={strings.startAgain} onPress={props.onStartAgain} />
-          </View>
         </View>
       </KeyboardAvoidingView>
     </View>

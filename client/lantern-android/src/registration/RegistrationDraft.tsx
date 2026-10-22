@@ -16,10 +16,9 @@ export type RegistrationDraft = {
   noticeAccepted: boolean;
   // null until the Parent picks one: a Family has no default Board.
   board: Board | null;
-  // Made when the Passphrase is created. The keys hold the Recovery code until the Parent has saved it.
-  // The Passphrase stays here, in memory only, until Finish succeeds: a taken Family id means the
-  // keys are wrapped again under a new one, and that needs it.
-  family: { id: string; keys: FamilyKeys; passphrase: string } | null;
+  // Made when the Recovery code step opens. The keys hold the Recovery code, in memory only, until
+  // Finish succeeds: a taken Family id means the key is wrapped again under a new one, and that needs it.
+  family: { id: string; keys: FamilyKeys } | null;
   // The first Child, then up to five more. An extra that is still empty is left out at Finish.
   children: ChildDraft[];
 };

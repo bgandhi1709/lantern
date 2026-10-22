@@ -6,7 +6,7 @@ import { UnlockNotice } from './UnlockNotice';
 const meta = {
   title: 'Home/UnlockNotice',
   component: UnlockNotice,
-  args: { onUnlock: fn(), onSignOut: fn() },
+  args: { onUnlock: fn() },
 } satisfies Meta<typeof UnlockNotice>;
 
 export default meta;

@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { LockError } from '../shared/crypto';
 import { getParent } from '../shared/session';
 import { readValue } from '../shared/storage';
-import type { FamilyLock, UnlockKind } from './unlockFamily';
+import type { FamilyLock } from './unlockFamily';
 import { UnlockWaitError, fetchFamilyLock, unlockFamily } from './unlockFamily';
 import type { UnlockPhase } from './UnlockView';
 import { useIsMounted } from './useIsMounted';
@@ -14,7 +14,6 @@ const MS_PER_SECOND = 1000;
 // The secrets are typed into this state only. They are never stored, logged or sent.
 export function useUnlock(onOpened: () => void) {
   const [phase, setPhase] = useState<UnlockPhase>('loading');
-  const [kind, setKind] = useState<UnlockKind>('passphrase');
   const [value, setValue] = useState('');
   const [opening, setOpening] = useState(false);
   const [wrong, setWrong] = useState(false);
@@ -58,7 +57,7 @@ export function useUnlock(onOpened: () => void) {
     setWrong(false);
     setSomethingWentWrong(false);
     try {
-      await unlockFamily(lock.current, { uid: getParent().uid, kind, typed: value });
+      await unlockFamily(lock.current, { uid: getParent().uid, typed: value });
       if (mounted.current) onOpened();
     } catch (error) {
       if (!mounted.current) return;
@@ -73,18 +72,12 @@ export function useUnlock(onOpened: () => void) {
 
   return {
     phase,
-    kind,
     value,
     opening,
     wrong,
     somethingWentWrong,
     secondsLeft,
     busy,
-    pickKind: (next: UnlockKind) => {
-      setKind(next);
-      setValue('');
-      setWrong(false);
-    },
     change: (text: string) => {
       setValue(text);
       setWrong(false);
