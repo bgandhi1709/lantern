@@ -12,6 +12,7 @@ import { REGISTRATION_STEP_COUNT } from './steps';
 type Props = {
   code: string;
   saved: boolean;
+  emailed: boolean;
   shareFailed?: boolean;
   onSavedToggle: () => void;
   onEmail: () => void;
@@ -23,6 +24,7 @@ type Props = {
 export function RecoveryCodeView({
   code,
   saved,
+  emailed,
   shareFailed = false,
   onSavedToggle,
   onEmail,
@@ -58,7 +60,16 @@ export function RecoveryCodeView({
         </CheckRow>
       </ScrollView>
       <View className="pb-6 pt-2">
-        <PrimaryButton label={strings.continue} onPress={onContinue} disabled={!saved} />
+        {emailed ? null : (
+          <Text className="pb-2 text-center font-inter-medium text-small text-muted">
+            {strings.emailFirst}
+          </Text>
+        )}
+        <PrimaryButton
+          label={strings.continue}
+          onPress={onContinue}
+          disabled={!saved || !emailed}
+        />
       </View>
     </View>
   );

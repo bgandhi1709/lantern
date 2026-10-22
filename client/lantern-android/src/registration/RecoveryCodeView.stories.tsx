@@ -9,6 +9,7 @@ const meta = {
   args: {
     code: 'K7QM-4TDX-92HB-WEPN',
     saved: false,
+    emailed: false,
     onSavedToggle: fn(),
     onEmail: fn(),
     onSave: fn(),
@@ -22,4 +23,5 @@ type Story = StoryObj<typeof meta>;
 
 export const NotSavedYet: Story = {};
 export const ShareFailed: Story = { args: { shareFailed: true } };
-export const Saved: Story = { args: { saved: true } };
+export const EmailedNotTicked: Story = { args: { emailed: true } };
+export const Saved: Story = { args: { saved: true, emailed: true } };

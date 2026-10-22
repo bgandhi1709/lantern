@@ -9,6 +9,7 @@ export function RecoveryCodeScreen({ onContinue }: { onContinue: () => void }) {
   const strings = useStrings().registration.recovery;
   const { draft } = useRegistrationDraft();
   const [saved, setSaved] = useState(false);
+  const [emailed, setEmailed] = useState(false);
   const [shareFailed, setShareFailed] = useState(false);
   if (draft.family === null) throw new Error('The Recovery code step needs the Family keys.');
   const message = strings.message(draft.family.keys.recoveryCode);
@@ -16,8 +17,10 @@ export function RecoveryCodeScreen({ onContinue }: { onContinue: () => void }) {
     setShareFailed(false);
     try {
       await action();
+      return true;
     } catch {
       setShareFailed(true);
+      return false;
     }
   };
 
@@ -25,11 +28,15 @@ export function RecoveryCodeScreen({ onContinue }: { onContinue: () => void }) {
     <RecoveryCodeView
       code={draft.family.keys.recoveryCode}
       saved={saved}
+      emailed={emailed}
       shareFailed={shareFailed}
       onSavedToggle={() => setSaved((value) => !value)}
-      onEmail={() =>
-        send(() => emailRecoveryCode(draft.parent.email, strings.mailSubject, message))
-      }
+      onEmail={async () => {
+        const opened = await send(() =>
+          emailRecoveryCode(draft.parent.email, strings.mailSubject, message),
+        );
+        if (opened) setEmailed(true);
+      }}
       onSave={() => send(() => shareRecoveryCode(message))}
       onContinue={onContinue}
     />

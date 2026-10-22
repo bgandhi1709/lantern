@@ -54,12 +54,12 @@ appId: com.lantern.app
     text: 'Continue'
     enabled: false
 - scrollUntilVisible:
-    element: 'Save elsewhere'
-- tapOn: 'Save elsewhere'
+    element: 'Email it to myself'
+- tapOn: 'Email it to myself'
 - pressKey: back
 - scrollUntilVisible:
-    element: 'I have saved my recovery code somewhere safe.'
-- tapOn: 'I have saved my recovery code somewhere safe.'
+    element: 'I have sent the email to myself.'
+- tapOn: 'I have sent the email to myself.'
 - assertVisible:
     text: 'Continue'
     enabled: true

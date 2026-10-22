@@ -25,8 +25,11 @@ const understoodBox = () =>
     name: "I understand Lantern can't reset or change it, and I will keep it safe.",
   });
 const createButton = () => screen.getByRole('button', { name: 'Create passphrase' });
-const savedBox = () =>
-  screen.getByRole('checkbox', { name: 'I have saved my recovery code somewhere safe.' });
+const savedBox = () => screen.getByRole('checkbox', { name: 'I have sent the email to myself.' });
+const emailTheCode = async (user: ReturnType<typeof userEvent.setup>) => {
+  jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
+  await user.press(screen.getByRole('button', { name: 'Email it to myself' }));
+};
 const continueButton = () => screen.getByRole('button', { name: 'Continue' });
 const backButton = () => screen.getByRole('button', { name: 'Back' });
 const codeText = () => screen.getByTestId('recovery-code').props.children as string;
@@ -219,14 +222,32 @@ describe('the Recovery code step', () => {
     expect(screen.queryByRole('button', { name: 'Back' })).not.toBeOnTheScreen();
   });
 
-  it('keeps Continue a real disabled button until the Parent ticks that they saved the code', async () => {
+  it('keeps Continue a real disabled button until the Parent has opened the email and ticked that they sent it', async () => {
     const user = await renderRecoveryStep();
     expect(continueButton()).toBeDisabled();
+    expect(
+      screen.getByText('Send the email to yourself first. Then the code is always in your inbox.'),
+    ).toBeOnTheScreen();
 
     await user.press(savedBox());
+    expect(continueButton()).toBeDisabled();
+
+    await emailTheCode(user);
     expect(continueButton()).toBeEnabled();
+    expect(screen.queryByText(/Send the email to yourself first/)).not.toBeOnTheScreen();
 
     await user.press(savedBox());
+    expect(continueButton()).toBeDisabled();
+  });
+
+  it('does not count the email as opened when neither the mail app nor the share sheet opens', async () => {
+    jest.spyOn(Share, 'share').mockRejectedValue(new Error('no share targets'));
+    jest.spyOn(Linking, 'openURL').mockRejectedValue(new Error('no mail app'));
+    const user = await renderRecoveryStep();
+    await user.press(savedBox());
+
+    await user.press(screen.getByRole('button', { name: 'Email it to myself' }));
+
     expect(continueButton()).toBeDisabled();
   });
 
@@ -240,7 +261,7 @@ describe('the Recovery code step', () => {
   });
 
   it("opens the phone's mail app with a message to the Google address, and sends nothing to the API", async () => {
-    const open = jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
+    const open = jest.spyOn(Linking, 'openURL').mockClear().mockResolvedValue(true);
     const user = await renderRecoveryStep();
 
     await user.press(screen.getByRole('button', { name: 'Email it to myself' }));
@@ -283,6 +304,7 @@ describe('the Recovery code step', () => {
   it('goes on to step 4 once ticked, and Back there returns to the same code', async () => {
     const user = await renderRecoveryStep();
     const code = codeText();
+    await emailTheCode(user);
     await user.press(savedBox());
 
     await user.press(continueButton());
@@ -306,6 +328,7 @@ describe('what the Passphrase and Recovery code leave behind', () => {
     ];
     const user = await renderRecoveryStep();
     const code = codeText();
+    await emailTheCode(user);
     await user.press(savedBox());
     await user.press(continueButton());
 

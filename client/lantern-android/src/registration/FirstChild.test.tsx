@@ -1,6 +1,6 @@
 import '@testing-library/react-native/matchers';
 import { act, fireEvent, render, screen, userEvent } from '@testing-library/react-native';
-import { BackHandler, Text } from 'react-native';
+import { BackHandler, Linking, Text } from 'react-native';
 
 import { AuthGate, AuthProvider } from '../auth';
 import { ApiError, api } from '../shared/api';
@@ -57,9 +57,9 @@ const renderChildStep = async (board: 'cbse' | 'ssc' = 'cbse') => {
     }),
   );
   await user.press(screen.getByRole('button', { name: 'Create passphrase' }));
-  await user.press(
-    await screen.findByRole('checkbox', { name: 'I have saved my recovery code somewhere safe.' }),
-  );
+  jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
+  await user.press(await screen.findByRole('button', { name: 'Email it to myself' }));
+  await user.press(screen.getByRole('checkbox', { name: 'I have sent the email to myself.' }));
   await user.press(screen.getByRole('button', { name: 'Continue' }));
   await screen.findByRole('header', { name: 'Add your first child' });
   return user;

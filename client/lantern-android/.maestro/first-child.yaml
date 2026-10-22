@@ -5,8 +5,8 @@ appId: com.lantern.app
 ---
 - runFlow: passphrase.yaml
 - scrollUntilVisible:
-    element: 'I have saved my recovery code somewhere safe.'
-- tapOn: 'I have saved my recovery code somewhere safe.'
+    element: 'I have sent the email to myself.'
+- tapOn: 'I have sent the email to myself.'
 - tapOn: 'Continue'
 - assertVisible: 'Add your first child'
 - assertVisible: 'Step 4 of 4'
