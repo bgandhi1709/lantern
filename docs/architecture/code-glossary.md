@@ -84,7 +84,9 @@ HTTP ─▶ Controller ─▶ (Interactor) ─▶ Service ─▶ Repository / St
 - Registered scoped in `BaseModule`.
 - Example: `ChildService`, `FamilyService`.
 - A read-only view over a Child's own storage has no repository and so no `ServiceBase`: `SubjectService` looks the Child up
-  through `IServiceBase<Child>` (which scopes it to the caller's Family) and reads through `IWorkspaceStore`.
+  through `IServiceBase<Child>` (which scopes it to the caller's Family) and reads through `IWorkspaceStore`. It also serves the
+  Chapters of a Subject (`ChaptersAsync`, read from the Child's own Class manifest once the Subject is in the Family manifest),
+  so a Child's Subjects and Chapters share one guard and one service.
 
 **Interactor** (`I{UseCase}Interactor` / `{UseCase}Interactor`, `Lantern.Base/Interactors/`)
 - Meaning: one use case that orchestrates several services, when putting it in one service would make that service
@@ -128,8 +130,8 @@ HTTP ─▶ Controller ─▶ (Interactor) ─▶ Service ─▶ Repository / St
 **Calculator** (`I{Noun}Calculator` / `{Noun}Calculator`, `Service/`)
 - Meaning: pure computation that more than one service shares, behind an interface. No storage, no
   state, no I/O. It is how shared logic stays out of static helpers (CODING_STANDARDS.md).
-- Example: `PageCalculator` cuts a list into a page and issues and reads its cursor; `SubjectService` uses it now and the
-  Chapters service will. Registered as a singleton in `CoreModule`.
+- Example: `PageCalculator` cuts a list into a page and issues and reads its cursor; `SubjectService` uses it for Subjects and
+  Chapters. Registered as a singleton in `CoreModule`.
 
 **Json service** (`IJsonService` / `JsonService`, `Service/`) **(tested: the only code that calls the JSON serializer)**
 - Meaning: the one place that turns JSON text into a class and back, with one set of options (camelCase, any case on read,

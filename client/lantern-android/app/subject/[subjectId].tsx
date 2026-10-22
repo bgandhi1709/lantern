@@ -1,7 +1,18 @@
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 
-import { ComingNextView } from '../../src/home';
+import { ChaptersScreen } from '../../src/home';
 
 export default function SubjectRoute() {
-  return <ComingNextView onBack={useRouter().back} />;
+  const router = useRouter();
+  const { childId, subjectId } = useLocalSearchParams<{ childId: string; subjectId: string }>();
+
+  return (
+    <ChaptersScreen
+      childId={childId}
+      subjectId={subjectId}
+      onBack={router.back}
+      onOpenTab={() => router.push('/coming-next')}
+      onAddChild={() => router.push('/add-child')}
+    />
+  );
 }

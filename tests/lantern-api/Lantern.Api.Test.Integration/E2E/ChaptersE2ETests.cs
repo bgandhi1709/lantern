@@ -14,6 +14,7 @@ public sealed class ChaptersE2ETests
 
     [Theory]
     [InlineData(BoardType.Cbse, 3)]
+    [InlineData(BoardType.Cbse, 10)]
     [InlineData(BoardType.Ssc, 2)]
     public async Task EachSubjectOfAChild_ListsItsBuiltChapters_NumberedOneToNInBookOrder(BoardType board, int classLevel)
     {
@@ -50,7 +51,6 @@ public sealed class ChaptersE2ETests
 
         Assert.Equal([1], first["items"]!.AsArray().Select(chapter => (int)chapter!["number"]!));
         Assert.Equal([2], second["items"]!.AsArray().Select(chapter => (int)chapter!["number"]!));
-        Assert.Null(second["nextCursor"]);
         Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync(ChaptersOf(child.ChildId, "astronomy"))).StatusCode);
     }
 

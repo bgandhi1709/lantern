@@ -11,9 +11,9 @@ appId: com.lantern.app
 - assertVisible: 'Welcome to Lantern'
 - tapOn: 'Got it'
 - assertNotVisible: 'Welcome to Lantern'
-- assertVisible: 'Teach, available later'
-- assertVisible: 'Check, available later'
-- assertVisible: 'Progress, available later'
+- assertVisible: 'Teach'
+- assertVisible: 'Check'
+- assertVisible: 'Progress'
 - tapOn: 'Switch child, now Aarav'
 - assertVisible: 'Who is learning?'
 - assertVisible: 'Add a child'
@@ -27,8 +27,10 @@ appId: com.lantern.app
     timeout: 120000
 - assertNotVisible: 'Welcome to Lantern'
 - tapOn: 'Mathematics.*'
-- assertVisible: 'Coming next'
+- assertVisible: 'Chapters'
+- assertVisible: 'Mathematics for Mira, in book order'
 - back
+- assertVisible: "Mira's Subjects, Class 2"
 - tapOn: 'Sign out'
 - extendedWaitUntil:
     visible: 'Continue with Google'

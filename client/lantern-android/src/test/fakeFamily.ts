@@ -22,6 +22,32 @@ export const ROHAN_SUBJECTS = {
 
 const SUBJECTS: Record<string, unknown> = { [AARYA]: AARYA_SUBJECTS, [ROHAN]: ROHAN_SUBJECTS };
 
+const chaptersOf = (subjectId: string, titles: [string, string][]) => ({
+  items: titles.map(([title, summary], index) => ({
+    chapterId: `${subjectId}-${index + 1}`,
+    number: index + 1,
+    title,
+    summary,
+  })),
+  nextCursor: null,
+});
+
+const CHAPTERS: Record<string, unknown> = {
+  [`${AARYA}/science`]: chaptersOf('science', [
+    ['Materials Around Us', 'The different materials around us and how we choose one for a job.'],
+    ['Changes of State', 'How materials change between solid, liquid and gas.'],
+    ['Measurement of Length and Motion', 'How we measure length and tell whether something moves.'],
+  ]),
+  [`${AARYA}/mathematics`]: chaptersOf('mathematics', [
+    ['Patterns in Mathematics', 'Finding and continuing patterns in numbers and shapes.'],
+    ['Lines and Angles', 'Straight lines, how they meet, and the angle between them.'],
+  ]),
+  [`${ROHAN}/english`]: chaptersOf('english', [
+    ['Poonam’s Day Out', 'A day spent noticing the animals, plants and people around us.'],
+    ['The Plant Fairy', 'How a seed grows into a plant, told as a story.'],
+  ]),
+};
+
 export async function registerFamilyOnThisPhone() {
   const { familyKey } = await createFamilyKeys(makeFamilyId());
   fakeRestoredSession();
@@ -39,6 +65,8 @@ export function answerLikeTheApi(get: jest.Mock, familyKey: string) {
         ],
       });
     }
-    return schema.parse(SUBJECTS[path.split('/')[3]]);
+    const [, , , childId, , subjectId] = path.split('?')[0].split('/');
+    if (path.includes('/chapters')) return schema.parse(CHAPTERS[`${childId}/${subjectId}`]);
+    return schema.parse(SUBJECTS[childId]);
   });
 }

@@ -1,3 +1,4 @@
+import type { Chapter } from '../home/chaptersApi';
 import type { Subject } from '../home/homeApi';
 import type { SwitcherChild } from '../home/useHome';
 
@@ -26,3 +27,24 @@ export const SIX_CHILDREN: SwitcherChild[] = [
 ];
 
 export const LONG_NAME = 'Venkatasubramanian Raghunathan';
+
+export const SCIENCE_CHAPTERS: Chapter[] = [
+  {
+    chapterId: 'science-1',
+    number: 1,
+    title: 'Materials Around Us',
+    summary: 'The different materials around us and how we choose the right one for a job.',
+  },
+  {
+    chapterId: 'science-2',
+    number: 2,
+    title: 'Changes of State',
+    summary: 'How materials change between solid, liquid and gas when they are heated or cooled.',
+  },
+  {
+    chapterId: 'science-3',
+    number: 3,
+    title: 'Measurement of Length and Motion',
+    summary: 'How we measure length, and how we tell whether something is moving.',
+  },
+];

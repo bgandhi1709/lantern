@@ -47,9 +47,9 @@ The diagram is [`docs/architecture/lantern-architecture.html`](docs/architecture
 
 - **Content.** The NCERT layer is being built class by class; the SSC layer follows.
 - **Infrastructure.** UAT is deployed from Bicep by `api.yml` ([`infra/README.md`](infra/README.md)).
-- **API.** Register, `me`, Family and Child management, Workspaces and Subjects are built, and the
+- **API.** Register, `me`, Family and Child management, Workspaces, Subjects and Chapters are built, and the
   end-to-end tests gate each release. Run it locally with [`deploy/local/README.md`](deploy/local/README.md).
-- **Parent app.** Sign-in, registration, Home, Unlock and Settings are built
+- **Parent app.** Sign-in, registration, Home, Chapters, Unlock and Settings are built
   ([`client/lantern-android/README.md`](client/lantern-android/README.md)).
 - **Next.** The Ask and Plan agents.
 

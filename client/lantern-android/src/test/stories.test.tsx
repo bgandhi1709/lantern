@@ -133,6 +133,20 @@ const requiredStories: Record<string, string[]> = {
   'home/AddChildRow.stories.tsx': ['Default'],
   'home/UnlockNotice.stories.tsx': ['Default'],
   'home/ComingNextView.stories.tsx': ['Default'],
+  'home/ChildPill.stories.tsx': ['Default', 'LongName'],
+  'home/ChapterCard.stories.tsx': ['Default', 'LongTitle', 'TwoDigitNumber', 'LongSummary'],
+  'home/SubjectPill.stories.tsx': ['Default', 'LongName'],
+  'home/SubjectOption.stories.tsx': ['Unselected', 'Selected', 'OneChapter', 'LongName'],
+  'home/SubjectSheet.stories.tsx': ['ThreeSubjects', 'LastSelected', 'TenSubjects'],
+  'home/ChaptersView.stories.tsx': [
+    'Ready',
+    'Loading',
+    'Failed',
+    'LoadingTheChild',
+    'SwitcherOpen',
+    'SubjectSheetOpen',
+    'SixChildren',
+  ],
 };
 
 // A component file with no story of its own must say why, so the list stays short and honest.
@@ -165,6 +179,7 @@ const withoutStory: Record<string, string> = {
   'shared/ui/icons.tsx': 'SVG parts used by the screens and their components',
   'shared/ui/markParts.tsx': 'SVG parts of Mark',
   'home/HomeScreen.tsx': 'container for HomeView, which has the stories',
+  'home/ChaptersScreen.tsx': 'container for ChaptersView, which has the stories',
   'home/homeIcons.tsx': 'SVG parts used by the Home components',
   'settings/AppearanceScreen.tsx': 'container for AppearanceView, which has the stories',
   'shared/theme/LookProvider.tsx': 'provider with nothing to draw; the Appearance stories use it',

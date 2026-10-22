@@ -101,7 +101,7 @@ One file in the Family's own storage listing each Child whose Content slice is r
 _Avoid_: Cache, Family index, Child list
 
 **Chapter**:
-A numbered unit of a Book, and the unit a Concept belongs to.
+A numbered unit of a Book, and the unit a Concept belongs to. The app lists a Subject's Chapters numbered 1 to N across all its Books, in book order, not by each Book's own printed numbers.
 _Avoid_: Lesson, unit
 
 **Concept**:
