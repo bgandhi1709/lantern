@@ -8,7 +8,19 @@ The Parent must email the code to their own address before registration continue
 
 Why: a Parent who forgets a Passphrase is locked out of their Family, and a code in their own inbox cannot be forgotten. The founder chose this on 2026-10-22 after the Unlock screen was built with both.
 
-What it costs, accepted: whoever can open the Parent's email can open the Family, because the code in the inbox is the key. Before, a stolen inbox alone was not enough. A Family whose Parent loses the code and the phone starts again as a new Family (Settings, Start again). The code is 16 characters from a 32-character alphabet (80 bits) behind a slow Argon2id derivation, so a stolen wrapped key stays slow to guess.
+What it costs, accepted: whoever can open the Parent's email can open the Family, because the code in the inbox is the key. Before, a stolen inbox alone was not enough.
+
+The cost, walked through as abuse cases (the walk the Security step now requires):
+
+| Attacker holds | Gets | Why |
+|---|---|---|
+| The code only | Nothing | `GET /v1/me` gives the wrapped key only to the signed-in Parent, so there is nothing to open |
+| Another Google account and the Parent's code | Nothing | `/v1/me` returns that account's own Family; the code opens only the Family it was made for (tested in `unlockSecurity.test.ts`) |
+| The Parent's Google account only | Class, Board and Region, which Lantern can read; no names | The wrapped key comes back but the code is needed to open it |
+| The Parent's Google account and inbox | Everything the Parent sees | Accepted cost: both factors sit in one account |
+| The Parent's unlocked phone | Everything the Parent sees | The Family key is in the Keystore; the phone's own lock is the defence |
+
+The API cannot tell a second phone signed in as the same Google account from the Parent's own: unlock happens on the phone and sends nothing, so Lantern holds no device list and cannot revoke one. The Parent is never told. This is recorded, not solved: options (a devices list, new-device approval, a delayed release, rotating the key) are in the experimental issue #168. A Family whose Parent loses the code and the phone starts again as a new Family (Settings, Start again). The code is 16 characters from a 32-character alphabet (80 bits) behind a slow Argon2id derivation, so a stolen wrapped key stays slow to guess.
 
 API contract: `PassphraseWrappedKey` and `PassphraseSalt` are removed from the register request, the Family model and the stored row; `RecoveryWrappedKey` and `RecoverySalt` stay. There is no migration, because no pilot Family exists; UAT test Families are deleted.
 

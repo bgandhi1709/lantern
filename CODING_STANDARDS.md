@@ -180,6 +180,7 @@ Every new endpoint follows these. `/security-review` checks them before the PR (
 - **Bounded.** Set a maximum body size, maximum lengths and counts on every input, and page every list response.
 - **Rate limited per caller**, keyed by the caller's uid hash, never by raw uid or IP alone.
 - **Cancellable.** Every I/O call takes the `CancellationToken`. No unbounded waits.
+- **Abuse cases are walked, not just the happy path.** A change that touches sign-in, keys, a Family, a Child or a route that returns a Family's data lists who holds what and says what each may get, for each of these: a stranger's Google account holding the Parent's secret; the Parent's Google account without the secret; the secret without the account; both (a stolen inbox); an unlocked or shared phone; a second phone the Parent does not know of; two accounts on one phone; a deleted or re-registered Family; and the logs, errors, crash and analytics reports, URLs and backups. Each row either has a test that fails when the answer is wrong, or a recorded accepted cost in the ADR, and a Child's data never appears in a log, URL or error. The table lives in the ADR or the PR; a new exposure with no row blocks the PR.
 - **Crypto ships with its tests.** Code that hashes or handles keys has tests for stability, a different key giving a different result, and isolation between Families; a locked value is tested as stored exactly as sent. Never invent a primitive; use the platform's.
 
 ## Changes that need more than code
