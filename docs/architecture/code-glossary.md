@@ -84,7 +84,10 @@ HTTP ─▶ Controller ─▶ (Interactor) ─▶ Service ─▶ Repository / St
 - Registered scoped in `BaseModule`.
 - Example: `ChildService`, `FamilyService`.
 - A read-only view over a Child's own storage has no repository and so no `ServiceBase`: `SubjectService` looks the Child up
-  through `IServiceBase<Child>` (which scopes it to the caller's Family) and reads through `IWorkspaceStore`.
+  through `IServiceBase<Child>` (which scopes it to the caller's Family) and reads through `IWorkspaceStore`. It also serves the
+  Chapters of a Subject (`ChaptersAsync`, read from the Child's own Class manifest once the Subject is in the Family manifest),
+  so a Child's Subjects and Chapters share one guard and one service. It also reads a Chapter's progress and history
+  (`IProgressRepository`, no other service owns it yet) for the Chapters list and the Chapter history.
 
 **Interactor** (`I{UseCase}Interactor` / `{UseCase}Interactor`, `Lantern.Base/Interactors/`)
 - Meaning: one use case that orchestrates several services, when putting it in one service would make that service
@@ -128,8 +131,8 @@ HTTP ─▶ Controller ─▶ (Interactor) ─▶ Service ─▶ Repository / St
 **Calculator** (`I{Noun}Calculator` / `{Noun}Calculator`, `Service/`)
 - Meaning: pure computation that more than one service shares, behind an interface. No storage, no
   state, no I/O. It is how shared logic stays out of static helpers (CODING_STANDARDS.md).
-- Example: `PageCalculator` cuts a list into a page and issues and reads its cursor; `SubjectService` uses it now and the
-  Chapters service will. Registered as a singleton in `CoreModule`.
+- Example: `PageCalculator` cuts a list into a page and issues and reads its cursor; `SubjectService` uses it for Subjects and
+  Chapters. Registered as a singleton in `CoreModule`.
 
 **Json service** (`IJsonService` / `JsonService`, `Service/`) **(tested: the only code that calls the JSON serializer)**
 - Meaning: the one place that turns JSON text into a class and back, with one set of options (camelCase, any case on read,
@@ -217,6 +220,8 @@ constant, so every enum lives in `Lantern.Core.Constants`. Never a static class 
   `BookManifest` until ADR-0014 gave that word to the derived documents in Core.
 
 **Ledger** (`ActionLedger`): the action ledger's table operations.
+
+**Progress repository** (`ProgressRepository`, no base class): the `progress` table's operations, for the rows that are not one per id: a Chapter's summary, Attempt and Check rows (ADR-0016). Like `ActionLedger` it is purpose-built, and it is the only holder of those three entities. Each change is one table transaction in the Family partition, retried when a race is lost.
 
 **RowKeyService** (`IRowKeyService`): every partition and row key. Keys are cipher context, so they are fixed in code.
 

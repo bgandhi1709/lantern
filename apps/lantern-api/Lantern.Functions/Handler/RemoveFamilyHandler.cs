@@ -12,6 +12,7 @@ internal sealed class RemoveFamilyHandler(
     IActionLedger ledger,
     IJsonService json,
     IWorkspaceStore workspaces,
+    IProgressRepository progress,
     IFamilyRepository families,
     ILogger<RemoveFamilyHandler> logger
 ) : ActionHandler<RemoveFamilyPayload>(ledger, json)
@@ -24,6 +25,7 @@ internal sealed class RemoveFamilyHandler(
 
         await families.EraseAsync(payload.FamilyId, cancellationToken);
         await workspaces.RemoveFamilyAsync(payload.FamilyId, cancellationToken);
+        await progress.RemoveFamilyAsync(payload.FamilyId, cancellationToken);
 
         FunctionLog.FamilyErased(logger, payload.FamilyId);
     }

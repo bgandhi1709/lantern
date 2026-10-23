@@ -101,7 +101,7 @@ One file in the Family's own storage listing each Child whose Content slice is r
 _Avoid_: Cache, Family index, Child list
 
 **Chapter**:
-A numbered unit of a Book, and the unit a Concept belongs to.
+A numbered unit of a Book, and the unit a Concept belongs to. The app lists a Subject's Chapters numbered 1 to N across all its Books, in book order, not by each Book's own printed numbers.
 _Avoid_: Lesson, unit
 
 **Concept**:
@@ -145,6 +145,14 @@ _Avoid_: Level, band, grade band
 **Plan**:
 Lantern's guide for teaching one Chapter, built from the Chapter's Concepts in book order: for each Concept, its summary, how the book teaches it, a home activity and a Recall. Ends with a Check. Progress is kept per Concept, so a Parent can stop and resume.
 _Avoid_: Lesson plan, session plan, schedule
+
+**Attempt**:
+One go at teaching and verifying a Chapter: a Plan, then the Checks taken on it. A Chapter can have many Attempts: each new Plan starts one, and every Attempt and every Check is kept, with its marks.
+_Avoid_: Round, session
+
+**Chapter state**:
+Where a Chapter stands for a Child, read from its latest Attempt: Not started (no Attempt), Planned, Taught (every Concept of the Plan done) or Checked (a Check was taken). A new Plan on a Checked Chapter makes it Planned again, and the earlier marks stay in its history.
+_Avoid_: Stage (a band of Classes), status
 
 **Chapter summary**:
 A few plain lines on what a Chapter is about, shown before the Parent opens its Plan. Written once, offline, for every Chapter.

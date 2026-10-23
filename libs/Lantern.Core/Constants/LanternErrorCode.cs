@@ -8,6 +8,7 @@ public enum LanternErrorCode
     CallerNotIdentified,
     ChildDeleting,
     ChildLimitReached,
+    ChapterNotFound,
     ChildNotFound,
     ClassNotAvailable,
     ContentNotReady,
@@ -16,5 +17,7 @@ public enum LanternErrorCode
     FamilyNotFound,
     InvalidPage,
     InvalidRequest,
+    InvalidSearch,
     NotRegistered,
+    SubjectNotFound,
 }

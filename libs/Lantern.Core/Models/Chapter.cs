@@ -21,6 +21,8 @@ public sealed class Chapter : IEquatable<Chapter>
 
     public string Summary { get; }
 
+    public Chapter WithNumber(int number) => new(ChapterId, BookId, number, Title, Summary);
+
     public bool Equals(Chapter other) =>
         other is not null
         && ChapterId == other.ChapterId

@@ -17,12 +17,16 @@ internal sealed class RepositoryHarness : IDisposable
     private readonly UnitOfWork<FamilyEntity> familyRows;
     private readonly UnitOfWork<ChildEntity> childRows;
     private readonly UnitOfWork<ParentEntity> parentRows;
+    private readonly UnitOfWork<ChapterProgressEntity> chapterProgressRows;
+    private readonly UnitOfWork<AttemptEntity> attemptRows;
+    private readonly UnitOfWork<CheckEntity> checkRows;
 
     public RepositoryHarness(string connectionString, bool createTables = true, string parentsTable = null, string familiesTable = null)
     {
         var service = new TableServiceClient(connectionString);
         Parents = service.GetTableClient(parentsTable ?? $"parents{Guid.NewGuid():N}");
         Families = service.GetTableClient(familiesTable ?? $"families{Guid.NewGuid():N}");
+        Progress = service.GetTableClient($"progress{Guid.NewGuid():N}");
         Crypto = new CryptoService(Options.Create(new SecurityOptions { Key = TestSettings.SecurityKey }));
 
         var config = new TypeAdapterConfig();
@@ -32,6 +36,9 @@ internal sealed class RepositoryHarness : IDisposable
         familyRows = new UnitOfWork<FamilyEntity>(Families, createTables);
         childRows = new UnitOfWork<ChildEntity>(Families, createTables);
         parentRows = new UnitOfWork<ParentEntity>(Parents, createTables);
+        chapterProgressRows = new UnitOfWork<ChapterProgressEntity>(Progress, createTables);
+        attemptRows = new UnitOfWork<AttemptEntity>(Progress, createTables);
+        checkRows = new UnitOfWork<CheckEntity>(Progress, createTables);
     }
 
     public static RowKeyService KeyService { get; } = new();
@@ -40,6 +47,8 @@ internal sealed class RepositoryHarness : IDisposable
 
     public TableClient Families { get; }
 
+    public TableClient Progress { get; }
+
     public CryptoService Crypto { get; }
 
     public FamilyRepository FamilyRepository() =>
@@ -47,6 +56,9 @@ internal sealed class RepositoryHarness : IDisposable
 
     public ChildRepository ChildRepository() =>
         new(childRows, familyRows, mapper, KeyService);
+
+    public ProgressRepository ProgressRepository() =>
+        new(chapterProgressRows, attemptRows, checkRows, KeyService, TestServices.Json);
 
     public void Dispose()
     {

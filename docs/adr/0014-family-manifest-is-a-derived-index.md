@@ -113,7 +113,7 @@ D89's per-Board copy rules gain one required file for both Boards: `manifest/cla
 
 ## Not built here
 
-- Chapters API numbering for a Subject with several Books (decided in #115; the manifest keeps `bookId` and `number`, so either way works).
+- Book headings in the Chapters list. A Subject's Chapters are numbered 1 to N across its Books by the API (D115); the manifest keeps `bookId` and the Book's own `number`, so headings can be added later without a rebuild.
 - The `refresh-content` job and any back-fill. Slices made before this change have no `content/manifest.json` and no manifest entry; nothing is in production, so those Families are re-registered.
 - Merging NCERT's two EVS-type Subjects in Classes 4 and 5. They are shown as the content holds them.
 

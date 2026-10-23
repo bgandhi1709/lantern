@@ -10,6 +10,7 @@ internal sealed class RemoveWorkspaceHandler(
     IActionLedger ledger,
     IJsonService json,
     IWorkspaceStore workspaces,
+    IProgressRepository progress,
     IChildRepository children,
     ILogger<RemoveWorkspaceHandler> logger
 ) : ActionHandler<RemoveWorkspacePayload>(ledger, json)
@@ -21,6 +22,7 @@ internal sealed class RemoveWorkspaceHandler(
         ArgumentNullException.ThrowIfNull(payload);
 
         await workspaces.RemoveAsync(payload.FamilyId, payload.ChildId, cancellationToken);
+        await progress.RemoveChildAsync(payload.FamilyId, payload.ChildId, cancellationToken);
         await children.RemoveAsync(payload.FamilyId, payload.ChildId, cancellationToken);
 
         FunctionLog.WorkspaceRemoved(logger, payload.FamilyId, payload.ChildId);

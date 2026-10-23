@@ -23,6 +23,9 @@ public sealed class StorageOptions : IValidatableObject
     public string ActionsTable { get; set; } = string.Empty;
 
     [Required]
+    public string ProgressTable { get; set; } = string.Empty;
+
+    [Required]
     public string WorkspaceContainer { get; set; } = string.Empty;
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)

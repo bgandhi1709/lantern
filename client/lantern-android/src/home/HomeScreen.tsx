@@ -5,6 +5,7 @@ import { MAX_CHILDREN } from '../registration';
 import { getParent } from '../shared/session';
 import { dayPartAt, firstNameOf } from './greeting';
 import { HomeView } from './HomeView';
+import { useActiveChildOnReturn } from './useActiveChildOnReturn';
 import { useHome } from './useHome';
 import { useRetryOnReturn } from './useRetryOnReturn';
 import { useWelcomeBanner } from './useWelcomeBanner';
@@ -26,6 +27,7 @@ export function HomeScreen({
 }: Props) {
   const home = useHome();
   useRetryOnReturn(home.locked, home.retry);
+  useActiveChildOnReturn(home.activeChild?.id ?? null, home.children, home.switchTo);
   const banner = useWelcomeBanner();
   const [sheetOpen, setSheetOpen] = useState(false);
 
