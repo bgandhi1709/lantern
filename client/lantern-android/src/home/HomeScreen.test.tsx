@@ -109,6 +109,15 @@ describe('Home', () => {
     expect(await screen.findByText('English')).toBeOnTheScreen();
   });
 
+  it('opens on the first Child when the stored Child is not in this Family, as after another account used the phone', async () => {
+    await writeValue('activeChildId', '00000000-0000-4000-8000-000000000999');
+
+    await openHome();
+
+    expect(screen.getByText("Aarya's Subjects, Class 6")).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'Switch child, now Aarya' })).toBeOnTheScreen();
+  });
+
   it('shows the Child chosen on another screen when the Parent comes back', async () => {
     const { view } = await openHome();
     const home = () => (

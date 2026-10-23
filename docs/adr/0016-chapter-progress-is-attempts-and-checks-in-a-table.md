@@ -25,3 +25,21 @@ A Parent can plan a Chapter again after a Check, and retry the Check once the Ch
 - A Child's rows are removed by a handler as well as a blob sweep, so the delete handlers each do one more thing.
 - Reading a Subject's Chapters reads the Child's summary rows every page. They are small and few.
 - Plan content, when the agents write it, will live in the Class folder as blobs referenced by the Attempt's Plan id. Its layout belongs to the Plan work.
+
+## Abuse cases
+
+The reads return Chapter titles and summaries, each Chapter's state and counts, and a Chapter's Attempts and Checks (Concept titles, marks, times). Nothing in them names a Child: names stay encrypted with the Family key (ADR-0015), and a Child is a GUID here. The API sees only the Parent's Google token, never the code. Walked as the Security step requires:
+
+| Attacker holds | Gets | Why |
+|---|---|---|
+| Another Google account and the Parent's code | Nothing | The code never reaches the API. A Child of another Family is exactly as 404 as an id that does not exist (`ChaptersTests` and `AttemptsTests`: `Get_AnotherFamilysChild_IsExactlyAsNotFoundAsAnIdThatDoesNotExist`; E2E: `AnotherFamilysChild_AndACallWithNoToken_*`) |
+| The Parent's Google account only | The Chapter progress and history, with no names | Accepted cost: marks are not encrypted with the Family key, so Lantern and the account alone can read them. They hold no personal data (above). The Parent's Google account was already enough to read the Children's Subjects |
+| The code only (no account) | Nothing | No token is 401 and an account that never registered is 404 (`Get_WithoutAToken_Is401_AndACallerWhoNeverRegistered_Is404NotRegistered`, both controllers) |
+| The Parent's Google account and inbox | Everything the Parent sees | Accepted cost: both factors sit in one account (ADR-0015). These endpoints only read |
+| The Parent's unlocked or shared phone | The Children's progress, as the Parent sees it | Accepted cost: the phone's own lock is the defence. The app keeps nothing from these screens on the device except the active Child's id |
+| A second phone the Parent does not know of | The same as the Parent | Accepted cost, as ADR-0015: Lantern holds no device list (#168) |
+| Two accounts on one phone | Nothing of the other account's Children | The API refuses a Child of another Family (row 1). Sign out keeps the phone's key and choices (D109), including the active Child's id, and Home ignores a stored id that is not in this Family (`HomeScreen.test.tsx`: opens on the first Child when the stored Child is not in this Family) |
+| A deleted or re-registered Family | Nothing | A Child being deleted is 404 (`Get_AChildBeingDeleted_IsNotFound`, both controllers). Deleting a Child or a Family removes its progress rows, so a Family registered again starts with none, and a repeat leaves nothing (`ProgressSweepTests`) |
+| Logs, errors, crash and analytics reports, URLs, backups | No Child's data | URLs hold GUIDs, the Chapter id and the Parent's search text over public Chapter titles. API request lines are not logged (`Microsoft.AspNetCore` is at Warning) and an error is a fixed Problem text (`ProblemExceptionHandler`). The app has no analytics or crash reporter. Accepted cost: a table backup holds ids, Concept titles, marks and times, tied to a Child only by its GUID |
+
+Inside one Family, a Child's progress is never shown on another Child (`ChaptersTests.Get_AnotherChildsProgress_IsNeverShown`). Chapter and Subject ids from the request are used only after they are found in the Child's own manifest, and every table query filter is parameterised. The `/security-review` of this branch found nothing above its threshold.
