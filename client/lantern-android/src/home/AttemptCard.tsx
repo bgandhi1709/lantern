@@ -8,9 +8,9 @@ import type { ChapterState } from './chaptersApi';
 
 const CHIP: Record<ChapterState, { box: string; label: string }> = {
   'not-started': { box: 'bg-track', label: 'text-ink' },
-  planned: { box: 'bg-tile', label: 'text-primary-deep' },
-  taught: { box: 'bg-warning/15', label: 'text-warning' },
-  checked: { box: 'bg-success/15', label: 'text-success' },
+  planned: { box: 'border border-primary bg-tile', label: 'text-primary-deep' },
+  taught: { box: 'border border-warning bg-card', label: 'text-warning' },
+  checked: { box: 'bg-primary', label: 'text-on-primary' },
 };
 
 export function AttemptCard({ attempt }: { attempt: Attempt }) {

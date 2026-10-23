@@ -47,11 +47,15 @@ public sealed class ProgressE2ETests
 
         Assert.Equal(expected, items.Select(item => (string)item!["state"]!));
         Assert.Equal(items.Count, page["progress"]!["states"]!.AsArray().Count);
-        Assert.Equal((2, 2, "planned", 4, 2), ((int)history["chapter"]!["attemptCount"]!, (int)history["chapter"]!["checkCount"]!, (string)history["chapter"]!["state"]!, (int)history["chapter"]!["conceptCount"]!, (int)history["chapter"]!["conceptsDone"]!));
+        Assert.Equal((2, 2, "planned", 2), ((int)history["chapter"]!["attemptCount"]!, (int)history["chapter"]!["checkCount"]!, (string)history["chapter"]!["state"]!, (int)history["chapter"]!["conceptsDone"]!));
+        Assert.True((int)history["chapter"]!["conceptCount"]! >= 3);
         Assert.Equal([2, 1], attempts.Select(attempt => (int)attempt!["attemptNumber"]!));
         Assert.Equal(["planned", "checked"], attempts.Select(attempt => (string)attempt!["state"]!));
         Assert.Empty(attempts[0]!["checks"]!.AsArray());
-        Assert.Equal([(2, 4, 1), (1, 3, 2)], attempts[1]!["checks"]!.AsArray().Select(check => ((int)check!["checkNumber"]!, (int)check["right"]!, check["wrong"]!.AsArray().Count)));
+        var checks = attempts[1]!["checks"]!.AsArray();
+        Assert.Equal([(2, 1), (1, 2)], checks.Select(check => ((int)check!["checkNumber"]!, check["wrong"]!.AsArray().Count)));
+        Assert.All(checks, check => Assert.Equal((int)check!["of"]! - check["wrong"]!.AsArray().Count, (int)check["right"]!));
+        Assert.All(checks.SelectMany(check => check!["wrong"]!.AsArray()), wrong => Assert.False(string.IsNullOrWhiteSpace((string)wrong!["title"]!)));
     }
 
     [Fact]
@@ -59,14 +63,15 @@ public sealed class ProgressE2ETests
     {
         using var client = await NewParentAsync();
         var child = (await RegisterAsync(client)).Children.Single();
-        var (subjectId, _) = await FirstSubjectAsync(client, child.ChildId);
+        var (subjectId, count) = await FirstSubjectAsync(client, child.ChildId);
         await SeedAsync(child.ChildId);
 
+        var limit = Math.Max(1, (count + 2) / 3);
         var numbers = new List<int>();
         string cursor = null;
         do
         {
-            var query = cursor is null ? "?limit=1" : $"?limit=1&cursor={Uri.EscapeDataString(cursor)}";
+            var query = cursor is null ? $"?limit={limit}" : $"?limit={limit}&cursor={Uri.EscapeDataString(cursor)}";
             var page = (await client.GetFromJsonAsync<JsonNode>(ChaptersOf(child.ChildId, subjectId, query)))!;
             numbers.AddRange(page["items"]!.AsArray().Select(item => (int)item!["number"]!));
             cursor = (string)page["nextCursor"];

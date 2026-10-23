@@ -1,0 +1,34 @@
+# Needs a Child registered through the app (run first-child.yaml, which leaves Aarav on Class 4), the stack from
+# `scripts/verify-env.sh up`, and the sample history made once with:
+#   curl -sk -X POST https://local.lantern.api/dev/seed-progress
+# It then walks the Chapter states and the Chapter history of Aarav's first Subject (Mathematics, on the real masters).
+# Run: maestro test .maestro/chapter-history.yaml
+appId: com.lantern.app
+---
+- stopApp
+- openLink: 'lantern://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8081'
+- extendedWaitUntil:
+    visible: "Aarav's Subjects, Class 4"
+    timeout: 120000
+- tapOn: 'Mathematics.*'
+- assertVisible: 'Mathematics for Aarav'
+- assertVisible: '1 of 14 checked'
+- assertVisible: 'Playing with Numbers, Planned · Attempt 2 · 2 of .* Concepts done. Continue'
+- assertVisible: 'Fun with Shapes, Checked. Plan again'
+- tapOn: 'View history of Playing with Numbers, 2 attempts'
+- assertVisible: 'Chapter history'
+- assertVisible: 'Now: Planned · Attempt 2 · 2 of .* Concepts done'
+- assertVisible: 'Attempt 2'
+- assertVisible: 'Attempt 1'
+- assertVisible: 'No Check taken yet.'
+- assertVisible: 'Check 2'
+- assertVisible: 'Check 1'
+- assertVisible: 'Wrong: .*'
+- tapOn: 'Continue this Plan'
+- assertVisible: 'Coming next'
+- back
+- back
+- scrollUntilVisible:
+    element: 'Addition and Subtraction, Taught. Check'
+- back
+- assertVisible: "Aarav's Subjects, Class 4"

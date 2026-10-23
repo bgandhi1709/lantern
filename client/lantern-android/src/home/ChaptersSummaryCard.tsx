@@ -5,8 +5,8 @@ import type { ChapterState, SubjectProgress } from './chaptersApi';
 
 const SEGMENT: Record<ChapterState, string> = {
   checked: 'bg-primary',
-  taught: 'bg-primary/60',
-  planned: 'bg-primary/30',
+  taught: 'bg-warning',
+  planned: 'border border-primary bg-tile',
   'not-started': 'bg-track',
 };
 

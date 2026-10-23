@@ -22,9 +22,9 @@ export function ChapterStateTracker({ state }: { state: ChapterState }) {
         const done = reached > index;
         return (
           <View key={step} className="flex-1 items-center gap-1">
-            {index > 0 ? (
+            {index < STEPS.length - 1 ? (
               <View
-                className={`absolute right-1/2 top-3 h-0.5 w-full ${done ? 'bg-primary' : 'bg-track'}`}
+                className={`absolute -right-1/2 left-1/2 top-3 mx-4 h-0.5 ${reached > index + 1 ? 'bg-primary' : 'bg-track'}`}
               />
             ) : null}
             <View

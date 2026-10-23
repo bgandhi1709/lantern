@@ -24,8 +24,9 @@ internal sealed class SeedProgressEndpoint : IStartupFilter
                         return;
                     }
 
+                    var reset = string.Equals(context.Request.Query["reset"], "true", StringComparison.OrdinalIgnoreCase);
                     Guid? onlyChild = Guid.TryParse(context.Request.Query["childId"], out var childId) ? childId : null;
-                    var seeded = await context.RequestServices.GetRequiredService<SampleProgress>().SeedAsync(onlyChild, context.RequestAborted);
+                    var seeded = await context.RequestServices.GetRequiredService<SampleProgress>().SeedAsync(onlyChild, reset, context.RequestAborted);
                     await context.Response.WriteAsJsonAsync(new { seeded }, context.RequestAborted);
                 })
             );
