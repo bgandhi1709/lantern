@@ -51,6 +51,9 @@ public static class RepositoryModule
         AddUnitOfWork<ChildEntity>(services, options => options.FamiliesTable);
         AddUnitOfWork<ParentEntity>(services, options => options.ParentsTable);
         AddUnitOfWork<ActionEntity>(services, options => options.ActionsTable);
+        AddUnitOfWork<ChapterProgressEntity>(services, options => options.ProgressTable);
+        AddUnitOfWork<AttemptEntity>(services, options => options.ProgressTable);
+        AddUnitOfWork<CheckEntity>(services, options => options.ProgressTable);
 
         services.TryAddSingleton<IRowKeyService, RowKeyService>();
         services.TryAddScoped<IFamilyRepository, FamilyRepository>();
@@ -58,6 +61,7 @@ public static class RepositoryModule
         services.TryAddScoped<IRepositoryBase<Core.Models.Child>>(serviceProvider => serviceProvider.GetRequiredService<IChildRepository>());
         services.TryAddScoped<IRepositoryBase<Core.Models.Family>>(serviceProvider => serviceProvider.GetRequiredService<IFamilyRepository>());
         services.TryAddSingleton<IActionLedger, ActionLedger>();
+        services.TryAddScoped<IProgressRepository, ProgressRepository>();
         services.AddSingleton<IRegister, RepositoryProfile>();
         services.TryAddSingleton<IWorkspaceStore>(serviceProvider =>
         {

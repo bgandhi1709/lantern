@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { unlockText } from '../shared/crypto';
 import { getParent } from '../shared/session';
 import { readFamilyKey, readValue, writeValue } from '../shared/storage';
-import { fetchChildren } from './homeApi';
 import type { Subject } from './homeApi';
 import { subjectsOnceReady } from './subjectsOnceReady';
+import { fetchUnlockedChildren } from './unlockedChildren';
 
 export type HomeChild = { id: string; name: string; classLevel: number };
 
@@ -44,12 +43,10 @@ export function useHome() {
         if (!cancelled) setLocked(true);
         return;
       }
-      const [rows, storedId] = await Promise.all([fetchChildren(), readValue('activeChildId')]);
-      const list = rows.map((row) => ({
-        id: row.childId,
-        name: unlockText(familyKey, row.name),
-        classLevel: row.classLevel,
-      }));
+      const [list, storedId] = await Promise.all([
+        fetchUnlockedChildren(familyKey),
+        readValue('activeChildId'),
+      ]);
       if (cancelled) return;
       setChildren(list);
       setActiveId((list.find((child) => child.id === storedId) ?? list[0])?.id ?? null);

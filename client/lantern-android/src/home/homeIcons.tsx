@@ -100,6 +100,21 @@ export const PlusIcon = () => (
   </Glyph>
 );
 
+export const SearchIcon = () => (
+  <Glyph size={22} tone="muted" strokeWidth={2.5}>
+    <Circle cx={11} cy={11} r={7} />
+    <Path d="M20 20l-4-4" />
+  </Glyph>
+);
+
+export const HistoryIcon = () => (
+  <Glyph size={18} tone="deep">
+    <Path d="M3 12a9 9 0 1 0 3-6.7" />
+    <Path d="M3 4v5h5" />
+    <Path d="M12 7v5l3 2" />
+  </Glyph>
+);
+
 export const TickIcon = () => (
   <Glyph size={18} tone="onPrimary" strokeWidth={3.5}>
     <Path d="M5 12.5l4.5 4.5L19 7.5" />

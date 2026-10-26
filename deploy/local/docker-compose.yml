@@ -63,6 +63,7 @@ services:
       Storage__ParentsTable: parents
       Storage__FamiliesTable: families
       Storage__ActionsTable: actions
+      Storage__ProgressTable: progress
       Storage__WorkspaceContainer: family
       Catalog__NcertContainer: ncert
       Catalog__SscContainer: ssc

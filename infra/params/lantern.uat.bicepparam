@@ -6,6 +6,7 @@ param tables = {
   parents: 'parents'
   families: 'families'
   actions: 'actions'
+  progress: 'progress'
 }
 
 // The Workspace container keeps its first name: renaming it would leave every existing Workspace behind.

@@ -4,7 +4,7 @@ import { Text } from 'react-native';
 
 import { AuthGate, AuthProvider } from '../auth';
 import { ApiError, api } from '../shared/api';
-import { clearAll, readFamilyKey, readValue } from '../shared/storage';
+import { clearAll, readFamilyKey, readValue, writeValue } from '../shared/storage';
 import { lockText } from '../shared/crypto';
 import { AARYA, ROHAN, answerLikeTheApi, registerFamilyOnThisPhone } from '../test/fakeFamily';
 import { FAKE_UID, fakeRestoredSession } from '../test/fakeFirebaseAuth';
@@ -12,7 +12,8 @@ import { GoogleSignin } from '../test/fakeGoogleSignIn';
 import { HomeScreen } from './HomeScreen';
 
 jest.mock('../shared/api', () => jest.requireActual('../test/fakeApiModule'));
-jest.mock('expo-router', () => ({ useIsFocused: () => true }));
+let mockFocused = true;
+jest.mock('expo-router', () => ({ useIsFocused: () => mockFocused }));
 
 const get = api.get as jest.Mock;
 
@@ -40,6 +41,7 @@ async function openHome() {
 }
 
 beforeEach(async () => {
+  mockFocused = true;
   await clearAll();
   get.mockReset();
   onOpenSubject.mockReset();
@@ -105,6 +107,37 @@ describe('Home', () => {
     );
 
     expect(await screen.findByText('English')).toBeOnTheScreen();
+  });
+
+  it('opens on the first Child when the stored Child is not in this Family, as after another account used the phone', async () => {
+    await writeValue('activeChildId', '00000000-0000-4000-8000-000000000999');
+
+    await openHome();
+
+    expect(screen.getByText("Aarya's Subjects, Class 6")).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'Switch child, now Aarya' })).toBeOnTheScreen();
+  });
+
+  it('shows the Child chosen on another screen when the Parent comes back', async () => {
+    const { view } = await openHome();
+    const home = () => (
+      <HomeScreen
+        onOpenSubject={onOpenSubject}
+        onAddChild={onAddChild}
+        onOpenSettings={onOpenSettings}
+        onOpenTab={onOpenTab}
+        onUnlock={onUnlock}
+      />
+    );
+
+    mockFocused = false;
+    await view.rerender(home());
+    await writeValue('activeChildId', ROHAN);
+    mockFocused = true;
+    await view.rerender(home());
+
+    expect(await screen.findByText('English')).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'Switch child, now Rohan' })).toBeOnTheScreen();
   });
 
   it('offers Add a child in the sheet and opens that route', async () => {

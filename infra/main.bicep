@@ -8,6 +8,7 @@ param tables {
   parents: string
   families: string
   actions: string
+  progress: string
 }
 
 @description('Blob containers. `workspaces` holds every Child\'s Workspace and is passed to both apps; `ncert` and `ssc` hold each Board\'s refined corpus.')
@@ -81,6 +82,7 @@ var sharedEnv = [
   { name: 'Storage__ParentsTable', value: tables.parents }
   { name: 'Storage__FamiliesTable', value: tables.families }
   { name: 'Storage__ActionsTable', value: tables.actions }
+  { name: 'Storage__ProgressTable', value: tables.progress }
   { name: 'Storage__WorkspaceContainer', value: containers.workspaces }
 ]
 

@@ -1,0 +1,33 @@
+# Needs a Google account on the emulator and `scripts/verify-env.sh up` running. It registers Aarav (Class 4) and
+# Mira (Class 2) through first-child.yaml, which ends on Home after a restart, then walks the Chapters screen.
+# Run: maestro test .maestro/chapters.yaml
+appId: com.lantern.app
+---
+- runFlow: first-child.yaml
+- tapOn: 'Mathematics.*'
+- assertVisible: 'Chapters'
+- assertVisible: 'Mathematics for Aarav'
+- assertVisible: 'Find a Chapter'
+- assertVisible: 'Switch child, now Aarav'
+- assertVisible: '.*, Not started. Plan'
+- assertNotVisible: 'View history'
+- tapOn: 'Find a Chapter'
+- inputText: 'shapes'
+- hideKeyboard
+- assertVisible: 'Fun with Shapes, Not started. Plan'
+- tapOn: 'Switch subject, now Mathematics'
+- assertVisible: 'Pick a Subject'
+- tapOn: 'English.*'
+- assertVisible: 'English for Aarav'
+- assertVisible: 'Switch subject, now English'
+- tapOn: 'Switch child, now Aarav'
+- assertVisible: 'Who is learning?'
+- tapOn: 'Mira.*'
+- assertVisible: '.* for Mira'
+- assertVisible: 'Switch child, now Mira'
+- back
+- assertVisible: "Mira's Subjects, Class 2"
+- tapOn: 'Sign out'
+- extendedWaitUntil:
+    visible: 'Continue with Google'
+    timeout: 30000

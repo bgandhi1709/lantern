@@ -57,6 +57,8 @@ E2E_BASE_URL=https://local.lantern.api E2E_AUTH_EMULATOR=http://127.0.0.1:9099 \
   dotnet test --project tests/lantern-api/Lantern.Api.Test.Integration --filter-trait "Category=E2E"
 ```
 
+`POST https://local.lantern.api/dev/seed-progress` (this Docker host only, never the real API) gives every Child that has none a sample history in the `progress` table: one Chapter planned a second time after two Checks, one Checked, one Taught and one Planned. Add `?childId=` for one Child. The E2E tests call it for their own Child, and it is how to see the Chapter history on the emulator for a Child registered through the app.
+
 The API container seeds synthetic `ncert` and `ssc` containers into Azurite on start (NCERT Classes 1 to 10, SSC Classes 1 to 5; never publisher text), each with the Class manifests `ncert-build` would write (`manifest/class-N.json`), so a Child registered or added in the stack gets its Content slice from them, and the seeded dev Children get theirs. The last step of each Child's `create-workspace` adds the Child to the Family's manifest (`{familyId}/manifest.json` in the `family` container, ADR-0014); the seeded Family's is written by the seeder. Deleting a Child goes through the Service Bus emulator to the `functions` container, so those E2E tests poll for up to a minute. The first `up` pulls the SQL Server and emulator images (about 2 GB) and the emulator needs about 1 GB of memory; `servicebus-ready` holds the API and the Functions app back until the queue is up, because an action sent before then is lost until the API next starts.
 
 CI runs the same tests in its `e2e-docker` job on every PR and push, and the release waits for it, so what passes here
