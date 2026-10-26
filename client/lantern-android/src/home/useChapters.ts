@@ -7,7 +7,7 @@ import { readFamilyKey, writeValue } from '../shared/storage';
 import { fetchChaptersPage } from './chaptersApi';
 import { fetchSubjects } from './homeApi';
 import type { Subject } from './homeApi';
-import { fetchUnlockedChildren } from './unlockedChildren';
+import { fetchUnlockedFamily } from './unlockedFamily';
 import type { HomeChild } from './useHome';
 
 const SEARCH_DELAY_MS = 300;
@@ -37,7 +37,7 @@ export function useChapters(initialChildId: string, initialSubjectId: string) {
     const load = async () => {
       const familyKey = await readFamilyKey(getParent().uid);
       if (!familyKey) throw new Error('This phone does not hold the Family key.');
-      const loaded = await fetchUnlockedChildren(familyKey);
+      const { children: loaded } = await fetchUnlockedFamily(familyKey);
       if (!cancelled) setChildren(loaded);
     };
     load().catch(() => {

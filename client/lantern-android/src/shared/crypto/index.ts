@@ -1,5 +1,6 @@
 export {
   createFamilyKeys,
+  makeChildId,
   makeFamilyId,
   openWithRecoveryCode,
   rewrapFamilyKeys,

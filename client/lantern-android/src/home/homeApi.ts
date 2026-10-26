@@ -1,8 +1,10 @@
 import { z } from 'zod';
 
+import { BOARDS } from '../registration';
 import { api } from '../shared/api';
 
-const FamilyChildren = z.object({
+const Family = z.object({
+  board: z.enum(BOARDS),
   children: z.array(
     z.object({ childId: z.string(), name: z.string(), classLevel: z.number().int() }),
   ),
@@ -25,7 +27,7 @@ const SubjectsPage = z.object({
 
 export type Subject = z.infer<typeof SubjectsPage>['items'][number];
 
-export const fetchChildren = async () => (await api.get('/v1/me', FamilyChildren)).children;
+export const fetchFamily = () => api.get('/v1/me', Family);
 
 export const fetchSubjects = async (childId: string) =>
   (await api.get(`/v1/children/${childId}/subjects`, SubjectsPage)).items;

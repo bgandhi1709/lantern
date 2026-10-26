@@ -62,6 +62,16 @@ const requiredStories: Record<string, string[]> = {
     'OpenAndEmpty',
     'LongName',
   ],
+  'addChild/AddChildView.stories.tsx': [
+    'Empty',
+    'Ready',
+    'SscBoard',
+    'Adding',
+    'LimitReached',
+    'ClassNotAvailable',
+    'Unreachable',
+    'Other',
+  ],
   'registration/FirstChildView.stories.tsx': [
     'Empty',
     'Ready',
@@ -194,6 +204,7 @@ const withoutStory: Record<string, string> = {
   'unlock/UnlockScreen.tsx': 'container for UnlockView, which has the stories',
   'unlock/StartAgainScreen.tsx': 'container for StartAgainView, which has the stories',
   'registration/FirstChildScreen.tsx': 'container for FirstChildView, which has the stories',
+  'addChild/AddChildScreen.tsx': 'container for AddChildView, which has the stories',
   'registration/MoreChildren.tsx':
     'the More children section of FirstChildView, whose stories show it',
   'registration/ChildFormFooter.tsx':

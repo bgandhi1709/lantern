@@ -17,6 +17,8 @@ export type FamilyKeys = {
 
 export const makeFamilyId = () => randomUUID();
 
+export const makeChildId = () => randomUUID();
+
 const wrappingKey = (familyId: string, secret: string, salt: Uint8Array) =>
   deriveKey(`${familyId}_${secret.normalize('NFC')}`, salt, WRAP_COST);
 

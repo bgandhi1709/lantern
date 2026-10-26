@@ -176,6 +176,21 @@ export const en = {
       continue: 'Continue',
     },
   },
+  addChild: {
+    heading: 'Add a child',
+    note: (max: number) => `A Family can have up to ${max} Children.`,
+    submit: 'Add child',
+    submitting: 'Adding…',
+    working: 'Adding the child…',
+    tryAgain: 'Try again',
+    failures: {
+      classNotAvailable:
+        "Lantern doesn't have books for this Class on this board yet. Pick another Class, then try again.",
+      childLimitReached: 'This family already has 6 children, so another cannot be added.',
+      unreachable: "Couldn't reach Lantern. Check your connection, then try again.",
+      other: 'Something went wrong, and the child was not added. Please try again.',
+    },
+  },
   home: {
     greeting: {
       morning: (name: string) => `Good morning, ${name}`,

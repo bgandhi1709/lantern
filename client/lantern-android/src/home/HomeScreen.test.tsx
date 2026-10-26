@@ -6,7 +6,13 @@ import { AuthGate, AuthProvider } from '../auth';
 import { ApiError, api } from '../shared/api';
 import { clearAll, readFamilyKey, readValue, writeValue } from '../shared/storage';
 import { lockText } from '../shared/crypto';
-import { AARYA, ROHAN, answerLikeTheApi, registerFamilyOnThisPhone } from '../test/fakeFamily';
+import {
+  AARYA,
+  MIRA,
+  ROHAN,
+  answerLikeTheApi,
+  registerFamilyOnThisPhone,
+} from '../test/fakeFamily';
 import { FAKE_UID, fakeRestoredSession } from '../test/fakeFirebaseAuth';
 import { GoogleSignin } from '../test/fakeGoogleSignIn';
 import { HomeScreen } from './HomeScreen';
@@ -24,7 +30,8 @@ const onOpenTab = jest.fn();
 const onUnlock = jest.fn();
 
 async function openHome() {
-  answerLikeTheApi(get, await registerFamilyOnThisPhone());
+  const familyKey = await registerFamilyOnThisPhone();
+  answerLikeTheApi(get, familyKey);
   fakeRestoredSession();
   const user = userEvent.setup();
   const view = await render(
@@ -37,7 +44,7 @@ async function openHome() {
     />,
   );
   await screen.findByText('Science');
-  return { user, view };
+  return { user, view, familyKey };
 }
 
 beforeEach(async () => {
@@ -147,6 +154,54 @@ describe('Home', () => {
     await user.press(await screen.findByRole('button', { name: 'Add a child' }));
 
     expect(onAddChild).toHaveBeenCalledTimes(1);
+    expect(onAddChild).toHaveBeenCalledWith('cbse');
+  });
+
+  it('shows a Child added on another screen, with its Subjects, when the Parent comes back', async () => {
+    const { view, familyKey } = await openHome();
+    const home = () => (
+      <HomeScreen
+        onOpenSubject={onOpenSubject}
+        onAddChild={onAddChild}
+        onOpenSettings={onOpenSettings}
+        onOpenTab={onOpenTab}
+        onUnlock={onUnlock}
+      />
+    );
+
+    mockFocused = false;
+    await view.rerender(home());
+    answerLikeTheApi(get, familyKey, true);
+    await writeValue('activeChildId', MIRA);
+    mockFocused = true;
+    await view.rerender(home());
+
+    expect(await screen.findByText('Hindi')).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'Switch child, now Mira' })).toBeOnTheScreen();
+  });
+
+  it('asks the API for the Family again only when the stored Child is one it has not met', async () => {
+    await writeValue('activeChildId', '00000000-0000-4000-8000-000000000999');
+    const { view } = await openHome();
+    const home = () => (
+      <HomeScreen
+        onOpenSubject={onOpenSubject}
+        onAddChild={onAddChild}
+        onOpenSettings={onOpenSettings}
+        onOpenTab={onOpenTab}
+        onUnlock={onUnlock}
+      />
+    );
+    const familyCalls = () => get.mock.calls.filter(([path]) => path === '/v1/me').length;
+    const before = familyCalls();
+
+    mockFocused = false;
+    await view.rerender(home());
+    mockFocused = true;
+    await view.rerender(home());
+    await screen.findByText('Science');
+
+    expect(familyCalls()).toBe(before);
   });
 
   it('does not offer Add a child once the Family has six Children', async () => {

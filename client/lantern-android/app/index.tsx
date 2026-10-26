@@ -16,7 +16,7 @@ export default function Index() {
           onOpenSubject={(childId, subjectId) =>
             router.push({ pathname: '/subject/[subjectId]', params: { subjectId, childId } })
           }
-          onAddChild={() => router.push('/add-child')}
+          onAddChild={(board) => router.push({ pathname: '/add-child', params: { board } })}
           onOpenSettings={() => router.push('/settings')}
           onOpenTab={() => router.push('/coming-next')}
           onUnlock={() => router.push('/unlock')}

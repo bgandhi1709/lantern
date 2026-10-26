@@ -6,6 +6,7 @@ import { FAKE_UID, fakeRestoredSession } from './fakeFirebaseAuth';
 
 export const AARYA = '11111111-1111-4111-8111-111111111111';
 export const ROHAN = '22222222-2222-4222-8222-222222222222';
+export const MIRA = '33333333-3333-4333-8333-333333333333';
 
 export const AARYA_SUBJECTS = {
   items: [
@@ -20,7 +21,16 @@ export const ROHAN_SUBJECTS = {
   nextCursor: null,
 };
 
-const SUBJECTS: Record<string, unknown> = { [AARYA]: AARYA_SUBJECTS, [ROHAN]: ROHAN_SUBJECTS };
+export const MIRA_SUBJECTS = {
+  items: [{ subjectId: 'hindi', name: 'Hindi', icon: 'book', chapterCount: 9 }],
+  nextCursor: null,
+};
+
+const SUBJECTS: Record<string, unknown> = {
+  [AARYA]: AARYA_SUBJECTS,
+  [ROHAN]: ROHAN_SUBJECTS,
+  [MIRA]: MIRA_SUBJECTS,
+};
 
 export type FakeChapter = {
   chapterId: string;
@@ -194,13 +204,17 @@ export async function registerFamilyOnThisPhone() {
   return familyKey;
 }
 
-export function answerLikeTheApi(get: jest.Mock, familyKey: string) {
+export function answerLikeTheApi(get: jest.Mock, familyKey: string, miraAdded = false) {
   get.mockImplementation(async (path: string, schema: z.ZodType) => {
     if (path === '/v1/me') {
       return schema.parse({
+        board: 'cbse',
         children: [
           { childId: AARYA, name: lockText(familyKey, 'Aarya'), classLevel: 6 },
           { childId: ROHAN, name: lockText(familyKey, 'Rohan'), classLevel: 3 },
+          ...(miraAdded
+            ? [{ childId: MIRA, name: lockText(familyKey, 'Mira'), classLevel: 2 }]
+            : []),
         ],
       });
     }
