@@ -106,6 +106,7 @@ export const en = {
       failures: {
         classNotAvailable:
           "Lantern doesn't have books for one of these Classes on this board yet. Check each child's Class, then try again.",
+        childLimitReached: 'A family can have up to 6 children.',
         unreachable: "Couldn't reach Lantern. Check your connection, then try again.",
         other: 'Something went wrong, and your family was not set up. Please try again.',
       },

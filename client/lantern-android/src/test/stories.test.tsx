@@ -196,7 +196,10 @@ const withoutStory: Record<string, string> = {
   'registration/FirstChildScreen.tsx': 'container for FirstChildView, which has the stories',
   'registration/MoreChildren.tsx':
     'the More children section of FirstChildView, whose stories show it',
-  'registration/FirstChildFooter.tsx': 'the Finish footer of FirstChildView, whose stories show it',
+  'registration/ChildFormFooter.tsx':
+    'the footer of FirstChildView and AddChildView, whose stories show it',
+  'registration/ChildStepLayout.tsx':
+    'the page shell of FirstChildView and AddChildView, whose stories show it',
   'auth/RegisteredContext.tsx': 'context provider with no look of its own',
   'registration/RecoveryCodeScreen.tsx': 'container for RecoveryCodeView, which has the stories',
   'shared/ui/BackButton.tsx':

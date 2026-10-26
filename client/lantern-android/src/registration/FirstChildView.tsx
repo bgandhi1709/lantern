@@ -1,13 +1,11 @@
-import { KeyboardAvoidingView, ScrollView, Text, View } from 'react-native';
-
 import { useStrings } from '../shared/i18n';
-import { LoadingOverlay } from '../shared/ui/LoadingOverlay';
+import type { SaveFailure } from '../shared/submit';
 import type { Board } from './board';
 import type { ChildDraft } from './child';
 import { ChildFields } from './ChildFields';
-import { FirstChildFooter } from './FirstChildFooter';
+import { ChildFormFooter } from './ChildFormFooter';
+import { ChildStepLayout } from './ChildStepLayout';
 import { MoreChildren } from './MoreChildren';
-import type { RegisterFailure } from './registrationError';
 import { StepHeader } from './StepHeader';
 import { REGISTRATION_STEP_COUNT } from './steps';
 
@@ -22,7 +20,7 @@ type Props = {
   canFinish: boolean;
   extraBlocks: boolean;
   finishing: boolean;
-  failure: RegisterFailure | null;
+  failure: SaveFailure | null;
   onChange: (index: number, changes: Partial<ChildDraft>) => void;
   onToggle: (index: number) => void;
   onAdd: () => void;
@@ -51,44 +49,39 @@ export function FirstChildView({
   const strings = useStrings().registration.firstChild;
 
   return (
-    <View className="flex-1 bg-ground px-6 pb-safe pt-safe">
-      <KeyboardAvoidingView behavior="padding" className="flex-1">
-        <StepHeader step={4} total={REGISTRATION_STEP_COUNT} onBack={onBack} />
-        <ScrollView contentContainerClassName="gap-4 pb-3" keyboardShouldPersistTaps="handled">
-          <View className="mt-5 gap-2">
-            <Text accessibilityRole="header" className="font-inter-bold text-heading text-ink">
-              {strings.heading}
-            </Text>
-            <Text className="font-inter-medium text-body text-muted">{strings.intro}</Text>
-          </View>
-          <ChildFields
-            idPrefix="child-1"
-            child={drafts[0]}
-            board={board}
-            years={years}
-            onChange={(changes) => onChange(0, changes)}
-          />
-          <MoreChildren
-            board={board}
-            drafts={drafts}
-            years={years}
-            now={now}
-            openIndex={openIndex}
-            onChange={onChange}
-            onToggle={onToggle}
-            onAdd={onAdd}
-            onRemove={onRemove}
-          />
-        </ScrollView>
-        <FirstChildFooter
-          canFinish={canFinish}
-          blocked={extraBlocks && openIndex === null}
-          finishing={finishing}
-          failure={failure}
-          onFinish={onFinish}
+    <ChildStepLayout
+      header={<StepHeader step={4} total={REGISTRATION_STEP_COUNT} onBack={onBack} />}
+      heading={strings.heading}
+      intro={strings.intro}
+      workingLabel={finishing ? strings.working : null}
+      footer={
+        <ChildFormFooter
+          label={finishing ? strings.finishing : failure ? strings.tryAgain : strings.finish}
+          disabled={!canFinish || finishing}
+          blockedText={extraBlocks && openIndex === null ? strings.more.blocked : null}
+          failureText={failure ? strings.failures[failure] : null}
+          onSubmit={onFinish}
         />
-      </KeyboardAvoidingView>
-      {finishing ? <LoadingOverlay label={strings.working} /> : null}
-    </View>
+      }
+    >
+      <ChildFields
+        idPrefix="child-1"
+        child={drafts[0]}
+        board={board}
+        years={years}
+        onChange={(changes) => onChange(0, changes)}
+      />
+      <MoreChildren
+        board={board}
+        drafts={drafts}
+        years={years}
+        now={now}
+        openIndex={openIndex}
+        onChange={onChange}
+        onToggle={onToggle}
+        onAdd={onAdd}
+        onRemove={onRemove}
+      />
+    </ChildStepLayout>
   );
 }
