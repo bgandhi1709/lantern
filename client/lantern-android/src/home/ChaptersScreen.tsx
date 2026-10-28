@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 import { MAX_CHILDREN } from '../registration';
+import type { Board } from '../registration';
 import { ChaptersView } from './ChaptersView';
 import { useChapters } from './useChapters';
 
@@ -9,7 +10,7 @@ type Props = {
   subjectId: string;
   onBack: () => void;
   onOpenTab: () => void;
-  onAddChild: () => void;
+  onAddChild: (board: Board) => void;
   onAction: () => void;
   onOpenHistory: (childId: string, chapterId: string) => void;
 };
@@ -37,7 +38,7 @@ export function ChaptersScreen({
       query={chapters.query}
       sheetOpen={sheetOpen}
       subjectSheetOpen={subjectSheetOpen}
-      canAddChild={chapters.children.length < MAX_CHILDREN}
+      canAddChild={chapters.board !== null && chapters.children.length < MAX_CHILDREN}
       onBack={onBack}
       onOpenSheet={() => setSheetOpen(true)}
       onOpenSubjectSheet={() => setSubjectSheetOpen(true)}
@@ -49,7 +50,7 @@ export function ChaptersScreen({
       }}
       onAddChild={() => {
         setSheetOpen(false);
-        onAddChild();
+        if (chapters.board) onAddChild(chapters.board);
       }}
       onSelectSubject={(id) => {
         chapters.selectSubject(id);

@@ -227,6 +227,7 @@ describe('Chapters', () => {
     await user.press(await screen.findByRole('button', { name: 'Add a child' }));
 
     expect(onAddChild).toHaveBeenCalledTimes(1);
+    expect(onAddChild).toHaveBeenCalledWith('cbse');
   });
 
   it('opens a tab other than Home as coming next', async () => {
