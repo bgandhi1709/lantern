@@ -1,7 +1,0 @@
-# Needs a Google account on the emulator and `scripts/verify-env.sh up` running. It walks the four
-# steps through recovery-code.yaml, then adds a first and an extra Child, finishes, lands on Home, and lands on Home again after a restart.
-# Run: maestro test .maestro/first-child.yaml
-appId: com.lantern.app
----
-- runFlow: recovery-code.yaml
-- runFlow: first-child-steps.yaml

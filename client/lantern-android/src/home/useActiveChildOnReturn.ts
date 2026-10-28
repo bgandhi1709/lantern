@@ -8,12 +8,13 @@ export function useActiveChildOnReturn(
   activeId: string | null,
   children: HomeChild[],
   switchTo: (childId: string) => void,
+  reload: () => void,
 ) {
   const focused = useIsFocused();
   const wasAway = useRef(false);
-  const latest = useRef({ activeId, children, switchTo });
+  const latest = useRef({ activeId, children, switchTo, reload });
   useEffect(() => {
-    latest.current = { activeId, children, switchTo };
+    latest.current = { activeId, children, switchTo, reload };
   });
 
   useEffect(() => {
@@ -25,10 +26,15 @@ export function useActiveChildOnReturn(
     wasAway.current = false;
     readValue('activeChildId')
       .then((storedId) => {
-        const { activeId: current, children: known, switchTo: pick } = latest.current;
-        if (storedId && storedId !== current && known.some((child) => child.id === storedId)) {
-          pick(storedId);
-        }
+        const {
+          activeId: current,
+          children: known,
+          switchTo: pick,
+          reload: again,
+        } = latest.current;
+        if (!storedId || storedId === current) return;
+        if (known.some((child) => child.id === storedId)) pick(storedId);
+        else again();
       })
       .catch(() => undefined);
   }, [focused]);

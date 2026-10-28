@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
+import type { Board } from '../registration';
 import { useDebouncedValue } from '../shared/paging/useDebouncedValue';
 import { usePagedList } from '../shared/paging/usePagedList';
 import { getParent } from '../shared/session';
@@ -7,7 +8,7 @@ import { readFamilyKey, writeValue } from '../shared/storage';
 import { fetchChaptersPage } from './chaptersApi';
 import { fetchSubjects } from './homeApi';
 import type { Subject } from './homeApi';
-import { fetchUnlockedChildren } from './unlockedChildren';
+import { fetchUnlockedFamily } from './unlockedFamily';
 import type { HomeChild } from './useHome';
 
 const SEARCH_DELAY_MS = 300;
@@ -15,6 +16,7 @@ const SEARCH_DELAY_MS = 300;
 export function useChapters(initialChildId: string, initialSubjectId: string) {
   const [childId, setChildId] = useState(initialChildId);
   const [subjectId, setSubjectId] = useState<string | null>(initialSubjectId);
+  const [board, setBoard] = useState<Board | null>(null);
   const [children, setChildren] = useState<HomeChild[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [query, setQuery] = useState('');
@@ -37,8 +39,10 @@ export function useChapters(initialChildId: string, initialSubjectId: string) {
     const load = async () => {
       const familyKey = await readFamilyKey(getParent().uid);
       if (!familyKey) throw new Error('This phone does not hold the Family key.');
-      const loaded = await fetchUnlockedChildren(familyKey);
-      if (!cancelled) setChildren(loaded);
+      const family = await fetchUnlockedFamily(familyKey);
+      if (cancelled) return;
+      setBoard(family.board);
+      setChildren(family.children);
     };
     load().catch(() => {
       if (!cancelled) setFailed(true);
@@ -98,6 +102,7 @@ export function useChapters(initialChildId: string, initialSubjectId: string) {
 
   return {
     childId,
+    board,
     activeChild: children.find((child) => child.id === childId) ?? null,
     children: children.map((child) => ({ ...child, stillBeingMade: false })),
     subjects,

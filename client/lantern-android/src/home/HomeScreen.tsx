@@ -2,6 +2,7 @@ import { useState } from 'react';
 
 import { signOutOfLantern } from '../auth';
 import { MAX_CHILDREN } from '../registration';
+import type { Board } from '../registration';
 import { getParent } from '../shared/session';
 import { dayPartAt, firstNameOf } from './greeting';
 import { HomeView } from './HomeView';
@@ -12,7 +13,7 @@ import { useWelcomeBanner } from './useWelcomeBanner';
 
 type Props = {
   onOpenSubject: (childId: string, subjectId: string) => void;
-  onAddChild: () => void;
+  onAddChild: (board: Board) => void;
   onOpenSettings: () => void;
   onOpenTab: () => void;
   onUnlock: () => void;
@@ -27,7 +28,7 @@ export function HomeScreen({
 }: Props) {
   const home = useHome();
   useRetryOnReturn(home.locked, home.retry);
-  useActiveChildOnReturn(home.activeChild?.id ?? null, home.children, home.switchTo);
+  useActiveChildOnReturn(home.activeChild?.id ?? null, home.children, home.switchTo, home.reload);
   const banner = useWelcomeBanner();
   const [sheetOpen, setSheetOpen] = useState(false);
 
@@ -41,7 +42,7 @@ export function HomeScreen({
       subjects={home.subjects}
       bannerVisible={banner.visible}
       sheetOpen={sheetOpen}
-      canAddChild={home.children.length < MAX_CHILDREN}
+      canAddChild={home.board !== null && home.children.length < MAX_CHILDREN}
       onOpenSheet={() => setSheetOpen(true)}
       onCloseSheet={() => setSheetOpen(false)}
       onPickChild={(childId) => {
@@ -50,7 +51,7 @@ export function HomeScreen({
       }}
       onAddChild={() => {
         setSheetOpen(false);
-        onAddChild();
+        if (home.board) onAddChild(home.board);
       }}
       onOpenSubject={onOpenSubject}
       onOpenSettings={onOpenSettings}

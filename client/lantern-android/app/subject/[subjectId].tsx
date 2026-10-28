@@ -12,7 +12,7 @@ export default function SubjectRoute() {
       subjectId={subjectId}
       onBack={router.back}
       onOpenTab={() => router.push('/coming-next')}
-      onAddChild={() => router.push('/add-child')}
+      onAddChild={(board) => router.push({ pathname: '/add-child', params: { board } })}
       onAction={() => router.push('/coming-next')}
       onOpenHistory={(historyChildId, chapterId) =>
         router.push({

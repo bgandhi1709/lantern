@@ -22,7 +22,7 @@ export type RegisterInput = {
 // 'alreadyRegistered' means another phone made this Parent's Family, so this one has no key to keep.
 export type RegisterResult = 'registered' | 'alreadyRegistered';
 
-function lockedChild(familyKey: string, child: ChildDraft) {
+export function lockedChild(familyKey: string, child: ChildDraft) {
   if (child.classLevel === null) throw new Error('A Child needs a Class before registering.');
   return {
     name: lockText(familyKey, child.name),

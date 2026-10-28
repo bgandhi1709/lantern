@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import type { Board } from '../registration';
 import { getParent } from '../shared/session';
 import { readFamilyKey, readValue, writeValue } from '../shared/storage';
 import type { Subject } from './homeApi';
 import { subjectsOnceReady } from './subjectsOnceReady';
-import { fetchUnlockedChildren } from './unlockedChildren';
+import { fetchUnlockedFamily } from './unlockedFamily';
 
 export type HomeChild = { id: string; name: string; classLevel: number };
 
@@ -19,6 +20,7 @@ const ready = (items: Subject[]): SubjectsState => ({ status: 'ready', items });
 
 export function useHome() {
   const [children, setChildren] = useState<HomeChild[]>([]);
+  const [board, setBoard] = useState<Board | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [subjectsByChild, setSubjectsByChild] = useState<Record<string, SubjectsState>>({});
   const [locked, setLocked] = useState(false);
@@ -43,13 +45,19 @@ export function useHome() {
         if (!cancelled) setLocked(true);
         return;
       }
-      const [list, storedId] = await Promise.all([
-        fetchUnlockedChildren(familyKey),
+      const [family, storedId] = await Promise.all([
+        fetchUnlockedFamily(familyKey),
         readValue('activeChildId'),
       ]);
       if (cancelled) return;
+      const list = family.children;
+      const active = list.find((child) => child.id === storedId) ?? list[0];
+      setBoard(family.board);
       setChildren(list);
-      setActiveId((list.find((child) => child.id === storedId) ?? list[0])?.id ?? null);
+      setActiveId(active?.id ?? null);
+      if (active && active.id !== storedId) {
+        writeValue('activeChildId', active.id).catch(() => undefined);
+      }
       list.forEach(loadSubjects);
     };
 
@@ -66,14 +74,18 @@ export function useHome() {
     writeValue('activeChildId', childId).catch(() => undefined);
   }, []);
 
+  const reload = useCallback(() => {
+    setChildren([]);
+    setSubjectsByChild({});
+    setLocked(false);
+    setListFailed(false);
+    setAttempt((n) => n + 1);
+  }, []);
+
   const retry = useCallback(() => {
     const failed = children.filter((child) => subjectsByChild[child.id]?.status === 'failed');
     if (listFailed || locked || failed.length === 0) {
-      setChildren([]);
-      setSubjectsByChild({});
-      setLocked(false);
-      setListFailed(false);
-      setAttempt((n) => n + 1);
+      reload();
       return;
     }
     setSubjectsByChild((current) => ({
@@ -81,13 +93,14 @@ export function useHome() {
       ...Object.fromEntries(failed.map((child) => [child.id, LOADING])),
     }));
     failed.forEach((child) => loadSubjectsRef.current(child));
-  }, [children, subjectsByChild, listFailed, locked]);
+  }, [children, subjectsByChild, listFailed, locked, reload]);
 
   const activeSubjects = activeId === null ? LOADING : (subjectsByChild[activeId] ?? LOADING);
   const subjects = listFailed ? FAILED : activeSubjects;
 
   return {
     locked,
+    board,
     activeChild: children.find((child) => child.id === activeId) ?? null,
     children: children.map((child) => ({
       ...child,
@@ -96,5 +109,6 @@ export function useHome() {
     subjects,
     switchTo,
     retry,
+    reload,
   };
 }
