@@ -42,3 +42,6 @@ yarn-error.*
 
 # Firebase config for the Android app, downloaded with the firebase CLI
 /google-services.json
+
+# Maestro flows, kept on the founder's machine (D117)
+/.maestro

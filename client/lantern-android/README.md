@@ -51,7 +51,7 @@ The sign-in then goes through the Firebase Auth Emulator, which accepts the Goog
 
 ## Drive the emulator with Maestro
 
-Maestro (Apache-2.0, dev-only) runs the flows in `.maestro/` and prints pass or fail, so nobody reads screenshots. Install the pinned release once, with its checksum:
+Maestro (Apache-2.0, dev-only) runs the flows in `.maestro/` and prints pass or fail, so nobody reads screenshots. The folder is git-ignored (D117): the flows are hand-written files kept on the founder's machine, and a fresh clone has none. The last committed copy is at commit `2be06af`; restore it with `git checkout 2be06af -- .maestro` and the folder stays out of the next commit. Install the pinned release once, with its checksum:
 
 ```sh
 gh release download cli-2.10.0 -R mobile-dev-inc/maestro -p maestro.zip -p checksums_sha256.txt
