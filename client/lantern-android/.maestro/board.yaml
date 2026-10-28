@@ -10,11 +10,16 @@ appId: com.lantern.app
     visible: 'Continue with Google'
     timeout: 120000
 - tapOn: 'Continue with Google'
+# Google skips the picker when the emulator has only one account.
 - extendedWaitUntil:
-    visible: 'Choose an account'
+    visible: 'Choose an account|A little about you'
     timeout: 15000
-- tapOn:
-    id: 'com.google.android.gms:id/account_display_name'
+- runFlow:
+    when:
+      visible: 'Choose an account'
+    commands:
+      - tapOn:
+          id: 'com.google.android.gms:id/account_display_name'
 - extendedWaitUntil:
     visible: 'A little about you'
     timeout: 30000

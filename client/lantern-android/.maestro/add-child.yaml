@@ -20,6 +20,9 @@ appId: com.lantern.app
     enabled: false
 - tapOn:
     id: 'child-year'
+# The year list opens at the newest years, so 2015 is below the first screen.
+- scrollUntilVisible:
+    element: '2015'
 - tapOn: '2015'
 - assertVisible:
     text: 'Add child'
