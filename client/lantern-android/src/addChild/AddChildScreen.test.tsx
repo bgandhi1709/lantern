@@ -3,9 +3,10 @@ import { act, fireEvent, render, screen, userEvent } from '@testing-library/reac
 import { BackHandler } from 'react-native';
 
 import { ApiError, api } from '../shared/api';
-import { unlockText } from '../shared/crypto';
-import { clearAll, readValue } from '../shared/storage';
+import { createFamilyKeys, makeFamilyId, unlockText } from '../shared/crypto';
+import { clearAll, keepFamilyKey, readValue } from '../shared/storage';
 import { registerFamilyOnThisPhone } from '../test/fakeFamily';
+import { fakeRestoredSession } from '../test/fakeFirebaseAuth';
 import { AddChildScreen } from './AddChildScreen';
 
 jest.mock('../shared/api', () => jest.requireActual('../test/fakeApiModule'));
@@ -24,6 +25,17 @@ const openScreen = async (board: 'cbse' | 'ssc' = 'cbse') => {
   const user = userEvent.setup();
   await render(<AddChildScreen board={board} onAdded={onAdded} onBack={onBack} />);
   return { user, familyKey };
+};
+
+const openScreenWithoutTheKey = async (keepOtherAccountsKey: boolean) => {
+  fakeRestoredSession();
+  if (keepOtherAccountsKey) {
+    const { familyKey } = await createFamilyKeys(makeFamilyId());
+    await keepFamilyKey('someone-elses-uid', familyKey);
+  }
+  const user = userEvent.setup();
+  await render(<AddChildScreen board="cbse" onAdded={onAdded} onBack={onBack} />);
+  return { user };
 };
 
 const fillChild = async (user: ReturnType<typeof userEvent.setup>, name = 'Mira') => {
@@ -153,6 +165,24 @@ describe('Add a child', () => {
 
     await act(async () => finish({}));
     expect(onAdded).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    ['this phone has no Family key', false],
+    ["this phone only has another account's Family key", true],
+  ])('sends nothing and stores nothing when %s', async (_case, otherAccountsKey) => {
+    const { user } = await openScreenWithoutTheKey(otherAccountsKey);
+    await fillChild(user);
+    await user.press(addButton());
+
+    expect(
+      await screen.findByText(
+        'Something went wrong, and the child was not added. Please try again.',
+      ),
+    ).toBeOnTheScreen();
+    expect(post).not.toHaveBeenCalled();
+    expect(await readValue('activeChildId')).toBeNull();
+    expect(onAdded).not.toHaveBeenCalled();
   });
 
   it('goes back from the arrow and from the Android Back button', async () => {
