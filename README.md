@@ -49,8 +49,8 @@ The diagram is [`docs/architecture/lantern-architecture.html`](docs/architecture
 - **Infrastructure.** UAT is deployed from Bicep by `api.yml` ([`infra/README.md`](infra/README.md)).
 - **API.** Register, `me`, Family and Child management, Workspaces, Subjects, Chapters and a Chapter's Attempts and Checks are built, and the
   end-to-end tests gate each release. Run it locally with [`deploy/local/README.md`](deploy/local/README.md).
-- **Parent app.** Sign-in, registration, Home, Add a child, Chapters (state, search, history), Unlock and Settings are built
-  ([`client/lantern-android/README.md`](client/lantern-android/README.md)).
+- **Parent app.** Sign-in, registration, Home, Add a child, Chapters (state, search, history), Unlock, Settings and anonymous usage
+  numbers after Consent are built ([`client/lantern-android/README.md`](client/lantern-android/README.md)).
 - **Next.** The Ask and Plan agents.
 
 How we work (cycle, skills, standards) is in [`docs/agents/workflow.md`](docs/agents/workflow.md) and

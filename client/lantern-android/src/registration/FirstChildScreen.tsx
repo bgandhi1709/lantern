@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { BackHandler } from 'react-native';
 
+import { trackTap } from '../shared/analytics';
 import {
   blockingExtra,
   birthYearChoices,
@@ -68,15 +69,16 @@ export function FirstChildScreen({ onBack }: { onBack: () => void }) {
       onToggle={(index) => setOpenIndex(openIndex === index ? null : index)}
       onAdd={add}
       onRemove={remove}
-      onFinish={() =>
-        finish({
+      onFinish={() => {
+        trackTap('finish-registration');
+        return finish({
           family,
           parent: draft.parent,
           region: draft.region,
           board,
           children: drafts.filter((child, index) => index === 0 || isChildTouched(child)),
-        })
-      }
+        });
+      }}
       onBack={() => (isBusy() ? undefined : onBack())}
     />
   );

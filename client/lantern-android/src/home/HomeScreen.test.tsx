@@ -3,6 +3,7 @@ import { render, screen, userEvent } from '@testing-library/react-native';
 import { Text } from 'react-native';
 
 import { AuthGate, AuthProvider } from '../auth';
+import { setCollectionEnabled } from '../shared/analytics';
 import { ApiError, api } from '../shared/api';
 import { clearAll, readFamilyKey, readValue, writeValue } from '../shared/storage';
 import { lockText } from '../shared/crypto';
@@ -13,6 +14,7 @@ import {
   answerLikeTheApi,
   registerFamilyOnThisPhone,
 } from '../test/fakeFamily';
+import { logEvent, logScreenView } from '../test/fakeFirebaseAnalytics';
 import { FAKE_UID, fakeRestoredSession } from '../test/fakeFirebaseAuth';
 import { GoogleSignin } from '../test/fakeGoogleSignIn';
 import { HomeScreen } from './HomeScreen';
@@ -371,5 +373,62 @@ describe('Home', () => {
     expect(await readValue('activeChildId')).toBe(ROHAN);
     expect(await readValue('welcomeDismissed')).toBe(true);
     expect(await readFamilyKey(FAKE_UID)).not.toBeNull();
+  });
+});
+
+describe('Home usage numbers', () => {
+  const taps = () =>
+    logEvent.mock.calls.filter(([, name]) => name === 'tap').map(([, , params]) => params);
+
+  beforeEach(() => setCollectionEnabled(true));
+
+  it('counts Home as viewed', async () => {
+    await openHome();
+
+    expect(logScreenView).toHaveBeenCalledWith(expect.anything(), {
+      screen_name: 'home',
+      screen_class: 'home',
+    });
+  });
+
+  it('counts the controls tapped by name, never which Child or Subject', async () => {
+    const { user } = await openHome();
+
+    await user.press(screen.getByRole('button', { name: 'Settings' }));
+    await user.press(screen.getByRole('button', { name: 'Mathematics, 14 Chapters' }));
+    await user.press(screen.getByRole('button', { name: 'Switch child, now Aarya' }));
+    await user.press(await screen.findByRole('button', { name: 'Rohan, Class 3' }));
+    await user.press(screen.getByRole('button', { name: 'Switch child, now Rohan' }));
+    await user.press(await screen.findByRole('button', { name: 'Add a child' }));
+
+    expect(taps()).toEqual([
+      { name: 'open-settings' },
+      { name: 'open-subject' },
+      { name: 'switch-child' },
+      { name: 'add-child' },
+    ]);
+    const sent = JSON.stringify(logEvent.mock.calls);
+    for (const personal of ['Aarya', 'Rohan', 'mathematics', 'Mathematics']) {
+      expect(sent).not.toContain(personal);
+    }
+  });
+
+  it('counts Unlock your Family on a phone with no Family key', async () => {
+    answerLikeTheApi(get, 'unused');
+    fakeRestoredSession();
+    const user = userEvent.setup();
+    await render(
+      <HomeScreen
+        onOpenSubject={onOpenSubject}
+        onAddChild={onAddChild}
+        onOpenSettings={onOpenSettings}
+        onOpenTab={onOpenTab}
+        onUnlock={onUnlock}
+      />,
+    );
+
+    await user.press(await screen.findByRole('button', { name: 'Unlock your Family' }));
+
+    expect(taps()).toEqual([{ name: 'unlock' }]);
   });
 });

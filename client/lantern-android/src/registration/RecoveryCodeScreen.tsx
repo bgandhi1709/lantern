@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 
+import { trackTap } from '../shared/analytics';
 import { createFamilyKeys, makeFamilyId } from '../shared/crypto';
 import { useStrings } from '../shared/i18n';
+import { finishStep } from './finishStep';
 import { useRegistrationDraft } from './RegistrationDraft';
 import { RecoveryCodeView } from './RecoveryCodeView';
 import { emailRecoveryCode, shareRecoveryCode } from './shareRecoveryCode';
@@ -64,19 +66,22 @@ export function RecoveryCodeScreen({ onContinue, onBack }: Props) {
       onSavedToggle={() => setSaved((value) => !value)}
       onEmail={async () => {
         if (code === null) return;
+        trackTap('share-recovery-code');
         const message = strings.message(code);
         const opened = await send(() =>
           emailRecoveryCode(draft.parent.email, strings.mailSubject, message),
         );
         if (opened) setEmailed(true);
       }}
-      onSave={() =>
-        code === null ? undefined : send(() => shareRecoveryCode(strings.message(code)))
-      }
-      onContinue={() => {
+      onSave={() => {
+        if (code === null) return;
+        trackTap('share-recovery-code');
+        return send(() => shareRecoveryCode(strings.message(code)));
+      }}
+      onContinue={finishStep('recovery-code', 'recovery-continue', () => {
         update({ codeSent: true });
         onContinue();
-      }}
+      })}
       onBack={onBack}
     />
   );

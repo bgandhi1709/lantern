@@ -63,6 +63,36 @@ describe('npm run lint', () => {
     },
   );
 
+  it.each(['@react-native-firebase/analytics', '@react-native-firebase/perf'])(
+    'fails on importing %s outside src/shared/analytics',
+    async (name) => {
+      const code = `import * as firebase from '${name}';\nexport { firebase };\n`;
+
+      expect(await rulesBroken(code)).toContain('no-restricted-imports');
+      expect(await rulesBroken(code, 'src/auth/example.ts')).toContain('no-restricted-imports');
+      expect(await rulesBroken(code, 'src/shared/session/example.ts')).toContain(
+        'no-restricted-imports',
+      );
+    },
+  );
+
+  it('allows the Analytics and Performance imports inside src/shared/analytics', async () => {
+    const code =
+      "import * as analytics from '@react-native-firebase/analytics';\nimport * as perf from '@react-native-firebase/perf';\nexport { analytics, perf };\n";
+
+    expect(await rulesBroken(code, 'src/shared/analytics/analytics.ts')).not.toContain(
+      'no-restricted-imports',
+    );
+  });
+
+  it('keeps the session imports out of src/shared/analytics', async () => {
+    const code = "import * as auth from '@react-native-firebase/auth';\nexport { auth };\n";
+
+    expect(await rulesBroken(code, 'src/shared/analytics/example.ts')).toContain(
+      'no-restricted-imports',
+    );
+  });
+
   it('allows the Firebase import inside src/shared/session', async () => {
     const code = "import * as auth from '@react-native-firebase/auth';\nexport { auth };\n";
 

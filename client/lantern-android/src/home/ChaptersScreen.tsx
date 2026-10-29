@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 import { MAX_CHILDREN } from '../registration';
+import { tapped } from '../shared/analytics';
 import type { Board } from '../registration';
 import { ChaptersView } from './ChaptersView';
 import { useChapters } from './useChapters';
@@ -44,21 +45,23 @@ export function ChaptersScreen({
       onOpenSubjectSheet={() => setSubjectSheetOpen(true)}
       onCloseSubjectSheet={() => setSubjectSheetOpen(false)}
       onCloseSheet={() => setSheetOpen(false)}
-      onPickChild={(id) => {
+      onPickChild={tapped('switch-child', (id: string) => {
         chapters.switchChild(id);
         setSheetOpen(false);
-      }}
-      onAddChild={() => {
+      })}
+      onAddChild={tapped('add-child', () => {
         setSheetOpen(false);
         if (chapters.board) onAddChild(chapters.board);
-      }}
+      })}
       onSelectSubject={(id) => {
         chapters.selectSubject(id);
         setSubjectSheetOpen(false);
       }}
       onChangeQuery={chapters.setQuery}
       onAction={onAction}
-      onOpenHistory={(chapterId) => onOpenHistory(chapters.childId, chapterId)}
+      onOpenHistory={tapped('open-chapter-history', (chapterId: string) =>
+        onOpenHistory(chapters.childId, chapterId),
+      )}
       onLoadMore={chapters.loadMore}
       onRetryMore={chapters.retryMore}
       onOpenTab={onOpenTab}

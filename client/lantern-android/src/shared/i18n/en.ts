@@ -129,14 +129,14 @@ export const en = {
         {
           title: 'While you use the app',
           text: [
-            'Lantern counts how the app is used, without knowing who you are: which screens open and for how long, which buttons are tapped, and how fast the app starts. Google, who provides this, also notes your phone model, your Android version and roughly which city your connection comes from. It is not your exact location.',
+            'Lantern counts how the app is used, without knowing who you are: which screens open and for how long, which buttons are tapped, which step of setting up you reach, how fast the app starts and how long its calls take. Google, who provides this, also notes your phone model, your Android version, roughly which city your connection comes from (not your exact location) and a random number that stands for this installation of the app.',
             'None of your details go with these numbers: not your name, email, your children, your Region or anything you type. They start only after you agree.',
           ],
         },
         {
           title: 'What stays on your phone',
           text: [
-            "Your Google sign-in, kept by the phone itself. A secret key for your Family, kept in the phone's secure store so you do not have to type your recovery code every time. Nothing else about you is saved on the phone.",
+            "Your Google sign-in, kept by the phone itself. A secret key for your Family, kept in the phone's secure store so you do not have to type your recovery code every time. Google's Firebase also keeps a random number on the phone for the usage counting, and whether counting is on. Nothing else about you is saved on the phone.",
           ],
         },
         {

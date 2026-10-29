@@ -198,6 +198,7 @@ const withoutStory: Record<string, string> = {
   'auth/AuthProvider.tsx': 'context provider with no look of its own',
   'auth/StartScreen.tsx': 'container for StartView, which has the stories',
   'registration/AboutYouScreen.tsx': 'container for AboutYouView, which has the stories',
+  'shared/analytics/RouteTracker.tsx': 'renders nothing; reports the route in front',
   'registration/BoardScreen.tsx': 'container for BoardView, which has the stories',
   'settings/FamilyRows.tsx':
     'the Unlock and Start again rows of AppearanceView, whose stories show them',
