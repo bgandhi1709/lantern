@@ -1,15 +1,26 @@
 import { useEffect, useState } from 'react';
 import { BackHandler } from 'react-native';
 
+import { setCollectionEnabled } from '../shared/analytics';
+
 import { AboutYouScreen } from './AboutYouScreen';
 import { BoardScreen } from './BoardScreen';
 import { PLACEHOLDER_NOTICE_VERSION } from './notice';
 import { NoticeView } from './NoticeView';
 import { FirstChildScreen } from './FirstChildScreen';
 import { RecoveryCodeScreen } from './RecoveryCodeScreen';
-import { RegistrationDraftProvider } from './RegistrationDraft';
+import { RegistrationDraftProvider, useRegistrationDraft } from './RegistrationDraft';
 
 type Step = 'about' | 'notice' | 'board' | 'recovery' | 'firstChild';
+
+// Usage numbers are collected only while the notice is ticked.
+function ConsentSync() {
+  const { draft } = useRegistrationDraft();
+  useEffect(() => {
+    setCollectionEnabled(draft.noticeAccepted);
+  }, [draft.noticeAccepted]);
+  return null;
+}
 
 // The steps share one draft, so going back never loses what the Parent typed.
 export function RegistrationFlow() {
@@ -39,5 +50,10 @@ export function RegistrationFlow() {
     firstChild: <FirstChildScreen onBack={backToRecovery} />,
   };
 
-  return <RegistrationDraftProvider>{steps[step]}</RegistrationDraftProvider>;
+  return (
+    <RegistrationDraftProvider>
+      <ConsentSync />
+      {steps[step]}
+    </RegistrationDraftProvider>
+  );
 }

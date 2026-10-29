@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 
+import { setCollectionEnabled } from '../shared/analytics';
 import { onSessionChange } from '../shared/session';
 
 type RegistrationCheck = { epoch: number; recheck: () => void };
@@ -16,6 +17,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const check = useMemo(() => ({ epoch, recheck: () => setEpoch((n) => n + 1) }), [epoch]);
 
   useEffect(() => onSessionChange((signedIn) => setState(signedIn ? 'signedIn' : 'signedOut')), []);
+
+  useEffect(() => {
+    if (state === 'signedOut') setCollectionEnabled(false);
+  }, [state]);
 
   return (
     <SessionContext.Provider value={state}>

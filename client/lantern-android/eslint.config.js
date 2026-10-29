@@ -21,6 +21,17 @@ const firebasePaths = [
   },
 ];
 
+const analyticsPaths = [
+  {
+    name: '@react-native-firebase/analytics',
+    message: 'Only src/shared/analytics sends usage numbers.',
+  },
+  {
+    name: '@react-native-firebase/perf',
+    message: 'Only src/shared/analytics sends usage numbers.',
+  },
+];
+
 const cryptoPaths = [
   {
     name: 'react-native-quick-crypto',
@@ -58,7 +69,15 @@ module.exports = [
       'no-console': 'error',
       'no-restricted-imports': [
         'error',
-        { paths: [...storagePaths, ...firebasePaths, ...googlePaths, ...cryptoPaths] },
+        {
+          paths: [
+            ...storagePaths,
+            ...firebasePaths,
+            ...analyticsPaths,
+            ...googlePaths,
+            ...cryptoPaths,
+          ],
+        },
       ],
     },
   },
@@ -71,6 +90,7 @@ module.exports = [
           paths: [
             ...storagePaths,
             ...firebasePaths,
+            ...analyticsPaths,
             ...cryptoPaths,
             ...(feature === 'auth' ? [] : googlePaths),
           ],
@@ -84,7 +104,16 @@ module.exports = [
     rules: {
       'no-restricted-imports': [
         'error',
-        { paths: [...storagePaths, ...googlePaths, ...cryptoPaths] },
+        { paths: [...storagePaths, ...analyticsPaths, ...googlePaths, ...cryptoPaths] },
+      ],
+    },
+  },
+  {
+    files: ['src/shared/analytics/**'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        { paths: [...storagePaths, ...firebasePaths, ...googlePaths, ...cryptoPaths] },
       ],
     },
   },
