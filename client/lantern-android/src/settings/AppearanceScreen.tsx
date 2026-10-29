@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-import { tapped, useTrackScreen } from '../shared/analytics';
+import { tapped } from '../shared/analytics';
 import { getParent } from '../shared/session';
 import { readFamilyKey } from '../shared/storage';
 import { useAppearance } from '../shared/theme';
@@ -9,7 +9,6 @@ import { AppearanceView } from './AppearanceView';
 type Props = { onBack: () => void; onUnlock: () => void; onStartAgain: () => void };
 
 export function AppearanceScreen({ onBack, onUnlock, onStartAgain }: Props) {
-  useTrackScreen('appearance');
   const { appearance, setTheme, setTextSize, setColourScheme } = useAppearance();
   const [locked, setLocked] = useState(false);
 

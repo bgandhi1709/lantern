@@ -3,9 +3,9 @@ import { useEffect, useRef, useState } from 'react';
 import { trackTap } from '../shared/analytics';
 import { createFamilyKeys, makeFamilyId } from '../shared/crypto';
 import { useStrings } from '../shared/i18n';
+import { finishStep } from './finishStep';
 import { useRegistrationDraft } from './RegistrationDraft';
 import { RecoveryCodeView } from './RecoveryCodeView';
-import { useRegistrationStep } from './useRegistrationStep';
 import { emailRecoveryCode, shareRecoveryCode } from './shareRecoveryCode';
 
 type Props = { onContinue: () => void; onBack: () => void };
@@ -13,7 +13,6 @@ type Props = { onContinue: () => void; onBack: () => void };
 export function RecoveryCodeScreen({ onContinue, onBack }: Props) {
   const strings = useStrings().registration.recovery;
   const { draft, update } = useRegistrationDraft();
-  const finishStep = useRegistrationStep('recovery-code');
   const [saved, setSaved] = useState(draft.codeSent);
   const [emailed, setEmailed] = useState(draft.codeSent);
   const [shareFailed, setShareFailed] = useState(false);
@@ -79,7 +78,7 @@ export function RecoveryCodeScreen({ onContinue, onBack }: Props) {
         trackTap('share-recovery-code');
         return send(() => shareRecoveryCode(strings.message(code)));
       }}
-      onContinue={finishStep('recovery-continue', () => {
+      onContinue={finishStep('recovery-code', 'recovery-continue', () => {
         update({ codeSent: true });
         onContinue();
       })}

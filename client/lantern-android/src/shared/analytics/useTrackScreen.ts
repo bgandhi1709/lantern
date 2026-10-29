@@ -8,11 +8,9 @@ import type { ScreenName } from './events';
 const MS_PER_SECOND = 1000;
 
 // A visit counts while the screen is in front and the app is in the foreground.
-export function useTrackScreen(screen: ScreenName) {
-  const focused = useIsFocused();
-
+export function useTrackVisit(screen: ScreenName | null) {
   useEffect(() => {
-    if (!focused) return;
+    if (screen === null) return;
     trackScreenView(screen);
     let startedAt: number | null = Date.now();
 
@@ -30,5 +28,10 @@ export function useTrackScreen(screen: ScreenName) {
       subscription.remove();
       stop();
     };
-  }, [focused, screen]);
+  }, [screen]);
+}
+
+// For a screen that other routes can open over, as Home is: it is in front only while focused.
+export function useTrackScreen(screen: ScreenName) {
+  useTrackVisit(useIsFocused() ? screen : null);
 }

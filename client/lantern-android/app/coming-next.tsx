@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
 
-import { ComingNextScreen } from '../src/home';
+import { ComingNextView } from '../src/home';
 
 export default function ComingNextRoute() {
-  return <ComingNextScreen onBack={useRouter().back} />;
+  return <ComingNextView onBack={useRouter().back} />;
 }

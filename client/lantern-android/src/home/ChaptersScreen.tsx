@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
 import { MAX_CHILDREN } from '../registration';
-import { tapped, useTrackScreen } from '../shared/analytics';
+import { tapped } from '../shared/analytics';
 import type { Board } from '../registration';
 import { ChaptersView } from './ChaptersView';
 import { useChapters } from './useChapters';
@@ -25,7 +25,6 @@ export function ChaptersScreen({
   onAction,
   onOpenHistory,
 }: Props) {
-  useTrackScreen('chapters');
   const chapters = useChapters(childId, subjectId);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [subjectSheetOpen, setSubjectSheetOpen] = useState(false);

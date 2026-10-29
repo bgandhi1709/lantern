@@ -1,11 +1,9 @@
-import { useTrackScreen } from '../shared/analytics';
 import { UnlockView } from './UnlockView';
 import { useUnlock } from './useUnlock';
 
 type Props = { onOpened: () => void; onBack: () => void };
 
 export function UnlockScreen({ onOpened, onBack }: Props) {
-  useTrackScreen('unlock');
   const unlock = useUnlock(onOpened);
 
   return (
