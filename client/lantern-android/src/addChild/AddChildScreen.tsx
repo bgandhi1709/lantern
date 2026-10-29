@@ -3,6 +3,7 @@ import { BackHandler } from 'react-native';
 
 import { birthYearChoices, emptyChild, isChildComplete } from '../registration';
 import type { Board } from '../registration';
+import { useTrackScreen } from '../shared/analytics';
 import { makeChildId } from '../shared/crypto';
 import { AddChildView } from './AddChildView';
 import { useAddChild } from './useAddChild';
@@ -10,6 +11,7 @@ import { useAddChild } from './useAddChild';
 type Props = { board: Board; onAdded: () => void; onBack: () => void };
 
 export function AddChildScreen({ board, onAdded, onBack }: Props) {
+  useTrackScreen('add-child');
   const { adding, failure, add, isBusy, clearFailure } = useAddChild(onAdded);
   const [child, setChild] = useState(emptyChild);
   const [childId] = useState(makeChildId);

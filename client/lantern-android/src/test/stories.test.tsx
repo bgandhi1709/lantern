@@ -199,6 +199,7 @@ const withoutStory: Record<string, string> = {
   'auth/StartScreen.tsx': 'container for StartView, which has the stories',
   'registration/AboutYouScreen.tsx': 'container for AboutYouView, which has the stories',
   'registration/BoardScreen.tsx': 'container for BoardView, which has the stories',
+  'registration/NoticeScreen.tsx': 'container for NoticeView, which has the stories',
   'settings/FamilyRows.tsx':
     'the Unlock and Start again rows of AppearanceView, whose stories show them',
   'unlock/UnlockScreen.tsx': 'container for UnlockView, which has the stories',
@@ -225,6 +226,7 @@ const withoutStory: Record<string, string> = {
   'shared/ui/FadeIn.tsx': 'animation wrapper with no look of its own',
   'shared/ui/icons.tsx': 'SVG parts used by the screens and their components',
   'shared/ui/markParts.tsx': 'SVG parts of Mark',
+  'home/ComingNextScreen.tsx': 'container for ComingNextView, which has the stories',
   'home/HomeScreen.tsx': 'container for HomeView, which has the stories',
   'home/ChaptersScreen.tsx': 'container for ChaptersView, which has the stories',
   'home/ChapterHistoryScreen.tsx': 'container for ChapterHistoryView, which has the stories',

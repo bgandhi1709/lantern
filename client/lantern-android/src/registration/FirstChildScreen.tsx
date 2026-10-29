@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { BackHandler } from 'react-native';
 
+import { trackTap } from '../shared/analytics';
 import {
   blockingExtra,
   birthYearChoices,
@@ -12,10 +13,12 @@ import type { ChildDraft } from './child';
 import { FirstChildView } from './FirstChildView';
 import { useRegistrationDraft } from './RegistrationDraft';
 import { useRegisterFamily } from './useRegisterFamily';
+import { useRegistrationStep } from './useRegistrationStep';
 
 // The year range is fixed for the visit: a Parent who is still here at midnight on New Year keeps the list.
 export function FirstChildScreen({ onBack }: { onBack: () => void }) {
   const { draft, update } = useRegistrationDraft();
+  useRegistrationStep('first-child');
   const { finishing, failure, finish, isBusy, clearFailure } = useRegisterFamily();
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const now = useMemo(() => new Date(), []);
@@ -68,15 +71,16 @@ export function FirstChildScreen({ onBack }: { onBack: () => void }) {
       onToggle={(index) => setOpenIndex(openIndex === index ? null : index)}
       onAdd={add}
       onRemove={remove}
-      onFinish={() =>
-        finish({
+      onFinish={() => {
+        trackTap('finish-registration');
+        return finish({
           family,
           parent: draft.parent,
           region: draft.region,
           board,
           children: drafts.filter((child, index) => index === 0 || isChildTouched(child)),
-        })
-      }
+        });
+      }}
       onBack={() => (isBusy() ? undefined : onBack())}
     />
   );

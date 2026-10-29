@@ -1,9 +1,11 @@
+import { useTrackScreen } from '../shared/analytics';
 import { StartAgainView } from './StartAgainView';
 import { useStartAgain } from './useStartAgain';
 
 type Props = { onDeleted: () => void; onKeep: () => void };
 
 export function StartAgainScreen({ onDeleted, onKeep }: Props) {
+  useTrackScreen('start-again');
   const again = useStartAgain(onDeleted);
 
   return (

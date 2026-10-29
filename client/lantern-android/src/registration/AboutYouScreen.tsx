@@ -1,12 +1,15 @@
 import { signOutOfLantern } from '../auth';
+import { tapped } from '../shared/analytics';
 import { AboutYouView } from './AboutYouView';
 import { isValidRegion } from './region';
 import { useRegistrationDraft } from './RegistrationDraft';
+import { useRegistrationStep } from './useRegistrationStep';
 
 type Props = { onOpenNotice: () => void; onContinue: () => void };
 
 export function AboutYouScreen({ onOpenNotice, onContinue }: Props) {
   const { draft, update } = useRegistrationDraft();
+  const finishStep = useRegistrationStep('about-you');
 
   return (
     <AboutYouView
@@ -17,9 +20,9 @@ export function AboutYouScreen({ onOpenNotice, onContinue }: Props) {
       onRegionChange={(region) => update({ region })}
       onNoticeToggle={() => update({ noticeAccepted: !draft.noticeAccepted })}
       onOpenNotice={onOpenNotice}
-      onContinue={onContinue}
+      onContinue={finishStep('about-continue', onContinue)}
       onBack={signOutOfLantern}
-      onChangeAccount={signOutOfLantern}
+      onChangeAccount={tapped('switch-google-account', signOutOfLantern)}
     />
   );
 }

@@ -31,6 +31,8 @@ export function setCollectionEnabled(enabled: boolean) {
   return setAnalyticsCollectionEnabled(analytics, enabled);
 }
 
+setCollectionEnabled(false);
+
 export function trackScreenView(screen: ScreenName) {
   if (!collecting || !isListed(SCREEN_NAMES, screen)) return;
   void logScreenView(analytics, { screen_name: screen, screen_class: screen });
@@ -45,6 +47,13 @@ export function trackTap(name: TapName) {
   if (!collecting || !isListed(TAP_NAMES, name)) return;
   void logEvent(analytics, 'tap', { name });
 }
+
+export const tapped =
+  <Args extends unknown[], Result>(name: TapName, action: (...args: Args) => Result) =>
+  (...args: Args) => {
+    trackTap(name);
+    return action(...args);
+  };
 
 export function trackRegistrationStep(step: RegistrationStep, state: RegistrationState) {
   if (!collecting || !isListed(REGISTRATION_STEPS, step)) return;

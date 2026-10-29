@@ -6,7 +6,7 @@ import { setCollectionEnabled } from '../shared/analytics';
 import { AboutYouScreen } from './AboutYouScreen';
 import { BoardScreen } from './BoardScreen';
 import { PLACEHOLDER_NOTICE_VERSION } from './notice';
-import { NoticeView } from './NoticeView';
+import { NoticeScreen } from './NoticeScreen';
 import { FirstChildScreen } from './FirstChildScreen';
 import { RecoveryCodeScreen } from './RecoveryCodeScreen';
 import { RegistrationDraftProvider, useRegistrationDraft } from './RegistrationDraft';
@@ -44,7 +44,7 @@ export function RegistrationFlow() {
     about: (
       <AboutYouScreen onOpenNotice={() => setStep('notice')} onContinue={() => setStep('board')} />
     ),
-    notice: <NoticeView version={PLACEHOLDER_NOTICE_VERSION} onBack={backToAbout} />,
+    notice: <NoticeScreen version={PLACEHOLDER_NOTICE_VERSION} onBack={backToAbout} />,
     board: <BoardScreen onContinue={() => setStep('recovery')} onBack={backToAbout} />,
     recovery: <RecoveryCodeScreen onContinue={() => setStep('firstChild')} onBack={backToBoard} />,
     firstChild: <FirstChildScreen onBack={backToRecovery} />,

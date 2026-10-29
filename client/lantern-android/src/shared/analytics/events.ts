@@ -1,6 +1,4 @@
 export const SCREEN_NAMES = [
-  'opening',
-  'start',
   'about-you',
   'privacy-notice',
   'board',
@@ -17,10 +15,7 @@ export const SCREEN_NAMES = [
 ] as const;
 
 export const TAP_NAMES = [
-  'continue-with-google',
   'switch-google-account',
-  'open-privacy-notice',
-  'accept-privacy-notice',
   'about-continue',
   'board-continue',
   'share-recovery-code',

@@ -1,9 +1,11 @@
+import { useTrackScreen } from '../shared/analytics';
 import { ChapterHistoryView } from './ChapterHistoryView';
 import { useChapterHistory } from './useChapterHistory';
 
 type Props = { childId: string; chapterId: string; onBack: () => void; onAction: () => void };
 
 export function ChapterHistoryScreen({ childId, chapterId, onBack, onAction }: Props) {
+  useTrackScreen('chapter-history');
   const history = useChapterHistory(childId, chapterId);
 
   return (

@@ -1,4 +1,4 @@
 export { ChapterHistoryScreen } from './ChapterHistoryScreen';
 export { ChaptersScreen } from './ChaptersScreen';
-export { ComingNextView } from './ComingNextView';
+export { ComingNextScreen } from './ComingNextScreen';
 export { HomeScreen } from './HomeScreen';

@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 
+import { trackTap } from '../shared/analytics';
 import { createFamilyKeys, makeFamilyId } from '../shared/crypto';
 import { useStrings } from '../shared/i18n';
 import { useRegistrationDraft } from './RegistrationDraft';
 import { RecoveryCodeView } from './RecoveryCodeView';
+import { useRegistrationStep } from './useRegistrationStep';
 import { emailRecoveryCode, shareRecoveryCode } from './shareRecoveryCode';
 
 type Props = { onContinue: () => void; onBack: () => void };
@@ -11,6 +13,7 @@ type Props = { onContinue: () => void; onBack: () => void };
 export function RecoveryCodeScreen({ onContinue, onBack }: Props) {
   const strings = useStrings().registration.recovery;
   const { draft, update } = useRegistrationDraft();
+  const finishStep = useRegistrationStep('recovery-code');
   const [saved, setSaved] = useState(draft.codeSent);
   const [emailed, setEmailed] = useState(draft.codeSent);
   const [shareFailed, setShareFailed] = useState(false);
@@ -64,19 +67,22 @@ export function RecoveryCodeScreen({ onContinue, onBack }: Props) {
       onSavedToggle={() => setSaved((value) => !value)}
       onEmail={async () => {
         if (code === null) return;
+        trackTap('share-recovery-code');
         const message = strings.message(code);
         const opened = await send(() =>
           emailRecoveryCode(draft.parent.email, strings.mailSubject, message),
         );
         if (opened) setEmailed(true);
       }}
-      onSave={() =>
-        code === null ? undefined : send(() => shareRecoveryCode(strings.message(code)))
-      }
-      onContinue={() => {
+      onSave={() => {
+        if (code === null) return;
+        trackTap('share-recovery-code');
+        return send(() => shareRecoveryCode(strings.message(code)));
+      }}
+      onContinue={finishStep('recovery-continue', () => {
         update({ codeSent: true });
         onContinue();
-      }}
+      })}
       onBack={onBack}
     />
   );

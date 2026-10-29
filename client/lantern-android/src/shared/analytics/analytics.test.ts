@@ -9,17 +9,29 @@ import {
   trackRegistrationStep,
   trackScreenTime,
   trackScreenView,
+  tapped,
   trackTap,
 } from './analytics';
 
 const sendAll = () => {
   trackScreenView('home');
   trackScreenTime('home', 12);
-  trackTap('continue-with-google');
+  trackTap('open-settings');
   trackRegistrationStep('about-you', 'reached');
 };
 
 beforeEach(() => setCollectionEnabled(false));
+
+describe('at every launch', () => {
+  it('switches collection off, whatever the last launch left on in the SDK', () => {
+    jest.isolateModules(() => {
+      jest.requireActual('./analytics');
+      const fake = jest.requireMock('@react-native-firebase/analytics');
+
+      expect(fake.setAnalyticsCollectionEnabled).toHaveBeenCalledWith(expect.anything(), false);
+    });
+  });
+});
 
 describe('before the Parent agrees', () => {
   it('sends no event', () => {
@@ -55,12 +67,21 @@ describe('after the Parent agrees', () => {
       seconds: 12,
     });
     expect(logEvent).toHaveBeenCalledWith(expect.anything(), 'tap', {
-      name: 'continue-with-google',
+      name: 'open-settings',
     });
     expect(logEvent).toHaveBeenCalledWith(expect.anything(), 'registration_step', {
       step: 'about-you',
       state: 'reached',
     });
+  });
+
+  it('counts a tap and then does what the control does, with its arguments and result', () => {
+    const open = jest.fn((id: string) => `opened ${id}`);
+
+    const result = tapped('open-subject', open)('a-subject');
+
+    expect(result).toBe('opened a-subject');
+    expect(logEvent).toHaveBeenCalledWith(expect.anything(), 'tap', { name: 'open-subject' });
   });
 
   it('refuses a name that is not on the fixed lists', () => {
