@@ -72,6 +72,16 @@ Storybook shows every shared component and every state of a screen from fixed da
 
 A story sits beside its component (`PrimaryButton.stories.tsx`), with one export per state. How to write one, and when a component may go without, is in `.claude/skills/storybook-standards`. While Metro runs, `http://localhost:7007/mcp` lists the components and their props for an agent (experimental). Release builds contain none of this: the switch is off, Metro replaces Storybook with empty modules, and the app refuses to start a release build with the switch on.
 
+## Check the usage numbers
+
+Analytics must be enabled on the Firebase project and `google-services.json` downloaded again afterwards. With a debug build on the emulator or a phone, tick the privacy notice on About you (or sign in as a registered Parent) and run:
+
+```bash
+adb shell setprop debug.firebase.analytics.app com.lantern.app
+```
+
+Then open DebugView in the Firebase console: `screen_view`, `screen_time`, `tap` and `registration_step` events appear with names only. `adb shell setprop debug.firebase.analytics.app .none.` turns debug mode off.
+
 ## Build an APK for a real phone
 
 The `Android - Check and Build` workflow ([`android.yml`](../../.github/workflows/android.yml)) checks every pull request that touches `client/**` (typecheck, lint, format, `expo-doctor`, and a bundle export). A manual run also builds a signed release APK.
@@ -113,13 +123,14 @@ Run these from `client/lantern-android`. CI (`android.yml`) runs the same four o
 | `npm run format:check` | Prettier check (`npm run format` fixes)                                                                                                      |
 | `npm test`             | Jest (`jest-expo`) with React Native Testing Library, including a render of every story; one file while iterating: `npx jest src/shared/api` |
 
-Lint fails on `any`, a `!` assertion, `console.*`, an AsyncStorage or SecureStore import outside `src/shared/storage`, a `@react-native-firebase` import outside `src/shared/session`, and a Google sign-in import outside `src/auth`, `StyleSheet.create` and `style={{…}}` objects anywhere except on `Animated` and SVG elements (use class names). A feature folder (`src/auth`, `src/family`, `src/catalog`) may import another feature only through its `index.ts`. `src/test/lint.test.ts` proves each rule.
+Lint fails on `any`, a `!` assertion, `console.*`, an AsyncStorage or SecureStore import outside `src/shared/storage`, a `@react-native-firebase` import outside `src/shared/session` (Analytics and Performance outside `src/shared/analytics`), and a Google sign-in import outside `src/auth`, `StyleSheet.create` and `style={{…}}` objects anywhere except on `Animated` and SVG elements (use class names). A feature folder (`src/auth`, `src/family`, `src/catalog`) may import another feature only through its `index.ts`. `src/test/lint.test.ts` proves each rule.
 
 ## Shared code
 
 - `src/shared/storage`: the only code that touches the device store. Keys are `lantern.v1.<name>`, each with a schema and a default that a missing, corrupt or old-version value falls back to. `clearAll()` wipes the plain and secure stores. Android backup is off (`android.allowBackup` is `false`, and the release build checks the manifest).
 - `src/shared/api`: the one API client. It times out, throws `ApiError` with the problem `code`, never retries, and parses every response with a zod schema. It asks `src/shared/session` for the current Firebase ID token before every call, so the header renews with the session.
 - `src/shared/session`: the only code that imports `@react-native-firebase/*`. The SDK keeps the session on the device in its own store and renews the ID token; the app stores no token itself. `endSession()` signs out and calls `clearAll()`.
+- `src/shared/analytics`: the only code that imports `@react-native-firebase/analytics` and `perf` (#126, D68, D118). It sends anonymous usage numbers: a screen viewed and the seconds spent on it (`useTrackScreen`, foreground only), a tap (`trackTap`, or `tapped(name, handler)` around a handler) and a registration step reached or finished, plus Performance Monitoring's app start and network timings. Names come from the `as const` lists in `events.ts`, so a free-text value does not compile and an unlisted one is dropped; nothing personal is ever a value. Collection is off at every launch and on only for a registered Parent or a ticked notice (`setCollectionEnabled`, called from `AuthProvider`, `SignedInRoute` and `RegistrationFlow`). `firebase.json` and `app.json` turn off collection at install, the advertising ID, ad storage and personalisation, and the SDK's own screen reporting (`src/test/nativeConfig.test.ts` checks them). A new screen container must call `useTrackScreen` or `useRegistrationStep`; `src/test/screenTracking.test.ts` fails otherwise.
 - `src/shared/i18n`: every word the Parent sees, in `en.ts`, read with `useStrings()`. A new language is a copy of `en.ts` typed as `Strings`; lint rejects text written in JSX or label props.
 - `src/auth`: the Opening intro (`useIntro`, `IntroMark`, `PageTurnLoader`: full on a new install, short after, still when the phone asks for less motion), the Start screen, the Google account sheet (the only code that imports `@react-native-google-signin`), `AuthProvider` (`restoring`, `signedOut`, `signedIn`) and `AuthGate`.
 - `src/home`: the Home screen (#116). `useHome` asks `GET /v1/me`, unlocks the Child names with the Family key and loads every Child's Subjects in parallel (a `409 content-not-ready` is asked again every few seconds and shows loading, never the error); `HomeScreen` is the container over `HomeView`. The active Child is kept as its opaque id and the dismissed welcome banner as a flag, both through `src/shared/storage`. A Subject tap opens the Chapters screen (`app/subject/[subjectId].tsx`); Add a child opens `app/add-child.tsx` with the Family's Board (#121). `.maestro/home.yaml` walks it. A gear in the header opens Settings.
@@ -130,7 +141,7 @@ Lint fails on `any`, a `!` assertion, `console.*`, an AsyncStorage or SecureStor
 - `.rnstorybook` and `*.stories.tsx`: Storybook's config and a story per component state (ADR-0012). `storybook.requires.ts` is generated when Metro starts; commit it.
 - `src/shared/ui`: the teal colours and Inter fonts from the canvas, the mother-and-child mark (`markParts`, shared with the intro and the launcher icon) and icons (SVG).
 - `src/shared/config.ts`: the only reader of `EXPO_PUBLIC_*`, the Google web client (taken from `google-services.json` by `app.config.js`) and the API timeout.
-- Tests fake the API (`src/test/fakeApi.ts`), the device stores (`jest.setup.ts`, `src/test/fakeSecureStore.ts`), the Firebase session (`src/test/fakeFirebaseAuth.ts`) and Google sign-in (`src/test/fakeGoogleSignIn.ts`). Google sign-in itself is checked by hand.
+- Tests fake the API (`src/test/fakeApi.ts`), the device stores (`jest.setup.ts`, `src/test/fakeSecureStore.ts`), the Firebase session (`src/test/fakeFirebaseAuth.ts`), Analytics and Performance (`src/test/fakeFirebaseAnalytics.ts`, `fakeFirebasePerf.ts`) and Google sign-in (`src/test/fakeGoogleSignIn.ts`). Google sign-in itself is checked by hand.
 
 ## Notes
 

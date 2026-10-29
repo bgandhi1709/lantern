@@ -15,7 +15,12 @@ describe('the native build settings for usage numbers', () => {
   });
 
   it('leave out the advertising ID and ad personalisation', () => {
-    expect(expo.android.blockedPermissions).toContain('com.google.android.gms.permission.AD_ID');
+    expect(expo.android.blockedPermissions).toEqual(
+      expect.arrayContaining([
+        'com.google.android.gms.permission.AD_ID',
+        'android.permission.ACCESS_ADSERVICES_AD_ID',
+      ]),
+    );
     expect(firebase.google_analytics_adid_collection_enabled).toBe(false);
     expect(firebase.google_analytics_ssaid_collection_enabled).toBe(false);
     expect(firebase.analytics_default_allow_ad_storage).toBe(false);

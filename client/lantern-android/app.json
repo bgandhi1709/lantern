@@ -16,7 +16,10 @@
       "predictiveBackGestureEnabled": false,
       "package": "com.lantern.app",
       "allowBackup": false,
-      "blockedPermissions": ["com.google.android.gms.permission.AD_ID"]
+      "blockedPermissions": [
+        "com.google.android.gms.permission.AD_ID",
+        "android.permission.ACCESS_ADSERVICES_AD_ID"
+      ]
     },
     "plugins": [
       "expo-router",

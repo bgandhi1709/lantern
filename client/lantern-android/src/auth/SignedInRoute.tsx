@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useLayoutEffect } from 'react';
 import type { ReactNode } from 'react';
 
 import { setCollectionEnabled } from '../shared/analytics';
@@ -14,8 +14,9 @@ type Props = { intro: Intro; home: ReactNode; registration: ReactNode };
 export function SignedInRoute({ intro, home, registration }: Props) {
   const { status, retry, markRegistered } = useMeStatus(useRegistrationCheck().epoch);
 
-  // A registered Parent agreed to the notice when registering; a new one agrees on About you.
-  useEffect(() => {
+  // A registered Parent agreed to the notice when registering; a new one agrees on About you. A
+  // layout effect, so it runs before Home's own effect reports that Home was viewed.
+  useLayoutEffect(() => {
     if (status === 'registered' || status === 'notRegistered') {
       setCollectionEnabled(status === 'registered');
     }

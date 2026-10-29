@@ -3,9 +3,10 @@ import { render, screen, userEvent } from '@testing-library/react-native';
 import { Text } from 'react-native';
 
 import { AuthGate, AuthProvider, signOutOfLantern, useRegistrationCheck } from '../auth';
-import { setCollectionEnabled } from '../shared/analytics';
+import { setCollectionEnabled, useTrackScreen } from '../shared/analytics';
 import { ApiError, api } from '../shared/api';
 import { fakeRestoredSession } from '../test/fakeFirebaseAuth';
+import { logScreenView } from '../test/fakeFirebaseAnalytics';
 import { performance } from '../test/fakeFirebasePerf';
 import { RegistrationFlow } from '.';
 
@@ -23,12 +24,17 @@ function Controls() {
   );
 }
 
+function Home() {
+  useTrackScreen('home');
+  return <Text>Home</Text>;
+}
+
 const renderApp = async () => {
   fakeRestoredSession();
   await render(
     <AuthProvider>
       <Controls />
-      <AuthGate home={<Text>Home</Text>} registration={<RegistrationFlow />} />
+      <AuthGate home={<Home />} registration={<RegistrationFlow />} />
     </AuthProvider>,
   );
 };
@@ -82,6 +88,18 @@ describe('when anonymous usage numbers are collected', () => {
     await screen.findByText('Home');
 
     expect(collecting()).toBe(true);
+  });
+
+  it('counts the first screen a registered Parent sees, not only the ones after it', async () => {
+    get.mockResolvedValue({});
+
+    await renderApp();
+    await screen.findByText('Home');
+
+    expect(logScreenView).toHaveBeenCalledWith(expect.anything(), {
+      screen_name: 'home',
+      screen_class: 'home',
+    });
   });
 
   it('stops when a registered Parent signs out', async () => {
