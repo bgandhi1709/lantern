@@ -15,7 +15,8 @@
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.lantern.app",
-      "allowBackup": false
+      "allowBackup": false,
+      "blockedPermissions": ["com.google.android.gms.permission.AD_ID"]
     },
     "plugins": [
       "expo-router",
@@ -34,6 +35,8 @@
       "expo-secure-store",
       "@react-native-firebase/app",
       "@react-native-firebase/auth",
+      "@react-native-firebase/analytics",
+      "@react-native-firebase/perf",
       "@react-native-google-signin/google-signin",
       [
         "expo-font",
