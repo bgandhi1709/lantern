@@ -1,1 +1,1 @@
-export { AppearanceScreen } from './AppearanceScreen';
+export { SettingsScreen } from './SettingsScreen';

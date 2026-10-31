@@ -1,14 +1,16 @@
 import { useRouter } from 'expo-router';
 
-import { AppearanceScreen } from '../src/settings';
+import { SettingsScreen } from '../src/settings';
 
 export default function Settings() {
   const router = useRouter();
   return (
-    <AppearanceScreen
+    <SettingsScreen
       onBack={() => router.back()}
       onUnlock={() => router.push('/unlock')}
       onStartAgain={() => router.push('/start-again')}
+      onDeleteChild={() => router.push('/delete-child')}
+      onDeleteFamily={() => router.push('/delete-family')}
     />
   );
 }

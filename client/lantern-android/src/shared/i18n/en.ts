@@ -324,7 +324,6 @@ export const en = {
     failed: 'Could not delete your Family. Nothing was changed. Try again.',
   },
   appearance: {
-    title: 'Appearance',
     unlockRow: {
       title: 'Unlock your Family',
       text: 'This phone does not hold your Family yet.',
@@ -362,6 +361,35 @@ export const en = {
       next: 'Next step',
     },
     savedNote: 'Saved on this phone only. Signing out keeps these.',
+  },
+  settings: {
+    title: 'Settings',
+    searchLabel: 'Search settings',
+    clearSearch: 'Clear search',
+    showAll: 'Show all settings',
+    noMatch: (query: string) => `No settings match "${query}"`,
+    noMatchHint: 'Try a shorter word, like theme, text or delete.',
+    rowLabel: (title: string, value: string) => `${title}, ${value}`,
+    groups: { app: 'App settings', family: 'Family management' },
+    previewValue: 'A lesson step',
+    deleteChildRow: {
+      title: 'Delete a child',
+      text: 'Remove one child and all their data.',
+    },
+    deleteFamilyRow: {
+      title: 'Delete Family',
+      text: 'Erase the whole Family and every child. This cannot be undone.',
+    },
+    keywords: {
+      theme: 'theme dark light evening night appearance',
+      textSize: 'text size font large largest bigger default accessibility appearance',
+      colour: 'colour color scheme teal blue gray golden accent appearance',
+      preview: 'preview sample lesson step appearance',
+      unlock: 'unlock your family recovery code key phone',
+      deleteChild: 'delete a child remove erase data family management',
+      deleteFamily: 'delete family erase everything remove account family management',
+      startAgain: 'start again lost recovery code reset register new family management',
+    },
   },
 };
 

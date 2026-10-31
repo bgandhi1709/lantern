@@ -5,6 +5,7 @@ export const ROUTE_SCREENS: Partial<Record<string, ScreenName>> = {
   'add-child': 'add-child',
   unlock: 'unlock',
   'start-again': 'start-again',
+  'delete-family': 'delete-family',
   'coming-next': 'coming-next',
   'subject/[subjectId]': 'chapters',
   'chapter/[chapterId]/history': 'chapter-history',
