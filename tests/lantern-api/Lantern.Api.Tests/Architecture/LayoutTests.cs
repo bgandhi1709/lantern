@@ -1,7 +1,7 @@
 namespace Lantern.Api.Tests.Architecture;
 
 // The Workspace and Board master names live in ContentLayout alone: a file or folder name written anywhere else in production code
-// is a second copy that can drift from the one ncert-build writes.
+// is a second copy that can drift from the one the content in the Board containers uses.
 public sealed class LayoutTests
 {
     private static readonly string[] Folders = ["apps", "libs"];

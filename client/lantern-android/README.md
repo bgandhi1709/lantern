@@ -86,7 +86,7 @@ Then open DebugView in the Firebase console: `screen_view`, `screen_time`, `tap`
 
 The `Android - Check and Build` workflow ([`android.yml`](../../.github/workflows/android.yml)) checks every pull request that touches `client/**` (typecheck, lint, format, `expo-doctor`, and a bundle export). A manual run also builds a signed release APK.
 
-**One-time setup** (the wizard writes everything to the `uat` environment of the repository; it needs Docker, `az` and `gh` signed in):
+**One-time setup**, run from the `lantern-utilities` repository (the wizard writes everything to the `uat` environment of the repository; it needs Docker, `az` and `gh` signed in):
 
 ```sh
 client/lantern-android/ci/setup-signing.sh

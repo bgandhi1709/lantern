@@ -56,7 +56,6 @@ Applies to architecture, data layout, domain terms, the cycle itself and the cod
 | Service boundaries, async flows | `microservices-architect` |
 | Ask API, retrieval | `rag-architect` |
 | Agent runtime | `multi-agent-patterns`, `context-optimization`, `evaluation` |
-| Python | `python-pro` |
 | React | `vercel-react-best-practices`, `vercel-composition-patterns` |
 | Module shape, testability | `codebase-design` |
 
@@ -72,7 +71,7 @@ Load a skill only when the issue touches its area. Each loaded skill costs conte
 - **Reads:** read the specific lines you need, not whole files. Search before reading.
 - **Output:** short chat replies, normal prose in files and commits.
 - **Tests:** single test files while iterating, the full suite once at the end.
-- **Direct Anthropic API calls** (scripts, runtime features):
+- **Direct Anthropic API calls** (runtime features):
   - one attempt per call, no retries; runtime agent calls may retry only on 429 and 529, at most twice with backoff (D48);
   - a hard budget ceiling checked from the API's real `usage` field before each call;
   - the cheapest adequate model by default (Haiku 4.5 for mechanical work);
