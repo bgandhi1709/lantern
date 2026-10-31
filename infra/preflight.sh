@@ -38,7 +38,7 @@ url="https://management.azure.com/subscriptions/${SUB_ID}/resourceGroups/${RG}/p
 if ! content_type=$(az rest --method get --url "$url" --query "properties.contentType" -o tsv 2>/dev/null); then
   echo "::error::Key Vault ${VAULT} has no secret '${AMQP_SECRET}'. ${FIX}"; failed=1
 elif [ "$content_type" = "placeholder" ]; then
-  echo "::error::Secret '${AMQP_SECRET}' in ${VAULT} is still the placeholder. Run infra/cloudamqp-wizard.sh ${RG} ${ENV_NAME}."; failed=1
+  echo "::error::Secret '${AMQP_SECRET}' in ${VAULT} is still the placeholder. Set the real broker URL as infra/README.md describes (The broker URL)."; failed=1
 fi
 
 exit "$failed"

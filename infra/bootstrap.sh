@@ -91,7 +91,7 @@ fi
 if az keyvault secret show --vault-name "$VAULT" -n "$AMQP_SECRET" -o none 2>/dev/null; then
   echo "Secret ${AMQP_SECRET} exists, left as is"
 else
-  echo "Creating placeholder ${AMQP_SECRET}; set the real URL with infra/cloudamqp-wizard.sh ${RG} ${ENV_NAME}"
+  echo "Creating placeholder ${AMQP_SECRET}; set the real URL as infra/README.md describes"
   az keyvault secret set --vault-name "$VAULT" -n "$AMQP_SECRET" --value placeholder --content-type placeholder -o none
 fi
 

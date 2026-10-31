@@ -26,15 +26,16 @@ The old `family-field-key` in the vault is no longer used; it can be deleted onc
 
 ### The broker URL (`amqp-url`)
 
-Actions go through a CloudAMQP LavinMQ instance (RabbitMQ-compatible) on the free plan ([D119](../docs/ideation/decision-log.md), issue #173). Its AMQPS URL holds the broker password and is the one connection string in Azure, held as the Key Vault secret `amqp-url` (the name is `keyVault.amqpUrlSecret` in the bicepparam). Only CloudAMQP can issue it, so `bootstrap.sh` creates a placeholder (value and content type `placeholder`) and you replace it:
+Actions go through a CloudAMQP LavinMQ instance (RabbitMQ-compatible) on the free plan ([D119](../docs/ideation/decision-log.md), issue #173). Its AMQPS URL holds the broker password and is the one connection string in Azure, held as the Key Vault secret `amqp-url` (the name is `keyVault.amqpUrlSecret` in the bicepparam). Only CloudAMQP can issue it, so `bootstrap.sh` creates a placeholder (value and content type `placeholder`) and you replace it. Create a LavinMQ instance on the CloudAMQP free plan, copy its AMQPS URL, then paste it once at the hidden prompt (the URL goes to no file, no shell history and no GitHub secret):
 
 ```bash
-infra/cloudamqp-wizard.sh rg-lantern-dev uat
+read -rsp 'AMQPS URL: ' URL; echo
+az keyvault secret set --vault-name kv-lantern-uat -n amqp-url --file <(printf '%s' "$URL"); unset URL
 ```
 
-The wizard opens the CloudAMQP dashboard, takes the URL as hidden input, stores it in the vault (no file, no GitHub secret) and runs `preflight.sh`. The preflight reads the secret's content type through Azure Resource Manager, because the deploy identity has Contributor only and must not read secret values, and fails while the secret is missing or still the placeholder.
+Setting it with no `--content-type` clears the placeholder flag. The release preflight reads the secret's content type through Azure Resource Manager, because the deploy identity has Contributor only and must not read secret values, and fails while the secret is missing or still the placeholder. It cannot see a wrong value, so paste the URL once and check it is one `amqps://user:password@host/vhost`.
 
-**Rotate:** change the password or URL in CloudAMQP, run the wizard again (or `az keyvault secret set` with no `--content-type`), then restart both apps (`az containerapp revision restart` on `ca-lantern-uat` and `ca-lantern-uat-functions`). They read the secret when a revision starts.
+**Rotate:** change the password or URL in CloudAMQP, run the same two commands, then restart both apps (`az containerapp revision restart` on `ca-lantern-uat` and `ca-lantern-uat-functions`). They read the secret when a revision starts.
 
 ## 2. Deploy
 

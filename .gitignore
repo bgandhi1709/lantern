@@ -30,3 +30,6 @@ deploy/local/certs/
 
 # Repo-level tooling (Husky)
 /node_modules/
+
+# One-time CloudAMQP setup helper, kept on the founder's machine
+/infra/cloudamqp-wizard.sh
