@@ -11,6 +11,7 @@ export const SCREEN_NAMES = [
   'appearance',
   'unlock',
   'start-again',
+  'delete-child',
   'delete-family',
   'coming-next',
 ] as const;

@@ -65,3 +65,14 @@ export const WithError: Story = {
     value: 'K7QM-4TDX',
   },
 };
+
+export const Numeric: Story = {
+  args: {
+    bare: true,
+    numeric: true,
+    label: en.deleteChild.codeLabel,
+    hint: en.deleteChild.codeHint,
+    value: '482917',
+    maxLength: 6,
+  },
+};

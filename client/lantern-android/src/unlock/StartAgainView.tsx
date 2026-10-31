@@ -3,6 +3,7 @@ import { ScrollView, Text, View } from 'react-native';
 import { useStrings } from '../shared/i18n';
 import { OutlineButton } from '../shared/ui/OutlineButton';
 import { PrimaryButton } from '../shared/ui/PrimaryButton';
+import { WarningCard } from '../shared/ui/WarningCard';
 
 type Props = { deleting: boolean; failed: boolean; onDelete: () => void; onKeep: () => void };
 
@@ -18,10 +19,7 @@ export function StartAgainView({ deleting, failed, onDelete, onKeep }: Props) {
           </Text>
           <Text className="font-inter-medium text-body text-muted">{strings.intro}</Text>
         </View>
-        <View className="gap-1 rounded-card border border-line bg-card p-4">
-          <Text className="font-inter-bold text-body text-danger">{strings.warningHeading}</Text>
-          <Text className="font-inter-medium text-body text-ink">{strings.warning}</Text>
-        </View>
+        <WarningCard heading={strings.warningHeading} text={strings.warning} />
         {failed ? (
           <Text
             accessibilityLiveRegion="polite"

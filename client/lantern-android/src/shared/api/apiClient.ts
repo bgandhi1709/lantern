@@ -10,6 +10,7 @@ export type ApiClientOptions = {
 };
 
 type Method = 'GET' | 'POST' | 'PUT' | 'DELETE';
+type ExtraHeaders = Record<string, string>;
 
 const ProblemBody = z.object({ code: z.string() });
 
@@ -35,7 +36,7 @@ export function createApiClient({
   getIdToken,
   fetchImpl = fetch,
 }: ApiClientOptions) {
-  async function send(method: Method, path: string, body?: unknown) {
+  async function send(method: Method, path: string, body?: unknown, headers: ExtraHeaders = {}) {
     const token = await getIdToken?.();
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -43,6 +44,7 @@ export function createApiClient({
       return await fetchImpl(`${baseUrl}${path}`, {
         method,
         headers: {
+          ...headers,
           Accept: 'application/json',
           ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -58,8 +60,14 @@ export function createApiClient({
     }
   }
 
-  async function request<T>(method: Method, path: string, schema: z.ZodType<T>, body?: unknown) {
-    const response = await send(method, path, body);
+  async function request<T>(
+    method: Method,
+    path: string,
+    schema: z.ZodType<T>,
+    body?: unknown,
+    headers?: ExtraHeaders,
+  ) {
+    const response = await send(method, path, body, headers);
     if (!response.ok) throw await failureOf(response);
     const payload = response.status === 204 ? undefined : await readJson(response);
     const parsed = schema.safeParse(payload);
@@ -73,6 +81,7 @@ export function createApiClient({
       request('POST', path, schema, body),
     put: <T>(path: string, schema: z.ZodType<T>, body: unknown) =>
       request('PUT', path, schema, body),
-    delete: <T>(path: string, schema: z.ZodType<T>) => request('DELETE', path, schema),
+    delete: <T>(path: string, schema: z.ZodType<T>, headers?: ExtraHeaders) =>
+      request('DELETE', path, schema, undefined, headers),
   };
 }

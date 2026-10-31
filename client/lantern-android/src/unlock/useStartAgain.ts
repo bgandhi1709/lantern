@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 
 import { startAgain } from './startAgain';
-import { useIsMounted } from './useIsMounted';
+import { useIsMounted } from '../shared/lifecycle/useIsMounted';
 
 export function useStartAgain(onDeleted: () => void) {
   const [deleting, setDeleting] = useState(false);

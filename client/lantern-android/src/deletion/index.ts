@@ -1,0 +1,1 @@
+export { DeleteChildScreen } from './DeleteChildScreen';
