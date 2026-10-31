@@ -46,7 +46,7 @@ The diagram is [`docs/architecture/lantern-architecture.html`](docs/architecture
 ## Status
 
 - **Content.** The NCERT layer is being built class by class; the SSC layer follows.
-- **Infrastructure.** UAT is deployed from Bicep by `api.yml` ([`infra/README.md`](infra/README.md)).
+- **Infrastructure.** UAT is deployed from Bicep by `api.yml` ([`infra/README.md`](infra/README.md)). A CloudAMQP LavinMQ broker is provisioned for publish and subscribe (D119, #173); actions still use Service Bus until the cutover.
 - **API.** Register, `me`, Family and Child management, Workspaces, Subjects, Chapters and a Chapter's Attempts and Checks are built, and the
   end-to-end tests gate each release. Run it locally with [`deploy/local/README.md`](deploy/local/README.md).
 - **Parent app.** Sign-in, registration, Home, Add a child, Chapters (state, search, history), Unlock, Settings and anonymous usage

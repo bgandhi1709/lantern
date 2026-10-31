@@ -17,12 +17,24 @@ Needs Owner or User Access Administrator on the resource group. Safe to run agai
 identity `id-lantern-uat`, the Key Vault `kv-lantern-uat`, the roles the identity needs (Storage Table
 Data Contributor, Storage Blob Data Contributor, Storage Blob Data Owner (the Functions host's own state), Azure Service Bus Data Owner (the API sends, the Functions app receives, and the KEDA rule that wakes it reads the queue's message count) and Monitoring Metrics Publisher (telemetry export) on the resource group, Key Vault Secrets User on the vault),
 a Storage Blob Data Contributor role on the resource group for whoever runs it (so `ncert-build upload`
-works once the container exists), and the secret `security-key`, only if missing.
+works once the container exists), the secret `security-key`, only if missing, and the secret `amqp-url` as a placeholder, only if missing.
 
 **`security-key` derives the uid hash key. Rotating it makes every registration unreadable.**
 Save a copy (the script prints the command). Lantern holds no Family key: each Family's personal fields are
 locked on the phone with a key only the Parent can open (D66, [ADR-0010](../docs/adr/0010-family-key-held-by-the-parent.md)).
 The old `family-field-key` in the vault is no longer used; it can be deleted once no Family on the old scheme remains.
+
+### The broker URL (`amqp-url`)
+
+Actions go through a CloudAMQP LavinMQ instance (RabbitMQ-compatible) on the free plan ([D119](../docs/ideation/decision-log.md), issue #173). Its AMQPS URL holds the broker password and is the one connection string in Azure, held as the Key Vault secret `amqp-url` (the name is `keyVault.amqpUrlSecret` in the bicepparam). Only CloudAMQP can issue it, so `bootstrap.sh` creates a placeholder (value and content type `placeholder`) and you replace it:
+
+```bash
+infra/cloudamqp-wizard.sh rg-lantern-dev uat
+```
+
+The wizard opens the CloudAMQP dashboard, takes the URL as hidden input, stores it in the vault (no file, no GitHub secret) and runs `preflight.sh`. The preflight reads the secret's content type through Azure Resource Manager, because the deploy identity has Contributor only and must not read secret values, and fails while the secret is missing or still the placeholder.
+
+**Rotate:** change the password or URL in CloudAMQP, run the wizard again (or `az keyvault secret set` with no `--content-type`), then restart both apps (`az containerapp revision restart` on `ca-lantern-uat` and `ca-lantern-uat-functions`). They read the secret when a revision starts.
 
 ## 2. Deploy
 

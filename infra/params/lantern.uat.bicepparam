@@ -18,6 +18,7 @@ param containers = {
 
 param keyVault = {
   securityKeySecret: 'security-key'
+  amqpUrlSecret: 'amqp-url'
 }
 
 // A five-minute lock and 288 deliveries: a failing action retries for about a day before it is dead-lettered.

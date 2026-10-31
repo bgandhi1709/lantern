@@ -29,4 +29,16 @@ for role in "Storage Table Data Contributor" "Storage Blob Data Contributor" "St
   grep -qxF "$role" <<<"$roles" || { echo "::error::${IDENTITY} lacks '${role}'. ${FIX}"; failed=1; }
 done
 
+PARAMS_FILE="$(dirname "$0")/params/lantern.${ENV_NAME}.bicepparam"
+source "$(dirname "$0")/kv-param.sh"
+AMQP_SECRET=$(key_vault_param amqpUrlSecret)
+VAULT="kv-lantern-${ENV_NAME}"
+SUB_ID=$(az account show --query id -o tsv)
+url="https://management.azure.com/subscriptions/${SUB_ID}/resourceGroups/${RG}/providers/Microsoft.KeyVault/vaults/${VAULT}/secrets/${AMQP_SECRET}?api-version=2023-07-01"
+if ! content_type=$(az rest --method get --url "$url" --query "properties.contentType" -o tsv 2>/dev/null); then
+  echo "::error::Key Vault ${VAULT} has no secret '${AMQP_SECRET}'. ${FIX}"; failed=1
+elif [ "$content_type" = "placeholder" ]; then
+  echo "::error::Secret '${AMQP_SECRET}' in ${VAULT} is still the placeholder. Run infra/cloudamqp-wizard.sh ${RG} ${ENV_NAME}."; failed=1
+fi
+
 exit "$failed"
