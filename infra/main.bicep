@@ -18,9 +18,10 @@ param containers {
   ssc: string
 }
 
-@description('The Key Vault secret bootstrap.sh creates: the key that hashes each uid. Lantern holds no Family key (D66).')
+@description('The Key Vault secrets bootstrap.sh creates: the key that hashes each uid (Lantern holds no Family key, D66) and the CloudAMQP broker URL (D119).')
 param keyVault {
   securityKeySecret: string
+  amqpUrlSecret: string
 }
 
 @description('The one queue for every Workspace event; the dispatcher picks the handler by type. The lock is the retry delay; deliveries times lock is how long a failing event retries.')

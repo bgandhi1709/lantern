@@ -13,11 +13,9 @@ VAULT="kv-lantern-${ENV_NAME}"
 
 # The secret name comes from the environment's bicepparam, so the app settings and this script never differ.
 PARAMS_FILE="$(dirname "$0")/params/lantern.${ENV_NAME}.bicepparam"
-key_vault_param() {
-  az bicep build-params --file "$PARAMS_FILE" --stdout \
-    | python3 -c "import json, sys; print(json.loads(json.load(sys.stdin)['parametersJson'])['parameters']['keyVault']['value']['$1'])"
-}
+source "$(dirname "$0")/kv-param.sh"
 SECRET=$(key_vault_param securityKeySecret)
+AMQP_SECRET=$(key_vault_param amqpUrlSecret)
 
 SUB_ID=$(az account show --query id -o tsv)
 
@@ -88,6 +86,13 @@ else
   done
   echo "Save a copy: az keyvault secret show --vault-name ${VAULT} -n ${SECRET} --query value -o tsv"
   echo "Losing it loses access to all registrations."
+fi
+
+if az keyvault secret show --vault-name "$VAULT" -n "$AMQP_SECRET" -o none 2>/dev/null; then
+  echo "Secret ${AMQP_SECRET} exists, left as is"
+else
+  echo "Creating placeholder ${AMQP_SECRET}; set the real URL as infra/README.md describes"
+  az keyvault secret set --vault-name "$VAULT" -n "$AMQP_SECRET" --value placeholder --content-type placeholder -o none
 fi
 
 echo "Done. Next: az deployment group create -g ${RG} -f infra/main.bicep -p infra/params/lantern.${ENV_NAME}.bicepparam"
