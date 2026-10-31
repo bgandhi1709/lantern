@@ -4,7 +4,6 @@ using System.Text.RegularExpressions;
 using Lantern.Core.Constants;
 using Lantern.Core.Service;
 using Microsoft.AspNetCore.Mvc;
-using IActionHandler = Functions::Lantern.Functions.Handler.IActionHandler;
 
 namespace Lantern.Api.Tests.Architecture;
 
@@ -76,17 +75,17 @@ public sealed partial class NamingTests
     }
 
     [Fact]
-    public void EveryActionType_HasOneHandlerAndOnePayloadNamedAfterIt()
+    public void EveryActionType_HasOneFunctionAndOnePayloadNamedAfterIt()
     {
-        var handlers = LanternAssemblies.Concrete.Where(type => typeof(IActionHandler).IsAssignableFrom(type)).Select(type => type.Name).ToList();
+        var functions = LanternAssemblies.Concrete.Where(IsActionFunction).Select(type => type.Name).ToList();
         var payloads = LanternAssemblies.Core.GetTypes().Select(type => type.Name).ToHashSet();
 
         Assert.All(Enum.GetNames<ActionType>(), name =>
         {
-            Assert.Contains($"{name}Handler", handlers);
+            Assert.Contains($"{name}Function", functions);
             Assert.Contains($"{name}Payload", payloads);
         });
-        Assert.Equal(Enum.GetNames<ActionType>().Length, handlers.Count);
+        Assert.Equal(Enum.GetNames<ActionType>().Length, functions.Count);
     }
 
     [Fact]
@@ -141,4 +140,7 @@ public sealed partial class NamingTests
 
     [GeneratedRegex(@"^(?:\[[^\]]*\]\s*)*(?:(?:public|internal|file|sealed|static|abstract|partial|readonly)\s+)*(?:class|record(?:\s+struct)?|interface|enum|struct)\s+(\w+)", RegexOptions.Multiline)]
     private static partial Regex TopLevelType();
+
+    private static bool IsActionFunction(Type type) =>
+        type.BaseType is { IsGenericType: true } baseType && baseType.GetGenericTypeDefinition().Name == "ActionFunction`1";
 }

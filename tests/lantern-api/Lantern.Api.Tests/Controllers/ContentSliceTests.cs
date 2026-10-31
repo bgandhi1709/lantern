@@ -5,7 +5,6 @@ using System.Net.Http.Json;
 using Azure.Data.Tables;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
-using Functions::Lantern.Functions.Handler;
 using Lantern.Api.Models;
 using Lantern.Api.Tests.Infrastructure;
 using Lantern.Core.Actions;
@@ -166,7 +165,7 @@ public sealed class ContentSliceTests(AzuriteFixture azurite) : IDisposable
         using var broken = factory.WithWebHostBuilder(builder => builder.ConfigureTestServices(services => services.AddSingleton(failing.Object)));
 
         await Assert.ThrowsAsync<IOException>(() =>
-            broken.Services.GetRequiredService<IActionDispatcher>().DispatchAsync(factory.Sender.Sent.Single(m => m.Type == ActionType.CreateWorkspace), CancellationToken.None)
+            broken.Services.DeliverAsync(factory.Sender.Sent.Single(m => m.Type == ActionType.CreateWorkspace), CancellationToken.None)
         );
 
         Assert.NotEmpty(await PendingAsync(family.FamilyId, family.Children));
@@ -183,9 +182,9 @@ public sealed class ContentSliceTests(AzuriteFixture azurite) : IDisposable
         using var client = Client(NewUid());
         var family = await RegisterAsync(client, BoardType.Cbse, 7);
         var message = factory.Sender.Sent.Single(m => m.Type == ActionType.CreateWorkspace);
-        var dispatcher = factory.Services.GetRequiredService<IActionDispatcher>();
+        var host = factory.Services;
 
-        await Task.WhenAll(Enumerable.Range(0, 4).Select(_ => dispatcher.DispatchAsync(message, CancellationToken.None)));
+        await Task.WhenAll(Enumerable.Range(0, 4).Select(_ => host.DeliverAsync(message, CancellationToken.None)));
 
         Assert.Equal(ApiBoardMasters.NcertSlice(7), await SliceAsync(family.FamilyId, family.Children[0].ChildId, 7));
         Assert.Empty(await PendingAsync(family.FamilyId, family.Children));
@@ -206,12 +205,12 @@ public sealed class ContentSliceTests(AzuriteFixture azurite) : IDisposable
                     return (Board: board, Family: await RegisterAsync(client, board, 1 + (index % 5), 2 + (index % 3), 3));
                 })
         );
-        var dispatcher = factory.Services.GetRequiredService<IActionDispatcher>();
+        var host = factory.Services;
 
         await Parallel.ForEachAsync(
             factory.Sender.Sent.Where(m => m.Type == ActionType.CreateWorkspace),
             new ParallelOptions { MaxDegreeOfParallelism = 8 },
-            async (message, token) => await dispatcher.DispatchAsync(message, token)
+            async (message, token) => await host.DeliverAsync(message, token)
         );
 
         Assert.Equal(36, factory.Sender.Sent.Count(m => m.Type == ActionType.CreateWorkspace));

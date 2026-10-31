@@ -29,7 +29,7 @@ The diagram is [`docs/architecture/lantern-architecture.html`](docs/architecture
   Books ready to read ([`docs/architecture/contracts`](docs/architecture/contracts/README.md)). Extracting the
   syllabus is part of a separate repository, `lantern-utilities` (ADR-0017).
 - **Runtime**, on Azure: the Parent app talks to an ASP.NET API, and queued work runs in
-  `Lantern.Functions` through Service Bus (ADR-0004).
+  `Lantern.Functions` through a CloudAMQP broker that delivers each action to every subscriber (ADR-0018).
 - **Privacy.** The phone locks personal details with a Family key only the Parent can open, through
   the emailed Recovery code (ADR-0010, ADR-0015), so Lantern stores them but cannot read them.
   Terms are in [`GLOSSARY.md`](GLOSSARY.md).
@@ -39,14 +39,14 @@ The diagram is [`docs/architecture/lantern-architecture.html`](docs/architecture
 | Parent app | Expo (React Native, TypeScript), Android first ([ADR-0007](docs/adr/0007-parent-app-in-expo.md)) |
 | Sign-in | Firebase Authentication (Google) |
 | Backend | ASP.NET on .NET 10 in Azure Container Apps, plus Azure Functions for queued actions |
-| Storage | Azure Table and Blob, Service Bus Basic |
+| Storage | Azure Table and Blob, CloudAMQP (LavinMQ) for actions |
 | AI | Claude through the Anthropic API, in a Node.js agent service (ADR-0008) |
 | Infrastructure | Bicep, deployed by GitHub Actions |
 
 ## Status
 
 - **Content.** The NCERT and SSC Books are in their containers; extracting them is a separate repository.
-- **Infrastructure.** UAT is deployed from Bicep by `api.yml` ([`infra/README.md`](infra/README.md)). A CloudAMQP LavinMQ broker is provisioned for publish and subscribe (D119, #173); actions still use Service Bus until the cutover.
+- **Infrastructure.** UAT is deployed from Bicep by `api.yml` ([`infra/README.md`](infra/README.md)). Actions are published and subscribed on a CloudAMQP LavinMQ broker (ADR-0018, #176), one thin trigger per subscriber; retry with delay, the parking alert and one trace through the broker follow (#177, #178, #179).
 - **API.** Register, `me`, Family and Child management, Workspaces, Subjects, Chapters and a Chapter's Attempts and Checks are built, and the
   end-to-end tests gate each release. Run it locally with [`deploy/local/README.md`](deploy/local/README.md).
 - **Parent app.** Sign-in, registration, Home, Add a child, Chapters (state, search, history), Unlock, Settings and anonymous usage

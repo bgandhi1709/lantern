@@ -24,12 +24,12 @@ param keyVault {
   amqpUrlSecret: string
 }
 
-@description('The one queue for every Workspace event; the dispatcher picks the handler by type. The lock is the retry delay; deliveries times lock is how long a failing event retries.')
-param actionsQueue {
-  name: string
-  lockDuration: string
-  maxDeliveryCount: int
-  messageTimeToLive: string
+@description('The exchange the API publishes actions to and the queue of each subscriber. They are the names in infra/topology.json, which apply-topology.sh declares on the broker.')
+param actions {
+  exchange: string
+  createWorkspaceQueue: string
+  removeWorkspaceQueue: string
+  removeFamilyQueue: string
 }
 
 @description('Size and scale of each Container App. cpu is a string because Bicep has no decimals.')
@@ -95,6 +95,13 @@ resource identity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' 
 // Created once by bootstrap.sh, which also writes the secret and the key named in keyVault. The template only reads it.
 resource vault 'Microsoft.KeyVault/vaults@2023-07-01' existing = {
   name: 'kv-${name}'
+}
+
+// The broker URL carries its password, so both apps read it from Key Vault through the identity; it is never a plain value.
+var amqpUrlSecret = {
+  name: 'amqp-url'
+  keyVaultUrl: '${vault.properties.vaultUri}secrets/${keyVault.amqpUrlSecret}'
+  identity: identity.id
 }
 
 resource logs 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
@@ -186,34 +193,6 @@ resource storage 'Microsoft.Storage/storageAccounts@2023-05-01' = {
   }
 }
 
-// Basic is queues only, which is all the one consumer of each action needs; topics (pub-sub) need Standard (ADR-0004).
-// Callers sign in with a managed identity, so no key or connection string exists.
-resource serviceBus 'Microsoft.ServiceBus/namespaces@2024-01-01' = {
-  name: 'sb-${name}'
-  location: location
-  sku: {
-    name: 'Basic'
-    tier: 'Basic'
-  }
-  properties: {
-    disableLocalAuth: true
-    minimumTlsVersion: '1.2'
-  }
-
-  // One queue for every action type; the message's type picks the handler. A message that is not settled comes back
-  // when its lock expires, so the lock is the retry delay and a failing action is dead-lettered only after
-  // maxDeliveryCount locks.
-  resource queue 'queues' = {
-    name: actionsQueue.name
-    properties: {
-      lockDuration: actionsQueue.lockDuration
-      maxDeliveryCount: actionsQueue.maxDeliveryCount
-      defaultMessageTimeToLive: actionsQueue.messageTimeToLive
-      deadLetteringOnMessageExpiration: true
-    }
-  }
-}
-
 resource environment 'Microsoft.App/managedEnvironments@2025-01-01' = {
   name: 'cae-${name}'
   location: location
@@ -250,6 +229,7 @@ resource app 'Microsoft.App/containerApps@2025-01-01' = {
           keyVaultUrl: '${vault.properties.vaultUri}secrets/${keyVault.securityKeySecret}'
           identity: identity.id
         }
+        amqpUrlSecret
         insightsSecret
       ]
     }
@@ -266,8 +246,8 @@ resource app 'Microsoft.App/containerApps@2025-01-01' = {
             { name: 'Storage__BlobEndpoint', value: storage.properties.primaryEndpoints.blob }
             { name: 'Catalog__NcertContainer', value: containers.ncert }
             { name: 'Catalog__SscContainer', value: containers.ssc }
-            { name: 'ServiceBus__FullyQualifiedNamespace', value: '${serviceBus.name}.servicebus.windows.net' }
-            { name: 'Actions__Queue', value: serviceBus::queue.name }
+            { name: 'Broker__Url', secretRef: amqpUrlSecret.name }
+            { name: 'Actions__Exchange', value: actions.exchange }
             { name: 'Security__Key', secretRef: 'security-key' }
             { name: 'RateLimits__ChildrenPerMinute', value: string(childrenPerMinute) }
             { name: 'Actions__ResendAfter', value: actionResendAfter }
@@ -289,8 +269,8 @@ resource app 'Microsoft.App/containerApps@2025-01-01' = {
   }
 }
 
-// Lantern.Functions: finishes the actions the API puts on the queue. No ingress; a message on the queue wakes it, and
-// it goes back to zero when the queue is empty.
+// Lantern.Functions: one trigger per subscriber finishes the actions the API publishes. No ingress; a message on a
+// subscriber's queue wakes it, and it goes back to zero when the queues are empty.
 resource functionsApp 'Microsoft.App/containerApps@2025-01-01' = {
   name: 'ca-${name}-functions'
   location: location
@@ -303,7 +283,7 @@ resource functionsApp 'Microsoft.App/containerApps@2025-01-01' = {
   properties: {
     managedEnvironmentId: environment.id
     configuration: {
-      secrets: [insightsSecret]
+      secrets: [amqpUrlSecret, insightsSecret]
     }
     template: {
       containers: [
@@ -322,10 +302,11 @@ resource functionsApp 'Microsoft.App/containerApps@2025-01-01' = {
             { name: 'AzureWebJobsStorage__accountName', value: storage.name }
             { name: 'AzureWebJobsStorage__credential', value: 'managedidentity' }
             { name: 'AzureWebJobsStorage__clientId', value: identity.properties.clientId }
-            { name: 'ServiceBus__fullyQualifiedNamespace', value: '${serviceBus.name}.servicebus.windows.net' }
-            { name: 'ServiceBus__credential', value: 'managedidentity' }
-            { name: 'ServiceBus__clientId', value: identity.properties.clientId }
-            { name: 'Actions__Queue', value: serviceBus::queue.name }
+            { name: 'Broker__Url', secretRef: amqpUrlSecret.name }
+            { name: 'Actions__Exchange', value: actions.exchange }
+            { name: 'Actions__CreateWorkspaceQueue', value: actions.createWorkspaceQueue }
+            { name: 'Actions__RemoveWorkspaceQueue', value: actions.removeWorkspaceQueue }
+            { name: 'Actions__RemoveFamilyQueue', value: actions.removeFamilyQueue }
             { name: 'APPLICATIONINSIGHTS_CONNECTION_STRING', secretRef: insightsSecret.name }
             { name: 'OTEL_SERVICE_NAME', value: 'lantern-functions' }
           ])
@@ -339,20 +320,24 @@ resource functionsApp 'Microsoft.App/containerApps@2025-01-01' = {
       scale: {
         minReplicas: functionsSize.minReplicas
         maxReplicas: functionsSize.maxReplicas
-        rules: [
-          {
-            name: 'workspace-events'
-            custom: {
-              type: 'azure-servicebus'
-              metadata: {
-                queueName: serviceBus::queue.name
-                namespace: serviceBus.name
-                messageCount: '1'
-              }
-              identity: identity.id
+        rules: [for queue in [actions.createWorkspaceQueue, actions.removeWorkspaceQueue, actions.removeFamilyQueue]: {
+          name: queue
+          custom: {
+            type: 'rabbitmq'
+            metadata: {
+              protocol: 'amqp'
+              queueName: queue
+              mode: 'QueueLength'
+              value: '1'
             }
+            auth: [
+              {
+                secretRef: amqpUrlSecret.name
+                triggerParameter: 'host'
+              }
+            ]
           }
-        ]
+        }]
       }
     }
   }

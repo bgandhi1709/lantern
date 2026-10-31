@@ -26,6 +26,10 @@ _Avoid_: Passphrase, backup key, reset code
 A person in a Family who attends school and whose learning the Parent supports. Never signs in; Lantern serves the Parent, not the Child. "Kid" is only the persona used in the docs.
 _Avoid_: Kid, student, learner
 
+**Action**:
+Work Lantern does after a request has been answered, such as removing a Child's Workspace. The API records it, then publishes it once under its name (`remove-workspace`); the broker delivers it to every subscriber bound to that name, and each subscriber finishes its own part. A subscriber that has not finished leaves the action recorded, and Lantern sends it again when the API next starts.
+_Avoid_: Job, message (a message is only the copy on the wire)
+
 **Hard delete**:
 How a Child is removed: the Parent decides, and the Child row, the Child's whole Workspace and the Child's History are erased with nothing kept. Lantern finishes it in the background and the Child disappears from the Parent's view at once. The Answer library is never touched by it.
 _Avoid_: Archive, soft delete, deactivate

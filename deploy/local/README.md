@@ -1,7 +1,7 @@
 # Run the API locally over HTTPS
 
 Serves the API at `https://local.lantern.api` in Docker, with stand-ins beside it for everything that is not local: an Azurite table and blob emulator, the Firebase
-Auth Emulator, and the Service Bus emulator (with its SQL Server container) with the real `Lantern.Functions` image beside the API.
+Auth Emulator, and LavinMQ (the engine CloudAMQP hosts) with the real `Lantern.Functions` image beside the API.
 Works from WSL and from Windows.
 
 ## Setup (once)
@@ -59,7 +59,7 @@ E2E_BASE_URL=https://local.lantern.api E2E_AUTH_EMULATOR=http://127.0.0.1:9099 \
 
 `POST https://local.lantern.api/dev/seed-progress` (this Docker host only, never the real API) gives every Child that has none a sample history in the `progress` table: one Chapter planned a second time after two Checks, one Checked, one Taught and one Planned. Add `?childId=` for one Child. The E2E tests call it for their own Child, and it is how to see the Chapter history on the emulator for a Child registered through the app.
 
-The API container seeds synthetic `ncert` and `ssc` containers into Azurite on start (NCERT Classes 1 to 10, SSC Classes 1 to 5; never publisher text), each with its Class manifests (`manifest/class-N.json`), so a Child registered or added in the stack gets its Content slice from them, and the seeded dev Children get theirs. The last step of each Child's `create-workspace` adds the Child to the Family's manifest (`{familyId}/manifest.json` in the `family` container, ADR-0014); the seeded Family's is written by the seeder. Deleting a Child goes through the Service Bus emulator to the `functions` container, so those E2E tests poll for up to a minute. The first `up` pulls the SQL Server and emulator images (about 2 GB) and the emulator needs about 1 GB of memory; `servicebus-ready` holds the API and the Functions app back until the queue is up, because an action sent before then is lost until the API next starts.
+The API container seeds synthetic `ncert` and `ssc` containers into Azurite on start (NCERT Classes 1 to 10, SSC Classes 1 to 5; never publisher text), each with its Class manifests (`manifest/class-N.json`), so a Child registered or added in the stack gets its Content slice from them, and the seeded dev Children get theirs. The last step of each Child's `create-workspace` adds the Child to the Family's manifest (`{familyId}/manifest.json` in the `family` container, ADR-0014); the seeded Family's is written by the seeder. Deleting a Child goes through LavinMQ to the `functions` container, so those E2E tests poll for up to a minute. `broker-topology` runs `infra/apply-topology.sh` (the script the release runs on UAT) against LavinMQ and holds the API and the Functions app back until the exchange and queues exist, because an action published before then is parked. The broker's management API is at <http://127.0.0.1:15672> (guest, guest), where `BrokerE2ETests` publishes an unroutable key and binds a second queue to one.
 
 CI runs the same tests in its `e2e-docker` job on every PR and push, and the release waits for it, so what passes here
 is what gates the release. They do not run against real UAT.

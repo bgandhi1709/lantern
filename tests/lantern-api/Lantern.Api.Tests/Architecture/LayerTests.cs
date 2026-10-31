@@ -1,6 +1,6 @@
 using System.Reflection;
 using Azure.Data.Tables;
-using Azure.Messaging.ServiceBus;
+using RabbitMQ.Client;
 using Azure.Storage.Blobs;
 
 namespace Lantern.Api.Tests.Architecture;
@@ -48,8 +48,8 @@ public sealed class LayerTests
             { typeof(TableServiceClient), "UnitOfWork`1" },
             { typeof(BlobContainerClient), "WorkspaceStore" },
             { typeof(BlobServiceClient), "WorkspaceStore" },
-            { typeof(ServiceBusClient), "ServiceBusService" },
-            { typeof(ServiceBusSender), "ServiceBusService" },
+            { typeof(IConnection), "RabbitMqPublishingService" },
+            { typeof(IChannel), "RabbitMqPublishingService" },
         };
 
     [Theory]
@@ -62,6 +62,19 @@ public sealed class LayerTests
             .Distinct();
 
         Assert.All(holders, holder => Assert.Equal(owner, holder));
+    }
+
+    [Fact]
+    public void ABrokerTrigger_IsOnlyOnAFunctionClass()
+    {
+        var triggered = LanternAssemblies.Concrete
+            .SelectMany(type => type.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly))
+            .Where(method => method.GetParameters().Any(parameter => parameter.GetCustomAttributes().Any(attribute => attribute.GetType().Name == "RabbitMQTriggerAttribute")))
+            .Select(method => method.DeclaringType!.Name)
+            .ToList();
+
+        Assert.NotEmpty(triggered);
+        Assert.All(triggered, name => Assert.EndsWith("Function", name, StringComparison.Ordinal));
     }
 
     [Fact]

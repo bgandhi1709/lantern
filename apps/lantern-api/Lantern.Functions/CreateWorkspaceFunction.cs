@@ -2,22 +2,27 @@ using Lantern.Core.Actions;
 using Lantern.Core.Constants;
 using Lantern.Core.Repository;
 using Lantern.Core.Service;
+using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
-namespace Lantern.Functions.Handler;
+namespace Lantern.Functions;
 
 // The ledger row is written before the Child row, so a message can name a Child whose add failed: that one does
 // nothing. A removal that finished while the Workspace was being created would leave it orphaned, so it is swept again.
-internal sealed class CreateWorkspaceHandler(
+internal sealed class CreateWorkspaceFunction(
     IActionLedger ledger,
     IJsonService json,
     IWorkspaceStore workspaces,
     IChildRepository children,
     IFamilyRepository families,
-    ILogger<CreateWorkspaceHandler> logger
-) : ActionHandler<CreateWorkspacePayload>(ledger, json)
+    ILogger<CreateWorkspaceFunction> logger
+) : ActionFunction<CreateWorkspacePayload>(ledger, json)
 {
-    public override ActionType Type => ActionType.CreateWorkspace;
+    [Function("CreateWorkspace")]
+    public Task RunAsync(
+        [RabbitMQTrigger("%Actions:CreateWorkspaceQueue%", ConnectionStringSetting = "Broker:Url")] string myQueueItem,
+        CancellationToken cancellationToken
+    ) => ExecuteAsync(myQueueItem, cancellationToken);
 
     protected override async Task HandleAsync(CreateWorkspacePayload payload, CancellationToken cancellationToken)
     {

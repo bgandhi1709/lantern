@@ -5,14 +5,7 @@
     "logLevel": {
       "default": "Information",
       "Azure.Core": "Warning",
-      "Host.Triggers.ServiceBus": "Warning"
-    }
-  },
-  "extensions": {
-    "serviceBus": {
-      "autoCompleteMessages": false,
-      "maxConcurrentCalls": 4,
-      "maxAutoLockRenewalDuration": "00:05:00"
+      "Host.Triggers.RabbitMQ": "Warning"
     }
   }
 }

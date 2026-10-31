@@ -10,7 +10,7 @@ using Microsoft.Extensions.Options;
 namespace Lantern.Core.Actions;
 
 internal sealed class ActionPublisher(
-    IServiceBusService serviceBus,
+    IPublishingService publishing,
     IActionLedger ledger,
     IJsonService json,
     IOptions<ActionOptions> options,
@@ -38,7 +38,7 @@ internal sealed class ActionPublisher(
 
         try
         {
-            await serviceBus.SendAsync(options.Value.Queue, message, cancellationToken);
+            await publishing.PublishAsync(options.Value.Exchange, message.Type.WireName(), message, cancellationToken);
             await ledger.MarkSentAsync(message.Type, message.Id, clock.GetUtcNow(), cancellationToken);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)

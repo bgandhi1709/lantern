@@ -22,13 +22,13 @@ public static class CoreModule
         ArgumentNullException.ThrowIfNull(configuration);
 
         services.AddOptions<SecurityOptions>().Bind(configuration.GetSection(SecurityOptions.SectionName)).ValidateDataAnnotations();
-        services.AddOptions<ServiceBusOptions>().Bind(configuration.GetSection(ServiceBusOptions.SectionName)).ValidateDataAnnotations();
+        services.AddOptions<BrokerOptions>().Bind(configuration.GetSection(BrokerOptions.SectionName)).ValidateDataAnnotations();
         services.AddOptions<ActionOptions>().Bind(configuration.GetSection(ActionOptions.SectionName)).ValidateDataAnnotations();
         services.AddOptions<CatalogOptions>().Bind(configuration.GetSection(CatalogOptions.SectionName)).ValidateDataAnnotations();
 
         services.TryAddSingleton(TimeProvider.System);
         services.TryAddSingleton<ICryptoService, CryptoService>();
-        services.TryAddSingleton<IServiceBusService, ServiceBusService>();
+        services.TryAddSingleton<IPublishingService, RabbitMqPublishingService>();
         services.TryAddScoped(typeof(IServiceBase<>), typeof(ServiceBase<>));
         services.TryAddSingleton<IJsonService, JsonService>();
         services.TryAddSingleton<ContentLayout>();

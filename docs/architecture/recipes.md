@@ -74,7 +74,7 @@ model's `IServiceBase<T>` or `I{Noun}Service`, or it is time for an interactor.
 
 ## New event
 
-Work that runs after the request, through the one `workspace-events` queue.
+Work that runs after the request. The API publishes it once to the `lantern.actions` exchange under its wire name, and the broker delivers it to every subscriber bound to that name (ADR-0018).
 
 1. **Type.** Add `{Verb}{Noun}` to `ActionType` with `[JsonStringEnumMemberName("{verb}-{noun}")]`. The member name is the
    ledger partition and the wire name is the queue contract: never rename either once released.
@@ -82,14 +82,21 @@ Work that runs after the request, through the one `workspace-events` queue.
 3. **Record and send.** In the service: `actions.RecordAsync(type, id, payload)` **before** the service's own writes,
    then the writes, then `actions.SendAsync(message)`. The action id makes a repeat the same row. Reference:
    `ChildService.RemoveAsync`, `ChildService.AddOrGetAsync`.
-4. **Handler.** `Lantern.Functions/Handler/{Verb}{Noun}Handler.cs : ActionHandler<{Verb}{Noun}Payload>`. Every step
-   is safe to repeat; check the state the API left (a status read) before acting, because the ledger row is written
-   before the API's own rows. Register it in `FunctionsModule`. Reference: `CreateWorkspaceHandler`.
+4. **Function.** `Lantern.Functions/{Verb}{Noun}Function.cs : ActionFunction<{Verb}{Noun}Payload>`: a `[Function]` method with a
+   `[RabbitMQTrigger("%Actions:{Verb}{Noun}Queue%", ConnectionStringSetting = "Broker:Url")] string myQueueItem` that returns
+   `ExecuteAsync(myQueueItem, cancellationToken)`, and the business logic in `HandleAsync(payload)`. Every step is safe to
+   repeat; check the state the API left (a status read) before acting, because the ledger row is written before the API's
+   own rows. Register it in `FunctionsModule`. Reference: `CreateWorkspaceFunction`.
 5. **Log.** A `[LoggerMessage]` in `FunctionLog` with a new event id.
-6. **Tests.** A wire-name test, an in-process test that delivers the sent message (`factory.DeliverAsync()`), a
+6. **Subscribe.** Add the queue and its binding (key = wire name) to `infra/topology.json`; the setting to `actions` in
+   `infra/params/lantern.uat.bicepparam` and `main.bicep` (the Functions app's env and its KEDA rule); the env var to the
+   Functions container in `deploy/local/docker-compose.yml`; and the type to `ActionDelivery` in the in-process tests.
+7. **Tests.** A wire-name test, an in-process test that delivers the sent message (`factory.DeliverAsync()`), a
    redelivery or repeat test, and a failure-then-redelivery test.
+8. **A second subscriber to an existing action** is the same, without a new `ActionType`: its own Function and
+   queue bound to the same key. The publisher and the first subscriber do not change.
 
-Never add a queue, a Function, a timer or a `BackgroundService` for an event.
+Never add a timer, a `BackgroundService`, a dispatcher or a separate handler class for an event. A Function and a queue exist for each subscriber, never for the publisher.
 
 ## Interactor
 
@@ -131,11 +138,11 @@ Storage formats, wire names and product rules are never settings ([D36](../ideat
 ## External dependency
 
 1. A contract in Core (`I{Resource}Service` or `I{Resource}Client`) that knows nothing of the domain: it takes and returns
-   general types (`SendAsync<T>(queue, message)`).
+   general types (`PublishAsync<T>(exchange, key, message)`).
 2. The implementation in Core holds the SDK client, created lazily from its options; it is the only holder of that
    client type (add a row to `LayerTests.ClientOwners`).
-3. Domain code wraps it in the layer that needs it (`ActionPublisher` over `ServiceBusService`).
-4. Tests replace it at this seam only (`RecordingServiceBus`).
+3. Domain code wraps it in the layer that needs it (`ActionPublisher` over `RabbitMqPublishingService`).
+4. Tests replace it at this seam only (`RecordingPublishingService`).
 
 ## Done
 
