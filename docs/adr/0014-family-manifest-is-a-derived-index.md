@@ -1,5 +1,7 @@
 # A Family manifest is a derived index of its Children's Subjects, and Board rules run at build time
 
+The Service Bus queue in the diagram is history: actions are published and subscribed on CloudAMQP ([ADR-0018](0018-actions-are-published-and-subscribed-on-cloudamqp.md)); the Family-level ordering argument below is unchanged.
+
 Home must show a Child's Subjects the moment the Parent opens it, for two Boards whose Books are laid out differently. This ADR records how: the Board's rules run once, when the content is built, and the result is a ready-made list that the API reads from one small file. It builds on ADR-0013 (each Child's Content slice) and changes none of it.
 
 ## Why not work it out on every request

@@ -10,7 +10,7 @@ using Microsoft.Extensions.Options;
 namespace Lantern.Core.Actions;
 
 internal sealed class ActionPublisher(
-    IServiceBusService serviceBus,
+    IPublishingService publishing,
     IActionLedger ledger,
     IJsonService json,
     IOptions<ActionOptions> options,
@@ -18,6 +18,9 @@ internal sealed class ActionPublisher(
     ILogger<ActionPublisher> logger
 ) : IActionPublisher
 {
+    private readonly Dictionary<ActionType, string> keys = Enum.GetValues<ActionType>()
+        .ToDictionary(type => type, type => json.Deserialize<string>(json.Serialize(type)));
+
     public async Task<ActionMessage> RecordAsync<TPayload>(
         ActionType type,
         string id,
@@ -38,7 +41,7 @@ internal sealed class ActionPublisher(
 
         try
         {
-            await serviceBus.SendAsync(options.Value.Queue, message, cancellationToken);
+            await publishing.PublishAsync(options.Value.Exchange, keys[message.Type], message, cancellationToken);
             await ledger.MarkSentAsync(message.Type, message.Id, clock.GetUtcNow(), cancellationToken);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)

@@ -15,11 +15,11 @@ public sealed class ActionPublisherTests
 {
     private static readonly ActionMessage Message = new("id", ActionType.RemoveWorkspace, "{}");
 
-    private readonly Mock<IServiceBusService> serviceBus = new();
+    private readonly Mock<IPublishingService> publishing = new();
     private readonly Mock<IActionLedger> ledger = new();
     private readonly FixedClock clock = new FixedClock(new DateTimeOffset(2026, 10, 1, 8, 0, 0, TimeSpan.Zero));
 
-    private ActionPublisher Publisher => new(serviceBus.Object, ledger.Object, TestServices.Json, Options.Create(new ActionOptions { Queue = "actions" }), clock, NullLogger<ActionPublisher>.Instance);
+    private ActionPublisher Publisher => new(publishing.Object, ledger.Object, TestServices.Json, Options.Create(new ActionOptions { Exchange = "exchange" }), clock, NullLogger<ActionPublisher>.Instance);
 
     [Fact]
     public async Task RecordAsync_WritesTheLedgerRow_WithTheWebJsonPayload()
@@ -28,7 +28,7 @@ public sealed class ActionPublisherTests
 
         Assert.Contains("\"familyId\"", message.Payload, StringComparison.Ordinal);
         ledger.Verify(l => l.RecordAsync(message, clock.GetUtcNow(), It.IsAny<CancellationToken>()), Times.Once);
-        serviceBus.VerifyNoOtherCalls();
+        publishing.VerifyNoOtherCalls();
     }
 
     [Fact]
@@ -50,19 +50,19 @@ public sealed class ActionPublisherTests
     }
 
     [Fact]
-    public async Task SendAsync_SendsTheMessageToTheActionQueue_ThenMarksItSent()
+    public async Task SendAsync_PublishesTheMessageToTheExchange_WithTheWireNameAsKey_ThenMarksItSent()
     {
         await Publisher.SendAsync(Message, CancellationToken.None);
 
-        serviceBus.Verify(s => s.SendAsync("actions", Message, It.IsAny<CancellationToken>()), Times.Once);
+        publishing.Verify(s => s.PublishAsync("exchange", "remove-workspace", Message, It.IsAny<CancellationToken>()), Times.Once);
         ledger.Verify(l => l.MarkSentAsync(ActionType.RemoveWorkspace, "id", clock.GetUtcNow(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
     public async Task SendAsync_WhenTheSendFails_DoesNotThrow_AndDoesNotMarkItSent()
     {
-        serviceBus
-            .Setup(s => s.SendAsync(It.IsAny<string>(), It.IsAny<ActionMessage>(), It.IsAny<CancellationToken>()))
+        publishing
+            .Setup(s => s.PublishAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<ActionMessage>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidOperationException("down"));
 
         await Publisher.SendAsync(Message, CancellationToken.None);
@@ -76,8 +76,8 @@ public sealed class ActionPublisherTests
     [Fact]
     public async Task SendAsync_WhenCancelled_Throws()
     {
-        serviceBus
-            .Setup(s => s.SendAsync(It.IsAny<string>(), It.IsAny<ActionMessage>(), It.IsAny<CancellationToken>()))
+        publishing
+            .Setup(s => s.PublishAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<ActionMessage>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new OperationCanceledException());
 
         await Assert.ThrowsAsync<OperationCanceledException>(() => Publisher.SendAsync(Message, CancellationToken.None));

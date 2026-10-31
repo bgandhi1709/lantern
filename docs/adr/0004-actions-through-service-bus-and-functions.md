@@ -1,5 +1,7 @@
 # Actions go through a Service Bus queue to Lantern.Functions
 
+Superseded for the transport, the dispatcher and the retry mechanism by [ADR-0018](0018-actions-are-published-and-subscribed-on-cloudamqp.md).
+
 Work the API must not do inside a request, starting with deleting a Child (ADR-0003), is event driven: the API puts a typed message on one Azure Service Bus queue, `workspace-events` (Bicep passes its name to both apps as `Actions__Queue`; the trigger reads `%Actions:Queue%`), and `Lantern.Functions` handles it. There is no timer anywhere. The first version of the delete used a `BackgroundService` on a `PeriodicTimer`; it ran only while the API container was awake, and the container scales to zero (D10), so a delete that failed once waited for the next request.
 
 The message carries an id, a `type` (`create-workspace`, `remove-workspace`) and a JSON payload. One Functions trigger hands every message to a dispatcher, which picks an `IActionHandler` by type through DI. The dispatcher and the handlers live in `Lantern.Functions/Handler`; the API only records and sends. A new action is a new handler and a new type, not a new queue, trigger or deployment. A type moves to its own queue only if it needs its own scaling or priority.

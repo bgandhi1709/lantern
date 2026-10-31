@@ -14,10 +14,10 @@ The order a request travels, and the one place each concern lives:
 
 ```text
 HTTP ─▶ Controller ─▶ (Interactor) ─▶ Service ─▶ Repository / Store ─▶ UnitOfWork ─▶ Table / Blob
-          │ maps Model ⇄ service model      │ records Action ─▶ Publisher ─▶ ServiceBusService ─▶ queue
+          │ maps Model ⇄ service model      │ records Action ─▶ Publisher ─▶ RabbitMqPublishingService ─▶ exchange
           ▼                                  ▼
    ProblemExceptionHandler            Validator, Normalizer
-                                                       queue ─▶ ActionFunction ─▶ Dispatcher ─▶ Handler ─▶ Repository / Store
+                                                       queue ─▶ {Verb}{Noun}Function ─▶ Repository / Store
 ```
 
 ## API layer: `apps/lantern-api/Lantern.Api`
@@ -58,19 +58,17 @@ HTTP ─▶ Controller ─▶ (Interactor) ─▶ Service ─▶ Repository / St
 
 ## Function layer: `apps/lantern-api/Lantern.Functions`
 
-**Function** (`ActionFunction`)
-- Meaning: an Azure Functions entry point. Lantern has one: it reads `workspace-events`, hands each message
-  to the dispatcher and settles it. A new event never adds a Function.
-
-**Dispatcher** (`ActionDispatcher`, `Handler/`)
-- Meaning: picks the one handler for an `ActionType`. Never changed for a new event.
-
-**Handler** (`{Verb}{Noun}Handler`, `Handler/`) **(tested: one per `ActionType`, named after it)**
-- Meaning: finishes one event type, with steps that are safe to repeat.
-- Base: `ActionHandler<{Verb}{Noun}Payload>`; the base checks and completes the ledger.
-- Calls repositories and stores (or services); never the ledger, never HTTP.
-- Registered in `FunctionsModule` with `TryAddEnumerable`.
-- Example: `RemoveWorkspaceHandler`, `CreateWorkspaceHandler`.
+**Function** (`{Verb}{Noun}Function`) **(tested: one per `ActionType`, named after it)**
+- Meaning: one subscriber, and its business logic. It reads its own queue (`%Actions:{Verb}{Noun}Queue%`) through a
+  `[RabbitMQTrigger]` method that calls `ExecuteAsync(body)`, and finishes the action in `HandleAsync(payload)`, with steps
+  that are safe to repeat. The broker, not code, decides which Function gets a message. There is no dispatcher and no
+  separate handler class (D123).
+- Base: `ActionFunction<{Verb}{Noun}Payload>`; the base decodes the body, skips an action whose ledger row is gone and
+  completes the row after `HandleAsync`. A body that is not an action throws, so the broker parks it.
+- Calls repositories and stores (or services); never the ledger, never HTTP. The trigger attribute is the only broker
+  type, and an architecture test confines it to `*Function` classes.
+- Registered in `FunctionsModule` with `TryAddScoped` so the in-process tests can resolve it.
+- Example: `RemoveWorkspaceFunction`, `CreateWorkspaceFunction`.
 
 ## Service layer: `libs/Lantern.Base`
 
@@ -141,8 +139,8 @@ HTTP ─▶ Controller ─▶ (Interactor) ─▶ Service ─▶ Repository / St
 - JSON is data: read it into the class that has its shape, change that object, and write it back (`FamilyManifest.Add`,
   `Remove`). Never walk a `JsonNode` to copy values into a class. A document with no class of its own (the Board's catalog,
   which is copied as the publisher wrote it) is read as a `JsonArray` through the same service.
-- Example: `WorkspaceStore` reads and writes the manifests and `version.json` through it; the publisher, the Service Bus
-  sender and the Functions handlers use it for the queue message.
+- Example: `WorkspaceStore` reads and writes the manifests and `version.json` through it; the publisher, the publishing
+  service and the Functions use it for the message.
 
 **Layout** (`ContentLayout`, `Lantern.Core/Storage/`) **(tested: pinned; the only code that names Workspace files and folders)**
 - Meaning: every file and folder name of the Workspace and the Board masters (`class.json`, `version.json`, `refined/`,
@@ -153,17 +151,17 @@ HTTP ─▶ Controller ─▶ (Interactor) ─▶ Service ─▶ Repository / St
   handed it (`EnsureValid(layout.ClassManifestSchema)`). Tests that pin the real names write them as literals on purpose.
 - Not for environment values (those are Options) and not for fixed sets of values (those are enums).
 
-**Ledger** (`IActionLedger`): the record of accepted events no handler has finished.
+**Ledger** (`IActionLedger`): the record of accepted events no Function has finished.
 
 **Action types** (`Actions/`)
 - `ActionType`: the enum of events, each with a kebab-case wire name (`create-workspace`). **(tested: pinned)**
 - `{Verb}{Noun}Payload`: the record an event carries. **(tested: one per `ActionType`)**
-- `ActionMessage`: the envelope (id, type, JSON payload).
-- `IActionPublisher` / `ActionPublisher`: `RecordAsync` writes the ledger row (the commit point); `SendAsync` puts it on
-  the queue and logs, never throws, on failure.
+- `ActionMessage`: the envelope (id, type, JSON payload, trace parent). Its type is the routing key.
+- `IActionPublisher` / `ActionPublisher`: `RecordAsync` writes the ledger row (the commit point); `SendAsync` publishes it to
+  the exchange under the wire name and logs, never throws, on failure.
 
 **Generic external service** (`I{Resource}Service` / `{Resource}Service`, or `I{Resource}Client`)
-- Meaning: the one gateway to an external resource, knowing nothing of what it carries. `ServiceBusService` sends any model to any queue;
+- Meaning: the one gateway to an external resource, knowing nothing of what it carries. `RabbitMqPublishingService` publishes any model to any exchange under a key;
   `CryptoService` holds the uid hash (Lantern holds no Family key, ADR-0010). **(tested: each Azure client has one owner)**
 
 **Resolver contract** (`IIdentityResolver`): the caller, resolved per request by the host.
@@ -241,7 +239,7 @@ These are decided, not missing. Use the Lantern alternative.
 |---|---|---|
 | `*Filter : BaseDataFilter<TEntity>` | An implicit tenant filter on every SQL query | The Family partition key: every read is already one partition |
 | `*Security : ServiceAccessControlBase<T>` | Per-model access checks before a save or remove | Family scope in `ServiceBase`. Add a `{Noun}Security` only when a rule goes beyond "same Family" (for example, Parent roles) |
-| `*Job` (Quartz) | Runs scheduled work | An event and a handler; no timers (D31) |
+| `*Job` (Quartz) | Runs scheduled work | An event and a Function; no timers (D31) |
 | `*Middleware` | Handles HTTP pipeline concerns | ASP.NET's built-ins plus `ProblemExceptionHandler` |
 | `*Context` (EF `DbContext`) | Holds a SQL session | `UnitOfWork<TEntity>` |
 | `*Helper`, `*Utils` | Collects static helpers | An injected interface (CODING_STANDARDS.md: inversion of control) |

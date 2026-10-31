@@ -1,7 +1,6 @@
 extern alias Functions;
 
 using Functions::Lantern.Functions;
-using Functions::Lantern.Functions.Handler;
 using Lantern.Core.Service;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Hosting;
@@ -24,17 +23,15 @@ public sealed class LanternApiFactory(string connectionString) : WebApplicationF
 
     public CapturingLoggerProvider Logs { get; } = new();
 
-    public RecordingServiceBus Sender { get; } = new();
+    public RecordingPublishingService Sender { get; } = new();
 
-    /// <summary>Hands every message sent so far, and not yet delivered, to the dispatcher, as the Functions app does.</summary>
     public async Task DeliverAsync()
     {
-        var dispatcher = Services.GetRequiredService<IActionDispatcher>();
         var all = Sender.Sent;
 
         while (delivered < all.Count)
         {
-            await dispatcher.DispatchAsync(all[delivered++], CancellationToken.None);
+            await Services.DeliverAsync(all[delivered++]);
         }
     }
 
@@ -48,15 +45,11 @@ public sealed class LanternApiFactory(string connectionString) : WebApplicationF
 
         builder.ConfigureLogging(logging => logging.AddProvider(Logs));
 
-        // Only satisfies startup validation: RecordingServiceBus below replaces the Service Bus client.
-        builder.UseSetting("ServiceBus:FullyQualifiedNamespace", "unused.servicebus.windows.net");
-        builder.UseSetting("Actions:Queue", RecordingServiceBus.Queue);
-
         builder.ConfigureTestServices(services =>
         {
             // The start-up resend is run by the tests that cover it.
             services.RemoveAll<IHostedService>();
-            services.AddSingleton<IServiceBusService>(Sender);
+            services.AddSingleton<IPublishingService>(Sender);
             // The Functions app's handlers, so a test can deliver what the API sent.
             services.AddLanternFunctions();
             services.PostConfigure<JwtBearerOptions>(

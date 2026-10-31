@@ -9,7 +9,6 @@ using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 using Lantern.Api.Models;
 using Lantern.Api.Services;
-using Functions::Lantern.Functions.Handler;
 using Lantern.Core.Actions;
 using Lantern.Core.Constants;
 using Lantern.Core.Repository;
@@ -182,7 +181,7 @@ public sealed class ChildrenTests(AzuriteFixture azurite) : IDisposable
 
         Assert.Equal(HttpStatusCode.Created, (await client.PostAsJsonAsync(ApiClientExtensions.Children, NewChild(id, "Kavya", 9))).StatusCode);
         await Assert.ThrowsAsync<RequestFailedException>(() =>
-            failing.Services.GetRequiredService<IActionDispatcher>().DispatchAsync(factory.Sender.Sent[^1], CancellationToken.None)
+            failing.Services.DeliverAsync(factory.Sender.Sent[^1], CancellationToken.None)
         );
         await factory.DeliverAsync();
 
@@ -353,7 +352,7 @@ public sealed class ChildrenTests(AzuriteFixture azurite) : IDisposable
     // ---- delete ----
 
     [Fact]
-    public async Task Delete_Returns202_HidesTheChildAtOnce_AndTheHandlerRemovesEverythingOfItAndNothingElse()
+    public async Task Delete_Returns202_HidesTheChildAtOnce_AndTheFunctionRemovesEverythingOfItAndNothingElse()
     {
         using var client = await RegisteredAsync();
         var me = await MeAsync(client);
@@ -481,7 +480,7 @@ public sealed class ChildrenTests(AzuriteFixture azurite) : IDisposable
     }
 
     [Fact]
-    public async Task Handler_WhenTheBlobStepFails_KeepsTheRowAndTheLedger_AndFinishesWhenTheMessageIsDeliveredAgain()
+    public async Task Function_WhenTheBlobStepFails_KeepsTheRowAndTheLedger_AndFinishesWhenTheMessageIsDeliveredAgain()
     {
         using var client = await RegisteredAsync();
         var me = await MeAsync(client);
@@ -494,7 +493,7 @@ public sealed class ChildrenTests(AzuriteFixture azurite) : IDisposable
         using var broken = factory.WithWebHostBuilder(b => b.ConfigureTestServices(s => s.AddSingleton(failing.Object)));
 
         await Assert.ThrowsAsync<RequestFailedException>(() =>
-            broken.Services.GetRequiredService<IActionDispatcher>().DispatchAsync(Removals[0], CancellationToken.None)
+            broken.Services.DeliverAsync(Removals[0], CancellationToken.None)
         );
 
         Assert.Single(await LedgerAsync(me.FamilyId));
@@ -509,7 +508,7 @@ public sealed class ChildrenTests(AzuriteFixture azurite) : IDisposable
     }
 
     [Fact]
-    public async Task Handler_ResumesAfterACrashBetweenTheRowDeleteAndTheLastStep()
+    public async Task Function_ResumesAfterACrashBetweenTheRowDeleteAndTheLastStep()
     {
         using var client = await RegisteredAsync();
         var me = await MeAsync(client);
@@ -524,17 +523,17 @@ public sealed class ChildrenTests(AzuriteFixture azurite) : IDisposable
     }
 
     [Fact]
-    public async Task Handler_TheSameMessageTwiceAtOnce_FinishesWithoutError()
+    public async Task Function_TheSameMessageTwiceAtOnce_FinishesWithoutError()
     {
         using var client = await RegisteredAsync();
         var me = await MeAsync(client);
         await client.DeleteAsync(ApiClientExtensions.Child(me.Children[0].ChildId));
-        var dispatcher = factory.Services.GetRequiredService<IActionDispatcher>();
+        var host = factory.Services;
         var message = Removals[0];
 
         await Task.WhenAll(
-            dispatcher.DispatchAsync(message, CancellationToken.None),
-            dispatcher.DispatchAsync(message, CancellationToken.None)
+            host.DeliverAsync(message, CancellationToken.None),
+            host.DeliverAsync(message, CancellationToken.None)
         );
 
         Assert.Empty(await LedgerAsync(me.FamilyId));
@@ -542,7 +541,7 @@ public sealed class ChildrenTests(AzuriteFixture azurite) : IDisposable
     }
 
     [Fact]
-    public async Task Handler_AMessageWithNoLedgerRow_TouchesNothing_AndTheAnswerLibraryIsNeverReached()
+    public async Task Function_AMessageWithNoLedgerRow_TouchesNothing_AndTheAnswerLibraryIsNeverReached()
     {
         using var client = await RegisteredAsync();
         using var other = await RegisteredAsync();
@@ -558,7 +557,7 @@ public sealed class ChildrenTests(AzuriteFixture azurite) : IDisposable
         );
         await client.DeleteAsync(ApiClientExtensions.Child(me.Children[0].ChildId));
 
-        await factory.Services.GetRequiredService<IActionDispatcher>().DispatchAsync(stray, CancellationToken.None);
+        await factory.Services.DeliverAsync(stray, CancellationToken.None);
         await factory.DeliverAsync();
 
         Assert.NotEmpty(await BlobNamesAsync($"{otherFamily.FamilyId:D}/{otherFamily.Children[0].ChildId:D}/"));

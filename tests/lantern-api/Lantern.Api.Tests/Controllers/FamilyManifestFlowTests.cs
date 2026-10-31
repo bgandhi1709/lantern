@@ -4,7 +4,6 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json.Nodes;
 using Azure.Storage.Blobs;
-using Functions::Lantern.Functions.Handler;
 using Lantern.Api.Models;
 using Lantern.Api.Tests.Infrastructure;
 using Lantern.Core.Constants;
@@ -65,11 +64,11 @@ public sealed class FamilyManifestFlowTests(AzuriteFixture azurite) : IDisposabl
         var family = await RegisterAsync(client, BoardType.Cbse, 3, 4);
         await factory.DeliverAsync();
         var before = await ManifestEtagAsync(family.FamilyId);
-        var dispatcher = factory.Services.GetRequiredService<IActionDispatcher>();
+        var host = factory.Services;
 
         foreach (var message in factory.Sender.Sent.Where(sent => sent.Type == ActionType.CreateWorkspace))
         {
-            await dispatcher.DispatchAsync(message, CancellationToken.None);
+            await host.DeliverAsync(message, CancellationToken.None);
         }
 
         Assert.Equal(before, await ManifestEtagAsync(family.FamilyId));
@@ -145,7 +144,7 @@ public sealed class FamilyManifestFlowTests(AzuriteFixture azurite) : IDisposabl
         using var broken = factory.WithWebHostBuilder(builder => builder.ConfigureTestServices(services => services.AddSingleton<IWorkspaceStore>(outage)));
         var message = factory.Sender.Sent.Single(sent => sent.Type == ActionType.CreateWorkspace);
 
-        await Assert.ThrowsAsync<IOException>(() => broken.Services.GetRequiredService<IActionDispatcher>().DispatchAsync(message, CancellationToken.None));
+        await Assert.ThrowsAsync<IOException>(() => broken.Services.DeliverAsync(message, CancellationToken.None));
 
         Assert.True(await Family.GetBlobClient($"{family.FamilyId:D}/{family.Children[0].ChildId:D}/3/content/version.json").ExistsAsync());
         Assert.False(await Family.GetBlobClient($"{family.FamilyId:D}/manifest.json").ExistsAsync());
@@ -167,7 +166,7 @@ public sealed class FamilyManifestFlowTests(AzuriteFixture azurite) : IDisposabl
         );
         using var racing = factory.WithWebHostBuilder(builder => builder.ConfigureTestServices(services => services.AddSingleton<IWorkspaceStore>(deleteIt)));
 
-        await racing.Services.GetRequiredService<IActionDispatcher>().DispatchAsync(factory.Sender.Sent.Single(sent => sent.Type == ActionType.CreateWorkspace), CancellationToken.None);
+        await racing.Services.DeliverAsync(factory.Sender.Sent.Single(sent => sent.Type == ActionType.CreateWorkspace), CancellationToken.None);
 
         Assert.Equal(0, deleteIt.AddCalls);
         Assert.False(await Family.GetBlobClient($"{family.FamilyId:D}/manifest.json").ExistsAsync());
@@ -186,7 +185,7 @@ public sealed class FamilyManifestFlowTests(AzuriteFixture azurite) : IDisposabl
         );
         using var racing = factory.WithWebHostBuilder(builder => builder.ConfigureTestServices(services => services.AddSingleton<IWorkspaceStore>(deleteIt)));
 
-        await racing.Services.GetRequiredService<IActionDispatcher>().DispatchAsync(factory.Sender.Sent.Single(sent => sent.Type == ActionType.CreateWorkspace), CancellationToken.None);
+        await racing.Services.DeliverAsync(factory.Sender.Sent.Single(sent => sent.Type == ActionType.CreateWorkspace), CancellationToken.None);
         await factory.DeliverAsync();
 
         Assert.Null(TestServices.FamilyManifest(await ManifestAsync(family.FamilyId)).SubjectsOf(child.ChildId));
@@ -205,12 +204,12 @@ public sealed class FamilyManifestFlowTests(AzuriteFixture azurite) : IDisposabl
             beforeCopy: async () =>
             {
                 await client.DeleteAsync(ApiClientExtensions.Child(child.ChildId));
-                await factory.Services.GetRequiredService<IActionDispatcher>().DispatchAsync(factory.Sender.Sent.Single(sent => sent.Type == ActionType.RemoveWorkspace), CancellationToken.None);
+                await factory.Services.DeliverAsync(factory.Sender.Sent.Single(sent => sent.Type == ActionType.RemoveWorkspace), CancellationToken.None);
             }
         );
         using var racing = factory.WithWebHostBuilder(builder => builder.ConfigureTestServices(services => services.AddSingleton<IWorkspaceStore>(removeFirst)));
 
-        await racing.Services.GetRequiredService<IActionDispatcher>().DispatchAsync(factory.Sender.Sent.Single(sent => sent.Type == ActionType.CreateWorkspace), CancellationToken.None);
+        await racing.Services.DeliverAsync(factory.Sender.Sent.Single(sent => sent.Type == ActionType.CreateWorkspace), CancellationToken.None);
 
         Assert.Equal(0, removeFirst.AddCalls);
         Assert.Empty(await NamesAsync($"{family.FamilyId:D}/{child.ChildId:D}/"));
@@ -228,14 +227,14 @@ public sealed class FamilyManifestFlowTests(AzuriteFixture azurite) : IDisposabl
         async Task DeleteAndRemoveAsync()
         {
             await client.DeleteAsync(ApiClientExtensions.Child(child.ChildId));
-            await factory.Services.GetRequiredService<IActionDispatcher>().DispatchAsync(factory.Sender.Sent.Single(sent => sent.Type == ActionType.RemoveWorkspace), CancellationToken.None);
+            await factory.Services.DeliverAsync(factory.Sender.Sent.Single(sent => sent.Type == ActionType.RemoveWorkspace), CancellationToken.None);
         }
 
         var inner = factory.Services.GetRequiredService<IWorkspaceStore>();
         var store = point == "beforeCreate" ? new ManifestOutageStore(inner, beforeCreate: DeleteAndRemoveAsync) : new ManifestOutageStore(inner, afterCopy: DeleteAndRemoveAsync);
         using var racing = factory.WithWebHostBuilder(builder => builder.ConfigureTestServices(services => services.AddSingleton<IWorkspaceStore>(store)));
 
-        await racing.Services.GetRequiredService<IActionDispatcher>().DispatchAsync(factory.Sender.Sent.Single(sent => sent.Type == ActionType.CreateWorkspace), CancellationToken.None);
+        await racing.Services.DeliverAsync(factory.Sender.Sent.Single(sent => sent.Type == ActionType.CreateWorkspace), CancellationToken.None);
 
         Assert.Equal(0, store.AddCalls);
         Assert.Empty(await NamesAsync($"{family.FamilyId:D}/{child.ChildId:D}/"));
@@ -253,7 +252,7 @@ public sealed class FamilyManifestFlowTests(AzuriteFixture azurite) : IDisposabl
         using var counted = factory.WithWebHostBuilder(builder => builder.ConfigureTestServices(services => services.AddSingleton<IWorkspaceStore>(counting)));
         await client.DeleteAsync(ApiClientExtensions.Child(gone.ChildId));
 
-        await counted.Services.GetRequiredService<IActionDispatcher>().DispatchAsync(factory.Sender.Sent.Single(sent => sent.Type == ActionType.RemoveWorkspace), CancellationToken.None);
+        await counted.Services.DeliverAsync(factory.Sender.Sent.Single(sent => sent.Type == ActionType.RemoveWorkspace), CancellationToken.None);
 
         Assert.Equal(1, counting.RemoveCalls);
         AssertJson(Manifest("cbse", [Ncert(kept.ChildId, 6)]), await ManifestAsync(family.FamilyId));

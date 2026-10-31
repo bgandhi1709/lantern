@@ -1,87 +1,64 @@
 using System.Text.Json;
-using Azure.Messaging.ServiceBus;
 using Lantern.Core.Actions;
 using Lantern.Core.Constants;
+using Lantern.Core.Repository;
 using Lantern.Core.Service;
-using Lantern.Functions.Handler;
-using Microsoft.Azure.Functions.Worker;
-using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 
 namespace Lantern.Functions.Tests;
 
 public sealed class ActionFunctionTests
 {
-    private static readonly ActionMessage Action = new("id", ActionType.RemoveWorkspace, "{}");
+    private readonly Mock<IActionLedger> ledger = new();
+    private readonly RecordingFunction function;
 
-    private readonly Mock<IActionDispatcher> dispatcher = new();
-    private readonly Mock<ServiceBusMessageActions> actions = new();
-
-    private ActionFunction Function => new(dispatcher.Object, new JsonService(), NullLogger<ActionFunction>.Instance);
+    public ActionFunctionTests() => function = new RecordingFunction(ledger.Object);
 
     [Fact]
-    public async Task RunAsync_WhenTheHandlerSucceeds_CompletesTheMessage()
+    public async Task RunAsync_APendingAction_RunsTheWork_ThenCompletesTheLedgerRow()
     {
-        var message = Message(JsonSerializer.Serialize(Action, JsonSerializerOptions.Web));
+        ledger.Setup(l => l.IsPendingAsync(ActionType.RemoveWorkspace, "id", It.IsAny<CancellationToken>())).ReturnsAsync(true);
 
-        await Function.RunAsync(message, actions.Object, CancellationToken.None);
+        await function.RunAsync(Body("{\"familyId\":\"x\"}"), CancellationToken.None);
 
-        dispatcher.Verify(d => d.DispatchAsync(Action, It.IsAny<CancellationToken>()), Times.Once);
-        actions.Verify(a => a.CompleteMessageAsync(message, It.IsAny<CancellationToken>()), Times.Once);
+        Assert.Equal(1, function.Handled);
+        ledger.Verify(l => l.CompleteAsync(ActionType.RemoveWorkspace, "id", It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
-    public async Task RunAsync_WhenTheHandlerFails_SettlesNothing_SoTheLockExpiryRedeliversIt()
+    public async Task RunAsync_AnActionWhoseRowIsGone_DoesNothing()
     {
-        dispatcher
-            .Setup(d => d.DispatchAsync(It.IsAny<ActionMessage>(), It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new InvalidOperationException("blob down"));
-        var message = Message(JsonSerializer.Serialize(Action, JsonSerializerOptions.Web));
+        await function.RunAsync(Body("{}"), CancellationToken.None);
 
-        await Function.RunAsync(message, actions.Object, CancellationToken.None);
-
-        actions.Verify(a => a.CompleteMessageAsync(It.IsAny<ServiceBusReceivedMessage>(), It.IsAny<CancellationToken>()), Times.Never);
-        actions.Verify(
-            a => a.DeadLetterMessageAsync(It.IsAny<ServiceBusReceivedMessage>(), It.IsAny<Dictionary<string, object>>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
-            Times.Never
-        );
-        actions.Verify(a => a.AbandonMessageAsync(It.IsAny<ServiceBusReceivedMessage>(), It.IsAny<IDictionary<string, object>>(), It.IsAny<CancellationToken>()), Times.Never);
-    }
-
-    [Fact]
-    public async Task RunAsync_UnknownType_DeadLettersTheMessage()
-    {
-        dispatcher
-            .Setup(d => d.DispatchAsync(It.IsAny<ActionMessage>(), It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new UnknownActionException(ActionType.RemoveWorkspace));
-        var message = Message(JsonSerializer.Serialize(Action, JsonSerializerOptions.Web));
-
-        await Function.RunAsync(message, actions.Object, CancellationToken.None);
-
-        actions.Verify(
-            a => a.DeadLetterMessageAsync(message, It.IsAny<Dictionary<string, object>>(), "Rejected", It.IsAny<string>(), It.IsAny<CancellationToken>()),
-            Times.Once
-        );
-        actions.Verify(a => a.CompleteMessageAsync(It.IsAny<ServiceBusReceivedMessage>(), It.IsAny<CancellationToken>()), Times.Never);
+        Assert.Equal(0, function.Handled);
+        ledger.Verify(l => l.CompleteAsync(It.IsAny<ActionType>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Theory]
     [InlineData("not json")]
     [InlineData("null")]
     [InlineData("{\"id\":\"id\",\"type\":\"mystery\",\"payload\":\"{}\"}")]
-    public async Task RunAsync_BodyThatIsNotAnAction_DeadLettersWithoutDispatching(string body)
+    public async Task RunAsync_ABodyThatIsNotAnAction_Throws_SoTheBrokerParksIt(string body) =>
+        await Assert.ThrowsAnyAsync<JsonException>(() => function.RunAsync(body, CancellationToken.None));
+
+    private static string Body(string payload) =>
+        new JsonService().Serialize(new ActionMessage("id", ActionType.RemoveWorkspace, payload));
+
+    private sealed class Payload
     {
-        var message = Message(body);
-
-        await Function.RunAsync(message, actions.Object, CancellationToken.None);
-
-        dispatcher.Verify(d => d.DispatchAsync(It.IsAny<ActionMessage>(), It.IsAny<CancellationToken>()), Times.Never);
-        actions.Verify(
-            a => a.DeadLetterMessageAsync(message, It.IsAny<Dictionary<string, object>>(), "Rejected", It.IsAny<string>(), It.IsAny<CancellationToken>()),
-            Times.Once
-        );
+        public string FamilyId { get; set; } = string.Empty;
     }
 
-    private static ServiceBusReceivedMessage Message(string body) =>
-        ServiceBusModelFactory.ServiceBusReceivedMessage(body: BinaryData.FromString(body), messageId: "id", deliveryCount: 1);
+    private sealed class RecordingFunction(IActionLedger ledger) : ActionFunction<Payload>(ledger, new JsonService())
+    {
+        public int Handled { get; private set; }
+
+        public Task RunAsync(string body, CancellationToken cancellationToken) => ExecuteAsync(body, cancellationToken);
+
+        protected override Task HandleAsync(Payload payload, CancellationToken cancellationToken)
+        {
+            Handled++;
+            return Task.CompletedTask;
+        }
+    }
 }

@@ -1,5 +1,7 @@
 # One trace in Application Insights, from the request through the queue into the Functions app
 
+The Service Bus send and its `Diagnostic-Id` below are superseded for the transport by [ADR-0018](0018-actions-are-published-and-subscribed-on-cloudamqp.md); carrying the trace through the broker is #179.
+
 Telemetry is OpenTelemetry exported to one workspace-based Application Insights, `appi-lantern-<env>`, on the existing Log Analytics workspace. The API uses `Azure.Monitor.OpenTelemetry.AspNetCore` (`UseAzureMonitor()`); the Functions app uses the isolated-worker OpenTelemetry package with `Azure.Monitor.OpenTelemetry.Exporter` and `"telemetryMode": "OpenTelemetry"` in `host.json`, so the host and the worker emit one trace. The cloud role names (`lantern-api`, `lantern-functions`) come from `OTEL_SERVICE_NAME`, set by Bicep, so the Application Map shows two nodes.
 
 The Azure SDK records the Service Bus send as a dependency and puts the trace context on the message (`Diagnostic-Id`); the trigger starts `DispatchAction` as its child. That is why one `DELETE /v1/family/children/{id}` is one `operation_Id` across the request, Key Vault, Table Storage, the send, and the Function run with its storage calls and its `FunctionLog` lines.

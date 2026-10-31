@@ -21,12 +21,11 @@ param keyVault = {
   amqpUrlSecret: 'amqp-url'
 }
 
-// A five-minute lock and 288 deliveries: a failing action retries for about a day before it is dead-lettered.
-param actionsQueue = {
-  name: 'workspace-events'
-  lockDuration: 'PT5M'
-  maxDeliveryCount: 288
-  messageTimeToLive: 'P14D'
+param actions = {
+  exchange: 'lantern.actions'
+  createWorkspaceQueue: 'create-workspace'
+  removeWorkspaceQueue: 'remove-workspace'
+  removeFamilyQueue: 'remove-family'
 }
 
 param apiSize = {

@@ -34,7 +34,7 @@ public sealed class PendingActionResenderTests
         var resender = new PendingActionResender(
             ledger.Object,
             Mock.Of<IActionPublisher>(),
-            Options.Create(new ActionOptions { Queue = "actions", ResendAfter = TimeSpan.FromMinutes(5) }),
+            Options.Create(new ActionOptions { Exchange = "exchange", ResendAfter = TimeSpan.FromMinutes(5) }),
             TimeProvider.System,
             NullLogger<PendingActionResender>.Instance
         );

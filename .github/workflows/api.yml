@@ -159,6 +159,12 @@ jobs:
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
       # Checked again here: a role or provider can be removed between the PR and the release. Read-only.
       - run: infra/preflight.sh "$RESOURCE_GROUP" uat
+      - name: Apply the broker topology
+        run: |
+          AMQP_URL=$(az keyvault secret show --vault-name kv-lantern-uat -n amqp-url --query value -o tsv)
+          echo "::add-mask::${AMQP_URL}"
+          export AMQP_URL
+          infra/apply-topology.sh
       # The release is one Bicep deployment: it applies any infra change and sets the new images and the API's port in the
       # same revision, so infra, API and Functions app can never collide.
       - run: az deployment group create -g "$RESOURCE_GROUP" -f infra/main.bicep -p "$PARAMS" -n "release-${GITHUB_RUN_ID}"

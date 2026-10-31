@@ -1,21 +1,25 @@
 using Lantern.Core.Actions;
-using Lantern.Core.Constants;
 using Lantern.Core.Repository;
 using Lantern.Core.Service;
+using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
-namespace Lantern.Functions.Handler;
+namespace Lantern.Functions;
 
-internal sealed class RemoveWorkspaceHandler(
+internal sealed class RemoveWorkspaceFunction(
     IActionLedger ledger,
     IJsonService json,
     IWorkspaceStore workspaces,
     IProgressRepository progress,
     IChildRepository children,
-    ILogger<RemoveWorkspaceHandler> logger
-) : ActionHandler<RemoveWorkspacePayload>(ledger, json)
+    ILogger<RemoveWorkspaceFunction> logger
+) : ActionFunction<RemoveWorkspacePayload>(ledger, json)
 {
-    public override ActionType Type => ActionType.RemoveWorkspace;
+    [Function("RemoveWorkspace")]
+    public Task RunAsync(
+        [RabbitMQTrigger("%Actions:RemoveWorkspaceQueue%", ConnectionStringSetting = "Broker:Url")] string myQueueItem,
+        CancellationToken cancellationToken
+    ) => ExecuteAsync(myQueueItem, cancellationToken);
 
     protected override async Task HandleAsync(RemoveWorkspacePayload payload, CancellationToken cancellationToken)
     {

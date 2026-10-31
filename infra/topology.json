@@ -1,0 +1,18 @@
+{
+  "exchanges": [
+    { "name": "lantern.parking", "type": "fanout", "durable": true, "arguments": {} },
+    { "name": "lantern.actions", "type": "direct", "durable": true, "arguments": { "alternate-exchange": "lantern.parking" } }
+  ],
+  "queues": [
+    { "name": "parking", "durable": true, "arguments": {} },
+    { "name": "create-workspace", "durable": true, "arguments": { "x-dead-letter-exchange": "lantern.parking" } },
+    { "name": "remove-workspace", "durable": true, "arguments": { "x-dead-letter-exchange": "lantern.parking" } },
+    { "name": "remove-family", "durable": true, "arguments": { "x-dead-letter-exchange": "lantern.parking" } }
+  ],
+  "bindings": [
+    { "source": "lantern.parking", "destination": "parking", "routing_key": "" },
+    { "source": "lantern.actions", "destination": "create-workspace", "routing_key": "create-workspace" },
+    { "source": "lantern.actions", "destination": "remove-workspace", "routing_key": "remove-workspace" },
+    { "source": "lantern.actions", "destination": "remove-family", "routing_key": "remove-family" }
+  ]
+}

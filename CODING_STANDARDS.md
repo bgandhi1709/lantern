@@ -18,9 +18,9 @@ shape, naming, folder and registration. Each kind's reference class is named in
 | Project | Owns | Never contains |
 |---|---|---|
 | `apps/lantern-api/Lantern.Api` | Controllers, API models, `ApiProfile` (API ↔ service mapping), `HttpIdentityResolver`, `ProblemExceptionHandler`, rate limits, the host's `Program.cs` | Business rules, storage, Azure SDK clients, service models built by hand |
-| `apps/lantern-api/Lantern.Functions` | Triggers, `Handler/` (dispatcher, `ActionHandler<T>`, one handler per `ActionType`), `FunctionsModule` | HTTP, business rules a service owns |
-| `libs/Lantern.Base` | Services (`I{Model}Service`), validators, normalizers, `BaseModule` | Azure SDK types, row keys, ciphertext, HTTP types, handlers |
-| `libs/Lantern.Core` | Service models, every contract (`IServiceBase<T>`, `IRepositoryBase<T>`, `I{Model}Repository`, `I{Thing}Store`, `IActionLedger`), `ServiceBase<T>`, exceptions, `{Section}Options`, `IIdentityResolver`, crypto, generic external services (`IServiceBusService`), action types, payloads and publisher, `CoreModule` | Implementations of storage contracts, entities, anything app-specific |
+| `apps/lantern-api/Lantern.Functions` | One Function per subscriber (`ActionFunction<T>` and a `{Verb}{Noun}Function` per `ActionType`), `FunctionsModule` | HTTP, business rules a service owns |
+| `libs/Lantern.Base` | Services (`I{Model}Service`), validators, normalizers, `BaseModule` | Azure SDK types, row keys, ciphertext, HTTP types, Functions |
+| `libs/Lantern.Core` | Service models, every contract (`IServiceBase<T>`, `IRepositoryBase<T>`, `I{Model}Repository`, `I{Thing}Store`, `IActionLedger`), `ServiceBase<T>`, exceptions, `{Section}Options`, `IIdentityResolver`, crypto, generic external services (`IPublishingService`), action types, payloads and publisher, `CoreModule` | Implementations of storage contracts, entities, anything app-specific |
 | `libs/Lantern.Repository` | Entities (internal), `UnitOfWork<TEntity>`, `BaseRepository<TModel, TEntity>`, repositories, stores, `RepositoryModule` | Business rules, HTTP, service orchestration |
 | `tests/<app>/` | Every test project and every local stand-in (seeder, Docker host) | Production code |
 
@@ -57,8 +57,8 @@ its "Reuse or create" table. Review a change against the recipe it should have f
 - A repository supplies only `RowKeyPrefix`, `RowKey` and `IdOf` unless a storage rule differs; a service overrides
   only the operations whose rules differ, and uses the base's members instead of re-injecting them.
 - A service never injects another model's repository; two or more services in a fixed order make an interactor.
-- Slow or must-finish work is a new `ActionType` and handler on the one `workspace-events` queue: never a new queue,
-  Function, timer or `BackgroundService`.
+- Slow or must-finish work is a new `ActionType` and a Function on its own queue bound in
+  `infra/topology.json` (ADR-0018): never a dispatcher, a handler layer, a timer or a `BackgroundService`.
 - An external resource has one generic gateway in Core that knows nothing of what it carries.
 - Logic two classes share moves into their base class or an injected service, never into a copy or a static helper.
 - An interactor is added only as `recipes.md` describes, never by default.
@@ -72,8 +72,8 @@ its "Reuse or create" table. Review a change against the recipe it should have f
 - **Repository and store**: storage only: keys, ETags, batches, encryption, entity mapping. The only business rule
   allowed is one that needs storage atomicity (the limit of six Children under the Family row's ETag). Only
   `UnitOfWork<TEntity>` sends table requests, and only a store (`WorkspaceStore`) sends Blob requests.
-- **Handler**: finishes one action type with idempotent steps through repositories and stores. The base class checks
-  the ledger and completes it; a handler never touches the ledger itself.
+- **Function**: one per subscriber; its body finishes one action type with idempotent steps through repositories and
+  stores. The `ActionFunction<T>` base checks the ledger and completes it; a Function never touches the ledger itself.
 - **Family scope** comes only from `IIdentityResolver` through `ServiceBase.FamilyIdAsync`, and a model's `FamilyId`
   is overwritten from it on every write.
 - **Locked values** are stored and returned as sent. The server never encrypts or decrypts a personal field and holds no
@@ -84,7 +84,7 @@ its "Reuse or create" table. Review a change against the recipe it should have f
 - Each project registers its own types in one `{Layer}Module.AddLantern{Layer}()` extension. Hosts call
   `AddLanternBase()` (plus `AddLanternFunctions()` in Functions) and add only host concerns in `Program.cs`.
 - Library registrations use `TryAdd*`, so a host or test can replace one.
-- Lifetimes: repositories, services, the dispatcher, handlers are scoped; units of work, the ledger, stores, the publisher and Azure clients
+- Lifetimes: repositories, services, Functions are scoped; units of work, the ledger, stores, the publisher and Azure clients
   are singletons.
 - Constructor injection with primary constructors. No service locator outside DI factory lambdas and the rate-limit
   policy.
@@ -158,10 +158,10 @@ The rules are in `.claude/skills/expo-app-standards/SKILL.md` (the cycle is `doc
 - Tests live under `tests/<app>/`: `Lantern.Api.Tests` and `Lantern.Functions.Tests` for unit and in-process tests,
   `Lantern.Api.Test.Integration` for E2E, and `Lantern.Api.Test.Integration.Host` for the local Docker host and its
   stand-ins. Reach internals with `InternalsVisibleTo`.
-- Storage behaviour is tested against real Azurite. Fakes are allowed only at the external seams: `IServiceBusService`
-  (`RecordingServiceBus`). In-process tests deliver the messages the API sent to
-  the real dispatcher from `Lantern.Functions`.
-- Every service override, repository override and handler has tests, and every wire name (action type, problem code)
+- Storage behaviour is tested against real Azurite. Fakes are allowed only at the external seams: `IPublishingService`
+  (`RecordingPublishingService`). In-process tests deliver the messages the API published to
+  the real Function of its key from `Lantern.Functions`.
+- Every service override, repository override and Function has tests, and every wire name (action type, problem code)
   has a test that pins it.
 - **A test helper that needs a new production member is a design smell.** Write the rows or call the internals from the
   helper instead.
