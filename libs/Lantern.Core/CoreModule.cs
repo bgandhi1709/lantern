@@ -24,6 +24,7 @@ public static class CoreModule
         services.AddOptions<SecurityOptions>().Bind(configuration.GetSection(SecurityOptions.SectionName)).ValidateDataAnnotations();
         services.AddOptions<BrokerOptions>().Bind(configuration.GetSection(BrokerOptions.SectionName)).ValidateDataAnnotations();
         services.AddOptions<ActionOptions>().Bind(configuration.GetSection(ActionOptions.SectionName)).ValidateDataAnnotations();
+        services.AddOptions<ActionQueueOptions>().Bind(configuration.GetSection(ActionQueueOptions.SectionName)).ValidateDataAnnotations();
         services.AddOptions<CatalogOptions>().Bind(configuration.GetSection(CatalogOptions.SectionName)).ValidateDataAnnotations();
 
         services.TryAddSingleton(TimeProvider.System);

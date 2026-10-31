@@ -57,6 +57,8 @@ counted messages a month (40% of the free cap), which is about 400,000 actions w
 and not meant for production; UAT runs on it, and moving to Service Bus Standard topics, or a paid plan, stays a rewrite of
 the publishing service and the triggers.
 
+**Local and release ordering.** `deploy/local` runs LavinMQ, the same engine as UAT, with the `guest` login that guards nothing outside the stack. A `broker-topology` job runs `infra/apply-topology.sh` against it first, and the API and the Functions app start after it, because an action published before its queue exists is parked. The release does the same on UAT: the `deploy` job applies the topology before the Bicep deployment, using the deploy identity's role on the `amqp-url` secret alone.
+
 **Trace.** The Azure SDK no longer puts trace context on the message. The envelope still carries the trace parent; making
 one trace run from the request through the broker into the Function is #179, so until then the trace stops at the publish.
 

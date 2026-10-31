@@ -88,7 +88,7 @@ Work that runs after the request. The API publishes it once to the `lantern.acti
    repeat; check the state the API left (a status read) before acting, because the ledger row is written before the API's
    own rows. Register it in `FunctionsModule`. Reference: `CreateWorkspaceFunction`.
 5. **Log.** A `[LoggerMessage]` in `FunctionLog` with a new event id.
-6. **Subscribe.** Add the queue and its binding (key = wire name) to `infra/topology.json`; the setting to `actions` in
+6. **Subscribe.** Add the queue and its binding (key = wire name) to `infra/topology.json`; a property on `ActionQueueOptions` and the setting to `actions` in
    `infra/params/lantern.uat.bicepparam` and `main.bicep` (the Functions app's env and its KEDA rule); the env var to the
    Functions container in `deploy/local/docker-compose.yml`; and the type to `ActionDelivery` in the in-process tests.
 7. **Tests.** A wire-name test, an in-process test that delivers the sent message (`factory.DeliverAsync()`), a

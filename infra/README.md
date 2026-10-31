@@ -93,7 +93,7 @@ environment, the `env-uat-e2e` federated credential on the Entra app, its `Stora
 
 ## The broker topology
 
-`infra/topology.json` is the exchange, the queues and the bindings (ADR-0018). The `deploy` job runs `infra/apply-topology.sh` before the Bicep deployment, reading `amqp-url` with the deploy identity's one-secret role. It declares each entity through the broker's management API and is safe to repeat, but it cannot change the arguments of a queue that exists: to change one, delete the queue in the CloudAMQP console first (it must be empty), then release. To run it by hand: `read -rsp 'AMQPS URL: ' AMQP_URL; echo; export AMQP_URL; infra/apply-topology.sh`.
+`infra/topology.json` is the exchange, the queues and the bindings (ADR-0018). The `deploy` job runs `infra/apply-topology.sh` before the Bicep deployment, reading `amqp-url` with the deploy identity's one-secret role. It declares each entity through the broker's management API and is safe to repeat, but it cannot change the arguments of a queue that exists: to change one, delete the queue in the CloudAMQP console first (it must be empty), then release. To run it by hand: `read -rsp 'AMQPS URL: ' AMQP_URL; echo; export AMQP_URL; infra/apply-topology.sh`. It also takes the URL as its first argument and another topology file as its second.
 
 A new subscriber adds its queue and binding to the file and its name to `actions` in the bicepparam (`new event` in `docs/architecture/recipes.md`).
 

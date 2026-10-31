@@ -15,15 +15,12 @@ services:
     ports:
       - "127.0.0.1:9099:9099"
 
-  # The same engine as UAT (LavinMQ on CloudAMQP). Local only; guest guards nothing outside this stack.
   lavinmq:
     image: cloudamqp/lavinmq:2.10.2
     ports:
       - "127.0.0.1:5672:5672"
       - "127.0.0.1:15672:15672"
 
-  # Declares the exchange, queues and bindings with the script the release runs on UAT. The API and the Functions app
-  # start after it, because an action published before its queue exists is parked.
   broker-topology:
     image: alpine:3
     depends_on:

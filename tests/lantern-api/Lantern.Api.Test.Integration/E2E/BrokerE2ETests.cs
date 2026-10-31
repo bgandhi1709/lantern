@@ -2,13 +2,11 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
-using System.Text.Json;
 using Azure.Storage.Blobs;
 using Lantern.Api.Models;
 
 namespace Lantern.Api.Test.Integration.E2E;
 
-// Needs the local Docker stack (deploy/local): LavinMQ with the topology of infra/topology.json, the API and the Functions app.
 [Trait("Category", "E2E")]
 public sealed class BrokerE2ETests(RegisteredFamilyFixture fixture) : IClassFixture<RegisteredFamilyFixture>
 {
@@ -31,7 +29,7 @@ public sealed class BrokerE2ETests(RegisteredFamilyFixture fixture) : IClassFixt
         published.EnsureSuccessStatusCode();
 
         var parked = new List<string>();
-        Assert.True(await WaitAsync(async () => Contains(parked, await TakeAsync(broker, "parking"), marker)), "The message was not parked.");
+        Assert.True(await WaitAsync(async () => HasSeen(parked, await TakeAsync(broker, "parking"), marker)), "The message was not parked.");
     }
 
     [Fact]
@@ -60,7 +58,7 @@ public sealed class BrokerE2ETests(RegisteredFamilyFixture fixture) : IClassFixt
 
             var received = new List<string>();
             Assert.True(
-                await WaitAsync(async () => Contains(received, await TakeAsync(broker, second), id.ToString("D"))),
+                await WaitAsync(async () => HasSeen(received, await TakeAsync(broker, second), id.ToString("D"))),
                 "The second queue did not receive the action."
             );
             Assert.True(await WaitAsync(async () => !await marker.ExistsAsync()), "The subscriber did not remove the Workspace.");
@@ -71,7 +69,7 @@ public sealed class BrokerE2ETests(RegisteredFamilyFixture fixture) : IClassFixt
         }
     }
 
-    private static StringContent Json(object body) => new(JsonSerializer.Serialize(body), new MediaTypeHeaderValue("application/json"));
+    private static JsonContent Json(object body) => JsonContent.Create(body, new MediaTypeHeaderValue("application/json"));
 
     private static HttpClient Broker()
     {
@@ -86,12 +84,12 @@ public sealed class BrokerE2ETests(RegisteredFamilyFixture fixture) : IClassFixt
     {
         var response = await broker.PostAsync($"queues/%2F/{queue}/get", Json(new { count = 50, ackmode = "ack_requeue_false", encoding = "auto" }));
         response.EnsureSuccessStatusCode();
-        using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var messages = await response.Content.ReadFromJsonAsync<List<BrokerMessage>>() ?? [];
 
-        return [.. document.RootElement.EnumerateArray().Select(message => message.GetProperty("payload").GetString() ?? string.Empty)];
+        return [.. messages.Select(message => message.Payload)];
     }
 
-    private static bool Contains(List<string> seen, List<string> taken, string text)
+    private static bool HasSeen(List<string> seen, List<string> taken, string text)
     {
         seen.AddRange(taken);
 

@@ -14,6 +14,7 @@ builder.Services.AddLanternBase(builder.Configuration).AddLanternFunctions();
 
 // The Content slice is copied from the Boards' containers (ADR-0013), so this app refuses to start without their names.
 builder.Services.AddOptions<CatalogOptions>().ValidateOnStart();
+builder.Services.AddOptions<ActionQueueOptions>().ValidateOnStart();
 
 // Telemetry is off without a connection string, so local runs and the E2E need none. OTEL_SERVICE_NAME is the cloud
 // role name.

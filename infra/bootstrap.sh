@@ -4,8 +4,6 @@
 # the secret and key named in the bicepparam's keyVault. Needs Owner (or User Access Administrator) on the resource group.
 #
 # Usage: infra/bootstrap.sh [resource-group] [environment] [deploy-client-id]
-# The deploy client id (the GitHub variable AZURE_CLIENT_ID) gets Key Vault Secrets User on the amqp-url secret alone, so
-# the release can apply infra/topology.json to the broker. It still cannot read any other secret.
 set -euo pipefail
 
 RG="${1:-rg-lantern-dev}"

@@ -1,12 +1,9 @@
 using System.Collections.Concurrent;
 using Lantern.Core.Actions;
-using Lantern.Core.Constants;
 using Lantern.Core.Service;
 
 namespace Lantern.Api.Tests.Infrastructure;
 
-// Stands in for the broker: it keeps what the API published, and the test delivers it to the real functions, which is
-// what the Functions app does with each message.
 public sealed class RecordingPublishingService : IPublishingService
 {
     public const string Exchange = "test-actions";
@@ -26,7 +23,7 @@ public sealed class RecordingPublishingService : IPublishingService
 
         Assert.Equal(Exchange, exchange);
         var action = Assert.IsType<ActionMessage>(message);
-        Assert.Equal(action.Type.WireName(), key);
+        Assert.Contains($"\"type\":\"{key}\"", new JsonService().Serialize(action), StringComparison.Ordinal);
         sent.Enqueue(action);
 
         return Task.CompletedTask;

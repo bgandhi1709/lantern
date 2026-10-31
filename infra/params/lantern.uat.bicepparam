@@ -21,7 +21,6 @@ param keyVault = {
   amqpUrlSecret: 'amqp-url'
 }
 
-// The names in infra/topology.json: the API publishes to the exchange and each subscriber has a queue of its own.
 param actions = {
   exchange: 'lantern.actions'
   createWorkspaceQueue: 'create-workspace'

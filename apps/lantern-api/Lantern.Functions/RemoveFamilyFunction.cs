@@ -1,9 +1,11 @@
+using System.Runtime.CompilerServices;
 using Lantern.Core.Actions;
 using Lantern.Core.Repository;
 using Lantern.Core.Service;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
+[assembly: InternalsVisibleTo("Lantern.Api.Tests")]
 namespace Lantern.Functions;
 
 // Erases a Family whose Parents the API already unregistered. The rows go before the Workspaces, so a Workspace being

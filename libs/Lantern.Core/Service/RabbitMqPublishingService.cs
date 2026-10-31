@@ -1,39 +1,79 @@
-using RabbitMQ.Client;
+using System.Text;
 using Lantern.Core.Configuration;
 using Microsoft.Extensions.Options;
+using RabbitMQ.Client;
 
 namespace Lantern.Core.Service;
 
-internal sealed class RabbitMqPublishingService : IPublishingService
+internal sealed class RabbitMqPublishingService(IOptions<BrokerOptions> options, IJsonService json)
+    : IPublishingService,
+        IAsyncDisposable
 {
-    private readonly IJsonService json;
-    private readonly Uri url;
-
-    public RabbitMqPublishingService(IOptions<BrokerOptions> options, IJsonService json)
-    {
-        ArgumentNullException.ThrowIfNull(options);
-        this.json = json;
-        url = new Uri(options.Value.Url);
-    }
+    private readonly SemaphoreSlim gate = new(1, 1);
+    private IConnection connection;
+    private IChannel channel;
 
     public async Task PublishAsync<T>(string exchange, string key, T message, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(exchange);
         ArgumentException.ThrowIfNullOrWhiteSpace(key);
 
-        await using var current = await new ConnectionFactory { Uri = url }.CreateConnectionAsync(cancellationToken);
+        await gate.WaitAsync(cancellationToken);
+        try
+        {
+            var open = await OpenChannelAsync(cancellationToken);
 
-        await using var channel = await current.CreateChannelAsync(
-            new CreateChannelOptions(true, true)
-            , cancellationToken);
+            await open.BasicPublishAsync(
+                exchange,
+                key,
+                mandatory: false,
+                new BasicProperties { ContentType = "application/json", DeliveryMode = DeliveryModes.Persistent },
+                Encoding.UTF8.GetBytes(json.Serialize(message)),
+                cancellationToken
+            );
+        }
+        finally
+        {
+            gate.Release();
+        }
+    }
 
-        await channel.BasicPublishAsync(
-            exchange,
-            key,
-            mandatory: false,
-            new BasicProperties { ContentType = "application/json", DeliveryMode = DeliveryModes.Persistent },
-            System.Text.Encoding.UTF8.GetBytes(json.Serialize(message)),
+    public async ValueTask DisposeAsync()
+    {
+        await CloseAsync();
+        gate.Dispose();
+    }
+
+    private async Task<IChannel> OpenChannelAsync(CancellationToken cancellationToken)
+    {
+        if (channel is { IsOpen: true })
+        {
+            return channel;
+        }
+
+        await CloseAsync();
+
+        connection = await new ConnectionFactory { Uri = new Uri(options.Value.Url) }.CreateConnectionAsync(cancellationToken);
+        channel = await connection.CreateChannelAsync(
+            new CreateChannelOptions(publisherConfirmationsEnabled: true, publisherConfirmationTrackingEnabled: true),
             cancellationToken
         );
+
+        return channel;
+    }
+
+    private async Task CloseAsync()
+    {
+        if (channel is not null)
+        {
+            await channel.DisposeAsync();
+            channel = null;
+        }
+
+        if (connection is not null)
+        {
+            await connection.DisposeAsync();
+            connection = null;
+        }
     }
 }

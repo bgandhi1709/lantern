@@ -5,8 +5,6 @@ using Lantern.Core.Service;
 
 namespace Lantern.Functions;
 
-// Every action Function gets the same guard: a message whose ledger row is gone (a repeat, or a redelivery after the
-// action finished) does nothing, and the row is removed only after the Function's own steps succeed.
 public abstract class ActionFunction<TPayload>(IActionLedger ledger, IJsonService json)
 {
     protected async Task ExecuteAsync(string body, CancellationToken cancellationToken)

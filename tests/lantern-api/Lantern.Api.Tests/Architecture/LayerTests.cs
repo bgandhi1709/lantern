@@ -1,7 +1,7 @@
 using System.Reflection;
 using Azure.Data.Tables;
-using RabbitMQ.Client;
 using Azure.Storage.Blobs;
+using RabbitMQ.Client;
 
 namespace Lantern.Api.Tests.Architecture;
 
@@ -65,6 +65,26 @@ public sealed class LayerTests
     }
 
     [Fact]
+    public void ABrokerClientType_IsMentionedOnlyByThePublishingService()
+    {
+        var broker = typeof(IConnection).Assembly;
+        const BindingFlags all = BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.DeclaredOnly;
+
+        var mentioning = LanternAssemblies.Concrete
+            .Where(type =>
+                type.GetFields(all).Select(field => field.FieldType)
+                    .Concat(type.GetProperties(all).Select(property => property.PropertyType))
+                    .Concat(type.GetConstructors(all).SelectMany(constructor => constructor.GetParameters()).Select(parameter => parameter.ParameterType))
+                    .Concat(type.GetMethods(all).SelectMany(method => method.GetParameters().Select(parameter => parameter.ParameterType).Append(method.ReturnType)))
+                    .Any(member => Mentions(member, broker)))
+            .Select(type => type.Name)
+            .Distinct()
+            .ToList();
+
+        Assert.Equal(["RabbitMqPublishingService"], mentioning);
+    }
+
+    [Fact]
     public void ABrokerTrigger_IsOnlyOnAFunctionClass()
     {
         var triggered = LanternAssemblies.Concrete
@@ -106,6 +126,9 @@ public sealed class LayerTests
         || type.GetConstructors(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public)
             .SelectMany(constructor => constructor.GetParameters())
             .Any(parameter => Mentions(parameter.ParameterType, client));
+
+    private static bool Mentions(Type candidate, Assembly assembly) =>
+        candidate.Assembly == assembly || (candidate.IsGenericType && candidate.GetGenericArguments().Any(argument => Mentions(argument, assembly)));
 
     private static bool Mentions(Type candidate, Type client) =>
         client.IsAssignableFrom(candidate) || (candidate.IsGenericType && candidate.GetGenericArguments().Any(argument => Mentions(argument, client)));

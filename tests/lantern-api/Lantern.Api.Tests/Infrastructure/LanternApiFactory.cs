@@ -25,7 +25,6 @@ public sealed class LanternApiFactory(string connectionString) : WebApplicationF
 
     public RecordingPublishingService Sender { get; } = new();
 
-    /// <summary>Hands every message published so far, and not yet delivered, to the function bound to its key, as the broker does.</summary>
     public async Task DeliverAsync()
     {
         var all = Sender.Sent;
@@ -45,7 +44,6 @@ public sealed class LanternApiFactory(string connectionString) : WebApplicationF
         builder.ConfigureAppConfiguration(config => config.AddJsonFile(TestSettings.FilePath, optional: false));
 
         builder.ConfigureLogging(logging => logging.AddProvider(Logs));
-
 
         builder.ConfigureTestServices(services =>
         {

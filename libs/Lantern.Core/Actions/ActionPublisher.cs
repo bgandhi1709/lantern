@@ -18,6 +18,9 @@ internal sealed class ActionPublisher(
     ILogger<ActionPublisher> logger
 ) : IActionPublisher
 {
+    private readonly Dictionary<ActionType, string> keys = Enum.GetValues<ActionType>()
+        .ToDictionary(type => type, type => json.Deserialize<string>(json.Serialize(type)));
+
     public async Task<ActionMessage> RecordAsync<TPayload>(
         ActionType type,
         string id,
@@ -38,7 +41,7 @@ internal sealed class ActionPublisher(
 
         try
         {
-            await publishing.PublishAsync(options.Value.Exchange, message.Type.WireName(), message, cancellationToken);
+            await publishing.PublishAsync(options.Value.Exchange, keys[message.Type], message, cancellationToken);
             await ledger.MarkSentAsync(message.Type, message.Id, clock.GetUtcNow(), cancellationToken);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)

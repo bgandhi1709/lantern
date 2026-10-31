@@ -1,27 +1,31 @@
-using System.Text.Json;
 using Lantern.Core.Constants;
+using Lantern.Core.Service;
 
 namespace Lantern.Api.Tests.Architecture;
 
 public sealed class TopologyTests
 {
+    private const string ActionsExchange = "lantern.actions";
+    private const string ParkingExchange = "lantern.parking";
+    private const string ParkingQueue = "parking";
+
+    private static readonly JsonService Json = new();
+
     [Fact]
     public void EveryActionType_HasAQueueNamedAfterItBoundToTheActionsExchangeByItsWireName()
     {
-        using var topology = JsonDocument.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "topology.json")));
-        var queues = topology.RootElement.GetProperty("queues").EnumerateArray().Select(queue => queue.GetProperty("name").GetString()).ToHashSet();
-        var bindings = topology
-            .RootElement.GetProperty("bindings")
-            .EnumerateArray()
-            .Select(binding => (binding.GetProperty("source").GetString(), binding.GetProperty("destination").GetString(), binding.GetProperty("routing_key").GetString()))
-            .ToHashSet();
+        var topology = Load();
+        var queues = topology.Queues.Select(queue => queue.Name).ToHashSet();
+        var bindings = topology.Bindings.Select(binding => (binding.Source, binding.Destination, binding.RoutingKey)).ToHashSet();
 
         Assert.All(
             Enum.GetValues<ActionType>(),
             type =>
             {
-                Assert.Contains(type.WireName(), queues);
-                Assert.Contains(("lantern.actions", type.WireName(), type.WireName()), bindings);
+                var wireName = Json.Deserialize<string>(Json.Serialize(type));
+
+                Assert.Contains(wireName, queues);
+                Assert.Contains((ActionsExchange, wireName, wireName), bindings);
             }
         );
     }
@@ -29,13 +33,17 @@ public sealed class TopologyTests
     [Fact]
     public void UnroutableKeysAndDeadLettersBothEndInTheParkingQueue()
     {
-        using var topology = JsonDocument.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "topology.json")));
-        var exchanges = topology.RootElement.GetProperty("exchanges").EnumerateArray().ToDictionary(e => e.GetProperty("name").GetString());
+        var topology = Load();
+        var actions = Assert.Single(topology.Exchanges, exchange => exchange.Name == ActionsExchange);
 
-        Assert.Equal("lantern.parking", exchanges["lantern.actions"].GetProperty("arguments").GetProperty("alternate-exchange").GetString());
+        Assert.Equal(ParkingExchange, actions.Arguments["alternate-exchange"]);
+        Assert.Contains(topology.Bindings, binding => binding.Source == ParkingExchange && binding.Destination == ParkingQueue);
         Assert.All(
-            topology.RootElement.GetProperty("queues").EnumerateArray().Where(queue => queue.GetProperty("name").GetString() != "parking"),
-            queue => Assert.Equal("lantern.parking", queue.GetProperty("arguments").GetProperty("x-dead-letter-exchange").GetString())
+            topology.Queues.Where(queue => queue.Name != ParkingQueue),
+            queue => Assert.Equal(ParkingExchange, queue.Arguments["x-dead-letter-exchange"])
         );
     }
+
+    private static TopologyFile Load() =>
+        Json.Deserialize<TopologyFile>(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "topology.json")));
 }

@@ -97,7 +97,6 @@ resource vault 'Microsoft.KeyVault/vaults@2023-07-01' existing = {
   name: 'kv-${name}'
 }
 
-// The broker URL carries its password, so both apps read it from Key Vault through the identity; it is never a plain value.
 var amqpUrlSecret = {
   name: 'amqp-url'
   keyVaultUrl: '${vault.properties.vaultUri}secrets/${keyVault.amqpUrlSecret}'

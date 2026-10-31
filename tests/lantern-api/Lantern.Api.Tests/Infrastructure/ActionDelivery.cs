@@ -1,7 +1,3 @@
-
-
-extern alias Functions;
-using Functions::Lantern.Functions;
 using Lantern.Core.Actions;
 using Lantern.Core.Constants;
 using Lantern.Core.Service;
@@ -9,9 +5,10 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Lantern.Api.Tests.Infrastructure;
 
+extern alias Functions;
+
 public static class ActionDelivery
 {
-    /// <summary>Hands an action to the function bound to its key, as the broker does.</summary>
     public static async Task DeliverAsync(this IServiceProvider host, ActionMessage action, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(host);
@@ -24,9 +21,9 @@ public static class ActionDelivery
         await (
             action.Type switch
             {
-                ActionType.RemoveWorkspace => provider.GetRequiredService<RemoveWorkspaceFunction>().RunAsync(body, cancellationToken),
-                ActionType.CreateWorkspace => provider.GetRequiredService<CreateWorkspaceFunction>().RunAsync(body, cancellationToken),
-                ActionType.RemoveFamily => provider.GetRequiredService<RemoveFamilyFunction>().RunAsync(body, cancellationToken),
+                ActionType.RemoveWorkspace => provider.GetRequiredService<Functions::Lantern.Functions.RemoveWorkspaceFunction>().RunAsync(body, cancellationToken),
+                ActionType.CreateWorkspace => provider.GetRequiredService<Functions::Lantern.Functions.CreateWorkspaceFunction>().RunAsync(body, cancellationToken),
+                ActionType.RemoveFamily => provider.GetRequiredService<Functions::Lantern.Functions.RemoveFamilyFunction>().RunAsync(body, cancellationToken),
                 _ => throw new ArgumentOutOfRangeException(nameof(action)),
             }
         );

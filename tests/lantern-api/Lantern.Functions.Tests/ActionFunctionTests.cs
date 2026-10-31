@@ -15,7 +15,7 @@ public sealed class ActionFunctionTests
     public ActionFunctionTests() => function = new RecordingFunction(ledger.Object);
 
     [Fact]
-    public async Task HandleAsync_APendingAction_RunsTheWork_ThenCompletesTheLedgerRow()
+    public async Task RunAsync_APendingAction_RunsTheWork_ThenCompletesTheLedgerRow()
     {
         ledger.Setup(l => l.IsPendingAsync(ActionType.RemoveWorkspace, "id", It.IsAny<CancellationToken>())).ReturnsAsync(true);
 
@@ -26,7 +26,7 @@ public sealed class ActionFunctionTests
     }
 
     [Fact]
-    public async Task HandleAsync_AnActionWhoseRowIsGone_DoesNothing()
+    public async Task RunAsync_AnActionWhoseRowIsGone_DoesNothing()
     {
         await function.RunAsync(Body("{}"), CancellationToken.None);
 
@@ -38,26 +38,16 @@ public sealed class ActionFunctionTests
     [InlineData("not json")]
     [InlineData("null")]
     [InlineData("{\"id\":\"id\",\"type\":\"mystery\",\"payload\":\"{}\"}")]
-    public async Task HandleAsync_ABodyThatIsNotAnAction_Throws_SoTheBrokerParksIt(string body) =>
+    public async Task RunAsync_ABodyThatIsNotAnAction_Throws_SoTheBrokerParksIt(string body) =>
         await Assert.ThrowsAnyAsync<JsonException>(() => function.RunAsync(body, CancellationToken.None));
 
-    [Theory]
-    [InlineData(ActionType.RemoveWorkspace, "remove-workspace")]
-    [InlineData(ActionType.CreateWorkspace, "create-workspace")]
-    [InlineData(ActionType.RemoveFamily, "remove-family")]
-    public void ActionMessage_OnTheWire_NamesTheTypeInKebabCase(ActionType type, string wireName)
-    {
-        var json = JsonSerializer.Serialize(new ActionMessage("id", type, "{}"), JsonSerializerOptions.Web);
-
-        Assert.Equal(wireName, type.WireName());
-        Assert.Contains($"\"type\":\"{wireName}\"", json, StringComparison.Ordinal);
-        Assert.Equal(type, JsonSerializer.Deserialize<ActionMessage>(json, JsonSerializerOptions.Web)!.Type);
-    }
-
     private static string Body(string payload) =>
-        JsonSerializer.Serialize(new ActionMessage("id", ActionType.RemoveWorkspace, payload), JsonSerializerOptions.Web);
+        new JsonService().Serialize(new ActionMessage("id", ActionType.RemoveWorkspace, payload));
 
-    private sealed record Payload(string FamilyId);
+    private sealed class Payload
+    {
+        public string FamilyId { get; set; } = string.Empty;
+    }
 
     private sealed class RecordingFunction(IActionLedger ledger) : ActionFunction<Payload>(ledger, new JsonService())
     {

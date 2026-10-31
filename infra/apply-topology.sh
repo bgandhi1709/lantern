@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Declares the exchanges, queues and bindings in topology.json on the broker named by an AMQP URL, through its
-# management API. Safe to repeat; it cannot change the arguments of a queue that already exists.
-# Usage: apply-topology.sh [amqp-url] [topology.json]   (the URL may be in AMQP_URL instead, so it stays out of the process list)
 set -euo pipefail
 
 url=${1:-${AMQP_URL:?usage: apply-topology.sh [amqp-url] [topology.json]}}

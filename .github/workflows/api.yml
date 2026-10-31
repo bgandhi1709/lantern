@@ -159,8 +159,6 @@ jobs:
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
       # Checked again here: a role or provider can be removed between the PR and the release. Read-only.
       - run: infra/preflight.sh "$RESOURCE_GROUP" uat
-      # The broker's exchange, queues and bindings, before the apps that wait on them. The deploy identity can read this one
-      # secret only (infra/README.md). Safe to repeat.
       - name: Apply the broker topology
         run: |
           AMQP_URL=$(az keyvault secret show --vault-name kv-lantern-uat -n amqp-url --query value -o tsv)
