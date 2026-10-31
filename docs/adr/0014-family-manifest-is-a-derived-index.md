@@ -16,7 +16,7 @@ Doing this per request would mean three Blob reads and a listing, plus Board rul
 
 ## Decision
 
-### 1. The Board's rules run once, at build time (Python, `ncert-build`)
+### 1. The Board's rules run once, at build time (in the content build, which lives in the separate `lantern-utilities` repository, ADR-0017)
 
 - **Board profile.** Both Boards get a `board.json` in their master container. SSC keeps its keys and moves to `ssc-v2`; NCERT's is new (`cbse-v1`). Both add an ordered `subjects` list (name and icon; the list order is the display order; a name not listed sorts last, alphabetically, with the icon `book`) and `chapter_titles` (`refined` for NCERT, `toc` for SSC). The build reads it; the API never does.
 - **Class manifest.** For each Board and Class the build writes `manifest/class-{N}.json`: the Subjects with their built Chapter counts and Chapters, in the shape the API returns. It is uploaded with the other master files and copied byte for byte into each Child's slice as `content/manifest.json`. A third Board is a profile and a build run.

@@ -146,7 +146,7 @@ resource storage 'Microsoft.Storage/storageAccounts@2023-05-01' = {
     }]
   }
 
-  // Private containers for each Board's refined corpus (ncert-build's output). The API reads them with the
+  // Private containers for each Board's refined corpus (each Board's ready-to-read Books). The API reads them with the
   // resource-group Blob role from bootstrap.sh, which covers every container (D82); their names reach it as Catalog__*.
   resource blobService 'blobServices' = {
     name: 'default'

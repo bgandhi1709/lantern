@@ -147,7 +147,7 @@ HTTP ─▶ Controller ─▶ (Interactor) ─▶ Service ─▶ Repository / St
 **Layout** (`ContentLayout`, `Lantern.Core/Storage/`) **(tested: pinned; the only code that names Workspace files and folders)**
 - Meaning: every file and folder name of the Workspace and the Board masters (`class.json`, `version.json`, `refined/`,
   `summaries/`, `manifest/class-N.json` and the rest), every path built from them, and the two manifest schema ids. They are
-  a contract with `ncert-build` and with what is already stored, so they are not settings (D36) and they live in one class
+  a contract with the content in the Board containers and with what is already stored, so they are not settings (D36) and they live in one class
   instead of as literals in the store.
 - An instance registered as a singleton in `CoreModule`, injected into `WorkspaceStore`; a model that needs a schema id is
   handed it (`EnsureValid(layout.ClassManifestSchema)`). Tests that pin the real names write them as literals on purpose.
