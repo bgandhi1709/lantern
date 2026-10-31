@@ -16,8 +16,7 @@ infra/bootstrap.sh rg-lantern-dev uat
 Needs Owner or User Access Administrator on the resource group. Safe to run again. It creates the
 identity `id-lantern-uat`, the Key Vault `kv-lantern-uat`, the roles the identity needs (Storage Table
 Data Contributor, Storage Blob Data Contributor, Storage Blob Data Owner (the Functions host's own state), Azure Service Bus Data Owner (the API sends, the Functions app receives, and the KEDA rule that wakes it reads the queue's message count) and Monitoring Metrics Publisher (telemetry export) on the resource group, Key Vault Secrets User on the vault),
-a Storage Blob Data Contributor role on the resource group for whoever runs it (so `ncert-build upload`
-works once the container exists), the secret `security-key`, only if missing, and the secret `amqp-url` as a placeholder, only if missing.
+a Storage Blob Data Contributor role on the resource group for whoever uploads the Board content, the secret `security-key`, only if missing, and the secret `amqp-url` as a placeholder, only if missing.
 
 **`security-key` derives the uid hash key. Rotating it makes every registration unreadable.**
 Save a copy (the script prints the command). Lantern holds no Family key: each Family's personal fields are
@@ -47,8 +46,8 @@ az deployment group create  -g rg-lantern-dev -f infra/main.bicep -p infra/param
 Re-run `bootstrap.sh` before the first release that uses Service Bus or the Functions app: the identity needs the new roles, and the release preflight fails with the fix if they are missing.
 
 The deploying account needs Contributor only. It creates the storage account `lanternuat` with the tables
-`parents`, `families`, `actions` (the action ledger) and `progress` (each Child's Chapter Attempts and Checks), the private `family` blob container (every Child's Workspace, a folder per Class; blob soft delete and versioning are off, so a deleted Child's files really go), the private `ncert` and `ssc` blob containers (each Board's `ncert-build` output — see
-[`tools/ncert-build`](../tools/ncert-build/README.md)), a Service Bus namespace `sb-lantern-uat` (Basic, no local keys) with the queue `workspace-events` (every Workspace event), a Log Analytics workspace with a retention and a daily ingestion cap from the bicepparam, a workspace-based Application Insights `appi-lantern-uat` (no ingestion key: both apps sign in with the identity; its connection string reaches them as the secret ref `appinsights-connection-string`), and the Container
+`parents`, `families`, `actions` (the action ledger) and `progress` (each Child's Chapter Attempts and Checks), the private `family` blob container (every Child's Workspace, a folder per Class; blob soft delete and versioning are off, so a deleted Child's files really go), the private `ncert` and `ssc` blob containers (each Board's Books, ready to read; layout in
+[`docs/architecture/contracts`](../docs/architecture/contracts/README.md)), a Service Bus namespace `sb-lantern-uat` (Basic, no local keys) with the queue `workspace-events` (every Workspace event), a Log Analytics workspace with a retention and a daily ingestion cap from the bicepparam, a workspace-based Application Insights `appi-lantern-uat` (no ingestion key: both apps sign in with the identity; its connection string reaches them as the secret ref `appinsights-connection-string`), and the Container
 Apps environment with two apps (each 0 to 1 replica, the identity attached): the API `ca-lantern-uat`, and `ca-lantern-uat-functions`, which runs `Lantern.Functions` with no ingress and is woken by a KEDA Service Bus rule when a message arrives ([ADR-0004](../docs/adr/0004-actions-through-service-bus-and-functions.md)). All names come from
 `environmentName`. The template reads the identity and the Key Vault by name and wires the app's
 settings: `Firebase__ProjectId` (a param, not a secret), `Storage__TableEndpoint` and `Storage__BlobEndpoint` (read from the
@@ -70,10 +69,10 @@ The `infra-check` job lints the Bicep, runs `infra/preflight.sh` (providers regi
 an API release go out together and never collide. A release runs on a merge to `main`, a manual run on `main`, or a
 PR labelled `deploy-uat` (to test a PR in UAT before merging); nothing is deployed until you approve. UAT is one
 environment, so the last approved release wins. A manual run on any other branch cannot sign in to Azure: the app
-registration trusts only the `pull_request`, `main` and `environment:uat` subjects (`github-setup.sh`).
+registration trusts only the `pull_request`, `main` and `environment:uat` subjects (`github-setup.sh`, in `lantern-utilities`).
 
 ```bash
-infra/github-setup.sh rg-lantern-dev uat   # once: Entra app with OIDC, Contributor on the group, variables
+infra/github-setup.sh rg-lantern-dev uat   # once, from the lantern-utilities repository: Entra app with OIDC, Contributor on the group, variables
 ```
 
 No secret is stored for Azure. The variables are `AZURE_CLIENT_ID`, `AZURE_TENANT_ID` and

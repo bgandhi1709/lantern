@@ -25,9 +25,9 @@ books**, so the AI does not make things up for a child.
 The diagram is [`docs/architecture/lantern-architecture.html`](docs/architecture/lantern-architecture.html)
 (open it in a browser). Two halves meet only in private Blob containers:
 
-- **Build time**, on a workstation: textbook PDFs become concepts, questions and answers through
-  local models and Claude Code (D16). Data stays out of this repo
-  ([`tools/ncert-build`](tools/ncert-build/README.md)).
+- **Content**, made outside this repo: the private `ncert` and `ssc` Blob containers hold each Board's
+  Books ready to read ([`docs/architecture/contracts`](docs/architecture/contracts/README.md)). Extracting the
+  syllabus is part of a separate repository, `lantern-utilities` (ADR-0017).
 - **Runtime**, on Azure: the Parent app talks to an ASP.NET API, and queued work runs in
   `Lantern.Functions` through Service Bus (ADR-0004).
 - **Privacy.** The phone locks personal details with a Family key only the Parent can open, through
@@ -45,7 +45,7 @@ The diagram is [`docs/architecture/lantern-architecture.html`](docs/architecture
 
 ## Status
 
-- **Content.** The NCERT layer is being built class by class; the SSC layer follows.
+- **Content.** The NCERT and SSC Books are in their containers; extracting them is a separate repository.
 - **Infrastructure.** UAT is deployed from Bicep by `api.yml` ([`infra/README.md`](infra/README.md)). A CloudAMQP LavinMQ broker is provisioned for publish and subscribe (D119, #173); actions still use Service Bus until the cutover.
 - **API.** Register, `me`, Family and Child management, Workspaces, Subjects, Chapters and a Chapter's Attempts and Checks are built, and the
   end-to-end tests gate each release. Run it locally with [`deploy/local/README.md`](deploy/local/README.md).

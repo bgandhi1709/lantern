@@ -1,6 +1,6 @@
 # A Family is a self-contained space: each Child's Class folder holds its own Content slice
 
-Everything a Family needs to run lives inside that Family's own storage. Book content is no exception: when a Child is added, and again at each Class change, Lantern copies the Books for that Child's Board and Class out of the shared `ncert` or `ssc` container into the Child's Class folder. Plan, Ask and Check read the copy and never the shared container. The shared containers stay the build output (`ncert-build upload`) and the source of the copy, nothing more.
+Everything a Family needs to run lives inside that Family's own storage. Book content is no exception: when a Child is added, and again at each Class change, Lantern copies the Books for that Child's Board and Class out of the shared `ncert` or `ssc` container into the Child's Class folder. Plan, Ask and Check read the copy and never the shared container. The shared containers stay the content the build uploads (a separate repository, ADR-0017) and the source of the copy, nothing more.
 
 The reasons are not performance. Reads of read-only files cannot race, and a catalog kept in memory (D82) costs no Blob reads once warm. The reasons are:
 
@@ -64,7 +64,7 @@ A Child is registered before its slice is ready (the Workspace is created in the
 
 Not built with the first stories: the copy at registration and add-Child ships first, and the refresh below (with the master `version.json` it compares against) is a later story. Until then a slice's `version.json` records when and for which Board and Class it was made, and nothing refreshes it.
 
-A slice is **pinned**: a yearly upload changes nothing under an existing Family. The master container gets its own `version.json` written last by `ncert-build upload`, and each slice records the master version it was copied from. A founder-run `ncert-build refresh --board <board>` sends one `refresh-content` message; the handler lists that Board's slices, compares versions, and queues one refresh per stale slice, each with its own ledger row. A Class folder with no `content/` counts as stale, so the same command backfills Children registered before this decision. A refresh overwrites only `content/`, never a Child's own files, and writes `version.json` last.
+A slice is **pinned**: a yearly upload changes nothing under an existing Family. The master container gets its own `version.json` written last by the content upload, and each slice records the master version it was copied from. A founder-run refresh command in `lantern-utilities` sends one `refresh-content` message; the handler lists that Board's slices, compares versions, and queues one refresh per stale slice, each with its own ledger row. A Class folder with no `content/` counts as stale, so the same command backfills Children registered before this decision. A refresh overwrites only `content/`, never a Child's own files, and writes `version.json` last.
 
 The upload runs only in a maintenance window, with the refresh after it. A Family that registers during the upload may take a mixed slice, but it is stamped with the older master version, so the refresh finds it and redoes it.
 

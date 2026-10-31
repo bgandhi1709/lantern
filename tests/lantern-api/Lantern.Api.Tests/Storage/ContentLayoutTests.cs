@@ -2,7 +2,7 @@ using Lantern.Core.Storage;
 
 namespace Lantern.Api.Tests.Storage;
 
-// The names are the contract with ncert-build and with what is already stored, so they are written out here as literals: a test
+// The names are the contract with the content in the Board containers and with what is already stored, so they are written out here as literals: a test
 // that read them from the class under test would agree with any change.
 public sealed class ContentLayoutTests
 {
