@@ -15,12 +15,9 @@ export function SubjectOption({ subject, selected, onPick }: Props) {
       accessibilityState={{ selected }}
       accessibilityLabel={`${subject.name}, ${chapters}`}
       onPress={onPick}
-      className={`min-h-16 flex-row items-center gap-3 rounded-card border-2 px-3.5 py-2.5 ${selected ? 'border-primary bg-tile' : 'border-field bg-card'}`}
+      className={`choice-row ${selected ? 'border-primary bg-tile' : 'border-field bg-card'}`}
     >
-      <View
-        importantForAccessibility="no-hide-descendants"
-        className="size-11 items-center justify-center rounded-control bg-tile"
-      >
+      <View importantForAccessibility="no-hide-descendants" className="icon-tile">
         {subjectGlyphs[subject.icon]}
       </View>
       <View className="flex-1">

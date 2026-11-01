@@ -10,7 +10,7 @@ type Props = Pick<Parent, 'name' | 'email'>;
 function Row({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
   return (
     <View className="flex-row items-center gap-3">
-      <View className="size-11 items-center justify-center rounded-control bg-tile">{icon}</View>
+      <View className="icon-tile">{icon}</View>
       <View className="flex-1">
         <Text className="type-small-muted">{label}</Text>
         <Text className="type-lead">{value}</Text>
@@ -24,7 +24,7 @@ export function GoogleAccountCard({ name, email }: Props) {
   const strings = useStrings().registration.about;
 
   return (
-    <View className="gap-3 rounded-card border border-line bg-card p-4">
+    <View className="gap-3 panel">
       <View className="flex-row items-center gap-2">
         <GoogleG />
         <Text className="type-small-muted-bold tracking-wider">{strings.fromGoogle}</Text>

@@ -7,7 +7,7 @@ export function OnlyChildNotice({ onDeleteFamily }: { onDeleteFamily: () => void
   const notice = useStrings().deleteChild.onlyChild;
 
   return (
-    <View className="gap-3 rounded-card border border-line bg-card p-4">
+    <View className="gap-3 panel">
       <Text accessibilityRole="header" className="type-lead">
         {notice.heading}
       </Text>

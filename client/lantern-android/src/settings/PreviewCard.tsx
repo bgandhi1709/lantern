@@ -11,12 +11,9 @@ export function PreviewCard() {
   const colors = useColors();
 
   return (
-    <View className="gap-3 rounded-card border border-line bg-card p-4">
+    <View className="gap-3 panel">
       <View className="flex-row items-center gap-3">
-        <View
-          importantForAccessibility="no-hide-descendants"
-          className="size-11 items-center justify-center rounded-control bg-tile"
-        >
+        <View importantForAccessibility="no-hide-descendants" className="icon-tile">
           <Svg width={BOOK_SIZE} height={BOOK_SIZE} viewBox="0 0 24 24" fill="none">
             <Path
               d="M12 6c-2-1.5-5-2-8-2v14c3 0 6 .5 8 2 2-1.5 5-2 8-2V4c-3 0-6 .5-8 2zM12 6v14"

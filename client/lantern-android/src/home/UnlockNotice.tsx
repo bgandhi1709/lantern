@@ -7,7 +7,7 @@ export function UnlockNotice({ onUnlock }: { onUnlock: () => void }) {
   const strings = useStrings().home.locked;
 
   return (
-    <View className="gap-3 rounded-card border border-line bg-card p-4">
+    <View className="gap-3 panel">
       <Text accessibilityRole="header" className="type-lead">
         {strings.heading}
       </Text>

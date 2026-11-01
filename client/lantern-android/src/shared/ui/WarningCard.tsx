@@ -4,7 +4,7 @@ type Props = { heading: string; text: string };
 
 export function WarningCard({ heading, text }: Props) {
   return (
-    <View className="gap-1 rounded-card border border-line bg-card p-4">
+    <View className="gap-1 panel">
       <Text className="font-inter-bold text-body text-danger">{heading}</Text>
       <Text className="type-body">{text}</Text>
     </View>

@@ -9,7 +9,7 @@ export function NoticeView({ version, onBack }: Props) {
   const notice = useStrings().registration.notice;
 
   return (
-    <View className="flex-1 bg-ground px-6 pb-safe pt-safe">
+    <View className="screen">
       <View className="flex-row">
         <BackButton onBack={onBack} />
       </View>

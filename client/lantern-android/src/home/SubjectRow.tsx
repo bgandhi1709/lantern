@@ -14,12 +14,9 @@ export function SubjectRow({ subject, onPress }: Props) {
       accessibilityRole="button"
       accessibilityLabel={`${subject.name}, ${chapters}`}
       onPress={onPress}
-      className="min-h-16 flex-row items-center gap-3 rounded-card border border-line bg-card px-4 py-2.5"
+      className="min-h-16 flex-row items-center gap-3 surface px-4 py-2.5"
     >
-      <View
-        importantForAccessibility="no-hide-descendants"
-        className="size-11 items-center justify-center rounded-control bg-tile"
-      >
+      <View importantForAccessibility="no-hide-descendants" className="icon-tile">
         {subjectGlyphs[subject.icon]}
       </View>
       <View className="flex-1">

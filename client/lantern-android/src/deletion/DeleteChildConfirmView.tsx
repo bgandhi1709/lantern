@@ -44,7 +44,7 @@ export function DeleteChildConfirmView(props: Props) {
       : props.failure && strings.failures[props.failure];
 
   return (
-    <View className="flex-1 bg-ground px-6 pb-safe pt-safe">
+    <View className="screen">
       <KeyboardAvoidingView behavior="padding" className="flex-1">
         <View className="h-16 flex-row items-center">
           <BackButton onBack={props.onBack} />

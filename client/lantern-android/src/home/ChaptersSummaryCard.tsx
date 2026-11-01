@@ -22,7 +22,7 @@ export function ChaptersSummaryCard({ subjectName, childName, progress }: Props)
   ];
 
   return (
-    <View className="gap-2.5 rounded-card border border-line bg-card px-4 py-3.5">
+    <View className="gap-2.5 surface px-4 py-3.5">
       <View className="flex-row items-baseline justify-between gap-2">
         <Text accessibilityRole="header" className="shrink type-lead">
           {text.summaryTitle(subjectName, childName)}

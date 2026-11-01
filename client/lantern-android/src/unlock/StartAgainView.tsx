@@ -11,7 +11,7 @@ export function StartAgainView({ deleting, failed, onDelete, onKeep }: Props) {
   const strings = useStrings().startAgain;
 
   return (
-    <View className="flex-1 bg-ground px-6 pb-safe pt-safe">
+    <View className="screen">
       <ScrollView contentContainerClassName="gap-4 pb-3 pt-6">
         <View className="gap-2">
           <Text accessibilityRole="header" className="type-heading">

@@ -91,9 +91,7 @@ export function ChaptersView(props: Props) {
         <PrimaryButton label={home.tryAgain} onPress={props.onTryAgain} />
       </View>
     ) : props.query.trim() !== '' && subjectName ? (
-      <Text className="rounded-card border border-line bg-card p-4 type-body-muted">
-        {text.noMatch(subjectName)}
-      </Text>
+      <Text className="panel type-body-muted">{text.noMatch(subjectName)}</Text>
     ) : null;
 
   return (

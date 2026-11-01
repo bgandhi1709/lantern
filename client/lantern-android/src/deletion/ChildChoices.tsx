@@ -26,7 +26,7 @@ export function ChildChoices({ options, pickedId, onPick }: Props) {
             accessibilityState={{ checked }}
             accessibilityLabel={`${child.name}, ${classLabel}`}
             onPress={() => onPick(child.id)}
-            className={`min-h-16 flex-row items-center gap-3 rounded-card border-2 px-3.5 py-2.5 ${checked ? 'border-primary bg-tile' : 'border-field bg-card'}`}
+            className={`choice-row ${checked ? 'border-primary bg-tile' : 'border-field bg-card'}`}
           >
             <ChildAvatar name={child.name} large />
             <View className="flex-1">

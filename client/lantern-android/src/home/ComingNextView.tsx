@@ -7,7 +7,7 @@ export function ComingNextView({ onBack }: { onBack: () => void }) {
   const comingNext = useStrings().home.comingNext;
 
   return (
-    <View className="flex-1 gap-3 bg-ground px-6 pb-safe pt-safe">
+    <View className="screen gap-3">
       <View className="flex-row">
         <BackButton onBack={onBack} />
       </View>

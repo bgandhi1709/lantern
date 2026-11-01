@@ -19,7 +19,7 @@ export function AttemptCard({ attempt }: { attempt: Attempt }) {
   const chip = CHIP[attempt.state];
 
   return (
-    <View className="gap-2.5 rounded-card border border-line bg-card px-4 py-3.5">
+    <View className="gap-2.5 surface px-4 py-3.5">
       <View className="flex-row items-center gap-2">
         <View className="flex-1">
           <Text className="type-body-bold">{text.attemptTitle(attempt.attemptNumber)}</Text>

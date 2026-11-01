@@ -30,7 +30,7 @@ export function DeleteChildCodeView(props: Props) {
   const hint = hintFor(props, strings);
 
   return (
-    <View className="flex-1 bg-ground px-6 pb-safe pt-safe">
+    <View className="screen">
       <KeyboardAvoidingView behavior="padding" className="flex-1">
         <View className="h-16 flex-row items-center">
           <BackButton onBack={props.onBack} />

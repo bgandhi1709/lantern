@@ -19,7 +19,7 @@ export function ChildRow({ child, selected, onPick }: Props) {
       accessibilityState={{ selected }}
       accessibilityLabel={`${child.name}, ${status}`}
       onPress={onPick}
-      className={`min-h-16 flex-row items-center gap-3 rounded-card border-2 px-3.5 py-2.5 ${selected ? 'border-primary bg-tile' : 'border-field bg-card'}`}
+      className={`choice-row ${selected ? 'border-primary bg-tile' : 'border-field bg-card'}`}
     >
       <ChildAvatar name={child.name} large />
       <View className="flex-1">

@@ -40,7 +40,7 @@ export function AboutYouView({
   const about = strings.about;
 
   return (
-    <View className="flex-1 bg-ground px-6 pb-safe pt-safe">
+    <View className="screen">
       <KeyboardAvoidingView behavior="padding" className="flex-1">
         <StepHeader step={1} total={REGISTRATION_STEP_COUNT} onBack={onBack} />
         <ScrollView contentContainerClassName="gap-4 pb-3" keyboardShouldPersistTaps="handled">

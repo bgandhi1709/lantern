@@ -26,7 +26,7 @@ export function SearchField({ value, onChangeText, onClear }: Props) {
         autoCorrect={false}
         autoComplete="off"
         returnKeyType="search"
-        className="h-13 rounded-control border-2 border-field bg-card pl-12 pr-12 type-body focus:border-primary-deep"
+        className="h-13 field pl-12 pr-12 type-body focus:border-primary-deep"
       />
       {value === '' ? null : (
         <Pressable

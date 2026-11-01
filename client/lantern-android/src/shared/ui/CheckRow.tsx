@@ -35,7 +35,7 @@ function Box({ checked }: { checked: boolean }) {
 
 export function CheckRow({ checked, onToggle, accessibilityLabel, icon, children }: Props) {
   return (
-    <View className="flex-row items-center gap-3 rounded-card border border-line bg-card py-1 pl-4 pr-1">
+    <View className="flex-row items-center gap-3 surface py-1 pl-4 pr-1">
       {icon}
       <View className="flex-1 py-2">{children}</View>
       <Pressable

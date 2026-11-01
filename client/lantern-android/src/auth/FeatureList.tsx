@@ -19,12 +19,10 @@ export function FeatureList() {
   const features = useStrings().start.features;
 
   return (
-    <View className="gap-4 rounded-card border border-line bg-card p-4">
+    <View className="gap-4 panel">
       {order.map((feature) => (
         <View key={feature} className="flex-row items-start gap-3">
-          <View className="size-11 items-center justify-center rounded-control bg-tile">
-            {icons[feature]}
-          </View>
+          <View className="icon-tile">{icons[feature]}</View>
           <View className="flex-1">
             <Text className="type-lead">{features[feature].title}</Text>
             <Text className="type-small-muted">{features[feature].text}</Text>

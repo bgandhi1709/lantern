@@ -40,7 +40,7 @@ export function RecoveryCodeView({
   const strings = useStrings().registration.recovery;
 
   return (
-    <View className="flex-1 bg-ground px-6 pb-safe pt-safe">
+    <View className="screen">
       <StepHeader step={3} total={REGISTRATION_STEP_COUNT} onBack={onBack} />
       <ScrollView contentContainerClassName="gap-4 pb-3">
         <View className="mt-5 gap-2">

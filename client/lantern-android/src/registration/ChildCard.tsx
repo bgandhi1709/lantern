@@ -47,7 +47,7 @@ export function ChildCard({
         : more.statusNeedsMore;
 
   return (
-    <View className="overflow-hidden rounded-card border border-line bg-card">
+    <View className="overflow-hidden surface">
       <Pressable
         accessibilityRole="button"
         accessibilityState={{ expanded: open }}

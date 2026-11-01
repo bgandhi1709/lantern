@@ -34,7 +34,7 @@ export function UnlockView(props: Props) {
       : strings.open;
 
   return (
-    <View className="flex-1 bg-ground px-6 pb-safe pt-safe">
+    <View className="screen">
       <KeyboardAvoidingView behavior="padding" className="flex-1">
         <View className="h-16 justify-center">
           <BackButton onBack={props.onBack} />

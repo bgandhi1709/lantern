@@ -19,7 +19,7 @@ export function BoardView({ board, onSelect, onContinue, onBack }: Props) {
   const strings = useStrings().registration.board;
 
   return (
-    <View className="flex-1 bg-ground px-6 pb-safe pt-safe">
+    <View className="screen">
       <StepHeader step={2} total={REGISTRATION_STEP_COUNT} onBack={onBack} />
       <ScrollView contentContainerClassName="gap-6 pb-3">
         <View className="mt-5 gap-2">
