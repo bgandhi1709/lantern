@@ -13,13 +13,13 @@ public sealed class HttpIdentityResolverTests
     [Fact]
     public void Identity_ReadsSubNameAndEmail() =>
         Assert.Equal(
-            new CallerIdentity("u1", "Meena", "m@example.test"),
+            new CallerIdentity("u1", "Meena", "m@example.test", false),
             Resolver(new Claim("sub", "u1"), new Claim("name", "Meena"), new Claim("email", "m@example.test")).Identity
         );
 
     [Fact]
     public void Identity_WithoutNameOrEmail_UsesEmptyStrings() =>
-        Assert.Equal(new CallerIdentity("u1", "", ""), Resolver(new Claim("sub", "u1")).Identity);
+        Assert.Equal(new CallerIdentity("u1", "", "", false), Resolver(new Claim("sub", "u1")).Identity);
 
     [Theory]
     [InlineData("")]

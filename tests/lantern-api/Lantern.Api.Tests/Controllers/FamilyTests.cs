@@ -376,7 +376,7 @@ public sealed class FamilyTests(AzuriteFixture azurite) : IDisposable
 
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
         Assert.Equal("not-registered", await (await client.GetAsync(ApiClientExtensions.Me)).ProblemCodeAsync());
-        Assert.Equal("not-registered", await (await client.DeleteAsync(ApiClientExtensions.Child(me!.Children[0].ChildId))).ProblemCodeAsync());
+        Assert.Equal("not-registered", await (await client.DeleteChildAsync(me!.Children[0].ChildId)).ProblemCodeAsync());
         Assert.Empty(await ProfilesAsync(me.FamilyId));
         Assert.Single(Erasures);
         Assert.Single(await LedgerAsync(me.FamilyId));
@@ -481,7 +481,7 @@ public sealed class FamilyTests(AzuriteFixture azurite) : IDisposable
     }
 
     private HttpClient Client(string uid, string name = null, string email = null) =>
-        factory.CreateClient().WithBearer(TestTokens.Create(uid, name, email));
+        factory.CreateClient().WithBearer(TestTokens.Create(uid, name, email ?? "parent@example.com"));
 
     private async Task<HttpClient> RegisteredAsync()
     {

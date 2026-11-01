@@ -11,6 +11,8 @@ export const SCREEN_NAMES = [
   'appearance',
   'unlock',
   'start-again',
+  'delete-child',
+  'delete-family',
   'coming-next',
 ] as const;
 
@@ -29,6 +31,8 @@ export const TAP_NAMES = [
   'change-appearance',
   'unlock',
   'start-again',
+  'delete-child',
+  'delete-family',
   'sign-out',
 ] as const;
 

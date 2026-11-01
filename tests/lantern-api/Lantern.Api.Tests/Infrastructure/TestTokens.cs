@@ -16,7 +16,8 @@ public static class TestTokens
     public static string Create(
         string uid,
         string name = null,
-        string email = null,
+        string email = "parent@example.com",
+        bool? emailVerified = true,
         string projectId = ProjectId,
         string audience = null,
         string issuer = null,
@@ -35,6 +36,11 @@ public static class TestTokens
         if (email is not null)
         {
             claims["email"] = email;
+        }
+
+        if (emailVerified is { } verified)
+        {
+            claims["email_verified"] = verified;
         }
 
         return new JsonWebTokenHandler().CreateToken(

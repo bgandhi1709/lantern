@@ -47,7 +47,7 @@ The diagram is [`docs/architecture/lantern-architecture.html`](docs/architecture
 
 - **Content.** The NCERT and SSC Books are in their containers; extracting them is a separate repository.
 - **Infrastructure.** UAT is deployed from Bicep by `api.yml` ([`infra/README.md`](infra/README.md)). Actions are published and subscribed on a CloudAMQP LavinMQ broker (ADR-0018, #176), one thin trigger per subscriber; retry with delay, the parking alert and one trace through the broker follow (#177, #178, #179).
-- **API.** Register, `me`, Family and Child management, Workspaces, Subjects, Chapters and a Chapter's Attempts and Checks are built, and the
+- **API.** Register, `me`, Family and Child management (a Child is deleted behind an emailed Delete code, ADR-0019), Workspaces, Subjects, Chapters and a Chapter's Attempts and Checks are built, and the
   end-to-end tests gate each release. Run it locally with [`deploy/local/README.md`](deploy/local/README.md).
 - **Parent app.** Sign-in, registration, Home, Add a child, Chapters (state, search, history), Unlock, Settings and anonymous usage
   numbers after Consent are built ([`client/lantern-android/README.md`](client/lantern-android/README.md)).

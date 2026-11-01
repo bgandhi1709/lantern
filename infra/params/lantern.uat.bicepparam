@@ -19,6 +19,7 @@ param containers = {
 param keyVault = {
   securityKeySecret: 'security-key'
   amqpUrlSecret: 'amqp-url'
+  acsConnectionStringSecret: 'acs-connection-string'
 }
 
 param actions = {
@@ -49,6 +50,14 @@ param telemetry = {
 }
 
 param childrenPerMinute = 30
+
+param codeLimits = {
+  requestsPerMinute: 1
+  requestsPerHour: 5
+  checksPerMinute: 5
+}
+
+param emailDataLocation = 'India'
 param actionResendAfter = '00:05:00'
 
 // Empty placeholder apps. The API release sets the real images and the API's port.

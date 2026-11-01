@@ -17,3 +17,7 @@ type Story = StoryObj<typeof meta>;
 export const Unlock: Story = { args: en.appearance.unlockRow };
 
 export const StartAgain: Story = { args: en.appearance.startAgainRow };
+
+export const DeleteChild: Story = { args: { ...en.settings.deleteChildRow, danger: true } };
+
+export const DeleteFamily: Story = { args: { ...en.settings.deleteFamilyRow, danger: true } };

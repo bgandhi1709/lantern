@@ -30,6 +30,7 @@ export function Picker({
   testID,
 }: Props) {
   const colors = useColors();
+  const itemStyle = { backgroundColor: colors.card };
   return (
     <View>
       <Text importantForAccessibility="no" className="font-inter-bold text-body text-ink">
@@ -46,9 +47,20 @@ export function Picker({
             mode="dropdown"
             dropdownIconColor={colors.text}
           >
-            <NativePicker.Item label={placeholder} value="" color={colors.textSecondary} />
+            <NativePicker.Item
+              label={placeholder}
+              value=""
+              color={colors.textSecondary}
+              style={itemStyle}
+            />
             {options.map((option) => (
-              <NativePicker.Item key={option.value} label={option.label} value={option.value} />
+              <NativePicker.Item
+                key={option.value}
+                label={option.label}
+                value={option.value}
+                color={colors.text}
+                style={itemStyle}
+              />
             ))}
           </NativePicker>
         </View>

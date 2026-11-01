@@ -18,6 +18,24 @@ const failureOf = async (call: Promise<unknown>) => {
   throw new Error('expected the call to fail');
 };
 
+describe('a delete that carries extra headers', () => {
+  it('sends them beside the token and keeps its own Accept', async () => {
+    const fetchImpl = jest.fn().mockResolvedValue(jsonResponse(204, undefined));
+
+    await clientWith(fetchImpl, async () => 'abc').delete('/v1/family', z.unknown(), {
+      'Lantern-Code-Proof': 'a-proof',
+      Accept: 'text/plain',
+    });
+
+    expect(fetchImpl.mock.calls[0][1]).toMatchObject({ method: 'DELETE' });
+    expect(fetchImpl.mock.calls[0][1].headers).toEqual({
+      Accept: 'application/json',
+      Authorization: 'Bearer abc',
+      'Lantern-Code-Proof': 'a-proof',
+    });
+  });
+});
+
 describe('a call that works', () => {
   it('returns the response parsed by its schema', async () => {
     const fetchImpl = jest.fn().mockResolvedValue(jsonResponse(200, { name: 'Asha' }));

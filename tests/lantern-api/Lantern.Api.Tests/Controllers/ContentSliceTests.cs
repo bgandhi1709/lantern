@@ -118,7 +118,7 @@ public sealed class ContentSliceTests(AzuriteFixture azurite) : IDisposable
         var added = Guid.NewGuid();
         await client.PostAsJsonAsync(ApiClientExtensions.Children, NewChild(added, 3));
 
-        await client.DeleteAsync(ApiClientExtensions.Child(added));
+        await client.DeleteChildAsync(added);
         await factory.DeliverAsync();
 
         Assert.Empty(await NamesAsync($"{family.FamilyId:D}/{added:D}/"));
@@ -133,7 +133,7 @@ public sealed class ContentSliceTests(AzuriteFixture azurite) : IDisposable
         await factory.DeliverAsync();
         var (gone, kept) = (family.Children[0], family.Children[1]);
 
-        await client.DeleteAsync(ApiClientExtensions.Child(gone.ChildId));
+        await client.DeleteChildAsync(gone.ChildId);
         await factory.DeliverAsync();
 
         Assert.Empty(await NamesAsync($"{family.FamilyId:D}/{gone.ChildId:D}/"));

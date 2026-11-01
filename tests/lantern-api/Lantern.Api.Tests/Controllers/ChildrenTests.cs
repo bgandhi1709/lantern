@@ -196,7 +196,7 @@ public sealed class ChildrenTests(AzuriteFixture azurite) : IDisposable
         var me = await MeAsync(client);
         var id = Guid.NewGuid();
         await client.PostAsJsonAsync(ApiClientExtensions.Children, NewChild(id, "Kavya", 4));
-        await client.DeleteAsync(ApiClientExtensions.Child(id));
+        await client.DeleteChildAsync(id);
 
         await factory.DeliverAsync();
 
@@ -242,7 +242,7 @@ public sealed class ChildrenTests(AzuriteFixture azurite) : IDisposable
     {
         using var client = await RegisteredAsync();
         var first = (await MeAsync(client)).Children[0];
-        await client.DeleteAsync(ApiClientExtensions.Child(first.ChildId));
+        await client.DeleteChildAsync(first.ChildId);
 
         var response = await client.PostAsJsonAsync(ApiClientExtensions.Children, NewChild(first.ChildId, "Again"));
 
@@ -258,7 +258,7 @@ public sealed class ChildrenTests(AzuriteFixture azurite) : IDisposable
         {
             await client.PostAsJsonAsync(ApiClientExtensions.Children, NewChild(Guid.NewGuid(), $"C{n}"));
         }
-        await client.DeleteAsync(ApiClientExtensions.Child((await MeAsync(client)).Children[0].ChildId));
+        await client.DeleteChildAsync((await MeAsync(client)).Children[0].ChildId);
 
         var response = await client.PostAsJsonAsync(ApiClientExtensions.Children, NewChild(Guid.NewGuid(), "Fresh"));
 
@@ -324,7 +324,7 @@ public sealed class ChildrenTests(AzuriteFixture azurite) : IDisposable
     {
         using var client = await RegisteredAsync();
         var children = (await MeAsync(client)).Children;
-        await client.DeleteAsync(ApiClientExtensions.Child(children[1].ChildId));
+        await client.DeleteChildAsync(children[1].ChildId);
 
         var unknown = await client.PutAsJsonAsync(ApiClientExtensions.Child(Guid.NewGuid()), new { Name = "X", School = "s", BirthYear = "y" });
         var deleting = await client.PutAsJsonAsync(ApiClientExtensions.Child(children[1].ChildId), new { Name = "X", School = "s", BirthYear = "y" });
@@ -360,7 +360,7 @@ public sealed class ChildrenTests(AzuriteFixture azurite) : IDisposable
         // The Child moved from Class 5 to Class 6 (issue #50 will do this): two Workspaces.
         await PlainWorkspaceStore.Over(Blobs, createContainer: false).CreateAsync(me.FamilyId, gone.ChildId, 6, CancellationToken.None);
 
-        var response = await client.DeleteAsync(ApiClientExtensions.Child(gone.ChildId));
+        var response = await client.DeleteChildAsync(gone.ChildId);
 
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         Assert.Equal([kept.ChildId], (await MeAsync(client)).Children.Select(c => c.ChildId));
@@ -383,10 +383,12 @@ public sealed class ChildrenTests(AzuriteFixture azurite) : IDisposable
         using var client = await RegisteredAsync();
         var child = (await MeAsync(client)).Children[0];
 
-        var first = await client.DeleteAsync(ApiClientExtensions.Child(child.ChildId));
-        var second = await client.DeleteAsync(ApiClientExtensions.Child(child.ChildId));
+        var proof = await client.ProofAsync(new { operation = "delete-child", target = child.ChildId });
+
+        var first = await client.DeleteChildAsync(child.ChildId, proof);
+        var second = await client.DeleteChildAsync(child.ChildId, proof);
         await factory.DeliverAsync();
-        var third = await client.DeleteAsync(ApiClientExtensions.Child(child.ChildId));
+        var third = await client.DeleteChildAsync(child.ChildId, proof);
 
         Assert.Equal(HttpStatusCode.Accepted, first.StatusCode);
         Assert.Equal(HttpStatusCode.Accepted, second.StatusCode);
@@ -402,7 +404,7 @@ public sealed class ChildrenTests(AzuriteFixture azurite) : IDisposable
         var theirFamily = await MeAsync(theirs);
         var theirChild = theirFamily.Children[0];
 
-        var response = await mine.DeleteAsync(ApiClientExtensions.Child(theirChild.ChildId));
+        var response = await mine.DeleteChildAsync(theirChild.ChildId);
         await factory.DeliverAsync();
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
@@ -422,9 +424,9 @@ public sealed class ChildrenTests(AzuriteFixture azurite) : IDisposable
         using var unregistered = factory.CreateClient().WithBearer(TestTokens.Create(NewUid()));
         using var anonymous = factory.CreateClient();
 
-        Assert.Equal(HttpStatusCode.NotFound, (await client.DeleteAsync(ApiClientExtensions.Child(Guid.NewGuid()))).StatusCode);
-        Assert.Equal(HttpStatusCode.NotFound, (await unregistered.DeleteAsync(ApiClientExtensions.Child(Guid.NewGuid()))).StatusCode);
-        Assert.Equal(HttpStatusCode.Unauthorized, (await anonymous.DeleteAsync(ApiClientExtensions.Child(Guid.NewGuid()))).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await client.DeleteChildAsync(Guid.NewGuid())).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await unregistered.DeleteChildAsync(Guid.NewGuid())).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await anonymous.DeleteChildAsync(Guid.NewGuid())).StatusCode);
         Assert.Equal(2, (await MeAsync(client)).Children.Count);
         Assert.Empty(Removals);
     }
@@ -435,7 +437,7 @@ public sealed class ChildrenTests(AzuriteFixture azurite) : IDisposable
         using var client = await RegisteredAsync();
         foreach (var child in (await MeAsync(client)).Children)
         {
-            Assert.Equal(HttpStatusCode.Accepted, (await client.DeleteAsync(ApiClientExtensions.Child(child.ChildId))).StatusCode);
+            Assert.Equal(HttpStatusCode.Accepted, (await client.DeleteChildAsync(child.ChildId)).StatusCode);
         }
         await factory.DeliverAsync();
 
@@ -451,7 +453,7 @@ public sealed class ChildrenTests(AzuriteFixture azurite) : IDisposable
         var child = me.Children[0];
         factory.Sender.Down = true;
 
-        var response = await client.DeleteAsync(ApiClientExtensions.Child(child.ChildId));
+        var response = await client.DeleteChildAsync(child.ChildId);
 
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         Assert.Empty(Removals);
@@ -472,7 +474,7 @@ public sealed class ChildrenTests(AzuriteFixture azurite) : IDisposable
     {
         using var client = await RegisteredAsync();
         var me = await MeAsync(client);
-        await client.DeleteAsync(ApiClientExtensions.Child(me.Children[0].ChildId));
+        await client.DeleteChildAsync(me.Children[0].ChildId);
 
         await Resender.RunOnceAsync(CancellationToken.None);
 
@@ -485,7 +487,7 @@ public sealed class ChildrenTests(AzuriteFixture azurite) : IDisposable
         using var client = await RegisteredAsync();
         var me = await MeAsync(client);
         var child = me.Children[0];
-        await client.DeleteAsync(ApiClientExtensions.Child(child.ChildId));
+        await client.DeleteChildAsync(child.ChildId);
         var failing = new Mock<IWorkspaceStore>();
         failing
             .Setup(s => s.RemoveAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
@@ -513,7 +515,7 @@ public sealed class ChildrenTests(AzuriteFixture azurite) : IDisposable
         using var client = await RegisteredAsync();
         var me = await MeAsync(client);
         var child = me.Children[0];
-        await client.DeleteAsync(ApiClientExtensions.Child(child.ChildId));
+        await client.DeleteChildAsync(child.ChildId);
         await Blobs.DeleteBlobIfExistsAsync($"{me.FamilyId:D}/{child.ChildId:D}/{child.ClassLevel}/class.json");
         await Families.DeleteEntityAsync(KeyService.FamilyPartition(me.FamilyId), KeyService.ChildRowKey(child.ChildId));
 
@@ -527,7 +529,7 @@ public sealed class ChildrenTests(AzuriteFixture azurite) : IDisposable
     {
         using var client = await RegisteredAsync();
         var me = await MeAsync(client);
-        await client.DeleteAsync(ApiClientExtensions.Child(me.Children[0].ChildId));
+        await client.DeleteChildAsync(me.Children[0].ChildId);
         var host = factory.Services;
         var message = Removals[0];
 
@@ -555,7 +557,7 @@ public sealed class ChildrenTests(AzuriteFixture azurite) : IDisposable
             ActionType.RemoveWorkspace,
             JsonSerializer.Serialize(new RemoveWorkspacePayload(otherFamily.FamilyId, otherFamily.Children[0].ChildId), JsonSerializerOptions.Web)
         );
-        await client.DeleteAsync(ApiClientExtensions.Child(me.Children[0].ChildId));
+        await client.DeleteChildAsync(me.Children[0].ChildId);
 
         await factory.Services.DeliverAsync(stray, CancellationToken.None);
         await factory.DeliverAsync();
@@ -590,11 +592,11 @@ public sealed class ChildrenTests(AzuriteFixture azurite) : IDisposable
         HttpStatusCode last = default;
         for (var n = 0; n < 40; n++)
         {
-            last = (await noisy.DeleteAsync(ApiClientExtensions.Child(Guid.NewGuid()))).StatusCode;
+            last = (await noisy.DeleteChildAsync(Guid.NewGuid(), "not-a-proof")).StatusCode;
         }
 
         Assert.Equal(HttpStatusCode.TooManyRequests, last);
-        Assert.Equal(HttpStatusCode.NotFound, (await quiet.DeleteAsync(ApiClientExtensions.Child(Guid.NewGuid()))).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await quiet.DeleteChildAsync(Guid.NewGuid(), "not-a-proof")).StatusCode);
     }
 
     [Fact]
@@ -607,7 +609,7 @@ public sealed class ChildrenTests(AzuriteFixture azurite) : IDisposable
 
         await client.PostAsJsonAsync(ApiClientExtensions.Children, NewChild(id, name, 2, school));
         await client.PutAsJsonAsync(ApiClientExtensions.Child(id), new { Name = name + "x", School = school + "x", BirthYear = "y" });
-        await client.DeleteAsync(ApiClientExtensions.Child(id));
+        await client.DeleteChildAsync(id);
         await factory.DeliverAsync();
 
         Assert.NotEmpty(factory.Logs.Entries);

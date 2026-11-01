@@ -21,7 +21,7 @@ AMQP_SECRET=$(key_vault_param amqpUrlSecret)
 SUB_ID=$(az account show --query id -o tsv)
 
 # Every provider main.bicep deploys from. Registration is per subscription, once; the deploy identity cannot do it.
-for ns in Microsoft.Storage Microsoft.App Microsoft.OperationalInsights Microsoft.Insights Microsoft.KeyVault Microsoft.ManagedIdentity; do
+for ns in Microsoft.Storage Microsoft.App Microsoft.OperationalInsights Microsoft.Insights Microsoft.KeyVault Microsoft.ManagedIdentity Microsoft.Communication; do
   echo "Provider ${ns}"
   az provider register --namespace "$ns" --wait -o none
 done

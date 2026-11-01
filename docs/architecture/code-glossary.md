@@ -30,6 +30,7 @@ HTTP ─▶ Controller ─▶ (Interactor) ─▶ Service ─▶ Repository / St
 - Example: `ChildrenController`. A resource the caller has exactly one of is singular: `FamilyController`.
 - A read-only view with no service model of its own (`SubjectsController`) derives `ControllerBase` directly with the same
   attributes (`[ApiController]`, `[Authorize]`, `[ApiVersion]`, the rate limit) and maps through `IMapper`. It calls its own service.
+- A capability that is not a stored resource (`SecurityController`: ask for a One-time code, check it) derives `ControllerBase` the same way, is named for the capability, and calls one service. It builds a response model from the one value the service returns; a model copied property by property goes through `IMapper`.
 
 **Model** (`Models/`) **(tested: only in `Lantern.Api.Models`)**
 - Meaning: the shape the app sees or sends. Every API model lives here and nowhere else.
@@ -81,6 +82,7 @@ HTTP ─▶ Controller ─▶ (Interactor) ─▶ Service ─▶ Repository / St
 - Never: Azure SDK types, row keys, ciphertext, HTTP types.
 - Registered scoped in `BaseModule`.
 - Example: `ChildService`, `FamilyService`.
+- A service over no stored model has no repository and no `ServiceBase` either: `OneTimeCodeService` keeps nothing and knows no operation. It signs and checks a challenge and a proof with `ICryptoService` (a keyed HMAC per purpose); `SecurityController` serves it, and a service such as `ChildService` asks it for the proof of its own operation and target before it acts.
 - A read-only view over a Child's own storage has no repository and so no `ServiceBase`: `SubjectService` looks the Child up
   through `IServiceBase<Child>` (which scopes it to the caller's Family) and reads through `IWorkspaceStore`. It also serves the
   Chapters of a Subject (`ChaptersAsync`, read from the Child's own Class manifest once the Subject is in the Family manifest),
@@ -142,6 +144,11 @@ HTTP ─▶ Controller ─▶ (Interactor) ─▶ Service ─▶ Repository / St
 - Example: `WorkspaceStore` reads and writes the manifests and `version.json` through it; the publisher, the publishing
   service and the Functions use it for the message.
 
+**Generator** (`I{Noun}Generator` / `{Noun}Generator`, `Service/`) **(tested through the endpoints that use it)**
+- Meaning: the one source of values that must be random, behind an interface, so a test can fix them. No storage, no I/O besides the random source. It is how a service gets a One-time code or a nonce without calling the random API itself.
+- Example: `OneTimeCodeGenerator` makes the 6-digit code and the nonce. Registered as a singleton in `CoreModule`.
+- Not a Calculator (that is pure) and not a Factory (it builds no object graph).
+
 **Layout** (`ContentLayout`, `Lantern.Core/Storage/`) **(tested: pinned; the only code that names Workspace files and folders)**
 - Meaning: every file and folder name of the Workspace and the Board masters (`class.json`, `version.json`, `refined/`,
   `summaries/`, `manifest/class-N.json` and the rest), every path built from them, and the two manifest schema ids. They are
@@ -161,8 +168,8 @@ HTTP ─▶ Controller ─▶ (Interactor) ─▶ Service ─▶ Repository / St
   the exchange under the wire name and logs, never throws, on failure.
 
 **Generic external service** (`I{Resource}Service` / `{Resource}Service`, or `I{Resource}Client`)
-- Meaning: the one gateway to an external resource, knowing nothing of what it carries. `RabbitMqPublishingService` publishes any model to any exchange under a key;
-  `CryptoService` holds the uid hash (Lantern holds no Family key, ADR-0010). **(tested: each Azure client has one owner)**
+- Meaning: the one gateway to an external resource, knowing nothing of what it carries. `RabbitMqPublishingService` publishes any model to any exchange under a key; `AcsEmailService` (`IEmailService`) sends one plain-text email through Azure Communication Services and turns a refusal into `EmailNotSent`;
+  `CryptoService` holds the uid hash and seals and opens signed, short-lived tokens bound to a Parent (Lantern holds no Family key, ADR-0010; D126). **(tested: each Azure client has one owner)**
 
 **Resolver contract** (`IIdentityResolver`): the caller, resolved per request by the host.
 

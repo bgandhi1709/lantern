@@ -163,6 +163,8 @@ Screenshots are S-tier - when the environment is set up for it and the change is
 
 Execution-based evidence is A-tier. Test results, console output. Show the exact test that now fails and passes, using pseudocode.
 
+In this repo Evidence also carries the **Verification report** and the code review's outcome: the table and the criteria map are in `docs/agents/app-workflow.md` step 5b, the review in step 8b (`docs/agents/workflow.md` step 6b for API work).
+
 ### Merge Danger
 
 Describe whether it's a one-way or two-way door. You can walk back through two-way doors, but not one-way doors. A PR that is cheap to roll back is lower risk. Changes that involve destructive actions or hard-to-reverse decisions are one-way doors.

@@ -14,4 +14,6 @@ public interface IChildService : IServiceBase<Child>
     /// <exception cref="Core.Exceptions.LanternException">(<c>ChildDeleting</c>) That id is being deleted.</exception>
     /// <exception cref="Core.Exceptions.LanternException">(<c>ClassNotAvailable</c>) The Class has no Books for the Family's Board.</exception>
     Task<(Child Child, bool Created)> AddOrGetAsync(Child child, CancellationToken cancellationToken);
+
+    Task RemoveAsync(Guid id, string proof, CancellationToken cancellationToken);
 }

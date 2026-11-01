@@ -6,7 +6,7 @@ import { readValue } from '../shared/storage';
 import type { FamilyLock } from './unlockFamily';
 import { UnlockWaitError, fetchFamilyLock, unlockFamily } from './unlockFamily';
 import type { UnlockPhase } from './UnlockView';
-import { useIsMounted } from './useIsMounted';
+import { useIsMounted } from '../shared/lifecycle/useIsMounted';
 
 const TICK_MS = 1000;
 const MS_PER_SECOND = 1000;

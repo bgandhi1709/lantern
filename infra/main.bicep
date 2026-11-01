@@ -18,10 +18,11 @@ param containers {
   ssc: string
 }
 
-@description('The Key Vault secrets bootstrap.sh creates: the key that hashes each uid (Lantern holds no Family key, D66) and the CloudAMQP broker URL (D119).')
+@description('The Key Vault secrets. bootstrap.sh creates the key that hashes each uid (Lantern holds no Family key, D66) and the CloudAMQP broker URL (D119). This template writes the Communication Services connection string itself, so the key never leaves Azure (ADR-0019).')
 param keyVault {
   securityKeySecret: string
   amqpUrlSecret: string
+  acsConnectionStringSecret: string
 }
 
 @description('The exchange the API publishes actions to and the queue of each subscriber. They are the names in infra/topology.json, which apply-topology.sh declares on the broker.')
@@ -50,6 +51,16 @@ param functionsSize {
 
 @description('Children endpoint calls per caller per minute.')
 param childrenPerMinute int
+
+@description('Where Azure keeps the Communication Services data (ADR-0019). The One-time code email goes through it.')
+param emailDataLocation string
+
+@description('One-time code limits per Parent: requests per minute and per hour, and code checks per minute (D125).')
+param codeLimits {
+  requestsPerMinute: int
+  requestsPerHour: int
+  checksPerMinute: int
+}
 
 @description('How long an action may go unsent before the API resends it on start, as a .NET TimeSpan (hh:mm:ss).')
 param actionResendAfter string
@@ -100,6 +111,47 @@ resource vault 'Microsoft.KeyVault/vaults@2023-07-01' existing = {
 var amqpUrlSecret = {
   name: 'amqp-url'
   keyVaultUrl: '${vault.properties.vaultUri}secrets/${keyVault.amqpUrlSecret}'
+  identity: identity.id
+}
+
+resource emailService 'Microsoft.Communication/emailServices@2023-04-01' = {
+  name: 'email-${name}'
+  location: 'global'
+  properties: {
+    dataLocation: emailDataLocation
+  }
+}
+
+resource emailDomain 'Microsoft.Communication/emailServices/domains@2023-04-01' = {
+  parent: emailService
+  name: 'AzureManagedDomain'
+  location: 'global'
+  properties: {
+    domainManagement: 'AzureManaged'
+  }
+}
+
+resource communication 'Microsoft.Communication/communicationServices@2023-04-01' = {
+  name: 'acs-${name}'
+  location: 'global'
+  properties: {
+    dataLocation: emailDataLocation
+    linkedDomains: [emailDomain.id]
+  }
+}
+
+resource acsConnectionString 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
+  parent: vault
+  name: keyVault.acsConnectionStringSecret
+  properties: {
+    value: communication.listKeys().primaryConnectionString
+    contentType: 'acs-connection-string'
+  }
+}
+
+var acsSecret = {
+  name: 'acs-connection-string'
+  keyVaultUrl: '${vault.properties.vaultUri}secrets/${keyVault.acsConnectionStringSecret}'
   identity: identity.id
 }
 
@@ -209,6 +261,7 @@ resource environment 'Microsoft.App/managedEnvironments@2025-01-01' = {
 resource app 'Microsoft.App/containerApps@2025-01-01' = {
   name: 'ca-${name}'
   location: location
+  dependsOn: [acsConnectionString]
   identity: {
     type: 'UserAssigned'
     userAssignedIdentities: {
@@ -229,6 +282,7 @@ resource app 'Microsoft.App/containerApps@2025-01-01' = {
           identity: identity.id
         }
         amqpUrlSecret
+        acsSecret
         insightsSecret
       ]
     }
@@ -249,6 +303,11 @@ resource app 'Microsoft.App/containerApps@2025-01-01' = {
             { name: 'Actions__Exchange', value: actions.exchange }
             { name: 'Security__Key', secretRef: 'security-key' }
             { name: 'RateLimits__ChildrenPerMinute', value: string(childrenPerMinute) }
+            { name: 'RateLimits__CodeRequestsPerMinute', value: string(codeLimits.requestsPerMinute) }
+            { name: 'RateLimits__CodeRequestsPerHour', value: string(codeLimits.requestsPerHour) }
+            { name: 'RateLimits__CodeChecksPerMinute', value: string(codeLimits.checksPerMinute) }
+            { name: 'Email__ConnectionString', secretRef: acsSecret.name }
+            { name: 'Email__Sender', value: 'DoNotReply@${emailDomain.properties.mailFromSenderDomain}' }
             { name: 'Actions__ResendAfter', value: actionResendAfter }
             { name: 'APPLICATIONINSIGHTS_CONNECTION_STRING', secretRef: insightsSecret.name }
             { name: 'OTEL_SERVICE_NAME', value: 'lantern-api' }

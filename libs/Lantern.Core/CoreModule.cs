@@ -26,12 +26,15 @@ public static class CoreModule
         services.AddOptions<ActionOptions>().Bind(configuration.GetSection(ActionOptions.SectionName)).ValidateDataAnnotations();
         services.AddOptions<ActionQueueOptions>().Bind(configuration.GetSection(ActionQueueOptions.SectionName)).ValidateDataAnnotations();
         services.AddOptions<CatalogOptions>().Bind(configuration.GetSection(CatalogOptions.SectionName)).ValidateDataAnnotations();
+        services.AddOptions<EmailOptions>().Bind(configuration.GetSection(EmailOptions.SectionName)).ValidateDataAnnotations();
 
         services.TryAddSingleton(TimeProvider.System);
         services.TryAddSingleton<ICryptoService, CryptoService>();
         services.TryAddSingleton<IPublishingService, RabbitMqPublishingService>();
         services.TryAddScoped(typeof(IServiceBase<>), typeof(ServiceBase<>));
         services.TryAddSingleton<IJsonService, JsonService>();
+        services.TryAddSingleton<IEmailService, AcsEmailService>();
+        services.TryAddSingleton<IOneTimeCodeGenerator, OneTimeCodeGenerator>();
         services.TryAddSingleton<ContentLayout>();
         services.TryAddSingleton<IPageCalculator, PageCalculator>();
         services.TryAddSingleton<IActionPublisher, ActionPublisher>();

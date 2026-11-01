@@ -120,6 +120,19 @@ export const PlusIcon = () => (
   </LineIcon>
 );
 
+export const SearchIcon = () => (
+  <LineIcon>
+    <Circle cx={11} cy={11} r={7} />
+    <Path d="M20 20l-4-4" />
+  </LineIcon>
+);
+
+export const CloseIcon = () => (
+  <LineIcon strokeWidth={2.75}>
+    <Path d="M6 6l12 12M18 6L6 18" />
+  </LineIcon>
+);
+
 export const ChevronDownIcon = () => (
   <LineIcon strokeWidth={2.75}>
     <Path d="M6 9l6 6 6-6" />

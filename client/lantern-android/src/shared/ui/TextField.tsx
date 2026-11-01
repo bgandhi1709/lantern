@@ -14,6 +14,7 @@ type Props = {
   // A secret: hidden as it is typed, never capitalised, corrected or offered to the keyboard's memory.
   secret?: boolean;
   error?: string;
+  numeric?: boolean;
   // For the Maestro flows, which find a field with no placeholder by its id.
   testID?: string;
 };
@@ -29,6 +30,7 @@ export function TextField({
   icon,
   secret = false,
   error,
+  numeric = false,
   testID,
 }: Props) {
   const colors = useColors();
@@ -48,12 +50,13 @@ export function TextField({
           placeholderTextColor={colors.textSecondary}
           maxLength={maxLength}
           secureTextEntry={secret}
-          autoCapitalize={secret ? 'none' : 'words'}
+          keyboardType={numeric ? 'number-pad' : 'default'}
+          autoCapitalize={secret || numeric ? 'none' : 'words'}
           autoCorrect={!secret}
           autoComplete="off"
           importantForAutofill={secret ? 'no' : 'auto'}
           returnKeyType="done"
-          className={`h-14 rounded-control border-2 border-field bg-card pr-4 font-inter-medium text-lead text-ink focus:border-primary-deep ${icon ? 'pl-12' : 'pl-4'}`}
+          className={`h-14 rounded-control border-2 border-field bg-card pr-4 font-inter-medium text-ink focus:border-primary-deep ${numeric ? 'text-center text-heading' : `text-lead ${icon ? 'pl-12' : 'pl-4'}`}`}
         />
       </View>
       {hint ? <Text className="mt-1 font-inter-medium text-small text-muted">{hint}</Text> : null}

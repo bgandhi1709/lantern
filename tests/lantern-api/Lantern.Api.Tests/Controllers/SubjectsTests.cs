@@ -103,7 +103,7 @@ public sealed class SubjectsTests(AzuriteFixture azurite) : IDisposable
         var family = await RegisterAsync(client, BoardType.Cbse, 3);
         var child = family.Children.Single();
         await FamilyManifestSeed.PutAsync(Family, family.FamilyId, (child.ChildId, 3, ClassThree));
-        Assert.Equal(HttpStatusCode.Accepted, (await client.DeleteAsync(ApiClientExtensions.Child(child.ChildId))).StatusCode);
+        Assert.Equal(HttpStatusCode.Accepted, (await client.DeleteChildAsync(child.ChildId)).StatusCode);
 
         var response = await client.GetAsync(SubjectsOf(child.ChildId));
 

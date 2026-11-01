@@ -29,6 +29,15 @@ internal sealed class ProblemExceptionHandler(ILogger<ProblemExceptionHandler> l
             case LanternErrorCode.AlreadyRegistered:
                 Log.AlreadyRegistered(logger);
                 break;
+            case LanternErrorCode.CodeWrong
+            or LanternErrorCode.CodeExpired
+            or LanternErrorCode.CodeTooSoon
+            or LanternErrorCode.CodeAttemptsUsed
+            or LanternErrorCode.ProofRequired
+            or LanternErrorCode.EmailNotSent
+            or LanternErrorCode.EmailNotVerified:
+                Log.CodeRefused(logger, failure.Code);
+                break;
             case LanternErrorCode.InvalidRequest:
                 Log.RegistrationInvalid(logger, failure.Message);
                 break;
@@ -71,6 +80,13 @@ internal sealed class ProblemExceptionHandler(ILogger<ProblemExceptionHandler> l
             LanternErrorCode.ClassNotAvailable => (HttpStatusCode.BadRequest, "class-not-available", "Class not available", "Lantern does not have books for this Class on the Family's Board yet."),
             LanternErrorCode.ContentNotReady => (HttpStatusCode.Conflict, "content-not-ready", "Content not ready", "This child's books are still being prepared. Try again shortly."),
             LanternErrorCode.InvalidPage => (HttpStatusCode.BadRequest, "invalid-page", "Invalid page", "The limit must be 1 to 100 and the cursor must be one this API returned."),
+            LanternErrorCode.CodeWrong => (HttpStatusCode.BadRequest, "code-wrong", "Wrong code", "That code is not right."),
+            LanternErrorCode.CodeTooSoon => (HttpStatusCode.TooManyRequests, "code-too-soon", "Too soon", "Wait a minute before asking for another code."),
+            LanternErrorCode.CodeAttemptsUsed => (HttpStatusCode.TooManyRequests, "code-attempts-used", "Too many tries", "Too many tries. Ask for a new code and wait a minute."),
+            LanternErrorCode.CodeExpired => (HttpStatusCode.Gone, "code-expired", "Code expired", "That code has expired. Ask for a new one."),
+            LanternErrorCode.ProofRequired => (HttpStatusCode.Forbidden, "proof-required", "Code required", "This needs a code from your email. Ask for a new one."),
+            LanternErrorCode.EmailNotSent => (HttpStatusCode.BadGateway, "email-not-sent", "Email not sent", "The email could not be sent. Try again in a minute."),
+            LanternErrorCode.EmailNotVerified => (HttpStatusCode.Forbidden, "email-not-verified", "Email not verified", "The email on this Google account is not verified."),
             LanternErrorCode.FamilyChanged => (HttpStatusCode.Conflict, "family-changed", "Family changed", "The family changed at the same moment; try again."),
             _ => throw new InvalidOperationException($"No problem mapping for {failure.Code}."),
         };

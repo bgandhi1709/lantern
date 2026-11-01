@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { signOutOfLantern } from '../auth';
 import { MAX_CHILDREN } from '../registration';
 import { tapped, useTrackScreen } from '../shared/analytics';
 import type { Board } from '../registration';
+import { onFamilyChanged } from '../shared/lifecycle/familyChanged';
 import { getParent } from '../shared/session';
 import { dayPartAt, firstNameOf } from './greeting';
 import { HomeView } from './HomeView';
@@ -31,6 +32,8 @@ export function HomeScreen({
   const home = useHome();
   useRetryOnReturn(home.locked, home.retry);
   useActiveChildOnReturn(home.activeChild?.id ?? null, home.children, home.switchTo, home.reload);
+  const reloadFamily = home.reload;
+  useEffect(() => onFamilyChanged(reloadFamily), [reloadFamily]);
   const banner = useWelcomeBanner();
   const [sheetOpen, setSheetOpen] = useState(false);
 

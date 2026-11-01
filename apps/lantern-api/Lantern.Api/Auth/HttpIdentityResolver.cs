@@ -20,7 +20,8 @@ internal sealed class HttpIdentityResolver(IHttpContextAccessor accessor) : IIde
                 : new CallerIdentity(
                     uid,
                     principal.FindFirstValue("name") ?? string.Empty,
-                    principal.FindFirstValue("email") ?? string.Empty
+                    principal.FindFirstValue("email") ?? string.Empty,
+                    bool.TryParse(principal.FindFirstValue("email_verified"), out var verified) && verified
                 );
         }
     }

@@ -1,4 +1,5 @@
 using System.Net.Http.Headers;
+using System.Text.RegularExpressions;
 using System.Net.Http.Json;
 using Lantern.Api.Models;
 using Lantern.Core.Constants;
@@ -8,11 +9,22 @@ namespace Lantern.Api.Test.Integration.E2E;
 // Talks to the API in the local Docker stack (deploy/local) over HTTPS: no WebApplicationFactory, no Azurite client, no
 // key wrapper. Signs in as a fresh Auth Emulator user and registers one family; the stack's volumes hold the rows,
 // so there is nothing to clean up.
+public sealed class OutboxEmail
+{
+    public string Recipient { get; set; } = string.Empty;
+
+    public string Text { get; set; } = string.Empty;
+}
+
 public sealed class RegisteredFamilyFixture : IAsyncLifetime
 {
     private static readonly Uri RegisterUri = new("/v1/register", UriKind.Relative);
+    private static readonly Uri SecurityCodeUri = new("/v1/security/code", UriKind.Relative);
+    private static readonly Uri VerifyUri = new("/v1/security/code/verify", UriKind.Relative);
 
     public HttpClient Client { get; private set; } = null!;
+
+    public string Email { get; private set; } = null!;
 
     public HttpResponseMessage RegisterResponse { get; private set; } = null!;
 
@@ -20,7 +32,9 @@ public sealed class RegisteredFamilyFixture : IAsyncLifetime
 
     public async ValueTask InitializeAsync()
     {
-        var idToken = await EmulatorTokens.MintAsync(RequireEnv("E2E_AUTH_EMULATOR"), $"e2e-{Guid.NewGuid():N}");
+        var uid = $"e2e-{Guid.NewGuid():N}";
+        Email = $"{uid}@lantern.local";
+        var idToken = await EmulatorTokens.MintAsync(RequireEnv("E2E_AUTH_EMULATOR"), uid);
 
         Client = new HttpClient { BaseAddress = new Uri(RequireEnv("E2E_BASE_URL")) };
         Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", idToken);
@@ -61,6 +75,38 @@ public sealed class RegisteredFamilyFixture : IAsyncLifetime
                 },
             ],
         };
+
+    public async Task<HttpResponseMessage> DeleteChildWithCodeAsync(Guid childId)
+    {
+        var requested = await Client.PostAsJsonAsync(SecurityCodeUri, new { operation = "delete-child", target = childId });
+        requested.EnsureSuccessStatusCode();
+        var challenge = (await requested.Content.ReadFromJsonAsync<CodeChallengeModel>())!.Challenge;
+
+        var verified = await Client.PostAsJsonAsync(VerifyUri, new { challenge, code = await EmailedCodeAsync() });
+        verified.EnsureSuccessStatusCode();
+        var proof = (await verified.Content.ReadFromJsonAsync<CodeProofModel>())!.Proof;
+
+        return await DeleteChildAsync(childId, proof);
+    }
+
+    public Task<HttpResponseMessage> DeleteChildAsync(Guid childId, string proof)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Delete, new Uri($"/v1/family/children/{childId}", UriKind.Relative));
+
+        if (proof is not null)
+        {
+            request.Headers.Add("Lantern-Code-Proof", proof);
+        }
+
+        return Client.SendAsync(request);
+    }
+
+    public async Task<string> EmailedCodeAsync()
+    {
+        var emails = await Client.GetFromJsonAsync<List<OutboxEmail>>(new Uri($"/dev/outbox?to={Uri.EscapeDataString(Email)}", UriKind.Relative));
+
+        return Regex.Match(emails!.Last().Text, "[0-9]{6}").Value;
+    }
 
     private static string RequireEnv(string name) =>
         Environment.GetEnvironmentVariable(name)

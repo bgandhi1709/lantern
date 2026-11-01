@@ -17,13 +17,19 @@ using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 namespace Lantern.Api.Tests.Infrastructure;
 
 // Only the signing-key source is replaced; issuer, audience, lifetime and signature checks are the production settings.
-public sealed class LanternApiFactory(string connectionString) : WebApplicationFactory<Program>
+public sealed class LanternApiFactory(string connectionString, IReadOnlyDictionary<string, string> settings = null) : WebApplicationFactory<Program>
 {
     private int delivered;
 
     public CapturingLoggerProvider Logs { get; } = new();
 
     public RecordingPublishingService Sender { get; } = new();
+
+    public RecordingEmailService Emails { get; } = new();
+
+    public FixedCodeGenerator Codes { get; } = new();
+
+    public TestClock Clock { get; } = new();
 
     public async Task DeliverAsync()
     {
@@ -41,7 +47,11 @@ public sealed class LanternApiFactory(string connectionString) : WebApplicationF
         builder.UseSetting("Firebase:ProjectId", TestTokens.ProjectId);
         builder.UseSetting("Storage:ConnectionString", connectionString);
         // The fixed values are in appsettings.Testing.json; only what the test run decides is set here.
-        builder.ConfigureAppConfiguration(config => config.AddJsonFile(TestSettings.FilePath, optional: false));
+        builder.ConfigureAppConfiguration(config =>
+        {
+            config.AddJsonFile(TestSettings.FilePath, optional: false);
+            config.AddInMemoryCollection(settings ?? new Dictionary<string, string>());
+        });
 
         builder.ConfigureLogging(logging => logging.AddProvider(Logs));
 
@@ -50,6 +60,9 @@ public sealed class LanternApiFactory(string connectionString) : WebApplicationF
             // The start-up resend is run by the tests that cover it.
             services.RemoveAll<IHostedService>();
             services.AddSingleton<IPublishingService>(Sender);
+            services.AddSingleton<IEmailService>(Emails);
+            services.AddSingleton<IOneTimeCodeGenerator>(Codes);
+            services.AddSingleton<TimeProvider>(Clock);
             // The Functions app's handlers, so a test can deliver what the API sent.
             services.AddLanternFunctions();
             services.PostConfigure<JwtBearerOptions>(

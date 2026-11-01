@@ -151,6 +151,7 @@ export const en = {
           text: [
             'Your phone makes a recovery code for your Family, and you email it to yourself. It cannot be reset. If you lose the email and this phone, nobody, including Lantern, can open the locked details.',
             'Deleting your Family erases everything stored for it.',
+            'When you delete a child or your Family, Lantern emails a 6-digit code to the address on your Google account, through Microsoft Azure Communication Services. That service handles your address only to send that one email. Lantern does not keep the code.',
           ],
         },
         {
@@ -324,7 +325,6 @@ export const en = {
     failed: 'Could not delete your Family. Nothing was changed. Try again.',
   },
   appearance: {
-    title: 'Appearance',
     unlockRow: {
       title: 'Unlock your Family',
       text: 'This phone does not hold your Family yet.',
@@ -362,6 +362,79 @@ export const en = {
       next: 'Next step',
     },
     savedNote: 'Saved on this phone only. Signing out keeps these.',
+  },
+  deleteChild: {
+    heading: 'Delete a child',
+    intro: 'Choose the child to remove. Your other Children stay.',
+    choiceLabel: 'Child to delete',
+    loading: 'Loading your Children…',
+    loadFailed: 'Could not load your Family. Try again.',
+    onlyChild: {
+      heading: 'Your Family needs at least one child',
+      text: 'The last child cannot be deleted on their own. To remove everything, delete the Family.',
+      action: 'Delete Family',
+    },
+    warningHeading: (name: string) => `This erases ${name}’s data for good`,
+    warning: (name: string) =>
+      `${name}’s Plans, Checks, marks and progress are deleted from Lantern. This cannot be undone and nothing can be recovered.`,
+    nameLabel: (name: string) => `Type ${name} to confirm`,
+    nameHint: 'Type the name exactly as shown, with the same capital letters.',
+    emailNote: (email: string) =>
+      `Next, we email a 6-digit code to ${email}. Deleting needs that code.`,
+    sendCode: 'Email me a code',
+    sending: 'Sending…',
+    cancel: 'Cancel',
+    codeHeading: 'Check your email',
+    codeIntro: (email: string) =>
+      `We emailed a 6-digit code to ${email}. Type it to delete the child you chose.`,
+    codeLabel: 'Code',
+    codeHint: 'Check your inbox for "Your Lantern one-time code".',
+    checking: 'Checking the code…',
+    verified: 'Code verified',
+    resend: 'Email me a new code',
+    resending: 'Sending a new code…',
+    resent: 'A new code is on its way',
+    delete: 'Delete child',
+    deleting: 'Deleting…',
+    failures: {
+      wrongCode: 'That code is not right. Check it and try again.',
+      codeExpired: 'That code has expired. Email yourself a new one.',
+      tooManyTries: 'Too many wrong tries. Email yourself a new code.',
+      tooSoon: 'Please wait a minute before asking for another code.',
+      emailNotVerified: 'Your Google email is not verified, so Lantern cannot send a code.',
+      emailNotSent: 'We could not send the email. Try again.',
+      unreachable: 'Could not reach Lantern. Check your connection and try again.',
+      other: 'Something went wrong. Nothing was deleted. Try again.',
+    },
+  },
+  settings: {
+    title: 'Settings',
+    searchLabel: 'Search settings',
+    clearSearch: 'Clear search',
+    clearSearchBox: 'Clear the search box',
+    noMatch: (query: string) => `No settings match "${query}"`,
+    noMatchHint: 'Try a shorter word, like theme, text or delete.',
+    rowLabel: (title: string, value: string) => `${title}, ${value}`,
+    groups: { app: 'App settings', family: 'Family management' },
+    previewValue: 'A lesson step',
+    deleteChildRow: {
+      title: 'Delete a child',
+      text: 'Remove one child and all their data.',
+    },
+    deleteFamilyRow: {
+      title: 'Delete Family',
+      text: 'Erase the whole Family and every child. This cannot be undone.',
+    },
+    keywords: {
+      theme: 'theme dark light evening night appearance',
+      textSize: 'text size font large largest bigger default accessibility appearance',
+      colour: 'colour color scheme teal blue gray golden accent appearance',
+      preview: 'preview sample lesson step appearance',
+      unlock: 'unlock your family recovery code key phone',
+      deleteChild: 'delete a child remove erase data family management',
+      deleteFamily: 'delete family erase everything remove account family management',
+      startAgain: 'start again lost recovery code reset register new family management',
+    },
   },
 };
 

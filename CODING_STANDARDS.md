@@ -77,7 +77,7 @@ its "Reuse or create" table. Review a change against the recipe it should have f
 - **Family scope** comes only from `IIdentityResolver` through `ServiceBase.FamilyIdAsync`, and a model's `FamilyId`
   is overwritten from it on every write.
 - **Locked values** are stored and returned as sent. The server never encrypts or decrypts a personal field and holds no
-  Family key (ADR-0010). The only crypto is the uid hash in `CryptoService`.
+  Family key (ADR-0010). Crypto primitives are used only by `CryptoService` and the code generator (an architecture test enforces it): a feature calls `Hash`, `Seal` and `Open`. Nothing encrypts a personal field and no key opens one.
 
 ### 6. Registration (DI)
 
@@ -145,7 +145,7 @@ defaults, suffixes, one type per file, namespaces). Review the rest.
 - A fixed set of values is an enum, not a static class of string constants. A static class is only for constants and
   pure framework extension methods, never for logic: logic sits behind an injected interface.
 - Keep classes short and single-purpose.
-- No comments, in any language. A comment means the code is too complicated: rename, extract or simplify until a senior
+- No comments, in any language (`scripts/check-no-new-comments.sh` fails a commit that adds one). A comment means the code is too complicated: rename, extract or simplify until a senior
   engineer reads it without one. The reason for a decision goes in the ADR or the decision log, not in the code.
 - Do not add checks that the platform already enforces (for example, what JwtBearer validates).
 

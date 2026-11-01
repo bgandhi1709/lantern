@@ -60,6 +60,16 @@ The release sets the real images and the API's port by deploying this template w
 images and port itself; `infra-check` reads the running ones (`keep-running-image.sh`) so its what-if never shows the
 placeholder coming back.
 
+### The One-time code email (`acs-connection-string`)
+
+The One-time code ([ADR-0019](../docs/adr/0019-one-time-code-emailed-through-azure.md), D125) is emailed through Azure Communication Services. `main.bicep` creates the Email Communication Service `email-lantern-uat`, Azure's managed domain on it, and the Communication Service `acs-lantern-uat` linked to that domain. It also writes the service's connection string to the Key Vault secret `acs-connection-string` (the name is `keyVault.acsConnectionStringSecret`), so nothing is pasted by hand. The API reads it as `Email__ConnectionString` and sends from `DoNotReply@<managed domain>` (`Email__Sender`). The data location is `emailDataLocation` in the bicepparam (`India`); if Azure refuses it for email, change that one value.
+
+Azure has no built-in role that lets an identity send email with Entra sign-in short of Contributor, so the API signs in with the connection string. The managed domain is for testing: it is rate limited and its mail may land in spam. Before real Families add a custom domain to the same Email Communication Service (SPF and DKIM records) and change `Email__Sender`; no code changes. Re-run `infra/bootstrap.sh` once so the `Microsoft.Communication` provider is registered; the preflight fails with that fix if it is not.
+
+### Watching and inspecting UAT
+
+`scripts/watch-uat.sh queues|api|functions` follows the CloudAMQP queues (read with the `amqp-url` secret, never printed) and the two apps' console logs, and reconnects when the app redeploys or scales to zero. `scripts/uat-family.sh show` lists the rows and Workspace blobs UAT stores. `scripts/uat-family.sh delete <familyId>` is a dry run until `UAT_CONFIRM=<familyId>` is set, and it never touches the Board content in `ncert` and `ssc`. Both need `az login`.
+
 ## 3. GitHub Actions
 
 There is one workflow, `.github/workflows/api.yml`, and it runs when `apps/lantern-api/**` or `infra/**` changes.
