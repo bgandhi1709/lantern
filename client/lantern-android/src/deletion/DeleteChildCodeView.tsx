@@ -1,4 +1,4 @@
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Pressable, ScrollView, Text, View } from 'react-native';
 
 import { useStrings } from '../shared/i18n';
 import { BackButton } from '../shared/ui/BackButton';
@@ -38,46 +38,48 @@ export function DeleteChildCodeView(props: Props) {
 
   return (
     <View className="flex-1 bg-ground px-6 pb-safe pt-safe">
-      <View className="h-16 flex-row items-center">
-        <BackButton onBack={props.onBack} />
-      </View>
-      <ScrollView contentContainerClassName="gap-4 pb-3 pt-1" keyboardShouldPersistTaps="handled">
-        <View className="gap-2">
-          <Text accessibilityRole="header" className="font-inter-bold text-heading text-ink">
-            {strings.codeHeading}
-          </Text>
-          <Text className="font-inter-medium text-body text-muted">
-            {strings.codeIntro(props.email)}
-          </Text>
+      <KeyboardAvoidingView behavior="padding" className="flex-1">
+        <View className="h-16 flex-row items-center">
+          <BackButton onBack={props.onBack} />
         </View>
-        <TextField
-          numeric
-          label={strings.codeLabel}
-          hint={hint}
-          value={props.code}
-          onChangeText={props.onTypeCode}
-          maxLength={CODE_LENGTH}
-        />
-        <FailureText failure={props.failure} />
-        <Pressable
-          accessibilityRole="button"
-          onPress={props.onResend}
-          disabled={props.work !== null}
-          className="min-h-12 justify-center"
-        >
-          <Text className="font-inter-bold text-body text-primary-deep underline">
-            {strings.resend}
-          </Text>
-        </Pressable>
-      </ScrollView>
-      <View className="gap-3 pb-6 pt-2">
-        <PrimaryButton
-          label={deleting ? strings.deleting : strings.delete}
-          onPress={props.onDelete}
-          disabled={!props.verified || deleting}
-        />
-        <OutlineButton label={strings.cancel} onPress={props.onCancel} />
-      </View>
+        <ScrollView contentContainerClassName="gap-4 pb-3 pt-1" keyboardShouldPersistTaps="handled">
+          <View className="gap-2">
+            <Text accessibilityRole="header" className="font-inter-bold text-heading text-ink">
+              {strings.codeHeading}
+            </Text>
+            <Text className="font-inter-medium text-body text-muted">
+              {strings.codeIntro(props.email)}
+            </Text>
+          </View>
+          <TextField
+            numeric
+            label={strings.codeLabel}
+            hint={hint}
+            value={props.code}
+            onChangeText={props.onTypeCode}
+            maxLength={CODE_LENGTH}
+          />
+          <FailureText failure={props.failure} />
+          <Pressable
+            accessibilityRole="button"
+            onPress={props.onResend}
+            disabled={props.work !== null}
+            className="min-h-12 justify-center"
+          >
+            <Text className="font-inter-bold text-body text-primary-deep underline">
+              {strings.resend}
+            </Text>
+          </Pressable>
+        </ScrollView>
+        <View className="gap-3 pb-6 pt-2">
+          <PrimaryButton
+            label={deleting ? strings.deleting : strings.delete}
+            onPress={props.onDelete}
+            disabled={!props.verified || deleting}
+          />
+          <OutlineButton label={strings.cancel} onPress={props.onCancel} />
+        </View>
+      </KeyboardAvoidingView>
     </View>
   );
 }
