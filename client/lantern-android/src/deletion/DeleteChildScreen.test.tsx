@@ -343,6 +343,50 @@ describe('Delete a child: the emailed code', () => {
     expect(deleteButton()).toBeDisabled();
   });
 
+  it('clears the old code and says a new one is being sent the moment Email me a new code is pressed, before the API answers', async () => {
+    const { user } = await openScreen();
+    await reachCodeStep(user);
+    await user.type(codeField(), '482917');
+    await screen.findByText('Code verified');
+    let answer: (value: { challenge: string }) => void = () => undefined;
+    post.mockImplementation(
+      (path: string) =>
+        new Promise((resolve) => {
+          if (path === REQUEST) answer = resolve;
+        }),
+    );
+
+    await user.press(screen.getByRole('button', { name: 'Email me a new code' }));
+
+    expect(screen.getByText('Sending a new code…')).toBeOnTheScreen();
+    expect(screen.queryByText('Code verified')).not.toBeOnTheScreen();
+    expect(codeField()).toHaveDisplayValue('');
+    expect(deleteButton()).toBeDisabled();
+
+    await act(async () => answer({ challenge: 'second-challenge' }));
+
+    expect(await screen.findByText('A new code is on its way')).toBeOnTheScreen();
+    expect(screen.queryByText('Sending a new code…')).not.toBeOnTheScreen();
+  });
+
+  it('clears the old failure when a new code is asked for', async () => {
+    post.mockImplementation(async (path: string) => {
+      if (path === VERIFY) throw new ApiError('code-expired', 410);
+      return { challenge: CHALLENGE };
+    });
+    const { user } = await openScreen();
+    await reachCodeStep(user);
+    await user.type(codeField(), '482917');
+    await screen.findByText('That code has expired. Email yourself a new one.');
+
+    await user.press(screen.getByRole('button', { name: 'Email me a new code' }));
+
+    expect(await screen.findByText('A new code is on its way')).toBeOnTheScreen();
+    expect(
+      screen.queryByText('That code has expired. Email yourself a new one.'),
+    ).not.toBeOnTheScreen();
+  });
+
   it('checks a new code against the new challenge, not the old one', async () => {
     post.mockImplementation(async (path: string) =>
       path === VERIFY

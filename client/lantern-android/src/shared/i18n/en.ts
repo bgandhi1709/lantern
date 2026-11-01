@@ -392,6 +392,7 @@ export const en = {
     checking: 'Checking the code…',
     verified: 'Code verified',
     resend: 'Email me a new code',
+    resending: 'Sending a new code…',
     resent: 'A new code is on its way',
     delete: 'Delete child',
     deleting: 'Deleting…',

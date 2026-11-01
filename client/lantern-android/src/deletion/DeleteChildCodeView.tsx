@@ -32,9 +32,11 @@ export function DeleteChildCodeView(props: Props) {
     ? strings.verified
     : props.work === 'verifying'
       ? strings.checking
-      : props.resent
-        ? strings.resent
-        : strings.codeHint;
+      : props.work === 'requesting'
+        ? strings.resending
+        : props.resent
+          ? strings.resent
+          : strings.codeHint;
 
   return (
     <View className="flex-1 bg-ground px-6 pb-safe pt-safe">

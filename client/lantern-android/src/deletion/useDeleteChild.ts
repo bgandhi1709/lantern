@@ -59,6 +59,12 @@ export function useDeleteChild(onDeleted: () => void) {
   const emailCode = (again: boolean) =>
     picked &&
     run('requesting', async () => {
+      if (again) {
+        latestCode.current = '';
+        setCode('');
+        setProof(null);
+        setResent(false);
+      }
       const issued = await requestCode({ operation: 'delete-child', target: picked.id });
       if (!mounted.current) return;
       challenge.current = issued;
