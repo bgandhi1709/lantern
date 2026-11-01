@@ -1,9 +1,14 @@
+using Lantern.Core.Constants;
+
 namespace Lantern.Api.Logging;
 
 internal static partial class Log
 {
     [LoggerMessage(EventId = 1001, Level = LogLevel.Warning, Message = "Rejected an ID token: {Reason}")]
     internal static partial void TokenInvalid(ILogger logger, string reason);
+
+    [LoggerMessage(EventId = 1020, Level = LogLevel.Information, Message = "A one-time code step was refused: {Reason}")]
+    internal static partial void CodeRefused(ILogger logger, LanternErrorCode reason);
 
     [LoggerMessage(EventId = 1002, Level = LogLevel.Warning, Message = "Registration refused: this account is already registered")]
     internal static partial void AlreadyRegistered(ILogger logger);

@@ -29,6 +29,15 @@ internal sealed class ProblemExceptionHandler(ILogger<ProblemExceptionHandler> l
             case LanternErrorCode.AlreadyRegistered:
                 Log.AlreadyRegistered(logger);
                 break;
+            case LanternErrorCode.CodeWrong
+            or LanternErrorCode.CodeExpired
+            or LanternErrorCode.CodeTooSoon
+            or LanternErrorCode.CodeAttemptsUsed
+            or LanternErrorCode.ProofRequired
+            or LanternErrorCode.EmailNotSent
+            or LanternErrorCode.EmailNotVerified:
+                Log.CodeRefused(logger, failure.Code);
+                break;
             case LanternErrorCode.InvalidRequest:
                 Log.RegistrationInvalid(logger, failure.Message);
                 break;

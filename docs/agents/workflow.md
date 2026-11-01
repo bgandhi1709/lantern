@@ -1,6 +1,6 @@
 # Working cycle
 
-One issue, one pass through these steps. Work inline: no subagents unless the user asks for one by name.
+One issue, one pass through these steps. Work inline: no subagents unless the user asks for one by name. `/code-review` (step 6b) is the one skill that runs subagents, by design; `/security-review` runs inline.
 
 Work under `client/` (the Expo app) follows `docs/agents/app-workflow.md` instead.
 
@@ -13,6 +13,7 @@ Work under `client/` (the Expo app) follows `docs/agents/app-workflow.md` instea
 | 4 | Implement | Re-read the recipe being followed before its first edit, and follow its steps in order. `/implement`, driving `/tdd` one red-green slice at a time. Build and run single tests as you go, the full suite once at the end. | Commits on the branch |
 | 5 | Verify | Start from a clean slate (see below). `/verify` against local Docker, in the real working tree: a scratch copy proves nothing about what the user builds. Old files a restructure leaves behind move to `~/lantern-stale/` before the build. The full suite includes the architecture tests (`Lantern.Api.Tests/Architecture`). Write down every test scenario. | Scenario list |
 | 6 | Security | `/security-review` on the branch diff, before the PR. Fix findings in the same branch. Check the security rules in `CODING_STANDARDS.md`, including its abuse cases: for anything touching sign-in, keys or a Family's data, write who holds what and what each may get, and give each row a test or a recorded accepted cost. | Findings fixed or recorded |
+| 6b | Code review | `/code-review origin/main` on the whole branch: Standards and Spec reviewers in parallel. Fix every hard violation and every unrecorded spec deviation in the same branch; a rule the code has outgrown is amended with a decision-log entry, never worked around. List the judgement calls you left, and why, in the PR. | Reviewers' findings fixed or recorded |
 | 7 | PR | `/pr` with the scenarios and acceptance criteria. Edit a PR description only after the commit it describes is pushed. | PR |
 | 8 | Doc sync | Root `README.md` (Status: one line per area, the whole file under 5,000 characters; detail goes in the ADRs, the decision log and the area READMEs), `docs/ideation/decision-log.md`, ADRs, any README or skill the change touches. | Docs match the code |
 | 9 | Review | User reviews on GitHub. Fix, reply as Claude, resolve the threads. | Resolved threads |
@@ -26,9 +27,12 @@ Skip `/to-spec` and `/to-tickets` at this scope. Use them only when the work spa
 A stale emulator, Metro cache, installed app or Docker image shows old code, and each restart costs a verify. So a verify begins with nothing running and ends with nothing running.
 
 - **Start:** for app work run `scripts/verify-env.sh up`. It tears everything down first, then starts the Docker stack, one emulator, one Metro with `--clear` and a fresh install of the app. For API-only work, `docker compose -f deploy/local/docker-compose.yml down` before `/verify` does the same.
-- **Change code mid-verify:** the same `up`, not a patch of the running pieces. A phone showing the old screen means Metro served a cached bundle; restart Metro with `--clear`.
+- **Change code mid-verify:** for a JS-only change run `scripts/verify-env.sh metro` (Metro restarts with `--clear` and the app reopens). For anything native, or an API change, run `up` again. A phone showing the old screen means Metro served a cached bundle: run `metro`. If it keeps happening, run `sudo scripts/raise-inotify-limit.sh` once.
+- **Local stack only:** `up` and `metro` export the local API and Auth emulator addresses themselves, so `client/lantern-android/.env` (which may name UAT) does not decide where a local verify points.
+- **Watching UAT:** `scripts/watch-uat.sh queues|api|functions` follows CloudAMQP and the two apps' logs. `scripts/uat-family.sh show` lists what UAT stores; its `delete` is a dry run until `UAT_CONFIRM=<familyId>` is set.
 - **Clean up:** after the PR is created run `scripts/verify-env.sh down --deep`. It stops Metro and the emulator, uninstalls the app, takes the Docker stack down, removes this stack's own images and the whole build cache (other projects' images stay), deletes Metro's cache and prints the disk left. The next `up` pulls the base images again (about 2.5 GB); plain `down` keeps them.
-- Start every long-lived process you launch (emulator, Metro) with `setsid nohup`, and stop Metro by its port. `pkill -f` kills your own shell whenever its pattern appears in your own command line, so match a process by PID, or by a pattern your command line does not contain.
+- Start every long-lived process you launch (emulator, Metro) with `setsid nohup`, and stop one by PID: `kill $(pgrep -f '[n]ame')`, where the brackets keep the pattern out of your own command line. A hook rejects `pkill -f` and `killall`.
+- Maestro owns the emulator's accessibility service, so run no `adb uiautomator` while it works, and filter a log monitor to one tag.
 
 ## Divergence guard
 

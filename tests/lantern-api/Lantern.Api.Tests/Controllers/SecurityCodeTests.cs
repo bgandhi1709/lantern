@@ -198,6 +198,44 @@ public sealed class SecurityCodeTests(AzuriteFixture azurite) : IDisposable
         Assert.DoesNotContain("a-target-id", email.Text + email.Subject, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task RequestAndVerify_LeaveATraceByOperation_ButNeverTheCode()
+    {
+        using var client = await RegisteredAsync();
+        var child = (await MeAsync(client)).Children[0].ChildId;
+        var challenge = await ChallengeAsync(client, child);
+
+        await client.PostAsJsonAsync(ApiClientExtensions.VerifyCode, new { challenge, code = FixedCodeGenerator.Code });
+
+        Assert.Contains(factory.Logs.Entries, entry => entry.Contains("one-time code was sent for delete-child", StringComparison.Ordinal));
+        Assert.Contains(factory.Logs.Entries, entry => entry.Contains("one-time code was proven for delete-child", StringComparison.Ordinal));
+        Assert.DoesNotContain(factory.Logs.Entries, entry => entry.Contains(FixedCodeGenerator.Code, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task Verify_AfterFiveMinutes_LogsTheRefusalByReason()
+    {
+        using var client = await RegisteredAsync();
+        var challenge = await ChallengeAsync(client, (await MeAsync(client)).Children[0].ChildId);
+        factory.Clock.Advance(TimeSpan.FromMinutes(5).Add(TimeSpan.FromSeconds(1)));
+
+        await client.PostAsJsonAsync(ApiClientExtensions.VerifyCode, new { challenge, code = FixedCodeGenerator.Code });
+
+        Assert.Contains(factory.Logs.Entries, entry => entry.Contains("refused: CodeExpired", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task Request_WithAnEmailThatIsNotVerified_LogsTheRefusalByReason_NotTheAddress()
+    {
+        using var client = await RegisteredAsync(emailVerified: false);
+        var child = (await MeAsync(client)).Children[0].ChildId;
+
+        await client.PostAsJsonAsync(ApiClientExtensions.SecurityCode, ChildScope(child));
+
+        Assert.Contains(factory.Logs.Entries, entry => entry.Contains("refused: EmailNotVerified", StringComparison.Ordinal));
+        Assert.DoesNotContain(factory.Logs.Entries, entry => entry.Contains(VerifiedEmail, StringComparison.Ordinal));
+    }
+
     private static async Task<string> ChallengeAsync(HttpClient client, Guid childId)
     {
         var response = await client.PostAsJsonAsync(ApiClientExtensions.SecurityCode, ChildScope(childId));

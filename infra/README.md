@@ -66,6 +66,10 @@ The One-time code ([ADR-0019](../docs/adr/0019-one-time-code-emailed-through-azu
 
 Azure has no built-in role that lets an identity send email with Entra sign-in short of Contributor, so the API signs in with the connection string. The managed domain is for testing: it is rate limited and its mail may land in spam. Before real Families add a custom domain to the same Email Communication Service (SPF and DKIM records) and change `Email__Sender`; no code changes. Re-run `infra/bootstrap.sh` once so the `Microsoft.Communication` provider is registered; the preflight fails with that fix if it is not.
 
+### Watching and inspecting UAT
+
+`scripts/watch-uat.sh queues|api|functions` follows the CloudAMQP queues (read with the `amqp-url` secret, never printed) and the two apps' console logs, and reconnects when the app redeploys or scales to zero. `scripts/uat-family.sh show` lists the rows and Workspace blobs UAT stores. `scripts/uat-family.sh delete <familyId>` is a dry run until `UAT_CONFIRM=<familyId>` is set, and it never touches the Board content in `ncert` and `ssc`. Both need `az login`.
+
 ## 3. GitHub Actions
 
 There is one workflow, `.github/workflows/api.yml`, and it runs when `apps/lantern-api/**` or `infra/**` changes.

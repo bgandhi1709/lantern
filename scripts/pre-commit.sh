@@ -10,6 +10,23 @@ cd "$(git rev-parse --show-toplevel)"
 
 staged=$(git diff --cached --name-only --diff-filter=ACMR)
 
+# Prints only the summary lines when the command passes, and everything when it fails.
+quietly() {
+  local summary=$1 log
+  shift
+  log=$(mktemp)
+  if "$@" >"$log" 2>&1; then
+    grep -E "$summary" "$log" || true
+    rm -f "$log"
+  else
+    cat "$log" >&2
+    rm -f "$log"
+    return 1
+  fi
+}
+
+scripts/check-no-new-comments.sh
+
 if grep -qE '\.(cs|csproj|props|slnx|editorconfig)$|^NuGet.config$|^global.json$' <<<"$staged"; then
   echo "pre-commit: .NET changes. Build (warnings are errors, no unused usings), format, unit tests"
   command -v azurite >/dev/null || { echo "azurite is not on PATH: npm install -g azurite@3 (the storage tests need it)" >&2; exit 1; }
@@ -19,7 +36,7 @@ if grep -qE '\.(cs|csproj|props|slnx|editorconfig)$|^NuGet.config$|^global.json$
     exit 1
   }
   # The E2E tests need the Docker stack and run in CI's e2e-docker job. Exit code 8 is an assembly with no tests left.
-  dotnet test --solution Lantern.slnx --no-build --filter-not-trait "Category=E2E" --ignore-exit-code 8
+  quietly '^[[:space:]]+(total|failed):' dotnet test --solution Lantern.slnx --no-build --filter-not-trait "Category=E2E" --ignore-exit-code 8
 fi
 
 if grep -q '^client/lantern-android/' <<<"$staged"; then
@@ -28,5 +45,5 @@ if grep -q '^client/lantern-android/' <<<"$staged"; then
   npm run typecheck --silent
   npm run lint --silent
   npm run format:check --silent
-  npm test --silent
+  quietly '^Tests?( Suites)?:' npm test --silent
 fi

@@ -1,10 +1,12 @@
 using System.Globalization;
+using Lantern.Base.Logging;
 using Lantern.Core.Constants;
 using Lantern.Core.Exceptions;
 using Lantern.Core.Identity;
 using Lantern.Core.Models;
 using Lantern.Core.Security;
 using Lantern.Core.Service;
+using Microsoft.Extensions.Logging;
 
 namespace Lantern.Base.Services;
 
@@ -13,7 +15,8 @@ internal sealed class OneTimeCodeService(
     ICryptoService crypto,
     IOneTimeCodeGenerator generator,
     IEmailService email,
-    TimeProvider clock
+    TimeProvider clock,
+    ILogger<OneTimeCodeService> logger
 ) : IOneTimeCodeService
 {
     private const string ChallengePurpose = "code-challenge";
@@ -37,6 +40,7 @@ internal sealed class OneTimeCodeService(
         var challenge = crypto.Seal(ChallengePurpose, TokenFor(operation, target ?? string.Empty, ChallengeLife), code);
 
         await email.SendAsync(caller.Email, EmailSubject, EmailText(code), cancellationToken);
+        BaseLog.CodeIssued(logger, operation);
 
         return challenge;
     }
@@ -54,6 +58,8 @@ internal sealed class OneTimeCodeService(
         {
             throw new LanternException(LanternErrorCode.CodeExpired);
         }
+
+        BaseLog.CodeProven(logger, token.Operation);
 
         return crypto.Seal(ProofPurpose, TokenFor(token.Operation, token.Target, ProofLife), string.Empty);
     }

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # One clean slate for verifying the Parent app: local Docker, one emulator, one Metro, a fresh install.
 #   scripts/verify-env.sh up      tear everything down, then start it all fresh
+#   scripts/verify-env.sh metro   restart only Metro (--clear) and reopen the app: the way to pick up a JS-only change
 #   scripts/verify-env.sh down    stop it all and free the disk (run it after the PR is created)
 #   scripts/verify-env.sh down --deep   also remove the base images (a re-pull costs about 2.5 GB)
 set -euo pipefail
@@ -16,6 +17,8 @@ PACKAGE=com.lantern.app
 METRO_PORT=8081
 POLL_SECONDS=5
 EMULATOR_EXIT_SECONDS=3
+METRO_EXIT_SECONDS=2
+FLOWS_COMMIT=2be06af
 API_TIMEOUT_SECONDS=300
 EMULATOR_BOOT_TIMEOUT_SECONDS=450
 METRO_TIMEOUT_SECONDS=120
@@ -64,9 +67,44 @@ wait_for() { # <description> <timeout seconds> <command...>
 emulator_booted() { [ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = 1 ]; }
 api_live() { [ "$(curl -sk -o /dev/null -w '%{http_code}' --max-time 3 https://local.lantern.api/health/live)" = 200 ]; }
 
+use_local_stack() {
+  export EXPO_PUBLIC_API_BASE_URL=https://10.0.2.2 EXPO_PUBLIC_FIREBASE_AUTH_EMULATOR=10.0.2.2:9099
+}
+
+restore_flows() {
+  local tmp
+  tmp=$(mktemp -d)
+  mkdir -p "$APP/.maestro"
+  git -C "$ROOT" archive "$FLOWS_COMMIT" client/lantern-android/.maestro | tar -x -C "$tmp"
+  cp --update=none "$tmp"/client/lantern-android/.maestro/* "$APP/.maestro/"
+  rm -rf "$tmp"
+}
+
+start_metro() {
+  mkdir -p "$LOGS"
+  cd "$APP"
+  use_local_stack
+  CI=1 setsid nohup npx expo start --dev-client --port "$METRO_PORT" --clear >"$LOGS/metro.log" 2>&1 &
+  wait_for "Metro" "$METRO_TIMEOUT_SECONDS" grep -q "Waiting on" "$LOGS/metro.log"
+  adb reverse "tcp:$METRO_PORT" "tcp:$METRO_PORT" >/dev/null
+  adb shell am force-stop "$PACKAGE"
+  adb shell am start -a android.intent.action.VIEW \
+    -d "lantern://expo-development-client/?url=http%3A%2F%2Flocalhost%3A$METRO_PORT" "$PACKAGE" >/dev/null
+}
+
+metro() {
+  local pid
+  pid=$(metro_pid)
+  [ -z "$pid" ] || kill "$pid" || true
+  sleep "$METRO_EXIT_SECONDS"
+  start_metro
+  echo "Metro restarted with --clear and the app reopened."
+}
+
 up() {
   down
   mkdir -p "$LOGS"
+  restore_flows
 
   # The local Azurite holds the real UAT masters (a no-op once loaded; needs az login the first time), and the synthetic seeder stays off.
   "$ROOT/deploy/local/load-uat-masters.sh"
@@ -81,19 +119,15 @@ up() {
   # The emulator keeps its data between runs, so a saved sign-in survives unless the app is removed first.
   adb uninstall "$PACKAGE" >/dev/null 2>&1 || true
   cd "$APP"
+  use_local_stack
   npx expo run:android --no-bundler >"$LOGS/build.log" 2>&1
-  CI=1 setsid nohup npx expo start --dev-client --port "$METRO_PORT" --clear >"$LOGS/metro.log" 2>&1 &
-  wait_for "Metro" "$METRO_TIMEOUT_SECONDS" grep -q "Waiting on" "$LOGS/metro.log"
-  adb reverse "tcp:$METRO_PORT" "tcp:$METRO_PORT" >/dev/null
-  # expo run:android already opened the app at a LAN address; a running app ignores the launch link.
-  adb shell am force-stop "$PACKAGE"
-  adb shell am start -a android.intent.action.VIEW \
-    -d "lantern://expo-development-client/?url=http%3A%2F%2Flocalhost%3A$METRO_PORT" "$PACKAGE" >/dev/null
+  start_metro
   echo "Ready: Docker, emulator, Metro (--clear) and a fresh install. Logs in $LOGS"
 }
 
 case ${1:-} in
   up) up ;;
+  metro) metro ;;
   down) down "${2:-}" ;;
-  *) echo "Usage: verify-env.sh up | down [--deep]" >&2; exit 2 ;;
+  *) echo "Usage: verify-env.sh up | metro | down [--deep]" >&2; exit 2 ;;
 esac

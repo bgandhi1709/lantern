@@ -17,6 +17,12 @@ internal static partial class BaseLog
     [LoggerMessage(EventId = 1011, Level = LogLevel.Information, Message = "Edited child {ChildId} of family {FamilyId}")]
     internal static partial void ChildEdited(ILogger logger, Guid familyId, Guid childId);
 
+    [LoggerMessage(EventId = 1020, Level = LogLevel.Information, Message = "A one-time code was sent for {Operation}")]
+    internal static partial void CodeIssued(ILogger logger, string operation);
+
+    [LoggerMessage(EventId = 1021, Level = LogLevel.Information, Message = "A one-time code was proven for {Operation}")]
+    internal static partial void CodeProven(ILogger logger, string operation);
+
     [LoggerMessage(EventId = 1012, Level = LogLevel.Information, Message = "Delete requested for child {ChildId} of family {FamilyId}")]
     internal static partial void ChildDeleteRequested(ILogger logger, Guid familyId, Guid childId);
 }
