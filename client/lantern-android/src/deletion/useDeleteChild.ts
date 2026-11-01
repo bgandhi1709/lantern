@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 
 import { useIsMounted } from '../shared/lifecycle/useIsMounted';
-import { requestDeleteCode, verifyDeleteCode } from './deleteCodesApi';
+import { requestCode, verifyCode } from './oneTimeCodeApi';
 import { deleteChild } from './deleteChild';
 import { KEEPS_PROOF, deleteFailureOf } from './deleteFailure';
 import type { DeleteFailure } from './deleteFailure';
@@ -18,6 +18,7 @@ export function useDeleteChild(onDeleted: () => void) {
   const mounted = useIsMounted();
   const busy = useRef(false);
   const latestCode = useRef('');
+  const challenge = useRef<string | null>(null);
   const [step, setStep] = useState<Step>('confirm');
   const [pickedId, setPickedId] = useState<string | null>(null);
   const [typedName, setTypedName] = useState('');
@@ -49,16 +50,18 @@ export function useDeleteChild(onDeleted: () => void) {
   };
 
   const verify = (digits: string) =>
+    challenge.current &&
     run('verifying', async () => {
-      const received = await verifyDeleteCode(digits);
+      const received = await verifyCode(challenge.current ?? '', digits);
       if (mounted.current && latestCode.current === digits) setProof(received);
     });
 
   const emailCode = (again: boolean) =>
     picked &&
     run('requesting', async () => {
-      await requestDeleteCode({ scope: 'child', childId: picked.id });
+      const issued = await requestCode({ operation: 'delete-child', target: picked.id });
       if (!mounted.current) return;
+      challenge.current = issued;
       latestCode.current = '';
       setCode('');
       setProof(null);

@@ -53,7 +53,7 @@ public sealed class BrokerE2ETests(RegisteredFamilyFixture fixture) : IClassFixt
                 .GetBlobClient($"{fixture.Family.FamilyId:D}/{id:D}/6/class.json");
             Assert.True(await WaitAsync(async () => await marker.ExistsAsync()), "The Workspace was not started.");
 
-            var deleted = await fixture.Client.DeleteAsync(new Uri($"/v1/family/children/{id}", UriKind.Relative));
+            var deleted = await fixture.DeleteChildWithCodeAsync(id);
             Assert.Equal(HttpStatusCode.Accepted, deleted.StatusCode);
 
             var received = new List<string>();

@@ -23,7 +23,7 @@ describe('a delete that carries extra headers', () => {
     const fetchImpl = jest.fn().mockResolvedValue(jsonResponse(204, undefined));
 
     await clientWith(fetchImpl, async () => 'abc').delete('/v1/family', z.unknown(), {
-      'Lantern-Delete-Proof': 'a-proof',
+      'Lantern-Code-Proof': 'a-proof',
       Accept: 'text/plain',
     });
 
@@ -31,7 +31,7 @@ describe('a delete that carries extra headers', () => {
     expect(fetchImpl.mock.calls[0][1].headers).toEqual({
       Accept: 'application/json',
       Authorization: 'Bearer abc',
-      'Lantern-Delete-Proof': 'a-proof',
+      'Lantern-Code-Proof': 'a-proof',
     });
   });
 });

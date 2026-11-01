@@ -22,6 +22,10 @@ _Avoid_: Encrypted field (the server does not encrypt), ciphertext
 The one secret that opens a Family, made by the phone and shown once at registration. The phone uses it to wrap the Family key, so Lantern holds no key and cannot read the locked values. The Parent must email it to their own address from the phone's mail app before registration continues (the share sheet is the fallback); Lantern never sends or sees it. A Parent who loses it and the phone starts the Family again as a new Family. There is no Passphrase (ADR-0015).
 _Avoid_: Passphrase, backup key, reset code
 
+**One-time code**:
+A random 6-digit code the API emails to the signed-in Parent when a sensitive operation needs proof that they can open their own inbox: deleting a Child or the Family, and later adding another Parent. The caller names the operation and an optional target; the Parent types the code back; a right code returns a short-lived proof bound to that operation and target, and the endpoint that does the operation refuses without it. It lives 5 minutes, is never stored (the API returns a signed challenge the phone sends back with the code), and carries no key (ADR-0019, D124, D125, D126). Not the Recovery code.
+_Avoid_: Delete code, OTP, passcode, verification code
+
 **Child**:
 A person in a Family who attends school and whose learning the Parent supports. Never signs in; Lantern serves the Parent, not the Child. "Kid" is only the persona used in the docs.
 _Avoid_: Kid, student, learner

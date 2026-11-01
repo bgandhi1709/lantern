@@ -16,10 +16,13 @@ internal sealed class ChildService(
     IFamilyRepository families,
     IIdentityResolver identityResolver,
     IActionPublisher actions,
+    IOneTimeCodeService codes,
     TimeProvider clock,
     ILogger<ChildService> logger
 ) : ServiceBase<Child, IChildRepository>(children, identityResolver, families), IChildService
 {
+    private const string DeleteOperation = "delete-child";
+
     public override async Task<Child> AddAsync(Child instance, CancellationToken cancellationToken) =>
         (await AddOrGetAsync(instance, cancellationToken)).Child;
 
@@ -74,6 +77,13 @@ internal sealed class ChildService(
         BaseLog.ChildEdited(logger, updated.FamilyId, updated.ChildId);
 
         return updated;
+    }
+
+    public async Task RemoveAsync(Guid id, string proof, CancellationToken cancellationToken)
+    {
+        codes.RequireProof(proof, DeleteOperation, id.ToString("D"));
+
+        await RemoveAsync(id, cancellationToken);
     }
 
     // The ledger row is the commit point: once it exists the delete will finish, whatever happens to this request.

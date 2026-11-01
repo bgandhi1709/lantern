@@ -1,5 +1,5 @@
 import { writeValue } from '../shared/storage';
-import { deleteChildWithProof } from './deleteCodesApi';
+import { deleteChildWithProof } from './oneTimeCodeApi';
 
 type Removal = { childId: string; proof: string; otherChildIds: string[] };
 

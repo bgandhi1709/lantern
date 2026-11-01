@@ -1,3 +1,4 @@
+using Lantern.Core.Service;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -21,6 +22,9 @@ internal sealed class LocalApiFactory(string contentRoot) : WebApplicationFactor
             services.AddScoped<DevelopmentSeeder>();
             services.AddScoped<SampleProgress>();
             services.AddTransient<IStartupFilter, SeedProgressEndpoint>();
+            services.AddSingleton<OutboxEmailService>();
+            services.AddSingleton<IEmailService>(serviceProvider => serviceProvider.GetRequiredService<OutboxEmailService>());
+            services.AddTransient<IStartupFilter, OutboxEndpoint>();
             services.AddHostedService<SeedOnStartup>();
             services.PostConfigure<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme, AcceptEmulatorTokens);
         });

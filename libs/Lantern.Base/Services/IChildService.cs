@@ -14,4 +14,8 @@ public interface IChildService : IServiceBase<Child>
     /// <exception cref="Core.Exceptions.LanternException">(<c>ChildDeleting</c>) That id is being deleted.</exception>
     /// <exception cref="Core.Exceptions.LanternException">(<c>ClassNotAvailable</c>) The Class has no Books for the Family's Board.</exception>
     Task<(Child Child, bool Created)> AddOrGetAsync(Child child, CancellationToken cancellationToken);
+
+    /// <summary>Records the delete of a Child after checking the proof of operation delete-child for that Child.</summary>
+    /// <exception cref="Core.Exceptions.LanternException">(<c>ProofRequired</c>) The proof is missing, expired, or for another Parent, operation or Child.</exception>
+    Task RemoveAsync(Guid id, string proof, CancellationToken cancellationToken);
 }

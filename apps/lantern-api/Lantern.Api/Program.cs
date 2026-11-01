@@ -31,6 +31,7 @@ builder.Services.AddLanternBase(builder.Configuration);
 // The API hashes uids and sends actions, so it refuses to start without those settings.
 builder.Services.AddOptions<SecurityOptions>().ValidateOnStart();
 builder.Services.AddOptions<BrokerOptions>().ValidateOnStart();
+builder.Services.AddOptions<EmailOptions>().ValidateOnStart();
 builder.Services.AddOptions<ActionOptions>().ValidateOnStart();
 builder
     .Services.AddOptions<RateLimitOptions>()
@@ -50,6 +51,7 @@ builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
     options.AddChildrenPolicy();
+    options.AddCodeLimits();
 });
 
 // Google-only sign-in is enforced in the Firebase console. A revoked or disabled user stays valid

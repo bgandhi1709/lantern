@@ -21,6 +21,7 @@ public static class BaseModule
         services.TryAddScoped<IFamilyService, FamilyService>();
         services.TryAddScoped<IChildService, ChildService>();
         services.TryAddScoped<ISubjectService, SubjectService>();
+        services.TryAddScoped<IOneTimeCodeService, OneTimeCodeService>();
 
         return services;
     }

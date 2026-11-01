@@ -83,7 +83,7 @@ public sealed class FamilyManifestFlowTests(AzuriteFixture azurite) : IDisposabl
         await factory.DeliverAsync();
         var (gone, kept) = (family.Children[0], family.Children[1]);
 
-        await client.DeleteAsync(ApiClientExtensions.Child(gone.ChildId));
+        await client.DeleteChildAsync(gone.ChildId);
         await factory.DeliverAsync();
 
         AssertJson(Manifest("cbse", [Ncert(kept.ChildId, 6)]), await ManifestAsync(family.FamilyId));
@@ -129,7 +129,7 @@ public sealed class FamilyManifestFlowTests(AzuriteFixture azurite) : IDisposabl
         var added = Guid.NewGuid();
         await client.PostAsJsonAsync(ApiClientExtensions.Children, NewChild(added, 4));
 
-        await client.DeleteAsync(ApiClientExtensions.Child(added));
+        await client.DeleteChildAsync(added);
         await factory.DeliverAsync();
 
         AssertJson(Manifest("cbse", [Ncert(family.Children[0].ChildId, 3)]), await ManifestAsync(family.FamilyId));
@@ -162,7 +162,7 @@ public sealed class FamilyManifestFlowTests(AzuriteFixture azurite) : IDisposabl
         var child = family.Children.Single();
         var deleteIt = new ManifestOutageStore(
             factory.Services.GetRequiredService<IWorkspaceStore>(),
-            afterCopy: () => client.DeleteAsync(ApiClientExtensions.Child(child.ChildId))
+            afterCopy: () => client.DeleteChildAsync(child.ChildId)
         );
         using var racing = factory.WithWebHostBuilder(builder => builder.ConfigureTestServices(services => services.AddSingleton<IWorkspaceStore>(deleteIt)));
 
@@ -181,7 +181,7 @@ public sealed class FamilyManifestFlowTests(AzuriteFixture azurite) : IDisposabl
         var child = family.Children.Single();
         var deleteIt = new ManifestOutageStore(
             factory.Services.GetRequiredService<IWorkspaceStore>(),
-            afterAdd: () => client.DeleteAsync(ApiClientExtensions.Child(child.ChildId))
+            afterAdd: () => client.DeleteChildAsync(child.ChildId)
         );
         using var racing = factory.WithWebHostBuilder(builder => builder.ConfigureTestServices(services => services.AddSingleton<IWorkspaceStore>(deleteIt)));
 
@@ -203,7 +203,7 @@ public sealed class FamilyManifestFlowTests(AzuriteFixture azurite) : IDisposabl
             inner,
             beforeCopy: async () =>
             {
-                await client.DeleteAsync(ApiClientExtensions.Child(child.ChildId));
+                await client.DeleteChildAsync(child.ChildId);
                 await factory.Services.DeliverAsync(factory.Sender.Sent.Single(sent => sent.Type == ActionType.RemoveWorkspace), CancellationToken.None);
             }
         );
@@ -226,7 +226,7 @@ public sealed class FamilyManifestFlowTests(AzuriteFixture azurite) : IDisposabl
         var child = family.Children.Single();
         async Task DeleteAndRemoveAsync()
         {
-            await client.DeleteAsync(ApiClientExtensions.Child(child.ChildId));
+            await client.DeleteChildAsync(child.ChildId);
             await factory.Services.DeliverAsync(factory.Sender.Sent.Single(sent => sent.Type == ActionType.RemoveWorkspace), CancellationToken.None);
         }
 
@@ -250,7 +250,7 @@ public sealed class FamilyManifestFlowTests(AzuriteFixture azurite) : IDisposabl
         var (gone, kept) = (family.Children[0], family.Children[1]);
         var counting = new ManifestOutageStore(factory.Services.GetRequiredService<IWorkspaceStore>());
         using var counted = factory.WithWebHostBuilder(builder => builder.ConfigureTestServices(services => services.AddSingleton<IWorkspaceStore>(counting)));
-        await client.DeleteAsync(ApiClientExtensions.Child(gone.ChildId));
+        await client.DeleteChildAsync(gone.ChildId);
 
         await counted.Services.DeliverAsync(factory.Sender.Sent.Single(sent => sent.Type == ActionType.RemoveWorkspace), CancellationToken.None);
 

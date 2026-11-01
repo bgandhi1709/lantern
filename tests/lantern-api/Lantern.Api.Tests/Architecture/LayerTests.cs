@@ -1,4 +1,5 @@
 using System.Reflection;
+using Azure.Communication.Email;
 using Azure.Data.Tables;
 using Azure.Storage.Blobs;
 using RabbitMQ.Client;
@@ -50,6 +51,7 @@ public sealed class LayerTests
             { typeof(BlobServiceClient), "WorkspaceStore" },
             { typeof(IConnection), "RabbitMqPublishingService" },
             { typeof(IChannel), "RabbitMqPublishingService" },
+            { typeof(EmailClient), "AcsEmailService" },
         };
 
     [Theory]

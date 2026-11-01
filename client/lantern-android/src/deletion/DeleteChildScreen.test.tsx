@@ -17,8 +17,9 @@ const onBack = jest.fn();
 const onDeleteFamily = jest.fn();
 
 const PROOF = 'proof-for-aarya';
-const REQUEST = '/v1/family/delete-codes';
-const VERIFY = '/v1/family/delete-codes/verify';
+const CHALLENGE = 'challenge-for-aarya';
+const REQUEST = '/v1/security/code';
+const VERIFY = '/v1/security/code/verify';
 
 async function openScreen() {
   const familyKey = await registerFamilyOnThisPhone();
@@ -51,7 +52,9 @@ async function reachCodeStep(user: ReturnType<typeof userEvent.setup>) {
 beforeEach(async () => {
   await clearAll();
   [post, remove, onDeleted, onBack, onDeleteFamily].forEach((mock) => mock.mockReset());
-  post.mockImplementation(async (path: string) => (path === VERIFY ? { proof: PROOF } : undefined));
+  post.mockImplementation(async (path: string) =>
+    path === VERIFY ? { proof: PROOF } : { challenge: CHALLENGE },
+  );
   remove.mockResolvedValue(undefined);
 });
 
@@ -111,8 +114,8 @@ describe('Delete a child: choose and confirm', () => {
 
     expect(post).toHaveBeenCalledTimes(1);
     expect(post).toHaveBeenCalledWith(REQUEST, expect.anything(), {
-      scope: 'child',
-      childId: AARYA,
+      operation: 'delete-child',
+      target: AARYA,
     });
     expect(await screen.findByRole('header', { name: 'Check your email' })).toBeOnTheScreen();
     expect(screen.getByText(/asha\.verma@gmail\.com/)).toBeOnTheScreen();
@@ -131,7 +134,7 @@ describe('Delete a child: choose and confirm', () => {
   });
 
   it.each([
-    ['delete-code-too-soon', 429, 'Please wait a minute before asking for another code.'],
+    ['code-too-soon', 429, 'Please wait a minute before asking for another code.'],
     [
       'email-not-verified',
       409,
@@ -210,7 +213,10 @@ describe('Delete a child: the emailed code', () => {
 
     await user.type(codeField(), '17');
 
-    expect(post).toHaveBeenLastCalledWith(VERIFY, expect.anything(), { code: '482917' });
+    expect(post).toHaveBeenLastCalledWith(VERIFY, expect.anything(), {
+      challenge: CHALLENGE,
+      code: '482917',
+    });
     expect(await screen.findByText('Code verified')).toBeOnTheScreen();
     expect(deleteButton()).toBeEnabled();
   });
@@ -225,9 +231,9 @@ describe('Delete a child: the emailed code', () => {
   });
 
   it.each([
-    ['delete-code-wrong', 400, 'That code is not right. Check it and try again.'],
-    ['delete-code-expired', 400, 'That code has expired. Email yourself a new one.'],
-    ['delete-code-attempts-used', 429, 'Too many wrong tries. Email yourself a new code.'],
+    ['code-wrong', 400, 'That code is not right. Check it and try again.'],
+    ['code-expired', 400, 'That code has expired. Email yourself a new one.'],
+    ['code-attempts-used', 429, 'Too many wrong tries. Email yourself a new code.'],
     ['network', null, 'Could not reach Lantern. Check your connection and try again.'],
   ])(
     'refuses a code the API rejects with %s and keeps Delete child off',
@@ -247,7 +253,7 @@ describe('Delete a child: the emailed code', () => {
   it('forgets a rejected code as soon as the Parent edits it', async () => {
     const { user } = await openScreen();
     await reachCodeStep(user);
-    post.mockRejectedValueOnce(new ApiError('delete-code-wrong', 400));
+    post.mockRejectedValueOnce(new ApiError('code-wrong', 400));
     await user.type(codeField(), '111111');
     await screen.findByText('That code is not right. Check it and try again.');
 
@@ -269,7 +275,7 @@ describe('Delete a child: the emailed code', () => {
 
     expect(remove).toHaveBeenCalledTimes(1);
     expect(remove).toHaveBeenCalledWith(`/v1/family/children/${AARYA}`, expect.anything(), {
-      'Lantern-Delete-Proof': PROOF,
+      'Lantern-Code-Proof': PROOF,
     });
     expect(await readValue('activeChildId')).toBe(ROHAN);
     expect(onDeleted).toHaveBeenCalledTimes(1);
@@ -319,18 +325,42 @@ describe('Delete a child: the emailed code', () => {
     await user.press(screen.getByRole('button', { name: 'Email me a new code' }));
 
     expect(post).toHaveBeenLastCalledWith(REQUEST, expect.anything(), {
-      scope: 'child',
-      childId: AARYA,
+      operation: 'delete-child',
+      target: AARYA,
     });
     expect(await screen.findByText('A new code is on its way')).toBeOnTheScreen();
     expect(codeField()).toHaveDisplayValue('');
     expect(deleteButton()).toBeDisabled();
   });
 
+  it('checks a new code against the new challenge, not the old one', async () => {
+    post.mockImplementation(async (path: string) =>
+      path === VERIFY
+        ? { proof: PROOF }
+        : {
+            challenge:
+              post.mock.calls.filter(([called]) => called === REQUEST).length === 1
+                ? CHALLENGE
+                : 'second-challenge',
+          },
+    );
+    const { user } = await openScreen();
+    await reachCodeStep(user);
+    await user.press(screen.getByRole('button', { name: 'Email me a new code' }));
+    await screen.findByText('A new code is on its way');
+
+    await user.type(codeField(), '135790');
+
+    expect(post).toHaveBeenLastCalledWith(VERIFY, expect.anything(), {
+      challenge: 'second-challenge',
+      code: '135790',
+    });
+  });
+
   it('says to wait when a new code is asked for too soon', async () => {
     const { user } = await openScreen();
     await reachCodeStep(user);
-    post.mockRejectedValue(new ApiError('delete-code-too-soon', 429));
+    post.mockRejectedValue(new ApiError('code-too-soon', 429));
 
     await user.press(screen.getByRole('button', { name: 'Email me a new code' }));
 

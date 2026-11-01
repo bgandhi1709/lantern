@@ -12,4 +12,7 @@ internal static partial class CoreLog
         Message = "Sending the {ActionType} action failed ({ErrorType}); it will be sent again when the API next starts"
     )]
     internal static partial void ActionPublishFailed(ILogger logger, ActionType actionType, string errorType);
+
+    [LoggerMessage(EventId = 2002, Level = LogLevel.Warning, Message = "The email provider refused a message (status {Status})")]
+    internal static partial void EmailNotSent(ILogger logger, int status);
 }

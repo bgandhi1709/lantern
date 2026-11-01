@@ -151,6 +151,7 @@ export const en = {
           text: [
             'Your phone makes a recovery code for your Family, and you email it to yourself. It cannot be reset. If you lose the email and this phone, nobody, including Lantern, can open the locked details.',
             'Deleting your Family erases everything stored for it.',
+            'When you delete a child or your Family, Lantern emails a 6-digit code to the address on your Google account, through Microsoft Azure Communication Services. That service handles your address only to send that one email. Lantern does not keep the code.',
           ],
         },
         {
@@ -387,7 +388,7 @@ export const en = {
     codeIntro: (email: string) =>
       `We emailed a 6-digit code to ${email}. Type it to delete the child you chose.`,
     codeLabel: 'Code',
-    codeHint: 'Check your inbox for "Your Lantern delete code".',
+    codeHint: 'Check your inbox for "Your Lantern one-time code".',
     checking: 'Checking the code…',
     verified: 'Code verified',
     resend: 'Email me a new code',

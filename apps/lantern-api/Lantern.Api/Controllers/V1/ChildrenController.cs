@@ -44,9 +44,13 @@ public sealed class ChildrenController(IChildService children, IMapper mapper)
 
     // 202: the delete finishes in Lantern.Functions (ADR-0003).
     [HttpDelete("{childId:guid}")]
-    public async Task<IActionResult> Delete(Guid childId, CancellationToken cancellationToken)
+    public async Task<IActionResult> Delete(
+        Guid childId,
+        [FromHeader(Name = "Lantern-Code-Proof")] string proof,
+        CancellationToken cancellationToken
+    )
     {
-        await Service.RemoveAsync(childId, cancellationToken);
+        await children.RemoveAsync(childId, proof, cancellationToken);
 
         return Accepted();
     }

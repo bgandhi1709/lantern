@@ -160,7 +160,7 @@ public sealed class ChaptersTests(AzuriteFixture azurite) : IDisposable
     {
         using var client = Client(NewUid());
         var child = await ReadyChildAsync(client, BoardType.Cbse, 7);
-        Assert.Equal(HttpStatusCode.Accepted, (await client.DeleteAsync(ApiClientExtensions.Child(child.ChildId))).StatusCode);
+        Assert.Equal(HttpStatusCode.Accepted, (await client.DeleteChildAsync(child.ChildId)).StatusCode);
 
         var response = await client.GetAsync(ChaptersOf(child, "english"));
 

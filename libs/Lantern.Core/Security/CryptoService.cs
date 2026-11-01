@@ -1,3 +1,5 @@
+using System.Buffers.Text;
+using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using System.Text;
 using Lantern.Core.Configuration;
@@ -19,6 +21,32 @@ internal sealed class CryptoService(IOptions<SecurityOptions> options) : ICrypto
 
         return Convert.ToHexStringLower(HMACSHA256.HashData(uidKey.Value, Encoding.UTF8.GetBytes(uid)));
     }
+
+    private readonly ConcurrentDictionary<string, byte[]> purposeKeys = new();
+
+    public string Sign(string purpose, string data)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(purpose);
+        ArgumentNullException.ThrowIfNull(data);
+
+        return Base64Url.EncodeToString(HMACSHA256.HashData(KeyFor(purpose), Encoding.UTF8.GetBytes(data)));
+    }
+
+    public bool Matches(string purpose, string data, string signature)
+    {
+        if (string.IsNullOrEmpty(signature))
+        {
+            return false;
+        }
+
+        return CryptographicOperations.FixedTimeEquals(
+            Encoding.UTF8.GetBytes(Sign(purpose, data)),
+            Encoding.UTF8.GetBytes(signature)
+        );
+    }
+
+    private byte[] KeyFor(string purpose) =>
+        purposeKeys.GetOrAdd(purpose, name => Derive(options.Value.Key, $"lantern-sign-{name}"));
 
     private static byte[] Derive(string key, string purpose) =>
         HKDF.DeriveKey(

@@ -11,11 +11,11 @@ export type DeleteFailure =
   | 'other';
 
 const BY_CODE: Record<string, DeleteFailure> = {
-  'delete-code-wrong': 'wrongCode',
-  'delete-code-expired': 'codeExpired',
-  'delete-proof-required': 'codeExpired',
-  'delete-code-attempts-used': 'tooManyTries',
-  'delete-code-too-soon': 'tooSoon',
+  'code-wrong': 'wrongCode',
+  'code-expired': 'codeExpired',
+  'proof-required': 'codeExpired',
+  'code-attempts-used': 'tooManyTries',
+  'code-too-soon': 'tooSoon',
   'email-not-verified': 'emailNotVerified',
   'email-not-sent': 'emailNotSent',
   network: 'unreachable',

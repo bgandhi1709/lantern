@@ -10,6 +10,8 @@ public enum LanternErrorCode
     ChildLimitReached,
     ChapterNotFound,
     ChildNotFound,
+    CodeExpired,
+    CodeWrong,
     ClassNotAvailable,
     ContentNotReady,
     FamilyChanged,
@@ -18,6 +20,9 @@ public enum LanternErrorCode
     InvalidPage,
     InvalidRequest,
     InvalidSearch,
+    EmailNotSent,
+    EmailNotVerified,
     NotRegistered,
+    ProofRequired,
     SubjectNotFound,
 }

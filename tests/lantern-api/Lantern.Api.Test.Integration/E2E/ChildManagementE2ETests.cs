@@ -41,7 +41,11 @@ public sealed class ChildManagementE2ETests(RegisteredFamilyFixture fixture) : I
         var afterEdit = (await fixture.Client.GetFromJsonAsync<FamilyModel>(Me))!.Children.Single(c => c.ChildId == id);
         Assert.Equal(("locked-kavya-p", "locked-school-2", 6), (afterEdit.Name, afterEdit.School, afterEdit.ClassLevel));
 
-        var deleted = await fixture.Client.DeleteAsync(new Uri($"/v1/family/children/{id}", UriKind.Relative));
+        var withoutProof = await fixture.DeleteChildAsync(id, proof: null);
+        Assert.Equal(HttpStatusCode.Forbidden, withoutProof.StatusCode);
+        Assert.Contains((await fixture.Client.GetFromJsonAsync<FamilyModel>(Me))!.Children, c => c.ChildId == id);
+
+        var deleted = await fixture.DeleteChildWithCodeAsync(id);
         Assert.Equal(HttpStatusCode.Accepted, deleted.StatusCode);
         Assert.DoesNotContain((await fixture.Client.GetFromJsonAsync<FamilyModel>(Me))!.Children, c => c.ChildId == id);
 
@@ -64,14 +68,18 @@ public sealed class ChildManagementE2ETests(RegisteredFamilyFixture fixture) : I
     {
         var seeded = await SeededMeAsync("dev-parent-1");
         var target = seeded.Children[0];
+        var stranger = new RegisteredFamilyFixture();
+        await stranger.InitializeAsync();
 
-        var deleted = await fixture.Client.DeleteAsync(new Uri($"/v1/family/children/{target.ChildId}", UriKind.Relative));
-        var edited = await fixture.Client.PutAsJsonAsync(
+        var withRealProof = await stranger.DeleteChildWithCodeAsync(target.ChildId);
+        var deleted = await stranger.DeleteChildAsync(target.ChildId, "stolen.proof");
+        var edited = await stranger.Client.PutAsJsonAsync(
             new Uri($"/v1/family/children/{target.ChildId}", UriKind.Relative),
             new { Name = "Hijacked", School = "locked-school", BirthYear = target.BirthYear }
         );
 
-        Assert.Equal(HttpStatusCode.NotFound, deleted.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, withRealProof.StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, deleted.StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, edited.StatusCode);
         var after = await SeededMeAsync("dev-parent-1");
         Assert.Equal(seeded.Children.Select(c => (c.ChildId, c.Name)), after.Children.Select(c => (c.ChildId, c.Name)));

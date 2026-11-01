@@ -29,7 +29,7 @@ public sealed class ProgressSweepTests(AzuriteFixture azurite) : IDisposable
         await WorkedOnAsync(family.FamilyId, staying, 7);
         await WorkedOnAsync(other.FamilyId, other.Children[0].ChildId, 7);
 
-        Assert.Equal(HttpStatusCode.Accepted, (await client.DeleteAsync(ApiClientExtensions.Child(leaving))).StatusCode);
+        Assert.Equal(HttpStatusCode.Accepted, (await client.DeleteChildAsync(leaving)).StatusCode);
         await factory.DeliverAsync();
 
         Assert.Empty(await ChaptersAsync(family.FamilyId, leaving, 7));
@@ -68,7 +68,7 @@ public sealed class ProgressSweepTests(AzuriteFixture azurite) : IDisposable
         var family = await RegisterAsync(client, 7);
         var child = family.Children[0].ChildId;
         await WorkedOnAsync(family.FamilyId, child, 7);
-        await client.DeleteAsync(ApiClientExtensions.Child(child));
+        await client.DeleteChildAsync(child);
         await factory.DeliverAsync();
 
         await factory.DeliverAsync();
