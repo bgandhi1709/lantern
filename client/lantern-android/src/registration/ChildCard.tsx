@@ -58,10 +58,10 @@ export function ChildCard({
           importantForAccessibility="no-hide-descendants"
           className="size-9 items-center justify-center rounded-full bg-tile"
         >
-          <Text className="font-inter-bold text-body text-primary-deep">{number}</Text>
+          <Text className="type-link">{number}</Text>
         </View>
         <View className="flex-1">
-          <Text className="font-inter-bold text-body text-ink">{title}</Text>
+          <Text className="type-body-bold">{title}</Text>
           <Text className={`font-inter-medium text-small ${STATUS_COLOR[status]}`}>
             {statusText}
           </Text>

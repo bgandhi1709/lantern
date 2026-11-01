@@ -51,13 +51,13 @@ export function DeleteChildConfirmView(props: Props) {
         </View>
         <ScrollView contentContainerClassName="gap-4 pb-3 pt-1" keyboardShouldPersistTaps="handled">
           <View className="gap-2">
-            <Text accessibilityRole="header" className="font-inter-bold text-heading text-ink">
+            <Text accessibilityRole="header" className="type-heading">
               {strings.heading}
             </Text>
-            <Text className="font-inter-medium text-body text-muted">{strings.intro}</Text>
+            <Text className="type-body-muted">{strings.intro}</Text>
           </View>
           {family.status === 'loading' ? (
-            <Text className="font-inter-medium text-body text-muted">{strings.loading}</Text>
+            <Text className="type-body-muted">{strings.loading}</Text>
           ) : null}
           {family.status === 'ready' && children.length < 2 ? (
             <OnlyChildNotice onDeleteFamily={props.onDeleteFamily} />
@@ -80,9 +80,7 @@ export function DeleteChildConfirmView(props: Props) {
               />
               <View className="flex-row items-start gap-2.5">
                 <MailIcon />
-                <Text className="flex-1 font-inter-medium text-small text-muted">
-                  {strings.emailNote(props.email)}
-                </Text>
+                <Text className="flex-1 type-small-muted">{strings.emailNote(props.email)}</Text>
               </View>
             </>
           )}

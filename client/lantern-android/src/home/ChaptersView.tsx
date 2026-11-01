@@ -57,7 +57,7 @@ export function ChaptersView(props: Props) {
     <View className="gap-4 pb-4">
       {subjectName ? (
         <View className="flex-row items-center gap-2">
-          <Text className="font-inter-semibold text-small text-muted">{text.subjectLabel}</Text>
+          <Text className="type-small-muted-semibold">{text.subjectLabel}</Text>
           <SubjectPill name={subjectName} onPress={props.onOpenSubjectSheet} />
         </View>
       ) : null}
@@ -81,17 +81,17 @@ export function ChaptersView(props: Props) {
         className="flex-row items-center gap-3 py-4"
       >
         <ActivityIndicator color={colors.accent} />
-        <Text className="shrink font-inter-medium text-small text-muted">{text.loading}</Text>
+        <Text className="shrink type-small-muted">{text.loading}</Text>
       </View>
     ) : chapters.status === 'failed' ? (
       <View className="items-start gap-3 py-2">
-        <Text accessibilityLiveRegion="polite" className="font-inter-medium text-body text-danger">
+        <Text accessibilityLiveRegion="polite" className="type-body-error">
           {text.failed}
         </Text>
         <PrimaryButton label={home.tryAgain} onPress={props.onTryAgain} />
       </View>
     ) : props.query.trim() !== '' && subjectName ? (
-      <Text className="rounded-card border border-line bg-card p-4 font-inter-medium text-body text-muted">
+      <Text className="rounded-card border border-line bg-card p-4 type-body-muted">
         {text.noMatch(subjectName)}
       </Text>
     ) : null;
@@ -100,7 +100,7 @@ export function ChaptersView(props: Props) {
     <View className="flex-1 bg-ground pt-safe">
       <View className="h-16 flex-row items-center gap-1 pl-4 pr-3">
         <BackButton onBack={props.onBack} />
-        <Text accessibilityRole="header" className="flex-1 font-inter-bold text-lead text-ink">
+        <Text accessibilityRole="header" className="flex-1 type-lead">
           {text.title}
         </Text>
         {activeChild ? <ChildPill name={activeChild.name} onPress={props.onOpenSheet} /> : null}

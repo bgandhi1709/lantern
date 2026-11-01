@@ -11,10 +11,10 @@ export function ComingNextView({ onBack }: { onBack: () => void }) {
       <View className="flex-row">
         <BackButton onBack={onBack} />
       </View>
-      <Text accessibilityRole="header" className="font-inter-bold text-heading text-ink">
+      <Text accessibilityRole="header" className="type-heading">
         {comingNext.heading}
       </Text>
-      <Text className="font-inter-medium text-body text-muted">{comingNext.text}</Text>
+      <Text className="type-body-muted">{comingNext.text}</Text>
     </View>
   );
 }

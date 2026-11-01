@@ -17,11 +17,9 @@ export function AddChildRow({ onPress }: { onPress: () => void }) {
         <View className="size-11 items-center justify-center rounded-full bg-tile">
           <PlusIcon />
         </View>
-        <Text className="font-inter-bold text-body text-primary-deep">{home.addChild}</Text>
+        <Text className="type-link">{home.addChild}</Text>
       </Pressable>
-      <Text className="text-center font-inter-medium text-caption text-muted">
-        {home.addChildNote(MAX_CHILDREN)}
-      </Text>
+      <Text className="text-center type-caption">{home.addChildNote(MAX_CHILDREN)}</Text>
     </View>
   );
 }

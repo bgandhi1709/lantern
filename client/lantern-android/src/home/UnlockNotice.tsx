@@ -8,10 +8,10 @@ export function UnlockNotice({ onUnlock }: { onUnlock: () => void }) {
 
   return (
     <View className="gap-3 rounded-card border border-line bg-card p-4">
-      <Text accessibilityRole="header" className="font-inter-bold text-lead text-ink">
+      <Text accessibilityRole="header" className="type-lead">
         {strings.heading}
       </Text>
-      <Text className="font-inter-medium text-small text-muted">{strings.text}</Text>
+      <Text className="type-small-muted">{strings.text}</Text>
       <PrimaryButton label={strings.unlock} onPress={onUnlock} />
     </View>
   );

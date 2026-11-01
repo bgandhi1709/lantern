@@ -26,10 +26,8 @@ export function FeatureList() {
             {icons[feature]}
           </View>
           <View className="flex-1">
-            <Text className="font-inter-bold text-lead text-ink">{features[feature].title}</Text>
-            <Text className="font-inter-medium text-small text-muted">
-              {features[feature].text}
-            </Text>
+            <Text className="type-lead">{features[feature].title}</Text>
+            <Text className="type-small-muted">{features[feature].text}</Text>
           </View>
         </View>
       ))}

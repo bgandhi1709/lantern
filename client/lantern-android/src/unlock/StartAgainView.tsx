@@ -14,17 +14,14 @@ export function StartAgainView({ deleting, failed, onDelete, onKeep }: Props) {
     <View className="flex-1 bg-ground px-6 pb-safe pt-safe">
       <ScrollView contentContainerClassName="gap-4 pb-3 pt-6">
         <View className="gap-2">
-          <Text accessibilityRole="header" className="font-inter-bold text-heading text-ink">
+          <Text accessibilityRole="header" className="type-heading">
             {strings.heading}
           </Text>
-          <Text className="font-inter-medium text-body text-muted">{strings.intro}</Text>
+          <Text className="type-body-muted">{strings.intro}</Text>
         </View>
         <WarningCard heading={strings.warningHeading} text={strings.warning} />
         {failed ? (
-          <Text
-            accessibilityLiveRegion="polite"
-            className="font-inter-semibold text-small text-danger"
-          >
+          <Text accessibilityLiveRegion="polite" className="type-error">
             {strings.failed}
           </Text>
         ) : null}

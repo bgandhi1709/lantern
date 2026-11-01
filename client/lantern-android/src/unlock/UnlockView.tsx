@@ -41,10 +41,10 @@ export function UnlockView(props: Props) {
         </View>
         <ScrollView contentContainerClassName="gap-4 pb-3" keyboardShouldPersistTaps="handled">
           <View className="gap-2">
-            <Text accessibilityRole="header" className="font-inter-bold text-heading text-ink">
+            <Text accessibilityRole="header" className="type-heading">
               {strings.heading}
             </Text>
-            <Text className="font-inter-medium text-body text-muted">{strings.intro}</Text>
+            <Text className="type-body-muted">{strings.intro}</Text>
           </View>
           <TextField
             secret
@@ -57,30 +57,21 @@ export function UnlockView(props: Props) {
           />
           {props.phase === 'failed' ? (
             <View className="gap-3">
-              <Text
-                accessibilityLiveRegion="polite"
-                className="font-inter-semibold text-small text-danger"
-              >
+              <Text accessibilityLiveRegion="polite" className="type-error">
                 {strings.loadFailed}
               </Text>
               <OutlineButton label={strings.tryAgain} onPress={props.onLoadAgain} />
             </View>
           ) : null}
           {props.somethingWentWrong ? (
-            <Text
-              accessibilityLiveRegion="polite"
-              className="font-inter-semibold text-small text-danger"
-            >
+            <Text accessibilityLiveRegion="polite" className="type-error">
               {strings.failed}
             </Text>
           ) : null}
         </ScrollView>
         <View className="gap-1 pb-4 pt-2">
           {props.wrong ? (
-            <Text
-              accessibilityLiveRegion="polite"
-              className="pb-2 font-inter-semibold text-small text-danger"
-            >
+            <Text accessibilityLiveRegion="polite" className="pb-2 type-error">
               {strings.wrong}
             </Text>
           ) : null}

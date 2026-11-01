@@ -33,7 +33,7 @@ export function Picker({
   const itemStyle = { backgroundColor: colors.card };
   return (
     <View>
-      <Text importantForAccessibility="no" className="font-inter-bold text-body text-ink">
+      <Text importantForAccessibility="no" className="type-body-bold">
         {label}
       </Text>
       <View className="mt-1.5 h-14 justify-center rounded-control border-2 border-field bg-card">
@@ -65,7 +65,7 @@ export function Picker({
           </NativePicker>
         </View>
       </View>
-      {hint ? <Text className="mt-1 font-inter-medium text-small text-muted">{hint}</Text> : null}
+      {hint ? <Text className="mt-1 type-small-muted">{hint}</Text> : null}
     </View>
   );
 }

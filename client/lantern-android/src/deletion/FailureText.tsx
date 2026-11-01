@@ -4,7 +4,7 @@ export function FailureText({ message }: { message: string | null }) {
   if (message === null) return null;
 
   return (
-    <Text accessibilityLiveRegion="polite" className="font-inter-semibold text-small text-danger">
+    <Text accessibilityLiveRegion="polite" className="type-error">
       {message}
     </Text>
   );

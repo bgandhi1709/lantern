@@ -14,9 +14,7 @@ export function StepHeader({ step, total, onBack }: Props) {
     <View>
       <View className="flex-row items-center justify-between">
         {onBack ? <BackButton onBack={onBack} /> : <View className="size-12" />}
-        <Text className="font-inter-semibold text-small text-muted">
-          {strings.step(step, total)}
-        </Text>
+        <Text className="type-small-muted-semibold">{strings.step(step, total)}</Text>
       </View>
       <View importantForAccessibility="no-hide-descendants" className="mt-2 flex-row gap-2">
         {bars.map((bar) => (

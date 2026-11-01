@@ -35,24 +35,24 @@ export function ChapterHistoryView({ history, ...on }: Props) {
         className="flex-row items-center gap-3 py-4"
       >
         <ActivityIndicator color={colors.accent} />
-        <Text className="shrink font-inter-medium text-small text-muted">{text.loading}</Text>
+        <Text className="shrink type-small-muted">{text.loading}</Text>
       </View>
     ) : history.status === 'failed' ? (
       <View className="items-start gap-3 py-2">
-        <Text accessibilityLiveRegion="polite" className="font-inter-medium text-body text-danger">
+        <Text accessibilityLiveRegion="polite" className="type-body-error">
           {text.failed}
         </Text>
         <PrimaryButton label={strings.tryAgain} onPress={on.onTryAgain} />
       </View>
     ) : (
-      <Text className="font-inter-medium text-body text-muted">{text.none}</Text>
+      <Text className="type-body-muted">{text.none}</Text>
     );
 
   return (
     <View className="flex-1 bg-ground pt-safe">
       <View className="h-16 flex-row items-center gap-1 pl-4 pr-3">
         <BackButton onBack={on.onBack} />
-        <Text accessibilityRole="header" className="flex-1 font-inter-bold text-lead text-ink">
+        <Text accessibilityRole="header" className="flex-1 type-lead">
           {text.title}
         </Text>
       </View>
@@ -66,7 +66,7 @@ export function ChapterHistoryView({ history, ...on }: Props) {
           chapter ? (
             <View className="gap-3.5 pb-3.5">
               <ChapterHistoryHeader chapter={chapter} />
-              <Text accessibilityRole="header" className="font-inter-bold text-body text-ink">
+              <Text accessibilityRole="header" className="type-body-bold">
                 {text.attemptsHeading}
               </Text>
             </View>

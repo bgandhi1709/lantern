@@ -44,10 +44,10 @@ export function MoreChildren({
   return (
     <View className="mt-4 gap-3">
       <View className="gap-0.5">
-        <Text accessibilityRole="header" className="font-inter-bold text-lead text-ink">
+        <Text accessibilityRole="header" className="type-lead">
           {strings.heading}
         </Text>
-        <Text className="font-inter-medium text-small text-muted">{strings.intro}</Text>
+        <Text className="type-small-muted">{strings.intro}</Text>
       </View>
       {drafts.slice(1).map((draft, offset) => {
         const index = offset + 1;

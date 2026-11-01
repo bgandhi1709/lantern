@@ -14,7 +14,7 @@ export function FamilyRow({ title, text, onPress, danger = false }: Props) {
         {title}
       </Text>
       <View>
-        <Text className="font-inter-medium text-small text-muted">{text}</Text>
+        <Text className="type-small-muted">{text}</Text>
       </View>
     </Pressable>
   );

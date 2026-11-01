@@ -24,8 +24,8 @@ export function SubjectOption({ subject, selected, onPick }: Props) {
         {subjectGlyphs[subject.icon]}
       </View>
       <View className="flex-1">
-        <Text className="font-inter-bold text-lead text-ink">{subject.name}</Text>
-        <Text className="font-inter-medium text-small text-muted">{chapters}</Text>
+        <Text className="type-lead">{subject.name}</Text>
+        <Text className="type-small-muted">{chapters}</Text>
       </View>
       {selected ? (
         <View className="size-7 items-center justify-center rounded-full bg-primary">

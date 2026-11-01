@@ -23,8 +23,8 @@ export function ChildRow({ child, selected, onPick }: Props) {
     >
       <ChildAvatar name={child.name} large />
       <View className="flex-1">
-        <Text className="font-inter-bold text-lead text-ink">{child.name}</Text>
-        <Text className="font-inter-medium text-small text-muted">{status}</Text>
+        <Text className="type-lead">{child.name}</Text>
+        <Text className="type-small-muted">{status}</Text>
       </View>
       {selected ? (
         <View className="size-7 items-center justify-center rounded-full bg-primary">

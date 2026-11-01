@@ -19,10 +19,10 @@ export function ChildStepLayout({ header, heading, intro, footer, workingLabel, 
         {header}
         <ScrollView contentContainerClassName="gap-4 pb-3" keyboardShouldPersistTaps="handled">
           <View className="mt-5 gap-2">
-            <Text accessibilityRole="header" className="font-inter-bold text-heading text-ink">
+            <Text accessibilityRole="header" className="type-heading">
               {heading}
             </Text>
-            <Text className="font-inter-medium text-body text-muted">{intro}</Text>
+            <Text className="type-body-muted">{intro}</Text>
           </View>
           {children}
         </ScrollView>

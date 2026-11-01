@@ -35,7 +35,7 @@ export function ChildSheet({
         />
         <View className="gap-3 rounded-t-3xl bg-card px-4 pb-safe pt-3">
           <View className="h-1 w-10 self-center rounded-full bg-track" />
-          <Text accessibilityRole="header" className="font-inter-bold text-lead text-ink">
+          <Text accessibilityRole="header" className="type-lead">
             {home.sheetTitle}
           </Text>
           <View className="gap-2">

@@ -37,12 +37,10 @@ export function DeleteChildCodeView(props: Props) {
         </View>
         <ScrollView contentContainerClassName="gap-4 pb-3 pt-1" keyboardShouldPersistTaps="handled">
           <View className="gap-2">
-            <Text accessibilityRole="header" className="font-inter-bold text-heading text-ink">
+            <Text accessibilityRole="header" className="type-heading">
               {strings.codeHeading}
             </Text>
-            <Text className="font-inter-medium text-body text-muted">
-              {strings.codeIntro(props.email)}
-            </Text>
+            <Text className="type-body-muted">{strings.codeIntro(props.email)}</Text>
           </View>
           <TextField
             numeric
@@ -59,9 +57,7 @@ export function DeleteChildCodeView(props: Props) {
             disabled={props.work !== null}
             className="min-h-12 justify-center"
           >
-            <Text className="font-inter-bold text-body text-primary-deep underline">
-              {strings.resend}
-            </Text>
+            <Text className="type-link underline">{strings.resend}</Text>
           </Pressable>
         </ScrollView>
         <View className="gap-3 pb-6 pt-2">

@@ -21,7 +21,7 @@ export function SubjectList({ childName, classLevel, state, onOpenSubject, onTry
 
   return (
     <View className="gap-2">
-      <Text accessibilityRole="header" className="font-inter-bold text-body text-ink">
+      <Text accessibilityRole="header" className="type-body-bold">
         {home.subjectsTitle(childName, classLevel)}
       </Text>
       {state.status === 'ready'
@@ -41,15 +41,12 @@ export function SubjectList({ childName, classLevel, state, onOpenSubject, onTry
           className="flex-row items-center gap-3 py-4"
         >
           <ActivityIndicator color={colors.accent} />
-          <Text className="shrink font-inter-medium text-small text-muted">{loadingLabel}</Text>
+          <Text className="shrink type-small-muted">{loadingLabel}</Text>
         </View>
       ) : null}
       {state.status === 'failed' ? (
         <View className="items-start gap-3 py-2">
-          <Text
-            accessibilityLiveRegion="polite"
-            className="font-inter-medium text-body text-danger"
-          >
+          <Text accessibilityLiveRegion="polite" className="type-body-error">
             {home.subjectsFailed}
           </Text>
           <PrimaryButton label={home.tryAgain} onPress={onTryAgain} />

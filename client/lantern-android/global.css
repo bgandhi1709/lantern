@@ -57,3 +57,43 @@
   --text-lead: var(--app-text-lead, 17px);
   --text-heading: var(--app-text-heading, 28px);
 }
+
+@utility type-heading {
+  @apply font-inter-bold text-heading text-ink;
+}
+@utility type-lead {
+  @apply font-inter-bold text-lead text-ink;
+}
+@utility type-body {
+  @apply font-inter-medium text-body text-ink;
+}
+@utility type-body-bold {
+  @apply font-inter-bold text-body text-ink;
+}
+@utility type-body-muted {
+  @apply font-inter-medium text-body text-muted;
+}
+@utility type-body-error {
+  @apply font-inter-medium text-body text-danger;
+}
+@utility type-link {
+  @apply font-inter-bold text-body text-primary-deep;
+}
+@utility type-small-muted {
+  @apply font-inter-medium text-small text-muted;
+}
+@utility type-small-muted-semibold {
+  @apply font-inter-semibold text-small text-muted;
+}
+@utility type-small-muted-bold {
+  @apply font-inter-bold text-small text-muted;
+}
+@utility type-small-link {
+  @apply font-inter-bold text-small text-primary-deep;
+}
+@utility type-error {
+  @apply font-inter-semibold text-small text-danger;
+}
+@utility type-caption {
+  @apply font-inter-medium text-caption text-muted;
+}

@@ -13,13 +13,11 @@ export function ChapterHistoryHeader({ chapter }: { chapter: ChapterHeader }) {
       <Text className="font-inter-semibold text-caption text-primary-deep">
         {text.subjectChapter(chapter.subjectName, chapter.number)}
       </Text>
-      <Text accessibilityRole="header" className="font-inter-bold text-heading text-ink">
+      <Text accessibilityRole="header" className="type-heading">
         {chapter.title}
       </Text>
-      <Text className="font-inter-bold text-small text-primary-deep">
-        {text.now(stateLine(strings.chapters, chapter))}
-      </Text>
-      <Text className="font-inter-medium text-caption text-muted">
+      <Text className="type-small-link">{text.now(stateLine(strings.chapters, chapter))}</Text>
+      <Text className="type-caption">
         {text.totals(
           strings.chapters.attempts(chapter.attemptCount),
           text.checks(chapter.checkCount),

@@ -15,24 +15,24 @@ export function NoticeView({ version, onBack }: Props) {
       </View>
       <ScrollView contentContainerClassName="gap-5 pb-6">
         <View className="gap-2">
-          <Text accessibilityRole="header" className="font-inter-bold text-heading text-ink">
+          <Text accessibilityRole="header" className="type-heading">
             {notice.heading}
           </Text>
-          <Text className="font-inter-medium text-body text-muted">{notice.intro}</Text>
+          <Text className="type-body-muted">{notice.intro}</Text>
         </View>
         {notice.sections.map((section) => (
           <View key={section.title} className="gap-2">
-            <Text accessibilityRole="header" className="font-inter-bold text-lead text-ink">
+            <Text accessibilityRole="header" className="type-lead">
               {section.title}
             </Text>
             {section.text.map((paragraph) => (
-              <Text key={paragraph} className="font-inter-medium text-body text-ink">
+              <Text key={paragraph} className="type-body">
                 {paragraph}
               </Text>
             ))}
           </View>
         ))}
-        <Text className="font-inter-medium text-small text-muted">{notice.version(version)}</Text>
+        <Text className="type-small-muted">{notice.version(version)}</Text>
       </ScrollView>
     </View>
   );

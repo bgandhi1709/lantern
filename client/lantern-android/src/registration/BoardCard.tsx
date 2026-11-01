@@ -53,10 +53,10 @@ export function BoardCard({ board, title, subtitle, classes, selected, onSelect 
         <Image source={LOGOS[board]} resizeMode="contain" accessible={false} className="size-22" />
       </View>
       <View className="flex-1 items-center gap-0.5">
-        <Text className="text-center font-inter-bold text-lead text-ink">{title}</Text>
-        <Text className="text-center font-inter-medium text-small text-muted">{subtitle}</Text>
+        <Text className="text-center type-lead">{title}</Text>
+        <Text className="text-center type-small-muted">{subtitle}</Text>
       </View>
-      <Text className="text-center font-inter-semibold text-small text-muted">{classes}</Text>
+      <Text className="text-center type-small-muted-semibold">{classes}</Text>
       {selected ? <Tick /> : null}
     </Pressable>
   );

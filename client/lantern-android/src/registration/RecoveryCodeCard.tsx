@@ -8,14 +8,8 @@ export function RecoveryCodeCard({ code }: { code: string }) {
 
   return (
     <View className="items-center gap-2 rounded-card border border-line bg-card px-4 py-6">
-      <Text className="font-inter-bold text-small tracking-wider text-muted">
-        {strings.codeLabel}
-      </Text>
-      <Text
-        selectable
-        testID="recovery-code"
-        className="font-inter-bold text-lead tracking-widest text-ink"
-      >
+      <Text className="type-small-muted-bold tracking-wider">{strings.codeLabel}</Text>
+      <Text selectable testID="recovery-code" className="type-lead tracking-widest">
         {code}
       </Text>
     </View>

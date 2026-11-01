@@ -30,7 +30,7 @@ function AgreementRow({
       accessibilityLabel={about.agreeLabel}
       icon={bare ? undefined : <ShieldCheckIcon />}
     >
-      <Text className="font-inter-medium text-body text-ink">
+      <Text className="type-body">
         {long ? (
           LONG_LABEL
         ) : (

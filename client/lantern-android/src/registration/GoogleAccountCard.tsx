@@ -12,8 +12,8 @@ function Row({ icon, label, value }: { icon: ReactNode; label: string; value: st
     <View className="flex-row items-center gap-3">
       <View className="size-11 items-center justify-center rounded-control bg-tile">{icon}</View>
       <View className="flex-1">
-        <Text className="font-inter-medium text-small text-muted">{label}</Text>
-        <Text className="font-inter-bold text-lead text-ink">{value}</Text>
+        <Text className="type-small-muted">{label}</Text>
+        <Text className="type-lead">{value}</Text>
       </View>
     </View>
   );
@@ -27,9 +27,7 @@ export function GoogleAccountCard({ name, email }: Props) {
     <View className="gap-3 rounded-card border border-line bg-card p-4">
       <View className="flex-row items-center gap-2">
         <GoogleG />
-        <Text className="font-inter-bold text-small tracking-wider text-muted">
-          {strings.fromGoogle}
-        </Text>
+        <Text className="type-small-muted-bold tracking-wider">{strings.fromGoogle}</Text>
       </View>
       <Row icon={<UserIcon />} label={strings.name} value={name} />
       <Row icon={<MailIcon />} label={strings.email} value={email} />

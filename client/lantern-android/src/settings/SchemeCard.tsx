@@ -34,8 +34,8 @@ export function SchemeCard({ name, note, swatch, selected, onPick }: Props) {
         </Svg>
       </View>
       <View className="shrink">
-        <Text className="font-inter-bold text-body text-ink">{name}</Text>
-        <Text className="font-inter-medium text-caption text-muted">{note}</Text>
+        <Text className="type-body-bold">{name}</Text>
+        <Text className="type-caption">{note}</Text>
       </View>
     </Pressable>
   );

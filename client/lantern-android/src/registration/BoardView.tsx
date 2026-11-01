@@ -23,10 +23,10 @@ export function BoardView({ board, onSelect, onContinue, onBack }: Props) {
       <StepHeader step={2} total={REGISTRATION_STEP_COUNT} onBack={onBack} />
       <ScrollView contentContainerClassName="gap-6 pb-3">
         <View className="mt-5 gap-2">
-          <Text accessibilityRole="header" className="font-inter-bold text-heading text-ink">
+          <Text accessibilityRole="header" className="type-heading">
             {strings.heading}
           </Text>
-          <Text className="font-inter-medium text-body text-muted">{strings.intro}</Text>
+          <Text className="type-body-muted">{strings.intro}</Text>
         </View>
         <View
           accessibilityRole="radiogroup"

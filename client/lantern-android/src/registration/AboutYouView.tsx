@@ -45,10 +45,10 @@ export function AboutYouView({
         <StepHeader step={1} total={REGISTRATION_STEP_COUNT} onBack={onBack} />
         <ScrollView contentContainerClassName="gap-4 pb-3" keyboardShouldPersistTaps="handled">
           <View className="mt-5 gap-2">
-            <Text accessibilityRole="header" className="font-inter-bold text-heading text-ink">
+            <Text accessibilityRole="header" className="type-heading">
               {about.heading}
             </Text>
-            <Text className="font-inter-medium text-body text-muted">{about.intro}</Text>
+            <Text className="type-body-muted">{about.intro}</Text>
           </View>
           <GoogleAccountCard name={parent.name} email={parent.email} />
           {/* -my-4 cancels the form's gap, so the link sits tight under the card as on the canvas. */}
@@ -76,7 +76,7 @@ export function AboutYouView({
             accessibilityLabel={about.agreeLabel}
             icon={<ShieldCheckIcon />}
           >
-            <Text className="font-inter-medium text-body text-ink">
+            <Text className="type-body">
               {about.agreeBefore}
               <Text
                 accessibilityRole="link"

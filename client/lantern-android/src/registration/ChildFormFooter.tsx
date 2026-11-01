@@ -22,10 +22,7 @@ export function ChildFormFooter({ label, disabled, blockedText, failureText, onS
         </Text>
       ) : null}
       {failureText ? (
-        <Text
-          accessibilityLiveRegion="polite"
-          className="text-center font-inter-semibold text-small text-danger"
-        >
+        <Text accessibilityLiveRegion="polite" className="text-center type-error">
           {failureText}
         </Text>
       ) : null}

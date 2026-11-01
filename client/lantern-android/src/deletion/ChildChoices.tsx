@@ -30,8 +30,8 @@ export function ChildChoices({ options, pickedId, onPick }: Props) {
           >
             <ChildAvatar name={child.name} large />
             <View className="flex-1">
-              <Text className="font-inter-bold text-lead text-ink">{child.name}</Text>
-              <Text className="font-inter-medium text-small text-muted">{classLabel}</Text>
+              <Text className="type-lead">{child.name}</Text>
+              <Text className="type-small-muted">{classLabel}</Text>
             </View>
             {checked ? <CheckCircleIcon /> : null}
           </Pressable>

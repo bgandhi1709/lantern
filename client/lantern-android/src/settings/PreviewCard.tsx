@@ -28,11 +28,11 @@ export function PreviewCard() {
           </Svg>
         </View>
         <View className="shrink">
-          <Text className="font-inter-bold text-body text-ink">{preview.title}</Text>
-          <Text className="font-inter-medium text-small text-muted">{preview.meta}</Text>
+          <Text className="type-body-bold">{preview.title}</Text>
+          <Text className="type-small-muted">{preview.meta}</Text>
         </View>
       </View>
-      <Text className="font-inter-medium text-body text-ink">{preview.body}</Text>
+      <Text className="type-body">{preview.body}</Text>
       <View className="h-2 rounded-full bg-track">
         <View className="h-2 w-3/5 rounded-full bg-primary" />
       </View>

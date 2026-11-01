@@ -15,7 +15,7 @@ export function ClassChips({ levels, selected, onSelect, hint }: Props) {
 
   return (
     <View>
-      <Text className="font-inter-bold text-body text-ink">{strings.classLabel}</Text>
+      <Text className="type-body-bold">{strings.classLabel}</Text>
       <View
         accessibilityRole="radiogroup"
         accessibilityLabel={strings.classLabel}
@@ -41,7 +41,7 @@ export function ClassChips({ levels, selected, onSelect, hint }: Props) {
           );
         })}
       </View>
-      {hint ? <Text className="mt-1 font-inter-medium text-small text-muted">{hint}</Text> : null}
+      {hint ? <Text className="mt-1 type-small-muted">{hint}</Text> : null}
     </View>
   );
 }

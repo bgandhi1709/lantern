@@ -8,10 +8,10 @@ export function OnlyChildNotice({ onDeleteFamily }: { onDeleteFamily: () => void
 
   return (
     <View className="gap-3 rounded-card border border-line bg-card p-4">
-      <Text accessibilityRole="header" className="font-inter-bold text-lead text-ink">
+      <Text accessibilityRole="header" className="type-lead">
         {notice.heading}
       </Text>
-      <Text className="font-inter-medium text-body text-muted">{notice.text}</Text>
+      <Text className="type-body-muted">{notice.text}</Text>
       <OutlineButton tone="danger" label={notice.action} onPress={onDeleteFamily} />
     </View>
   );

@@ -44,18 +44,15 @@ export function RecoveryCodeView({
       <StepHeader step={3} total={REGISTRATION_STEP_COUNT} onBack={onBack} />
       <ScrollView contentContainerClassName="gap-4 pb-3">
         <View className="mt-5 gap-2">
-          <Text accessibilityRole="header" className="font-inter-bold text-heading text-ink">
+          <Text accessibilityRole="header" className="type-heading">
             {strings.heading}
           </Text>
-          <Text className="font-inter-medium text-body text-muted">{strings.intro}</Text>
+          <Text className="type-body-muted">{strings.intro}</Text>
         </View>
         {code === null ? null : <RecoveryCodeCard code={code} />}
         {makeFailed ? (
           <View className="gap-3">
-            <Text
-              accessibilityLiveRegion="polite"
-              className="font-inter-semibold text-small text-danger"
-            >
+            <Text accessibilityLiveRegion="polite" className="type-error">
               {strings.makeFailed}
             </Text>
             <OutlineButton label={strings.tryAgain} onPress={onMakeAgain} />
@@ -64,23 +61,18 @@ export function RecoveryCodeView({
         <OutlineButton label={strings.email} onPress={onEmail} icon={<MailIcon />} />
         <OutlineButton label={strings.save} onPress={onSave} icon={<ShareIcon />} />
         {shareFailed ? (
-          <Text
-            accessibilityLiveRegion="polite"
-            className="font-inter-semibold text-small text-danger"
-          >
+          <Text accessibilityLiveRegion="polite" className="type-error">
             {strings.shareFailed}
           </Text>
         ) : null}
-        <Text className="font-inter-medium text-small text-muted">{strings.hint}</Text>
+        <Text className="type-small-muted">{strings.hint}</Text>
         <CheckRow checked={saved} onToggle={onSavedToggle} accessibilityLabel={strings.saved}>
-          <Text className="font-inter-medium text-body text-ink">{strings.saved}</Text>
+          <Text className="type-body">{strings.saved}</Text>
         </CheckRow>
       </ScrollView>
       <View className="pb-6 pt-2">
         {emailed ? null : (
-          <Text className="pb-2 text-center font-inter-medium text-small text-muted">
-            {strings.emailFirst}
-          </Text>
+          <Text className="pb-2 text-center type-small-muted">{strings.emailFirst}</Text>
         )}
         <PrimaryButton
           label={strings.continue}
