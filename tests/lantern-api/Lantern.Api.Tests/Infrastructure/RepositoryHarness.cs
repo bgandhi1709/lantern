@@ -27,7 +27,7 @@ internal sealed class RepositoryHarness : IDisposable
         Parents = service.GetTableClient(parentsTable ?? $"parents{Guid.NewGuid():N}");
         Families = service.GetTableClient(familiesTable ?? $"families{Guid.NewGuid():N}");
         Progress = service.GetTableClient($"progress{Guid.NewGuid():N}");
-        Crypto = new CryptoService(Options.Create(new SecurityOptions { Key = TestSettings.SecurityKey }));
+        Crypto = new CryptoService(Options.Create(new SecurityOptions { Key = TestSettings.SecurityKey }), TestServices.Json);
 
         var config = new TypeAdapterConfig();
         config.Apply(new RepositoryProfile());

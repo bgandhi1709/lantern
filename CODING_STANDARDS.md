@@ -77,7 +77,7 @@ its "Reuse or create" table. Review a change against the recipe it should have f
 - **Family scope** comes only from `IIdentityResolver` through `ServiceBase.FamilyIdAsync`, and a model's `FamilyId`
   is overwritten from it on every write.
 - **Locked values** are stored and returned as sent. The server never encrypts or decrypts a personal field and holds no
-  Family key (ADR-0010). The only crypto is the uid hash in `CryptoService`.
+  Family key (ADR-0010). The only crypto is in `CryptoService`: the uid hash, and `Seal` and `Open` for short-lived signed tokens bound to a Parent (D125, D126). It encrypts nothing and holds no Family key.
 
 ### 6. Registration (DI)
 

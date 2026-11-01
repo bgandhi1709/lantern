@@ -4,6 +4,7 @@ import { tapped } from '../shared/analytics';
 import { getParent } from '../shared/session';
 import { readFamilyKey } from '../shared/storage';
 import { useAppearance } from '../shared/theme';
+import type { FamilyActions } from './FamilyManagement';
 import { SettingsView } from './SettingsView';
 import { useSettingsOutline } from './useSettingsOutline';
 
@@ -30,20 +31,23 @@ export function SettingsScreen({
     readFamilyKey(getParent().uid).then((key) => setLocked(key === null));
   }, []);
 
-  return (
-    <SettingsView
-      theme={appearance.theme}
-      textSize={appearance.textSize}
-      colourScheme={appearance.colourScheme}
-      onTheme={tapped('change-appearance', setTheme)}
-      onTextSize={tapped('change-appearance', setTextSize)}
-      onColourScheme={tapped('change-appearance', setColourScheme)}
-      outline={outline}
-      onBack={onBack}
-      onUnlock={locked === true ? tapped('unlock', onUnlock) : undefined}
-      onStartAgain={locked === true ? tapped('start-again', onStartAgain) : undefined}
-      onDeleteChild={locked === false ? tapped('delete-child', onDeleteChild) : undefined}
-      onDeleteFamily={locked === false ? tapped('delete-family', onDeleteFamily) : undefined}
-    />
-  );
+  const look = {
+    theme: appearance.theme,
+    textSize: appearance.textSize,
+    colourScheme: appearance.colourScheme,
+    onTheme: tapped('change-appearance', setTheme),
+    onTextSize: tapped('change-appearance', setTextSize),
+    onColourScheme: tapped('change-appearance', setColourScheme),
+  };
+  const family: FamilyActions =
+    locked === true
+      ? { unlock: tapped('unlock', onUnlock), startAgain: tapped('start-again', onStartAgain) }
+      : locked === false
+        ? {
+            deleteChild: tapped('delete-child', onDeleteChild),
+            deleteFamily: tapped('delete-family', onDeleteFamily),
+          }
+        : {};
+
+  return <SettingsView look={look} family={family} outline={outline} onBack={onBack} />;
 }

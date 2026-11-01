@@ -137,7 +137,7 @@ const requiredStories: Record<string, string[]> = {
     'NameTyped',
     'Sending',
     'EmailNotSent',
-    'LongName_',
+    'LongName',
     'Dark',
     'LargestText',
   ],
@@ -249,6 +249,7 @@ const withoutStory: Record<string, string> = {
   'shared/analytics/RouteTracker.tsx': 'renders nothing; reports the route in front',
   'registration/BoardScreen.tsx': 'container for BoardView, which has the stories',
   'settings/AppSettings.tsx': 'the App settings group of SettingsView, whose stories show it',
+  'settings/SchemeGrid.tsx': 'the colour cards of AppSettings, whose SettingsView stories show it',
   'settings/FamilyManagement.tsx':
     'the Family management group of SettingsView, whose stories show it',
   'unlock/UnlockScreen.tsx': 'container for UnlockView, which has the stories',

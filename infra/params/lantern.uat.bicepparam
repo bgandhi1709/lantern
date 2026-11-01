@@ -51,14 +51,12 @@ param telemetry = {
 
 param childrenPerMinute = 30
 
-// ADR-0019 and D125: a Parent may ask for a One-time code once a minute and five times an hour, and try it five times a minute.
 param codeLimits = {
   requestsPerMinute: 1
   requestsPerHour: 5
   checksPerMinute: 5
 }
 
-// Where Azure keeps the One-time code email's data. India for the Indian Families (DPDP); change it here if Azure does not offer email there.
 param emailDataLocation = 'India'
 param actionResendAfter = '00:05:00'
 

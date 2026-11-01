@@ -72,6 +72,8 @@ internal sealed class ProblemExceptionHandler(ILogger<ProblemExceptionHandler> l
             LanternErrorCode.ContentNotReady => (HttpStatusCode.Conflict, "content-not-ready", "Content not ready", "This child's books are still being prepared. Try again shortly."),
             LanternErrorCode.InvalidPage => (HttpStatusCode.BadRequest, "invalid-page", "Invalid page", "The limit must be 1 to 100 and the cursor must be one this API returned."),
             LanternErrorCode.CodeWrong => (HttpStatusCode.BadRequest, "code-wrong", "Wrong code", "That code is not right."),
+            LanternErrorCode.CodeTooSoon => (HttpStatusCode.TooManyRequests, "code-too-soon", "Too soon", "Wait a minute before asking for another code."),
+            LanternErrorCode.CodeAttemptsUsed => (HttpStatusCode.TooManyRequests, "code-attempts-used", "Too many tries", "Too many tries. Ask for a new code and wait a minute."),
             LanternErrorCode.CodeExpired => (HttpStatusCode.Gone, "code-expired", "Code expired", "That code has expired. Ask for a new one."),
             LanternErrorCode.ProofRequired => (HttpStatusCode.Forbidden, "proof-required", "Code required", "This needs a code from your email. Ask for a new one."),
             LanternErrorCode.EmailNotSent => (HttpStatusCode.BadGateway, "email-not-sent", "Email not sent", "The email could not be sent. Try again in a minute."),

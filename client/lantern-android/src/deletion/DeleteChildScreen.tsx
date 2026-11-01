@@ -19,6 +19,8 @@ export function DeleteChildScreen({ onDeleted, onBack, onDeleteFamily }: Props) 
     else onBack();
   };
 
+  const cancel = () => (deletion.isBusy() ? undefined : onBack());
+
   useEffect(() => {
     const press = BackHandler.addEventListener('hardwareBackPress', () => {
       goBack();
@@ -39,7 +41,7 @@ export function DeleteChildScreen({ onDeleted, onBack, onDeleteFamily }: Props) 
         onTypeCode={deletion.typeCode}
         onResend={() => deletion.emailCode(true)}
         onDelete={deletion.remove}
-        onCancel={() => (deletion.isBusy() ? undefined : onBack())}
+        onCancel={cancel}
         onBack={goBack}
       />
     );
@@ -48,8 +50,7 @@ export function DeleteChildScreen({ onDeleted, onBack, onDeleteFamily }: Props) 
   return (
     <DeleteChildConfirmView
       family={deletion.family}
-      pickedId={deletion.picked?.id ?? null}
-      pickedName={deletion.picked?.name ?? null}
+      picked={deletion.picked}
       typedName={deletion.typedName}
       canSend={deletion.nameMatches}
       sending={deletion.work === 'requesting'}
@@ -58,7 +59,7 @@ export function DeleteChildScreen({ onDeleted, onBack, onDeleteFamily }: Props) 
       onPick={deletion.pick}
       onTypeName={deletion.typeName}
       onSend={() => deletion.emailCode(false)}
-      onCancel={() => (deletion.isBusy() ? undefined : onBack())}
+      onCancel={cancel}
       onBack={goBack}
       onDeleteFamily={onDeleteFamily}
     />

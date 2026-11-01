@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Lantern.Api.Models;
 
-public sealed class CodeRequest
+public sealed class CodeIssueRequest
 {
     [Required]
     [StringLength(40, MinimumLength = 1)]

@@ -114,8 +114,6 @@ var amqpUrlSecret = {
   identity: identity.id
 }
 
-// The One-time code email (ADR-0019): Azure's own managed sender domain, so no domain has to be bought yet. A custom
-// domain later is a second domain on this email service and a new Email__Sender, with no code change.
 resource emailService 'Microsoft.Communication/emailServices@2023-04-01' = {
   name: 'email-${name}'
   location: 'global'
@@ -142,8 +140,6 @@ resource communication 'Microsoft.Communication/communicationServices@2023-04-01
   }
 }
 
-// Written by this template, not by hand: Azure issues the key. Entra sign-in has no built-in sending role yet
-// (only Contributor), so the API reads the connection string from Key Vault with its identity.
 resource acsConnectionString 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
   parent: vault
   name: keyVault.acsConnectionStringSecret

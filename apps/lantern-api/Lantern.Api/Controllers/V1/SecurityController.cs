@@ -16,7 +16,7 @@ public sealed class SecurityController(IOneTimeCodeService codes) : ControllerBa
     private const int MaxBodyBytes = 1024;
 
     [HttpPost]
-    public async Task<ActionResult<CodeChallengeModel>> Issue([FromBody] CodeRequest request, CancellationToken cancellationToken) =>
+    public async Task<ActionResult<CodeChallengeModel>> Issue([FromBody] CodeIssueRequest request, CancellationToken cancellationToken) =>
         Ok(new CodeChallengeModel { Challenge = await codes.RequestAsync(request.Operation, request.Target, cancellationToken) });
 
     [HttpPost("verify")]

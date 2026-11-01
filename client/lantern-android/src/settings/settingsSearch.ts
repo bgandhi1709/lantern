@@ -1,6 +1,7 @@
 export const APP_IDS = ['theme', 'textSize', 'colour', 'preview'] as const;
 export const FAMILY_IDS = ['unlock', 'deleteChild', 'deleteFamily', 'startAgain'] as const;
 
+export type FamilyId = (typeof FAMILY_IDS)[number];
 export type SettingId = (typeof APP_IDS)[number] | (typeof FAMILY_IDS)[number];
 export type GroupId = 'app' | 'family';
 

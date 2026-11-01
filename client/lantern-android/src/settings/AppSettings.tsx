@@ -1,11 +1,11 @@
-import { Text, View } from 'react-native';
+import { Text } from 'react-native';
 
 import { useStrings } from '../shared/i18n';
-import { COLOUR_SCHEMES, TEXT_SIZES, THEME_CHOICES, paletteFor } from '../shared/theme';
+import { TEXT_SIZES, THEME_CHOICES } from '../shared/theme';
 import type { ColourScheme, TextSize, ThemeChoice } from '../shared/theme';
 import { OptionGroup } from '../shared/ui/OptionGroup';
 import { PreviewCard } from './PreviewCard';
-import { SchemeCard } from './SchemeCard';
+import { SchemeGrid } from './SchemeGrid';
 import { SettingRow } from './SettingRow';
 import { SettingsGroup } from './SettingsGroup';
 import { APP_IDS } from './settingsSearch';
@@ -17,19 +17,18 @@ const SAMPLE_CLASS: Record<TextSize, string> = {
   largest: 'text-aa-largest',
 };
 
-const SCHEME_ROWS = [COLOUR_SCHEMES.slice(0, 2), COLOUR_SCHEMES.slice(2)];
-
-type Props = {
+export type Look = {
   theme: ThemeChoice;
   textSize: TextSize;
   colourScheme: ColourScheme;
   onTheme: (theme: ThemeChoice) => void;
   onTextSize: (textSize: TextSize) => void;
   onColourScheme: (colourScheme: ColourScheme) => void;
-  outline: Outline;
 };
 
-export function AppSettings({ outline, ...look }: Props) {
+type Props = { look: Look; outline: Outline };
+
+export function AppSettings({ look, outline }: Props) {
   const strings = useStrings();
   const text = strings.appearance;
   const row = (id: 'theme' | 'textSize' | 'colour' | 'preview', title: string, value: string) => ({
@@ -80,26 +79,7 @@ export function AppSettings({ outline, ...look }: Props) {
       ) : null}
       {outline.matches('colour') ? (
         <SettingRow {...row('colour', text.colour.heading, text.colour[look.colourScheme].name)}>
-          <View
-            accessibilityRole="radiogroup"
-            accessibilityLabel={text.colour.heading}
-            className="gap-2.5"
-          >
-            {SCHEME_ROWS.map((schemes) => (
-              <View key={schemes.join()} className="flex-row gap-2.5">
-                {schemes.map((scheme) => (
-                  <SchemeCard
-                    key={scheme}
-                    name={text.colour[scheme].name}
-                    note={text.colour[scheme].note}
-                    swatch={paletteFor(scheme, false).primary}
-                    selected={scheme === look.colourScheme}
-                    onPick={() => look.onColourScheme(scheme)}
-                  />
-                ))}
-              </View>
-            ))}
-          </View>
+          <SchemeGrid value={look.colourScheme} onPick={look.onColourScheme} />
         </SettingRow>
       ) : null}
       {outline.matches('preview') ? (

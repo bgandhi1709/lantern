@@ -166,7 +166,7 @@ describe('Settings search', () => {
     expect(screen.queryByRole('button', { name: /^Theme/ })).not.toBeOnTheScreen();
   });
 
-  it('says so when nothing matches, and Show all settings brings everything back', async () => {
+  it('says so when nothing matches, and Clear search brings everything back', async () => {
     const user = await openSettings();
 
     await user.type(search(), 'zzz');
@@ -174,7 +174,7 @@ describe('Settings search', () => {
     expect(screen.getByText('No settings match "zzz"')).toBeOnTheScreen();
     expect(screen.queryByRole('button', { name: 'App settings' })).not.toBeOnTheScreen();
 
-    await user.press(screen.getByRole('button', { name: 'Show all settings' }));
+    await user.press(screen.getByRole('button', { name: 'Clear search' }));
 
     expect(search()).toHaveDisplayValue('');
     expect(row('App settings', true)).toBeOnTheScreen();
@@ -185,7 +185,7 @@ describe('Settings search', () => {
     const user = await openSettings();
     await user.type(search(), 'dark');
 
-    await user.press(screen.getByRole('button', { name: 'Clear search' }));
+    await user.press(screen.getByRole('button', { name: 'Clear the search box' }));
 
     expect(search()).toHaveDisplayValue('');
     expect(row('Text size, Normal text size')).toBeOnTheScreen();

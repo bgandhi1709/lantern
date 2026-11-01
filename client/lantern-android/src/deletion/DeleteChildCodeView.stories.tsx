@@ -35,7 +35,7 @@ export const ExpiredCode: Story = { args: { code: '482917', failure: 'codeExpire
 export const TooSoon: Story = { args: { failure: 'tooSoon', resent: false } };
 export const Resent: Story = { args: { resent: true } };
 export const Deleting: Story = {
-  args: { code: '482917', verified: true, work: 'deleting' },
+  args: { code: '482917', verified: true, work: 'acting' },
 };
 export const DeleteFailed: Story = {
   args: { code: '482917', verified: true, failure: 'other' },

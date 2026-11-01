@@ -411,7 +411,7 @@ export const en = {
     title: 'Settings',
     searchLabel: 'Search settings',
     clearSearch: 'Clear search',
-    showAll: 'Show all settings',
+    clearSearchBox: 'Clear the search box',
     noMatch: (query: string) => `No settings match "${query}"`,
     noMatchHint: 'Try a shorter word, like theme, text or delete.',
     rowLabel: (title: string, value: string) => `${title}, ${value}`,

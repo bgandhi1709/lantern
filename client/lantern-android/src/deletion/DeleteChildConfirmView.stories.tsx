@@ -10,8 +10,7 @@ const meta = {
   component: DeleteChildConfirmView,
   args: {
     family: { status: 'ready', children: TWO_CHILDREN },
-    pickedId: null,
-    pickedName: null,
+    picked: null,
     typedName: '',
     canSend: false,
     sending: false,
@@ -30,7 +29,7 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-const picked = { pickedId: 'aarya', pickedName: 'Aarya' } as const;
+const picked = { picked: { id: 'aarya', name: 'Aarya', classLevel: 5 } } as const;
 
 export const Loading: Story = { args: { family: { status: 'loading' } } };
 export const LoadFailed: Story = { args: { family: { status: 'failed' } } };
@@ -46,14 +45,13 @@ export const Sending: Story = {
 export const EmailNotSent: Story = {
   args: { ...picked, typedName: 'Aarya', canSend: true, failure: 'emailNotSent' },
 };
-export const LongName_: Story = {
+export const LongName: Story = {
   args: {
     family: {
       status: 'ready',
       children: [{ id: 'long', name: LONG_NAME, classLevel: 6 }, ...TWO_CHILDREN],
     },
-    pickedId: 'long',
-    pickedName: LONG_NAME,
+    picked: { id: 'long', name: LONG_NAME, classLevel: 6 },
     typedName: LONG_NAME,
     canSend: true,
   },

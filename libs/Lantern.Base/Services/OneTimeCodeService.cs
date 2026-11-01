@@ -1,5 +1,4 @@
-using System.Buffers.Text;
-using System.Text;
+using System.Globalization;
 using Lantern.Core.Constants;
 using Lantern.Core.Exceptions;
 using Lantern.Core.Identity;
@@ -14,13 +13,12 @@ internal sealed class OneTimeCodeService(
     ICryptoService crypto,
     IOneTimeCodeGenerator generator,
     IEmailService email,
-    IJsonService json,
     TimeProvider clock
 ) : IOneTimeCodeService
 {
     private const string ChallengePurpose = "code-challenge";
     private const string ProofPurpose = "code-proof";
-    private const string Subject = "Your Lantern one-time code";
+    private const string EmailSubject = "Your Lantern one-time code";
     private static readonly TimeSpan ChallengeLife = TimeSpan.FromMinutes(5);
     private static readonly TimeSpan ProofLife = TimeSpan.FromMinutes(5);
 
@@ -36,50 +34,38 @@ internal sealed class OneTimeCodeService(
         }
 
         var code = generator.NewCode();
-        var challenge = Challenge(operation, target, caller, code);
+        var challenge = crypto.Seal(ChallengePurpose, TokenFor(operation, target ?? string.Empty, ChallengeLife), code);
 
-        await email.SendAsync(caller.Email, Subject, EmailText(code), cancellationToken);
+        await email.SendAsync(caller.Email, EmailSubject, EmailText(code), cancellationToken);
 
         return challenge;
     }
 
     public string Verify(string challenge, string code)
     {
-        var token = OpenChallenge(challenge, code, out var caller);
+        var token = crypto.Open<CodeToken>(ChallengePurpose, challenge, code);
+
+        if (token is null || token.UidHash != CallerHash)
+        {
+            throw new LanternException(LanternErrorCode.CodeWrong);
+        }
 
         if (token.ExpiresAt <= clock.GetUtcNow())
         {
             throw new LanternException(LanternErrorCode.CodeExpired);
         }
 
-        return Seal(
-            new CodeToken
-            {
-                Subject = crypto.Hash(caller.Uid),
-                Operation = token.Operation,
-                Target = token.Target,
-                ExpiresAt = clock.GetUtcNow().Add(ProofLife),
-                Nonce = generator.NewNonce(),
-            },
-            ProofPurpose
-        );
+        return crypto.Seal(ProofPurpose, TokenFor(token.Operation, token.Target, ProofLife), string.Empty);
     }
 
     public void RequireProof(string proof, string operation, string target)
     {
-        var parts = (proof ?? string.Empty).Split('.');
-
-        if (parts.Length != 2 || !crypto.Matches(ProofPurpose, parts[0], parts[1]))
-        {
-            throw new LanternException(LanternErrorCode.ProofRequired);
-        }
-
-        var token = Open(parts[0]);
+        var token = crypto.Open<CodeToken>(ProofPurpose, proof, string.Empty);
         var valid =
             token is not null
-            && token.Subject == crypto.Hash(identityResolver.Identity.Uid)
+            && token.UidHash == CallerHash
             && token.Operation == operation
-            && token.Target == Normalized(target)
+            && token.Target == target
             && token.ExpiresAt > clock.GetUtcNow();
 
         if (!valid)
@@ -88,50 +74,21 @@ internal sealed class OneTimeCodeService(
         }
     }
 
-    private CodeToken OpenChallenge(string challenge, string code, out CallerIdentity caller)
-    {
-        caller = identityResolver.Identity;
-        var parts = (challenge ?? string.Empty).Split('.');
+    private string CallerHash => crypto.Hash(identityResolver.Identity.Uid);
 
-        if (parts.Length != 2 || !crypto.Matches(ChallengePurpose, $"{parts[0]}.{code}", parts[1]))
+    private CodeToken TokenFor(string operation, string target, TimeSpan life) =>
+        new()
         {
-            throw new LanternException(LanternErrorCode.CodeWrong);
-        }
-
-        var token = Open(parts[0]);
-
-        return token is not null && token.Subject == crypto.Hash(caller.Uid) ? token : throw new LanternException(LanternErrorCode.CodeWrong);
-    }
-
-    private CodeToken Open(string payload) => json.Deserialize<CodeToken>(Encoding.UTF8.GetString(Base64Url.DecodeFromChars(payload)));
-
-    private string Challenge(string operation, string target, CallerIdentity caller, string code)
-    {
-        var payload = Payload(
-            new CodeToken
-            {
-                Subject = crypto.Hash(caller.Uid),
-                Operation = operation,
-                Target = Normalized(target),
-                ExpiresAt = clock.GetUtcNow().Add(ChallengeLife),
-                Nonce = generator.NewNonce(),
-            }
-        );
-
-        return $"{payload}.{crypto.Sign(ChallengePurpose, $"{payload}.{code}")}";
-    }
-
-    private string Seal(CodeToken token, string purpose)
-    {
-        var payload = Payload(token);
-
-        return $"{payload}.{crypto.Sign(purpose, payload)}";
-    }
-
-    private string Payload(CodeToken token) => Base64Url.EncodeToString(Encoding.UTF8.GetBytes(json.Serialize(token)));
-
-    private static string Normalized(string target) => target ?? string.Empty;
+            UidHash = CallerHash,
+            Operation = operation,
+            Target = target,
+            ExpiresAt = clock.GetUtcNow().Add(life),
+            Nonce = generator.NewNonce(),
+        };
 
     private static string EmailText(string code) =>
-        $"Your Lantern code is {code}. It works for 5 minutes. If you did not ask for it, ignore this email and nothing will change.";
+        string.Create(
+            CultureInfo.InvariantCulture,
+            $"Your Lantern code is {code}. It works for {ChallengeLife.TotalMinutes:0} minutes. If you did not ask for it, ignore this email and nothing will change."
+        );
 }

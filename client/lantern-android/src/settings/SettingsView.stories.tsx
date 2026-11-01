@@ -3,6 +3,7 @@ import { fn } from 'storybook/test';
 
 import { en } from '../shared/i18n/en';
 import { LookProvider } from '../shared/theme';
+import type { Look } from './AppSettings';
 import { SettingsView } from './SettingsView';
 import { matchesQuery } from './settingsSearch';
 import type { GroupId, SettingId } from './settingsSearch';
@@ -25,25 +26,32 @@ function outlineOf({ query = '', open, closedGroups = [] }: OutlineState = {}): 
   };
 }
 
+const LOOK: Look = {
+  theme: 'light',
+  textSize: 'default',
+  colourScheme: 'teal',
+  onTheme: fn(),
+  onTextSize: fn(),
+  onColourScheme: fn(),
+};
+
 const meta = {
   title: 'Settings/SettingsView',
   component: SettingsView,
   args: {
-    theme: 'light',
-    textSize: 'default',
-    colourScheme: 'teal',
-    onTheme: fn(),
-    onTextSize: fn(),
-    onColourScheme: fn(),
+    look: LOOK,
+    family: { deleteChild: fn(), deleteFamily: fn() },
     outline: outlineOf(),
     onBack: fn(),
-    onDeleteChild: fn(),
-    onDeleteFamily: fn(),
   },
   decorators: [
     (Story, { args }) => (
       <LookProvider
-        appearance={{ theme: args.theme, textSize: args.textSize, colourScheme: args.colourScheme }}
+        appearance={{
+          theme: args.look.theme,
+          textSize: args.look.textSize,
+          colourScheme: args.look.colourScheme,
+        }}
       >
         <Story />
       </LookProvider>
@@ -56,18 +64,17 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
-export const DarkTeal: Story = { args: { theme: 'dark' } };
-export const BlueLargeText: Story = { args: { colourScheme: 'blue', textSize: 'large' } };
-export const GrayDark: Story = { args: { colourScheme: 'gray', theme: 'dark' } };
-export const GoldenLargestText: Story = { args: { colourScheme: 'golden', textSize: 'largest' } };
+export const DarkTeal: Story = { args: { look: { ...LOOK, theme: 'dark' } } };
+export const BlueLargeText: Story = {
+  args: { look: { ...LOOK, colourScheme: 'blue', textSize: 'large' } },
+};
+export const GrayDark: Story = { args: { look: { ...LOOK, colourScheme: 'gray', theme: 'dark' } } };
+export const GoldenLargestText: Story = {
+  args: { look: { ...LOOK, colourScheme: 'golden', textSize: 'largest' } },
+};
 
 export const FamilyLocked: Story = {
-  args: {
-    onDeleteChild: undefined,
-    onDeleteFamily: undefined,
-    onUnlock: fn(),
-    onStartAgain: fn(),
-  },
+  args: { family: { unlock: fn(), startAgain: fn() } },
 };
 
 export const ThemeOpen: Story = { args: { outline: outlineOf({ open: ['theme'] }) } };

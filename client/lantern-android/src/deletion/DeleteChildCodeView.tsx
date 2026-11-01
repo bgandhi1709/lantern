@@ -7,9 +7,8 @@ import { PrimaryButton } from '../shared/ui/PrimaryButton';
 import { TextField } from '../shared/ui/TextField';
 import type { DeleteFailure } from './deleteFailure';
 import { FailureText } from './FailureText';
-import type { Work } from './useDeleteChild';
-
-const CODE_LENGTH = 6;
+import { CODE_LENGTH } from './useOneTimeCode';
+import type { Work } from './useOneTimeCode';
 
 type Props = {
   email: string;
@@ -27,16 +26,8 @@ type Props = {
 
 export function DeleteChildCodeView(props: Props) {
   const strings = useStrings().deleteChild;
-  const deleting = props.work === 'deleting';
-  const hint = props.verified
-    ? strings.verified
-    : props.work === 'verifying'
-      ? strings.checking
-      : props.work === 'requesting'
-        ? strings.resending
-        : props.resent
-          ? strings.resent
-          : strings.codeHint;
+  const deleting = props.work === 'acting';
+  const hint = hintFor(props, strings);
 
   return (
     <View className="flex-1 bg-ground px-6 pb-safe pt-safe">
@@ -61,7 +52,7 @@ export function DeleteChildCodeView(props: Props) {
             onChangeText={props.onTypeCode}
             maxLength={CODE_LENGTH}
           />
-          <FailureText failure={props.failure} />
+          <FailureText message={props.failure && strings.failures[props.failure]} />
           <Pressable
             accessibilityRole="button"
             onPress={props.onResend}
@@ -84,4 +75,12 @@ export function DeleteChildCodeView(props: Props) {
       </KeyboardAvoidingView>
     </View>
   );
+}
+
+function hintFor(props: Props, strings: ReturnType<typeof useStrings>['deleteChild']) {
+  if (props.verified) return strings.verified;
+  if (props.work === 'verifying') return strings.checking;
+  if (props.work === 'requesting') return strings.resending;
+  if (props.resent) return strings.resent;
+  return strings.codeHint;
 }

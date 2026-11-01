@@ -30,6 +30,7 @@ HTTP ─▶ Controller ─▶ (Interactor) ─▶ Service ─▶ Repository / St
 - Example: `ChildrenController`. A resource the caller has exactly one of is singular: `FamilyController`.
 - A read-only view with no service model of its own (`SubjectsController`) derives `ControllerBase` directly with the same
   attributes (`[ApiController]`, `[Authorize]`, `[ApiVersion]`, the rate limit) and maps through `IMapper`. It calls its own service.
+- A capability that is not a stored resource (`SecurityController`: ask for a One-time code, check it) derives `ControllerBase` the same way, is named for the capability, and calls one service. It builds a response model from the one value the service returns; a model copied property by property goes through `IMapper`.
 
 **Model** (`Models/`) **(tested: only in `Lantern.Api.Models`)**
 - Meaning: the shape the app sees or sends. Every API model lives here and nowhere else.
@@ -168,7 +169,7 @@ HTTP ─▶ Controller ─▶ (Interactor) ─▶ Service ─▶ Repository / St
 
 **Generic external service** (`I{Resource}Service` / `{Resource}Service`, or `I{Resource}Client`)
 - Meaning: the one gateway to an external resource, knowing nothing of what it carries. `RabbitMqPublishingService` publishes any model to any exchange under a key; `AcsEmailService` (`IEmailService`) sends one plain-text email through Azure Communication Services and turns a refusal into `EmailNotSent`;
-  `CryptoService` holds the uid hash (Lantern holds no Family key, ADR-0010). **(tested: each Azure client has one owner)**
+  `CryptoService` holds the uid hash and seals and opens signed, short-lived tokens bound to a Parent (Lantern holds no Family key, ADR-0010; D126). **(tested: each Azure client has one owner)**
 
 **Resolver contract** (`IIdentityResolver`): the caller, resolved per request by the host.
 

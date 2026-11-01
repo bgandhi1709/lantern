@@ -1,5 +1,6 @@
 using System.Threading.RateLimiting;
-using Microsoft.AspNetCore.Mvc;
+using Lantern.Core.Constants;
+using Lantern.Core.Exceptions;
 using Lantern.Core.Security;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Options;
@@ -12,8 +13,6 @@ internal static class RateLimits
 
     private const string CodePath = "/v1/security/code";
     private const string VerifyPath = "/v1/security/code/verify";
-    private const string TooSoonCode = "code-too-soon";
-    private const string AttemptsUsedCode = "code-attempts-used";
 
     public static void AddCodeLimits(this RateLimiterOptions options)
     {
@@ -22,27 +21,22 @@ internal static class RateLimits
             PerParent(IsCodeRequest, TimeSpan.FromHours(1), settings => settings.CodeRequestsPerHour),
             PerParent(IsCodeCheck, TimeSpan.FromMinutes(1), settings => settings.CodeChecksPerMinute)
         );
-        options.OnRejected = async (context, cancellationToken) =>
+        options.OnRejected = (context, _) =>
         {
             var http = context.HttpContext;
             http.Response.StatusCode = StatusCodes.Status429TooManyRequests;
 
-            var code = IsCodeCheck(http) ? AttemptsUsedCode : IsCodeRequest(http) ? TooSoonCode : null;
-            if (code is null)
+            if (IsCodeCheck(http))
             {
-                return;
+                throw new LanternException(LanternErrorCode.CodeAttemptsUsed);
             }
 
-            http.Response.ContentType = "application/problem+json";
-            var problem = new ProblemDetails
+            if (IsCodeRequest(http))
             {
-                Status = StatusCodes.Status429TooManyRequests,
-                Title = "Too many tries",
-                Detail = "Wait a little before trying again.",
-                Instance = http.Request.Path,
-            };
-            problem.Extensions["code"] = code;
-            await http.Response.WriteAsJsonAsync(problem, cancellationToken);
+                throw new LanternException(LanternErrorCode.CodeTooSoon);
+            }
+
+            return ValueTask.CompletedTask;
         };
     }
 

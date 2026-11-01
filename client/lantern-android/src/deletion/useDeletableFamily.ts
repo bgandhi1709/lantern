@@ -8,6 +8,9 @@ import { readFamilyKey } from '../shared/storage';
 export type FamilyState =
   { status: 'loading' } | { status: 'failed' } | { status: 'ready'; children: HomeChild[] };
 
+export const childrenOf = (family: FamilyState) =>
+  family.status === 'ready' ? family.children : [];
+
 export function useDeletableFamily() {
   const [family, setFamily] = useState<FamilyState>({ status: 'loading' });
 

@@ -1,36 +1,23 @@
 import { useStrings } from '../shared/i18n';
 import { FamilyRow } from './FamilyRow';
 import { SettingsGroup } from './SettingsGroup';
+import { FAMILY_IDS } from './settingsSearch';
+import type { FamilyId } from './settingsSearch';
 import type { Outline } from './useSettingsOutline';
 
-type Props = {
-  outline: Outline;
-  onUnlock?: () => void;
-  onStartAgain?: () => void;
-  onDeleteChild?: () => void;
-  onDeleteFamily?: () => void;
-};
+export type FamilyActions = Partial<Record<FamilyId, () => void>>;
 
-export function FamilyManagement({
-  outline,
-  onUnlock,
-  onStartAgain,
-  onDeleteChild,
-  onDeleteFamily,
-}: Props) {
+type Props = { outline: Outline; actions: FamilyActions };
+
+export function FamilyManagement({ outline, actions }: Props) {
   const strings = useStrings();
-  const rows = [
-    { id: 'unlock', onPress: onUnlock, danger: false, ...strings.appearance.unlockRow },
-    { id: 'deleteChild', onPress: onDeleteChild, danger: true, ...strings.settings.deleteChildRow },
-    {
-      id: 'deleteFamily',
-      onPress: onDeleteFamily,
-      danger: true,
-      ...strings.settings.deleteFamilyRow,
-    },
-    { id: 'startAgain', onPress: onStartAgain, danger: false, ...strings.appearance.startAgainRow },
-  ] as const;
-  const shown = rows.filter((row) => row.onPress && outline.matches(row.id));
+  const rows: Record<FamilyId, { title: string; text: string; danger: boolean }> = {
+    unlock: { ...strings.appearance.unlockRow, danger: false },
+    deleteChild: { ...strings.settings.deleteChildRow, danger: true },
+    deleteFamily: { ...strings.settings.deleteFamilyRow, danger: true },
+    startAgain: { ...strings.appearance.startAgainRow, danger: false },
+  };
+  const shown = FAMILY_IDS.filter((id) => actions[id] && outline.matches(id));
 
   if (shown.length === 0) return null;
 
@@ -40,8 +27,8 @@ export function FamilyManagement({
       open={outline.isGroupOpen('family')}
       onToggle={() => outline.toggleGroup('family')}
     >
-      {shown.map(({ id, onPress, ...row }) => (
-        <FamilyRow key={id} {...row} onPress={() => onPress?.()} />
+      {shown.map((id) => (
+        <FamilyRow key={id} {...rows[id]} onPress={() => actions[id]?.()} />
       ))}
     </SettingsGroup>
   );

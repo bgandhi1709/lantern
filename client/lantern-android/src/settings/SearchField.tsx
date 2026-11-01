@@ -9,7 +9,7 @@ type Props = { value: string; onChangeText: (text: string) => void; onClear: () 
 export function SearchField({ value, onChangeText, onClear }: Props) {
   const colors = useColors();
   const label = useStrings().settings.searchLabel;
-  const clear = useStrings().settings.clearSearch;
+  const clear = useStrings().settings.clearSearchBox;
 
   return (
     <View className="justify-center">

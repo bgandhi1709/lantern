@@ -2,7 +2,7 @@ namespace Lantern.Core.Models;
 
 public sealed class CodeToken
 {
-    public string Subject { get; set; }
+    public string UidHash { get; set; }
 
     public string Operation { get; set; }
 

@@ -14,7 +14,6 @@ type Props = {
   // A secret: hidden as it is typed, never capitalised, corrected or offered to the keyboard's memory.
   secret?: boolean;
   error?: string;
-  // A short number such as an emailed code: the number pad, centred and large.
   numeric?: boolean;
   // For the Maestro flows, which find a field with no placeholder by its id.
   testID?: string;
