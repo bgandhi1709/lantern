@@ -2,6 +2,7 @@ import '@testing-library/react-native/matchers';
 import { act, render, screen, userEvent } from '@testing-library/react-native';
 
 import { ApiError, api } from '../shared/api';
+import { onFamilyChanged } from '../shared/lifecycle/familyChanged';
 import { clearAll, readValue, writeValue } from '../shared/storage';
 import { AARYA, ROHAN, answerLikeTheApi, registerFamilyOnThisPhone } from '../test/fakeFamily';
 import { DeleteChildScreen } from './DeleteChildScreen';
@@ -13,6 +14,7 @@ const post = api.post as jest.Mock;
 const remove = api.delete as jest.Mock;
 
 const onDeleted = jest.fn();
+const familyChanged = jest.fn();
 const onBack = jest.fn();
 const onDeleteFamily = jest.fn();
 
@@ -49,7 +51,11 @@ async function reachCodeStep(user: ReturnType<typeof userEvent.setup>) {
   await screen.findByRole('header', { name: 'Check your email' });
 }
 
+let stopListening = () => undefined as void;
+
 beforeEach(async () => {
+  familyChanged.mockReset();
+  stopListening = onFamilyChanged(familyChanged);
   await clearAll();
   [post, remove, onDeleted, onBack, onDeleteFamily].forEach((mock) => mock.mockReset());
   post.mockImplementation(async (path: string) =>
@@ -57,6 +63,8 @@ beforeEach(async () => {
   );
   remove.mockResolvedValue(undefined);
 });
+
+afterEach(() => stopListening());
 
 describe('Delete a child: choose and confirm', () => {
   it('lists the Children with none picked and nothing to send yet', async () => {
@@ -279,6 +287,7 @@ describe('Delete a child: the emailed code', () => {
     });
     expect(await readValue('activeChildId')).toBe(ROHAN);
     expect(onDeleted).toHaveBeenCalledTimes(1);
+    expect(familyChanged).toHaveBeenCalledTimes(1);
   });
 
   it('ignores a second press while the delete is running', async () => {
@@ -309,6 +318,7 @@ describe('Delete a child: the emailed code', () => {
       await screen.findByText('Something went wrong. Nothing was deleted. Try again.'),
     ).toBeOnTheScreen();
     expect(onDeleted).not.toHaveBeenCalled();
+    expect(familyChanged).not.toHaveBeenCalled();
 
     await user.press(deleteButton());
 

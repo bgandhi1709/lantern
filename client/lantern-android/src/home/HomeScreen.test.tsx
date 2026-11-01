@@ -1,10 +1,11 @@
 import '@testing-library/react-native/matchers';
-import { render, screen, userEvent } from '@testing-library/react-native';
+import { act, render, screen, userEvent } from '@testing-library/react-native';
 import { Text } from 'react-native';
 
 import { AuthGate, AuthProvider } from '../auth';
 import { setCollectionEnabled } from '../shared/analytics';
 import { ApiError, api } from '../shared/api';
+import { notifyFamilyChanged } from '../shared/lifecycle/familyChanged';
 import { clearAll, readFamilyKey, readValue, writeValue } from '../shared/storage';
 import { lockText } from '../shared/crypto';
 import {
@@ -180,6 +181,17 @@ describe('Home', () => {
 
     expect(await screen.findByText('Hindi')).toBeOnTheScreen();
     expect(screen.getByRole('button', { name: 'Switch child, now Mira' })).toBeOnTheScreen();
+  });
+
+  it('asks the API for the Family again when the Family changes under it, as after a delete', async () => {
+    await openHome();
+    const familyCalls = () => get.mock.calls.filter(([path]) => path === '/v1/me').length;
+    const before = familyCalls();
+
+    await act(async () => notifyFamilyChanged());
+    await screen.findByText('Science');
+
+    expect(familyCalls()).toBe(before + 1);
   });
 
   it('asks the API for the Family again only when the stored Child is one it has not met', async () => {
