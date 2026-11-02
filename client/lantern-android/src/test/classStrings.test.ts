@@ -98,6 +98,12 @@ const roles: Composites = {
   'lantern-card-padded': ['rounded-card', 'border', 'border-line', 'bg-card', 'p-4'],
 };
 
+const PREFIX = 'lantern-';
+
+function unknownNames(segment: string, composites: Composites): string[] {
+  return segment.split(/\s+/).filter((token) => token.startsWith(PREFIX) && !(token in composites));
+}
+
 describe('coveredBy', () => {
   it('names the composite a class string spells out in full', () => {
     expect(coveredBy('mt-1 font-inter-medium text-small text-muted', roles)).toEqual([
@@ -115,6 +121,18 @@ describe('coveredBy', () => {
         'lantern-pick-row-selected': ['border-primary', 'bg-tile'],
       }),
     ).toEqual([]);
+  });
+});
+
+describe('unknownNames', () => {
+  it('names a lantern- class that global.css does not define', () => {
+    expect(unknownNames('mt-1 lantern-hint lantern-hnt', { 'lantern-hint': [] })).toEqual([
+      'lantern-hnt',
+    ]);
+  });
+
+  it('ignores classes that do not start with the prefix', () => {
+    expect(unknownNames('type-lead mt-1', {})).toEqual([]);
   });
 });
 
@@ -152,6 +170,21 @@ describe('the app', () => {
         classSegments(fs.readFileSync(file, 'utf8')).flatMap((segment) =>
           coveredBy(segment, composites).map(
             (name) => `${path.relative(root, file)}: use ${name} for "${segment.trim()}"`,
+          ),
+        ),
+      );
+    expect(offences).toEqual([]);
+  });
+
+  it('uses only lantern- classes that global.css defines', () => {
+    const composites = compositesIn(fs.readFileSync(path.join(root, 'global.css'), 'utf8'));
+    const offences = ['src', 'app']
+      .flatMap((dir) => filesUnder(path.join(root, dir)))
+      .filter((file) => file.endsWith('.tsx') && !file.endsWith('.test.tsx'))
+      .flatMap((file) =>
+        classSegments(fs.readFileSync(file, 'utf8')).flatMap((segment) =>
+          unknownNames(segment, composites).map(
+            (name) => `${path.relative(root, file)}: ${name} is not in global.css`,
           ),
         ),
       );
