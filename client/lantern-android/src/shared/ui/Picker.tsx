@@ -36,7 +36,7 @@ export function Picker({
       <Text importantForAccessibility="no" className="type-body-bold">
         {label}
       </Text>
-      <View className="mt-1.5 h-14 justify-center field">
+      <View className="mt-1.5 h-14 justify-center rounded-control bg-card">
         {icon ? <View className="absolute left-3.5 z-10">{icon}</View> : null}
         <View className={icon ? 'pl-9' : ''}>
           <NativePicker
@@ -64,6 +64,10 @@ export function Picker({
             ))}
           </NativePicker>
         </View>
+        <View
+          pointerEvents="none"
+          className="absolute inset-0 rounded-control border-2 border-field"
+        />
       </View>
       {hint ? <Text className="mt-1 type-small-muted">{hint}</Text> : null}
     </View>
