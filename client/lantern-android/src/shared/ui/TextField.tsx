@@ -57,7 +57,7 @@ export function TextField({
           autoComplete="off"
           importantForAutofill={secret ? 'no' : 'auto'}
           returnKeyType="done"
-          className={`h-14 rounded-control border-2 border-field bg-card pr-4 font-inter-medium text-ink focus:border-primary-deep ${numeric ? 'text-center text-heading' : `text-lead ${icon ? 'pl-12' : 'pl-4'}`}`}
+          className={`h-14 field pr-4 font-inter-medium text-ink focus:border-primary-deep ${numeric ? 'text-center text-heading' : `text-lead ${icon ? 'pl-12' : 'pl-4'}`}`}
         />
       </View>
       {hint ? <Text className="mt-1 type-small-muted">{hint}</Text> : null}

@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
-export type ChoiceRole = 'button' | 'radio';
+type ChoiceRole = 'button' | 'radio';
 
 type Props = {
   role: ChoiceRole;

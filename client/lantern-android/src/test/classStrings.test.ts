@@ -25,15 +25,65 @@ function compositesIn(css: string): Composites {
   );
 }
 
+function closingBacktick(source: string, from: number): number {
+  for (let i = from; i < source.length; i++) {
+    if (source[i] === '`') return i;
+    if (source.startsWith('${', i)) i = closingBrace(source, i + 2);
+  }
+  return source.length;
+}
+
+function closingBrace(source: string, from: number): number {
+  let depth = 1;
+  for (let i = from; i < source.length; i++) {
+    if (source[i] === '`') i = closingBacktick(source, i + 1);
+    else if (source[i] === '{') depth++;
+    else if (source[i] === '}' && --depth === 0) return i;
+  }
+  return source.length;
+}
+
+function templateSegments(body: string): string[] {
+  const holes: string[] = [];
+  let text = '';
+  for (let i = 0; i < body.length; i++) {
+    if (!body.startsWith('${', i)) {
+      text += body[i];
+      continue;
+    }
+    const end = closingBrace(body, i + 2);
+    holes.push(body.slice(i + 2, end));
+    text += ' ';
+    i = end;
+  }
+  return [text, ...holes.flatMap(holeSegments)];
+}
+
+function holeSegments(hole: string): string[] {
+  const segments: string[] = [];
+  for (let i = 0; i < hole.length; i++) {
+    if (hole[i] === '`') {
+      const end = closingBacktick(hole, i + 1);
+      segments.push(...templateSegments(hole.slice(i + 1, end)));
+      i = end;
+    } else if (hole[i] === "'") {
+      const end = hole.indexOf("'", i + 1);
+      segments.push(hole.slice(i + 1, end));
+      i = end;
+    }
+  }
+  return segments;
+}
+
 function classSegments(source: string): string[] {
-  const spans = source.matchAll(/\w*[cC]lassName=(?:"([^"]*)"|\{`([^`]*)`\}|\{'([^']*)'\})/g);
-  return [...spans].flatMap((span) => {
-    const value = span[1] ?? span[2] ?? span[3];
-    const quoted = [...value.matchAll(/\$\{([^}]*)\}/g)].flatMap((hole) =>
-      [...hole[1].matchAll(/'([^']*)'/g)].map((literal) => literal[1]),
-    );
-    return [value.replace(/\$\{[^}]*\}/g, ' '), ...quoted];
+  const plain = [...source.matchAll(/\w*[cC]lassName=(?:"([^"]*)"|\{'([^']*)'\})/g)].map(
+    (span) => span[1] ?? span[2],
+  );
+  const templates = [...source.matchAll(/\w*[cC]lassName=\{`/g)].flatMap((span) => {
+    const from = (span.index ?? 0) + span[0].length;
+    return templateSegments(source.slice(from, closingBacktick(source, from)));
   });
+  return [...plain, ...templates];
 }
 
 function coveredBy(segment: string, composites: Composites): string[] {
@@ -81,7 +131,12 @@ describe('classSegments', () => {
       "<View className={`c d ${on ? 'e f' : 'g'}`} />",
       '<ScrollView contentContainerClassName="h i" />',
     ].join('\n');
-    expect(classSegments(source)).toEqual(['a b', 'c d  ', 'e f', 'g', 'h i']);
+    expect(classSegments(source).sort()).toEqual(['a b', 'c d  ', 'e f', 'g', 'h i']);
+  });
+
+  it('reads a template nested inside a template', () => {
+    const source = "<TextInput className={`a ${n ? 'b c' : `d ${i ? 'e' : 'f'}`}`} />";
+    expect(classSegments(source).sort()).toEqual(['a  ', 'b c', 'd  ', 'e', 'f']);
   });
 });
 
