@@ -1,7 +1,6 @@
 import { ScrollView, Text, View } from 'react-native';
 
 import { useStrings } from '../shared/i18n';
-import { BackButton } from '../shared/ui/BackButton';
 import { OutlineButton } from '../shared/ui/OutlineButton';
 import { AppSettings } from './AppSettings';
 import type { Look } from './AppSettings';
@@ -10,6 +9,7 @@ import type { FamilyActions } from './FamilyManagement';
 import { SearchField } from './SearchField';
 import { APP_IDS, FAMILY_IDS } from './settingsSearch';
 import type { Outline } from './useSettingsOutline';
+import { TopBar } from '../shared/ui/TopBar';
 
 type Props = { look: Look; family: FamilyActions; outline: Outline; onBack: () => void };
 
@@ -20,12 +20,7 @@ export function SettingsView({ look, family, outline, onBack }: Props) {
 
   return (
     <View className="flex-1 bg-ground pb-safe pt-safe">
-      <View className="h-16 flex-row items-center gap-1 pl-4 pr-3">
-        <BackButton onBack={onBack} />
-        <Text accessibilityRole="header" className="type-lead">
-          {strings.settings.title}
-        </Text>
-      </View>
+      <TopBar title={strings.settings.title} onBack={onBack} />
       <View className="px-4 pb-2.5">
         <SearchField
           value={outline.query}

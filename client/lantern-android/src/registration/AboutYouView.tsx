@@ -10,6 +10,7 @@ import { GoogleAccountCard } from './GoogleAccountCard';
 import { REGION_MAX_LENGTH } from './region';
 import { StepHeader } from './StepHeader';
 import { REGISTRATION_STEP_COUNT } from './steps';
+import { ScreenHeading } from '../shared/ui/ScreenHeading';
 
 type Props = {
   parent: Pick<Parent, 'name' | 'email'>;
@@ -44,12 +45,7 @@ export function AboutYouView({
       <KeyboardAvoidingView behavior="padding" className="flex-1">
         <StepHeader step={1} total={REGISTRATION_STEP_COUNT} onBack={onBack} />
         <ScrollView contentContainerClassName="gap-4 pb-3" keyboardShouldPersistTaps="handled">
-          <View className="mt-5 gap-2">
-            <Text accessibilityRole="header" className="type-heading">
-              {about.heading}
-            </Text>
-            <Text className="type-body-muted">{about.intro}</Text>
-          </View>
+          <ScreenHeading className="mt-5" heading={about.heading} intro={about.intro} />
           <GoogleAccountCard name={parent.name} email={parent.email} />
           {/* -my-4 cancels the form's gap, so the link sits tight under the card as on the canvas. */}
           <Pressable
@@ -89,7 +85,7 @@ export function AboutYouView({
             </Text>
           </CheckRow>
         </ScrollView>
-        <View className="pb-6 pt-2">
+        <View className="footer">
           <PrimaryButton label={about.continue} onPress={onContinue} disabled={!canContinue} />
         </View>
       </KeyboardAvoidingView>

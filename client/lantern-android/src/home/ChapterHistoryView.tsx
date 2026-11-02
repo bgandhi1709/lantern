@@ -2,12 +2,12 @@ import { ActivityIndicator, FlatList, Text, View } from 'react-native';
 
 import { useStrings } from '../shared/i18n';
 import { useColors } from '../shared/theme';
-import { BackButton } from '../shared/ui/BackButton';
 import { PagingFooter } from '../shared/ui/PagingFooter';
 import { PrimaryButton } from '../shared/ui/PrimaryButton';
 import { AttemptCard } from './AttemptCard';
 import { ChapterHistoryHeader } from './ChapterHistoryHeader';
 import type { ChapterHistoryList } from './useChapterHistory';
+import { TopBar } from '../shared/ui/TopBar';
 
 const LOAD_MORE_AT_REMAINING = 0.5;
 
@@ -50,12 +50,7 @@ export function ChapterHistoryView({ history, ...on }: Props) {
 
   return (
     <View className="flex-1 bg-ground pt-safe">
-      <View className="h-16 flex-row items-center gap-1 pl-4 pr-3">
-        <BackButton onBack={on.onBack} />
-        <Text accessibilityRole="header" className="flex-1 type-lead">
-          {text.title}
-        </Text>
-      </View>
+      <TopBar title={text.title} onBack={on.onBack} />
       <FlatList
         testID="history-list"
         data={history.items}

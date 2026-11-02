@@ -5,6 +5,7 @@ import { Mark } from '../shared/ui/Mark';
 import { FeatureList } from './FeatureList';
 import { GoogleButton } from './GoogleButton';
 import type { SignInStatus } from './useGoogleSignIn';
+import { ErrorText } from '../shared/ui/ErrorText';
 
 type Props = { status: SignInStatus; onSignIn: () => void };
 
@@ -27,9 +28,9 @@ export function StartView({ status, onSignIn }: Props) {
         <FeatureList />
       </ScrollView>
       <View className="gap-2 px-6 pb-6">
-        <Text accessibilityLiveRegion="polite" className="text-center type-error">
+        <ErrorText className="text-center">
           {status === 'failed' ? strings.start.signInFailed : null}
-        </Text>
+        </ErrorText>
         <GoogleButton busy={status === 'signingIn'} onPress={onSignIn} />
         <Text className="text-center type-caption">{strings.start.note}</Text>
       </View>

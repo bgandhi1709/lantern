@@ -1,6 +1,7 @@
 import { Text, View } from 'react-native';
 
 import { PrimaryButton } from '../shared/ui/PrimaryButton';
+import { ErrorText } from '../shared/ui/ErrorText';
 
 type Props = {
   label: string;
@@ -21,11 +22,7 @@ export function ChildFormFooter({ label, disabled, blockedText, failureText, onS
           {blockedText}
         </Text>
       ) : null}
-      {failureText ? (
-        <Text accessibilityLiveRegion="polite" className="text-center type-error">
-          {failureText}
-        </Text>
-      ) : null}
+      {failureText ? <ErrorText className="text-center">{failureText}</ErrorText> : null}
       <PrimaryButton label={label} onPress={onSubmit} disabled={disabled} />
     </View>
   );

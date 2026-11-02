@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { Text, TextInput, View } from 'react-native';
 
 import { useColors } from '../theme';
+import { ErrorText } from './ErrorText';
 
 type Props = {
   label: string;
@@ -60,11 +61,7 @@ export function TextField({
         />
       </View>
       {hint ? <Text className="mt-1 type-small-muted">{hint}</Text> : null}
-      {error ? (
-        <Text accessibilityLiveRegion="polite" className="mt-1 type-error">
-          {error}
-        </Text>
-      ) : null}
+      {error ? <ErrorText className="mt-1">{error}</ErrorText> : null}
     </View>
   );
 }

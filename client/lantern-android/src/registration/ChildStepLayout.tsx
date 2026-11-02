@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react';
-import { KeyboardAvoidingView, ScrollView, Text, View } from 'react-native';
+import { KeyboardAvoidingView, ScrollView, View } from 'react-native';
 
 import { LoadingOverlay } from '../shared/ui/LoadingOverlay';
+import { ScreenHeading } from '../shared/ui/ScreenHeading';
 
 type Props = {
   header: ReactNode;
@@ -18,12 +19,7 @@ export function ChildStepLayout({ header, heading, intro, footer, workingLabel, 
       <KeyboardAvoidingView behavior="padding" className="flex-1">
         {header}
         <ScrollView contentContainerClassName="gap-4 pb-3" keyboardShouldPersistTaps="handled">
-          <View className="mt-5 gap-2">
-            <Text accessibilityRole="header" className="type-heading">
-              {heading}
-            </Text>
-            <Text className="type-body-muted">{intro}</Text>
-          </View>
+          <ScreenHeading className="mt-5" heading={heading} intro={intro} />
           {children}
         </ScrollView>
         {footer}

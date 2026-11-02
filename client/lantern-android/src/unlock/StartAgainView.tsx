@@ -1,9 +1,11 @@
-import { ScrollView, Text, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 
 import { useStrings } from '../shared/i18n';
 import { OutlineButton } from '../shared/ui/OutlineButton';
 import { PrimaryButton } from '../shared/ui/PrimaryButton';
 import { WarningCard } from '../shared/ui/WarningCard';
+import { ErrorText } from '../shared/ui/ErrorText';
+import { ScreenHeading } from '../shared/ui/ScreenHeading';
 
 type Props = { deleting: boolean; failed: boolean; onDelete: () => void; onKeep: () => void };
 
@@ -13,20 +15,11 @@ export function StartAgainView({ deleting, failed, onDelete, onKeep }: Props) {
   return (
     <View className="screen">
       <ScrollView contentContainerClassName="gap-4 pb-3 pt-6">
-        <View className="gap-2">
-          <Text accessibilityRole="header" className="type-heading">
-            {strings.heading}
-          </Text>
-          <Text className="type-body-muted">{strings.intro}</Text>
-        </View>
+        <ScreenHeading heading={strings.heading} intro={strings.intro} />
         <WarningCard heading={strings.warningHeading} text={strings.warning} />
-        {failed ? (
-          <Text accessibilityLiveRegion="polite" className="type-error">
-            {strings.failed}
-          </Text>
-        ) : null}
+        {failed ? <ErrorText>{strings.failed}</ErrorText> : null}
       </ScrollView>
-      <View className="gap-3 pb-6 pt-2">
+      <View className="footer">
         <OutlineButton
           tone="danger"
           label={deleting ? strings.deleting : strings.delete}

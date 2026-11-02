@@ -50,6 +50,9 @@ const requiredStories: Record<string, string[]> = {
     'Numeric',
   ],
   'shared/ui/ChoiceRow.stories.tsx': ['Unselected', 'Selected', 'Radio', 'LongTitle'],
+  'shared/ui/ErrorText.stories.tsx': ['Default', 'Centered', 'LongMessage'],
+  'shared/ui/ScreenHeading.stories.tsx': ['Default', 'BelowAStepHeader', 'LongIntro'],
+  'shared/ui/TopBar.stories.tsx': ['Default', 'LongTitle'],
   'shared/ui/CheckRow.stories.tsx': ['Unchecked', 'Checked', 'LongLabel', 'WithoutIcon'],
   'shared/ui/OutlineButton.stories.tsx': ['WithIcon', 'WithoutIcon', 'Danger', 'LongLabel'],
   'registration/NoticeView.stories.tsx': ['Default'],
@@ -283,8 +286,6 @@ const withoutStory: Record<string, string> = {
   'home/homeIcons.tsx': 'SVG parts used by the Home components',
   'deletion/DeleteChildScreen.tsx':
     'container for the Delete a child views, which have the stories',
-  'deletion/FailureText.tsx':
-    'the failure line of the Delete a child views, whose stories show every failure',
   'settings/SettingsScreen.tsx': 'container for SettingsView, which has the stories',
   'shared/theme/LookProvider.tsx': 'provider with nothing to draw; the Appearance stories use it',
   'shared/theme/ThemeProvider.tsx':

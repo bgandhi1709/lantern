@@ -10,10 +10,11 @@ import { WarningCard } from '../shared/ui/WarningCard';
 import { ChildChoices } from './ChildChoices';
 import type { HomeChild } from '../home';
 import type { DeleteFailure } from './deleteFailure';
-import { FailureText } from './FailureText';
 import { OnlyChildNotice } from './OnlyChildNotice';
 import { childrenOf } from './useDeletableFamily';
 import type { FamilyState } from './useDeletableFamily';
+import { ScreenHeading } from '../shared/ui/ScreenHeading';
+import { ErrorText } from '../shared/ui/ErrorText';
 
 const NAME_MAX_LENGTH = 50;
 
@@ -50,12 +51,7 @@ export function DeleteChildConfirmView(props: Props) {
           <BackButton onBack={props.onBack} />
         </View>
         <ScrollView contentContainerClassName="gap-4 pb-3 pt-1" keyboardShouldPersistTaps="handled">
-          <View className="gap-2">
-            <Text accessibilityRole="header" className="type-heading">
-              {strings.heading}
-            </Text>
-            <Text className="type-body-muted">{strings.intro}</Text>
-          </View>
+          <ScreenHeading heading={strings.heading} intro={strings.intro} />
           {family.status === 'loading' ? (
             <Text className="type-body-muted">{strings.loading}</Text>
           ) : null}
@@ -84,9 +80,9 @@ export function DeleteChildConfirmView(props: Props) {
               </View>
             </>
           )}
-          <FailureText message={failureMessage} />
+          {failureMessage ? <ErrorText>{failureMessage}</ErrorText> : null}
         </ScrollView>
-        <View className="gap-3 pb-6 pt-2">
+        <View className="footer">
           <PrimaryButton
             label={props.sending ? strings.sending : strings.sendCode}
             onPress={props.onSend}

@@ -2,6 +2,7 @@ import { ScrollView, Text, View } from 'react-native';
 
 import { useStrings } from '../shared/i18n';
 import { BackButton } from '../shared/ui/BackButton';
+import { ScreenHeading } from '../shared/ui/ScreenHeading';
 
 type Props = { version: string; onBack: () => void };
 
@@ -14,12 +15,7 @@ export function NoticeView({ version, onBack }: Props) {
         <BackButton onBack={onBack} />
       </View>
       <ScrollView contentContainerClassName="gap-5 pb-6">
-        <View className="gap-2">
-          <Text accessibilityRole="header" className="type-heading">
-            {notice.heading}
-          </Text>
-          <Text className="type-body-muted">{notice.intro}</Text>
-        </View>
+        <ScreenHeading heading={notice.heading} intro={notice.intro} />
         {notice.sections.map((section) => (
           <View key={section.title} className="gap-2">
             <Text accessibilityRole="header" className="type-lead">

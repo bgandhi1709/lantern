@@ -128,3 +128,7 @@
 @utility choice-off {
   @apply border-field bg-card;
 }
+
+@utility footer {
+  @apply gap-3 pb-6 pt-2;
+}

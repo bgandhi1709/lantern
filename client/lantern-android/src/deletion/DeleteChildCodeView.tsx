@@ -6,9 +6,10 @@ import { OutlineButton } from '../shared/ui/OutlineButton';
 import { PrimaryButton } from '../shared/ui/PrimaryButton';
 import { TextField } from '../shared/ui/TextField';
 import type { DeleteFailure } from './deleteFailure';
-import { FailureText } from './FailureText';
 import { CODE_LENGTH } from './useOneTimeCode';
 import type { Work } from './useOneTimeCode';
+import { ScreenHeading } from '../shared/ui/ScreenHeading';
+import { ErrorText } from '../shared/ui/ErrorText';
 
 type Props = {
   email: string;
@@ -36,12 +37,7 @@ export function DeleteChildCodeView(props: Props) {
           <BackButton onBack={props.onBack} />
         </View>
         <ScrollView contentContainerClassName="gap-4 pb-3 pt-1" keyboardShouldPersistTaps="handled">
-          <View className="gap-2">
-            <Text accessibilityRole="header" className="type-heading">
-              {strings.codeHeading}
-            </Text>
-            <Text className="type-body-muted">{strings.codeIntro(props.email)}</Text>
-          </View>
+          <ScreenHeading heading={strings.codeHeading} intro={strings.codeIntro(props.email)} />
           <TextField
             numeric
             label={strings.codeLabel}
@@ -50,7 +46,7 @@ export function DeleteChildCodeView(props: Props) {
             onChangeText={props.onTypeCode}
             maxLength={CODE_LENGTH}
           />
-          <FailureText message={props.failure && strings.failures[props.failure]} />
+          {props.failure ? <ErrorText>{strings.failures[props.failure]}</ErrorText> : null}
           <Pressable
             accessibilityRole="button"
             onPress={props.onResend}
@@ -60,7 +56,7 @@ export function DeleteChildCodeView(props: Props) {
             <Text className="type-link underline">{strings.resend}</Text>
           </Pressable>
         </ScrollView>
-        <View className="gap-3 pb-6 pt-2">
+        <View className="footer">
           <PrimaryButton
             label={deleting ? strings.deleting : strings.delete}
             onPress={props.onDelete}
