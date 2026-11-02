@@ -10,7 +10,7 @@ export function PrimaryButton({ label, onPress, disabled = false }: Props) {
       accessibilityRole="button"
       disabled={disabled}
       onPress={onPress}
-      className={`will-change-variable button ${disabled ? 'border-2 border-dashed border-disabled-line bg-disabled' : 'bg-primary'}`}
+      className={`will-change-variable lantern-button ${disabled ? 'border-2 border-dashed border-disabled-line bg-disabled' : 'bg-primary'}`}
     >
       <Text
         className={`will-change-variable text-center font-inter-bold text-body ${disabled ? 'text-disabled-text' : 'text-on-primary'}`}

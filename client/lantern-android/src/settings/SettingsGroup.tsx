@@ -15,7 +15,7 @@ export function SettingsGroup({ title, open, onToggle, children }: Props) {
         onPress={onToggle}
         className="min-h-12 flex-row items-center justify-between px-1"
       >
-        <Text className="type-small-muted-bold uppercase">{title}</Text>
+        <Text className="lantern-section-label uppercase">{title}</Text>
         <View className={open ? 'rotate-180' : ''}>
           <ChevronDownIcon />
         </View>

@@ -7,14 +7,14 @@ export function ComingNextView({ onBack }: { onBack: () => void }) {
   const comingNext = useStrings().home.comingNext;
 
   return (
-    <View className="screen gap-3">
+    <View className="lantern-screen gap-3">
       <View className="flex-row">
         <BackButton onBack={onBack} />
       </View>
-      <Text accessibilityRole="header" className="type-heading">
+      <Text accessibilityRole="header" className="lantern-screen-title">
         {comingNext.heading}
       </Text>
-      <Text className="type-body-muted">{comingNext.text}</Text>
+      <Text className="lantern-intro-text">{comingNext.text}</Text>
     </View>
   );
 }

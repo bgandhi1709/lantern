@@ -31,7 +31,7 @@ export function DeleteChildCodeView(props: Props) {
   const hint = hintFor(props, strings);
 
   return (
-    <View className="screen">
+    <View className="lantern-screen">
       <KeyboardAvoidingView behavior="padding" className="flex-1">
         <View className="h-16 flex-row items-center">
           <BackButton onBack={props.onBack} />
@@ -53,10 +53,10 @@ export function DeleteChildCodeView(props: Props) {
             disabled={props.work !== null}
             className="min-h-12 justify-center"
           >
-            <Text className="type-link underline">{strings.resend}</Text>
+            <Text className="lantern-link underline">{strings.resend}</Text>
           </Pressable>
         </ScrollView>
-        <View className="footer">
+        <View className="lantern-screen-footer">
           <PrimaryButton
             label={deleting ? strings.deleting : strings.delete}
             onPress={props.onDelete}

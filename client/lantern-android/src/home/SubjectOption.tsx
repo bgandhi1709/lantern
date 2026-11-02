@@ -17,7 +17,7 @@ export function SubjectOption({ subject, selected, onPick }: Props) {
       label={`${subject.name}, ${chapters}`}
       onPress={onPick}
       leading={
-        <View importantForAccessibility="no-hide-descendants" className="icon-tile">
+        <View importantForAccessibility="no-hide-descendants" className="lantern-icon-badge">
           {subjectGlyphs[subject.icon]}
         </View>
       }

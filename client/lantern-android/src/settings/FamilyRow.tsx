@@ -8,13 +8,13 @@ export function FamilyRow({ title, text, onPress, danger = false }: Props) {
       accessibilityRole="button"
       accessibilityLabel={title}
       onPress={onPress}
-      className="min-h-12 gap-0.5 panel"
+      className="min-h-12 gap-0.5 lantern-card-padded"
     >
       <Text className={`font-inter-bold text-lead ${danger ? 'text-danger' : 'text-ink'}`}>
         {title}
       </Text>
       <View>
-        <Text className="type-small-muted">{text}</Text>
+        <Text className="lantern-hint">{text}</Text>
       </View>
     </Pressable>
   );

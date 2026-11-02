@@ -33,7 +33,7 @@ export function OpeningScreen({ intro, message, children }: OpeningScreenProps) 
         </View>
       )}
       {message ? (
-        <Text accessibilityLiveRegion="polite" className="px-6 text-center type-body-muted">
+        <Text accessibilityLiveRegion="polite" className="px-6 text-center lantern-intro-text">
           {message}
         </Text>
       ) : null}

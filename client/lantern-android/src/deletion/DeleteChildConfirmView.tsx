@@ -45,7 +45,7 @@ export function DeleteChildConfirmView(props: Props) {
       : props.failure && strings.failures[props.failure];
 
   return (
-    <View className="screen">
+    <View className="lantern-screen">
       <KeyboardAvoidingView behavior="padding" className="flex-1">
         <View className="h-16 flex-row items-center">
           <BackButton onBack={props.onBack} />
@@ -53,7 +53,7 @@ export function DeleteChildConfirmView(props: Props) {
         <ScrollView contentContainerClassName="gap-4 pb-3 pt-1" keyboardShouldPersistTaps="handled">
           <ScreenHeading heading={strings.heading} intro={strings.intro} />
           {family.status === 'loading' ? (
-            <Text className="type-body-muted">{strings.loading}</Text>
+            <Text className="lantern-intro-text">{strings.loading}</Text>
           ) : null}
           {family.status === 'ready' && children.length < 2 ? (
             <OnlyChildNotice onDeleteFamily={props.onDeleteFamily} />
@@ -76,13 +76,13 @@ export function DeleteChildConfirmView(props: Props) {
               />
               <View className="flex-row items-start gap-2.5">
                 <MailIcon />
-                <Text className="flex-1 type-small-muted">{strings.emailNote(props.email)}</Text>
+                <Text className="flex-1 lantern-hint">{strings.emailNote(props.email)}</Text>
               </View>
             </>
           )}
           {failureMessage ? <ErrorText>{failureMessage}</ErrorText> : null}
         </ScrollView>
-        <View className="footer">
+        <View className="lantern-screen-footer">
           <PrimaryButton
             label={props.sending ? strings.sending : strings.sendCode}
             onPress={props.onSend}

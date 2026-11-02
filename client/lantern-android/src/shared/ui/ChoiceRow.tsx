@@ -30,12 +30,12 @@ export function ChoiceRow({
       accessibilityState={role === 'radio' ? { checked: selected } : { selected }}
       accessibilityLabel={label}
       onPress={onPress}
-      className={`choice-row ${selected ? 'choice-on' : 'choice-off'}`}
+      className={`lantern-pick-row ${selected ? 'lantern-pick-row-selected' : 'lantern-pick-row-unselected'}`}
     >
       {leading}
       <View className="flex-1">
-        <Text className="type-lead">{title}</Text>
-        <Text className="type-small-muted">{subtitle}</Text>
+        <Text className="lantern-item-title">{title}</Text>
+        <Text className="lantern-hint">{subtitle}</Text>
       </View>
       {selected ? trailing : null}
     </Pressable>

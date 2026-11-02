@@ -16,7 +16,7 @@ const meta = {
   },
   render: (args) => (
     <SettingsGroup {...args}>
-      <Text className="type-body">{en.appearance.theme.note}</Text>
+      <Text className="lantern-paragraph">{en.appearance.theme.note}</Text>
     </SettingsGroup>
   ),
 } satisfies Meta<typeof SettingsGroup>;

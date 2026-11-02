@@ -49,20 +49,20 @@ A screen file holds layout and role names, never a look. The look lives in four 
 | Layer | Where | What it holds |
 |---|---|---|
 | Tokens | `global.css` `@theme` | Colours, fonts, radii, text sizes (`bg-ground`, `text-muted`, `font-inter-bold`, `text-heading`) |
-| Composite classes | `global.css` `@utility` with `@apply` | A named combination of tokens, used in markup like any class. A composite may nest another (`panel` is `surface p-4`) |
+| Composite classes | `global.css` `@utility` with `@apply` | A named combination of tokens, used in markup like any class. A composite may nest another (`lantern-card-padded` is `lantern-card p-4`) |
 | Shared parts | `src/shared/ui/` | Structure that repeats: `ChoiceRow`, `ScreenHeading`, `TopBar`, `ErrorText`, `PrimaryButton`, `OutlineButton`, `TextField`, `Picker` |
 | Screens | `src/<feature>/` | Layout (`flex-row`, `gap-3`, `mt-5`) plus composite and shared-part names |
 
-**Composite classes** (list them with `grep '@utility' client/lantern-android/global.css`):
-- Text roles: `type-heading`, `type-lead`, `type-body`, `type-body-bold`, `type-body-muted`, `type-body-error`, `type-link`, `type-small-muted`, `type-small-muted-semibold`, `type-small-muted-bold`, `type-small-link`, `type-error`, `type-caption`. Pick the role by what the text is, not by its look.
-- Frames: `screen` (page frame with safe areas), `surface` (card edge), `panel` (surface with padding), `pill`, `icon-tile`, `button`, `field` (input box), `footer`.
-- Selectable row: `choice-row` with `choice-on` or `choice-off`.
+**Composite classes** (list them with `grep '@utility' client/lantern-android/global.css`). Every name starts with `lantern-` (no clash with Tailwind, easy to grep) and says the job, not the look or the screen: `lantern-hint`, not `type-small-muted`; one style under several screen names would bring the repetition back. Only a look that exists on one screen is named after that screen.
+- Text roles: `lantern-screen-title`, `lantern-item-title`, `lantern-paragraph`, `lantern-label`, `lantern-intro-text`, `lantern-error-message`, `lantern-link`, `lantern-hint`, `lantern-small-label`, `lantern-section-label`, `lantern-chapter-meta`, `lantern-field-error`, `lantern-footnote`. Pick the role by what the text is, not by its look.
+- Frames: `lantern-screen` (page frame with safe areas), `lantern-card` (card edge), `lantern-card-padded` (the card with padding), `lantern-chip`, `lantern-icon-badge`, `lantern-button`, `lantern-input-box` (the box of a text field or dropdown), `lantern-screen-footer`.
+- Selectable row: `lantern-pick-row` with `lantern-pick-row-selected` or `lantern-pick-row-unselected`.
 
 **Rules:**
 1. Never spell out a combination a composite names. `src/test/classStrings.test.ts` reads `global.css`, scans every `className`, every `*ClassName` prop and every template or ternary literal (nested ones too) in `src` and `app`, and fails when a string holds all the tokens of a composite of three or more. Fix it by using the composite, not by editing the test.
 2. Add a composite when a combination is used a third time, in `global.css` with `@utility` and `@apply`, with a unit test case if it is a new kind of rule. A one-off combination stays spelled out in the screen. Never build a composite from a value that is not a token.
-3. Reuse a shared part before writing markup: a heading with an intro is `ScreenHeading`, a back arrow with a title is `TopBar`, an error line is `ErrorText` (its live region is built in), a row the Parent selects is `ChoiceRow` (role `radio` for one of many, `button` for a switch), a Class or Birth year is `Picker`. A new shared part needs a story with one export per state (`storybook-standards`) and a reason it is not a class.
-4. Pressed feedback is built into `button`, `choice-row` and `pill` (`active:opacity-70`). Anything tappable uses one of them; a new tappable look adds `active:opacity-70` itself.
+3. Reuse a shared part before writing markup: a heading with an intro is `ScreenHeading`, a back arrow with a title is `TopBar`, an error line is `ErrorText` (its live region is built in), a row the Parent selects is `ChoiceRow` (role `radio` for one of many, `lantern-button` for a switch), a Class or Birth year is `Picker`. A new shared part needs a story with one export per state (`storybook-standards`) and a reason it is not a class.
+4. Pressed feedback is built into `lantern-button`, `lantern-pick-row` and `lantern-chip` (`active:opacity-70`). Anything tappable uses one of them; a new tappable look adds `active:opacity-70` itself.
 5. A change to a text role, a card or a field is one edit in `global.css`; a change to what a shared part shows is one edit in that file. If a change needs edits in several screens, a layer is missing.
 6. Board spacing is design, not drift: half steps such as `py-2.5` and `px-3.5`, heights 52, 56, 64 and 68, and the two link colours (`#0F766E` on About, `#115E59` on the Delete screens) come from the Design board. Do not snap or merge them. A look change on purpose needs a decision-log entry and goes in the PR as a deliberate change.
 7. A label in a fixed-width slot (a step label, a tab) takes `numberOfLines={1}` with `adjustsFontSizeToFit` and a named `minimumFontScale`, so Gujarati, Hindi and large system text shrink instead of breaking mid-word. A body or heading wraps instead.

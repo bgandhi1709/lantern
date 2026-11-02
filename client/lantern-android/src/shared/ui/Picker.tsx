@@ -33,7 +33,7 @@ export function Picker({
   const itemStyle = { backgroundColor: colors.card };
   return (
     <View>
-      <Text importantForAccessibility="no" className="type-body-bold">
+      <Text importantForAccessibility="no" className="lantern-label">
         {label}
       </Text>
       <View className="mt-1.5 h-14 justify-center rounded-control bg-card">
@@ -69,7 +69,7 @@ export function Picker({
           className="absolute inset-0 rounded-control border-2 border-field"
         />
       </View>
-      {hint ? <Text className="mt-1 type-small-muted">{hint}</Text> : null}
+      {hint ? <Text className="mt-1 lantern-hint">{hint}</Text> : null}
     </View>
   );
 }

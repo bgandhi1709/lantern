@@ -8,7 +8,7 @@ type Props = { name: string; onPress: () => void };
 export function ChildSwitcherButton({ name, onPress }: Props) {
   return (
     <View className="flex-row items-center gap-2">
-      <Text className="type-small-muted-semibold">{useStrings().home.learningWith}</Text>
+      <Text className="lantern-small-label">{useStrings().home.learningWith}</Text>
       <ChildPill name={name} onPress={onPress} />
     </View>
   );

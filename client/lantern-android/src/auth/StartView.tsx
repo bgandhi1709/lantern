@@ -21,10 +21,10 @@ export function StartView({ status, onSignIn }: Props) {
         <View className="items-center">
           <Mark />
         </View>
-        <Text accessibilityRole="header" className="text-center type-heading">
+        <Text accessibilityRole="header" className="text-center lantern-screen-title">
           {strings.start.heading}
         </Text>
-        <Text className="text-center type-body-muted">{strings.start.subheading}</Text>
+        <Text className="text-center lantern-intro-text">{strings.start.subheading}</Text>
         <FeatureList />
       </ScrollView>
       <View className="gap-2 px-6 pb-6">
@@ -32,7 +32,7 @@ export function StartView({ status, onSignIn }: Props) {
           {status === 'failed' ? strings.start.signInFailed : null}
         </ErrorText>
         <GoogleButton busy={status === 'signingIn'} onPress={onSignIn} />
-        <Text className="text-center type-caption">{strings.start.note}</Text>
+        <Text className="text-center lantern-footnote">{strings.start.note}</Text>
       </View>
     </View>
   );

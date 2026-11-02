@@ -13,13 +13,13 @@ export function StartAgainView({ deleting, failed, onDelete, onKeep }: Props) {
   const strings = useStrings().startAgain;
 
   return (
-    <View className="screen">
+    <View className="lantern-screen">
       <ScrollView contentContainerClassName="gap-4 pb-3 pt-6">
         <ScreenHeading heading={strings.heading} intro={strings.intro} />
         <WarningCard heading={strings.warningHeading} text={strings.warning} />
         {failed ? <ErrorText>{strings.failed}</ErrorText> : null}
       </ScrollView>
-      <View className="footer">
+      <View className="lantern-screen-footer">
         <OutlineButton
           tone="danger"
           label={deleting ? strings.deleting : strings.delete}

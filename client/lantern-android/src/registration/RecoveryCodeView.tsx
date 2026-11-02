@@ -42,7 +42,7 @@ export function RecoveryCodeView({
   const strings = useStrings().registration.recovery;
 
   return (
-    <View className="screen">
+    <View className="lantern-screen">
       <StepHeader step={3} total={REGISTRATION_STEP_COUNT} onBack={onBack} />
       <ScrollView contentContainerClassName="gap-4 pb-3">
         <ScreenHeading className="mt-5" heading={strings.heading} intro={strings.intro} />
@@ -56,14 +56,14 @@ export function RecoveryCodeView({
         <OutlineButton label={strings.email} onPress={onEmail} icon={<MailIcon />} />
         <OutlineButton label={strings.save} onPress={onSave} icon={<ShareIcon />} />
         {shareFailed ? <ErrorText>{strings.shareFailed}</ErrorText> : null}
-        <Text className="type-small-muted">{strings.hint}</Text>
+        <Text className="lantern-hint">{strings.hint}</Text>
         <CheckRow checked={saved} onToggle={onSavedToggle} accessibilityLabel={strings.saved}>
-          <Text className="type-body">{strings.saved}</Text>
+          <Text className="lantern-paragraph">{strings.saved}</Text>
         </CheckRow>
       </ScrollView>
       <View className="pb-6 pt-2">
         {emailed ? null : (
-          <Text className="pb-2 text-center type-small-muted">{strings.emailFirst}</Text>
+          <Text className="pb-2 text-center lantern-hint">{strings.emailFirst}</Text>
         )}
         <PrimaryButton
           label={strings.continue}

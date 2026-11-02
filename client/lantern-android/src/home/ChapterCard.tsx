@@ -16,7 +16,7 @@ export function ChapterCard({ chapter, onAction, onOpenHistory }: Props) {
   const outlined = chapter.state === 'checked';
 
   return (
-    <View className="overflow-hidden surface">
+    <View className="overflow-hidden lantern-card">
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`${chapter.title}, ${line}. ${action}`}
@@ -28,11 +28,11 @@ export function ChapterCard({ chapter, onAction, onOpenHistory }: Props) {
             importantForAccessibility="no-hide-descendants"
             className="size-8 items-center justify-center rounded-full bg-tile"
           >
-            <Text className="type-small-link">{chapter.number}</Text>
+            <Text className="lantern-chapter-meta">{chapter.number}</Text>
           </View>
           <View className="flex-1">
-            <Text className="type-body-bold">{chapter.title}</Text>
-            <Text numberOfLines={2} className="mt-0.5 type-small-muted">
+            <Text className="lantern-label">{chapter.title}</Text>
+            <Text numberOfLines={2} className="mt-0.5 lantern-hint">
               {chapter.summary}
             </Text>
             <Text className="mt-1.5 font-inter-bold text-caption text-primary-deep">{line}</Text>
@@ -59,8 +59,8 @@ export function ChapterCard({ chapter, onAction, onOpenHistory }: Props) {
           className="min-h-12 flex-row items-center gap-2 border-t border-line bg-tile px-4"
         >
           <HistoryIcon />
-          <Text className="flex-1 type-small-link">{attempts}</Text>
-          <Text className="type-small-link underline">{text.viewHistory}</Text>
+          <Text className="flex-1 lantern-chapter-meta">{attempts}</Text>
+          <Text className="lantern-chapter-meta underline">{text.viewHistory}</Text>
         </Pressable>
       ) : null}
     </View>

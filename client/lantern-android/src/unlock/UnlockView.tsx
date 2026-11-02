@@ -36,7 +36,7 @@ export function UnlockView(props: Props) {
       : strings.open;
 
   return (
-    <View className="screen">
+    <View className="lantern-screen">
       <KeyboardAvoidingView behavior="padding" className="flex-1">
         <View className="h-16 justify-center">
           <BackButton onBack={props.onBack} />

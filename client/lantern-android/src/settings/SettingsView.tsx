@@ -31,17 +31,17 @@ export function SettingsView({ look, family, outline, onBack }: Props) {
       <ScrollView contentContainerClassName="gap-2 px-4 pb-8" keyboardShouldPersistTaps="handled">
         {nothingFound ? (
           <View accessibilityRole="alert" className="items-center gap-2 px-2 py-6">
-            <Text className="text-center type-lead">
+            <Text className="text-center lantern-item-title">
               {strings.settings.noMatch(outline.query.trim())}
             </Text>
-            <Text className="text-center type-small-muted">{strings.settings.noMatchHint}</Text>
+            <Text className="text-center lantern-hint">{strings.settings.noMatchHint}</Text>
             <OutlineButton label={strings.settings.clearSearch} onPress={outline.clearQuery} />
           </View>
         ) : null}
         <AppSettings look={look} outline={outline} />
         <FamilyManagement outline={outline} actions={family} />
         {outline.searching ? null : (
-          <Text className="mt-2 type-small-muted">{strings.appearance.savedNote}</Text>
+          <Text className="mt-2 lantern-hint">{strings.appearance.savedNote}</Text>
         )}
       </ScrollView>
     </View>

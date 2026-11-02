@@ -15,7 +15,7 @@ type Props = {
 
 export function ChildStepLayout({ header, heading, intro, footer, workingLabel, children }: Props) {
   return (
-    <View className="screen">
+    <View className="lantern-screen">
       <KeyboardAvoidingView behavior="padding" className="flex-1">
         {header}
         <ScrollView contentContainerClassName="gap-4 pb-3" keyboardShouldPersistTaps="handled">

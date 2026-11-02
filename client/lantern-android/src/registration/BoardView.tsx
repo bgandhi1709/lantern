@@ -20,7 +20,7 @@ export function BoardView({ board, onSelect, onContinue, onBack }: Props) {
   const strings = useStrings().registration.board;
 
   return (
-    <View className="screen">
+    <View className="lantern-screen">
       <StepHeader step={2} total={REGISTRATION_STEP_COUNT} onBack={onBack} />
       <ScrollView contentContainerClassName="gap-6 pb-3">
         <ScreenHeading className="mt-5" heading={strings.heading} intro={strings.intro} />
@@ -40,7 +40,7 @@ export function BoardView({ board, onSelect, onContinue, onBack }: Props) {
           ))}
         </View>
       </ScrollView>
-      <View className="footer">
+      <View className="lantern-screen-footer">
         <PrimaryButton label={strings.continue} onPress={onContinue} disabled={board === null} />
       </View>
     </View>

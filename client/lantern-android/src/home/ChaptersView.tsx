@@ -57,7 +57,7 @@ export function ChaptersView(props: Props) {
     <View className="gap-4 pb-4">
       {subjectName ? (
         <View className="flex-row items-center gap-2">
-          <Text className="type-small-muted-semibold">{text.subjectLabel}</Text>
+          <Text className="lantern-small-label">{text.subjectLabel}</Text>
           <SubjectPill name={subjectName} onPress={props.onOpenSubjectSheet} />
         </View>
       ) : null}
@@ -81,17 +81,17 @@ export function ChaptersView(props: Props) {
         className="flex-row items-center gap-3 py-4"
       >
         <ActivityIndicator color={colors.accent} />
-        <Text className="shrink type-small-muted">{text.loading}</Text>
+        <Text className="shrink lantern-hint">{text.loading}</Text>
       </View>
     ) : chapters.status === 'failed' ? (
       <View className="items-start gap-3 py-2">
-        <Text accessibilityLiveRegion="polite" className="type-body-error">
+        <Text accessibilityLiveRegion="polite" className="lantern-error-message">
           {text.failed}
         </Text>
         <PrimaryButton label={home.tryAgain} onPress={props.onTryAgain} />
       </View>
     ) : props.query.trim() !== '' && subjectName ? (
-      <Text className="panel type-body-muted">{text.noMatch(subjectName)}</Text>
+      <Text className="lantern-card-padded lantern-intro-text">{text.noMatch(subjectName)}</Text>
     ) : null;
 
   return (

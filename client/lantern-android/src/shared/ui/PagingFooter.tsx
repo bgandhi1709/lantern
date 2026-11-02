@@ -19,7 +19,7 @@ export function PagingFooter({ loadingMore, failed, loadingLabel, failedLabel, o
   if (failed) {
     return (
       <View className="items-start gap-3 py-2">
-        <Text accessibilityLiveRegion="polite" className="type-body-error">
+        <Text accessibilityLiveRegion="polite" className="lantern-error-message">
           {failedLabel}
         </Text>
         <PrimaryButton label={home.tryAgain} onPress={onRetry} />
@@ -35,7 +35,7 @@ export function PagingFooter({ loadingMore, failed, loadingLabel, failedLabel, o
       className="flex-row items-center gap-3 py-4"
     >
       <ActivityIndicator color={colors.accent} />
-      <Text className="shrink type-small-muted">{loadingLabel}</Text>
+      <Text className="shrink lantern-hint">{loadingLabel}</Text>
     </View>
   );
 }

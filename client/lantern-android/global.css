@@ -58,77 +58,77 @@
   --text-heading: var(--app-text-heading, 28px);
 }
 
-@utility type-heading {
+@utility lantern-screen-title {
   @apply font-inter-bold text-heading text-ink;
 }
-@utility type-lead {
+@utility lantern-item-title {
   @apply font-inter-bold text-lead text-ink;
 }
-@utility type-body {
+@utility lantern-paragraph {
   @apply font-inter-medium text-body text-ink;
 }
-@utility type-body-bold {
+@utility lantern-label {
   @apply font-inter-bold text-body text-ink;
 }
-@utility type-body-muted {
+@utility lantern-intro-text {
   @apply font-inter-medium text-body text-muted;
 }
-@utility type-body-error {
+@utility lantern-error-message {
   @apply font-inter-medium text-body text-danger;
 }
-@utility type-link {
+@utility lantern-link {
   @apply font-inter-bold text-body text-primary-deep;
 }
-@utility type-small-muted {
+@utility lantern-hint {
   @apply font-inter-medium text-small text-muted;
 }
-@utility type-small-muted-semibold {
+@utility lantern-small-label {
   @apply font-inter-semibold text-small text-muted;
 }
-@utility type-small-muted-bold {
+@utility lantern-section-label {
   @apply font-inter-bold text-small text-muted;
 }
-@utility type-small-link {
+@utility lantern-chapter-meta {
   @apply font-inter-bold text-small text-primary-deep;
 }
-@utility type-error {
+@utility lantern-field-error {
   @apply font-inter-semibold text-small text-danger;
 }
-@utility type-caption {
+@utility lantern-footnote {
   @apply font-inter-medium text-caption text-muted;
 }
 
-@utility screen {
+@utility lantern-screen {
   @apply flex-1 bg-ground px-6 pb-safe pt-safe;
 }
-@utility surface {
+@utility lantern-card {
   @apply rounded-card border border-line bg-card;
 }
-@utility panel {
-  @apply surface p-4;
+@utility lantern-card-padded {
+  @apply lantern-card p-4;
 }
-@utility pill {
+@utility lantern-chip {
   @apply rounded-full border border-line bg-card active:opacity-70;
 }
-@utility icon-tile {
+@utility lantern-icon-badge {
   @apply size-11 items-center justify-center rounded-control bg-tile;
 }
-@utility button {
+@utility lantern-button {
   @apply min-h-12 justify-center rounded-control px-6 py-3 active:opacity-70;
 }
-@utility field {
+@utility lantern-input-box {
   @apply rounded-control border-2 border-field bg-card;
 }
-@utility choice-row {
+@utility lantern-pick-row {
   @apply min-h-16 flex-row items-center gap-3 rounded-card border-2 px-3.5 py-2.5 active:opacity-70;
 }
-@utility choice-on {
+@utility lantern-pick-row-selected {
   @apply border-primary bg-tile;
 }
-@utility choice-off {
+@utility lantern-pick-row-unselected {
   @apply border-field bg-card;
 }
 
-@utility footer {
+@utility lantern-screen-footer {
   @apply gap-3 pb-6 pt-2;
 }

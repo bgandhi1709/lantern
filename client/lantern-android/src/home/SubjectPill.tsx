@@ -13,7 +13,7 @@ export function SubjectPill({ name, onPress }: Props) {
       accessibilityRole="button"
       accessibilityLabel={chapters.switchSubject(name)}
       onPress={onPress}
-      className="min-h-12 shrink flex-row items-center gap-2 pill px-4 py-1"
+      className="min-h-12 shrink flex-row items-center gap-2 lantern-chip px-4 py-1"
     >
       <Text numberOfLines={1} className="shrink font-inter-bold text-small text-ink">
         {name}

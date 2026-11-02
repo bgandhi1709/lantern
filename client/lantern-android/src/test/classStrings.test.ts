@@ -94,14 +94,14 @@ function coveredBy(segment: string, composites: Composites): string[] {
 }
 
 const roles: Composites = {
-  'type-small-muted': ['font-inter-medium', 'text-small', 'text-muted'],
-  panel: ['rounded-card', 'border', 'border-line', 'bg-card', 'p-4'],
+  'lantern-hint': ['font-inter-medium', 'text-small', 'text-muted'],
+  'lantern-card-padded': ['rounded-card', 'border', 'border-line', 'bg-card', 'p-4'],
 };
 
 describe('coveredBy', () => {
   it('names the composite a class string spells out in full', () => {
     expect(coveredBy('mt-1 font-inter-medium text-small text-muted', roles)).toEqual([
-      'type-small-muted',
+      'lantern-hint',
     ]);
   });
 
@@ -111,7 +111,9 @@ describe('coveredBy', () => {
 
   it('ignores a composite of fewer than three classes', () => {
     expect(
-      coveredBy('border-primary bg-tile', { 'choice-on': ['border-primary', 'bg-tile'] }),
+      coveredBy('border-primary bg-tile', {
+        'lantern-pick-row-selected': ['border-primary', 'bg-tile'],
+      }),
     ).toEqual([]);
   });
 });
@@ -119,8 +121,8 @@ describe('coveredBy', () => {
 describe('compositesIn', () => {
   it('expands a composite built from another', () => {
     const css =
-      '@utility surface {\n  @apply rounded-card border;\n}\n@utility panel {\n  @apply surface p-4;\n}';
-    expect(compositesIn(css).panel).toEqual(['rounded-card', 'border', 'p-4']);
+      '@utility lantern-card {\n  @apply rounded-card border;\n}\n@utility lantern-card-padded {\n  @apply lantern-card p-4;\n}';
+    expect(compositesIn(css)['lantern-card-padded']).toEqual(['rounded-card', 'border', 'p-4']);
   });
 });
 

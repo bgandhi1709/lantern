@@ -7,9 +7,9 @@ export function RecoveryCodeCard({ code }: { code: string }) {
   const strings = useStrings().registration.recovery;
 
   return (
-    <View className="items-center gap-2 surface px-4 py-6">
-      <Text className="type-small-muted-bold tracking-wider">{strings.codeLabel}</Text>
-      <Text selectable testID="recovery-code" className="type-lead tracking-widest">
+    <View className="items-center gap-2 lantern-card px-4 py-6">
+      <Text className="lantern-section-label tracking-wider">{strings.codeLabel}</Text>
+      <Text selectable testID="recovery-code" className="lantern-item-title tracking-widest">
         {code}
       </Text>
     </View>

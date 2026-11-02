@@ -41,7 +41,7 @@ export function AboutYouView({
   const about = strings.about;
 
   return (
-    <View className="screen">
+    <View className="lantern-screen">
       <KeyboardAvoidingView behavior="padding" className="flex-1">
         <StepHeader step={1} total={REGISTRATION_STEP_COUNT} onBack={onBack} />
         <ScrollView contentContainerClassName="gap-4 pb-3" keyboardShouldPersistTaps="handled">
@@ -72,7 +72,7 @@ export function AboutYouView({
             accessibilityLabel={about.agreeLabel}
             icon={<ShieldCheckIcon />}
           >
-            <Text className="type-body">
+            <Text className="lantern-paragraph">
               {about.agreeBefore}
               <Text
                 accessibilityRole="link"
@@ -85,7 +85,7 @@ export function AboutYouView({
             </Text>
           </CheckRow>
         </ScrollView>
-        <View className="footer">
+        <View className="lantern-screen-footer">
           <PrimaryButton label={about.continue} onPress={onContinue} disabled={!canContinue} />
         </View>
       </KeyboardAvoidingView>

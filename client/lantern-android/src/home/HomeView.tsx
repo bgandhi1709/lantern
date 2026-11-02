@@ -43,7 +43,7 @@ export function HomeView(props: Props) {
     <View className="flex-1 bg-ground pt-safe">
       <HomeHeader onOpenSettings={props.onOpenSettings} onSignOut={props.onSignOut} />
       <ScrollView contentContainerClassName="gap-4 px-4 pb-4 pt-1">
-        <Text accessibilityRole="header" className="type-heading">
+        <Text accessibilityRole="header" className="lantern-screen-title">
           {greeting}
         </Text>
         {locked ? <UnlockNotice onUnlock={props.onUnlock} /> : null}

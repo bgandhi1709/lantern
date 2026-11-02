@@ -35,17 +35,17 @@ export function ChapterHistoryView({ history, ...on }: Props) {
         className="flex-row items-center gap-3 py-4"
       >
         <ActivityIndicator color={colors.accent} />
-        <Text className="shrink type-small-muted">{text.loading}</Text>
+        <Text className="shrink lantern-hint">{text.loading}</Text>
       </View>
     ) : history.status === 'failed' ? (
       <View className="items-start gap-3 py-2">
-        <Text accessibilityLiveRegion="polite" className="type-body-error">
+        <Text accessibilityLiveRegion="polite" className="lantern-error-message">
           {text.failed}
         </Text>
         <PrimaryButton label={strings.tryAgain} onPress={on.onTryAgain} />
       </View>
     ) : (
-      <Text className="type-body-muted">{text.none}</Text>
+      <Text className="lantern-intro-text">{text.none}</Text>
     );
 
   return (
@@ -61,7 +61,7 @@ export function ChapterHistoryView({ history, ...on }: Props) {
           chapter ? (
             <View className="gap-3.5 pb-3.5">
               <ChapterHistoryHeader chapter={chapter} />
-              <Text accessibilityRole="header" className="type-body-bold">
+              <Text accessibilityRole="header" className="lantern-label">
                 {text.attemptsHeading}
               </Text>
             </View>

@@ -10,7 +10,7 @@ export function NoticeView({ version, onBack }: Props) {
   const notice = useStrings().registration.notice;
 
   return (
-    <View className="screen">
+    <View className="lantern-screen">
       <View className="flex-row">
         <BackButton onBack={onBack} />
       </View>
@@ -18,17 +18,17 @@ export function NoticeView({ version, onBack }: Props) {
         <ScreenHeading heading={notice.heading} intro={notice.intro} />
         {notice.sections.map((section) => (
           <View key={section.title} className="gap-2">
-            <Text accessibilityRole="header" className="type-lead">
+            <Text accessibilityRole="header" className="lantern-item-title">
               {section.title}
             </Text>
             {section.text.map((paragraph) => (
-              <Text key={paragraph} className="type-body">
+              <Text key={paragraph} className="lantern-paragraph">
                 {paragraph}
               </Text>
             ))}
           </View>
         ))}
-        <Text className="type-small-muted">{notice.version(version)}</Text>
+        <Text className="lantern-hint">{notice.version(version)}</Text>
       </ScrollView>
     </View>
   );
