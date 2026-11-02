@@ -5,7 +5,7 @@ import { ApiError, api } from '../shared/api';
 import { clearAll, readValue } from '../shared/storage';
 import { fakeRestoredSession } from '../test/fakeFirebaseAuth';
 import { AARYA, ROHAN, answerLikeTheApi, registerFamilyOnThisPhone } from '../test/fakeFamily';
-import { MAX_CONTENT_POLLS, CONTENT_POLL_MS } from './subjectsOnceReady';
+import { CONTENT_POLL_MS, MAX_CONTENT_POLLS, RATE_LIMITED_POLL_MS } from './subjectsOnceReady';
 import { useHome } from './useHome';
 
 jest.mock('../shared/api', () => jest.requireActual('../test/fakeApiModule'));
@@ -169,6 +169,26 @@ describe('when a Child’s call fails', () => {
     await act(() => jest.advanceTimersByTimeAsync(CONTENT_POLL_MS * (MAX_CONTENT_POLLS + 1)));
 
     await waitFor(() => expect(result.current.subjects).toEqual({ status: 'failed' }));
+    jest.useRealTimers();
+  });
+
+  it('waits out a rate limit and shows the Subjects once the call goes through', async () => {
+    jest.useFakeTimers();
+    answerLikeTheApi(get, await registerFamilyOnThisPhone());
+    const answer = get.getMockImplementation();
+    let limited = true;
+    get.mockImplementation(async (path: string, schema: unknown) => {
+      if (path === `/v1/children/${AARYA}/subjects` && limited) {
+        limited = false;
+        throw new ApiError('http-429', 429);
+      }
+      return answer?.(path, schema);
+    });
+
+    const { result } = await renderHook(() => useHome());
+    await act(() => jest.advanceTimersByTimeAsync(RATE_LIMITED_POLL_MS));
+
+    await waitFor(() => expect(result.current.subjects.status).toBe('ready'));
     jest.useRealTimers();
   });
 

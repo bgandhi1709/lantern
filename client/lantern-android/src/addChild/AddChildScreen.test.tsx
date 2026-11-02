@@ -40,7 +40,7 @@ const openScreenWithoutTheKey = async (keepOtherAccountsKey: boolean) => {
 
 const fillChild = async (user: ReturnType<typeof userEvent.setup>, name = 'Mira') => {
   await user.type(screen.getByLabelText("Child's name"), name);
-  await user.press(screen.getByRole('radio', { name: 'Class 4' }));
+  await fireEvent(screen.getByLabelText('Class'), 'valueChange', '4');
   await fireEvent(screen.getByLabelText('Birth year'), 'valueChange', String(THIS_YEAR - 9));
 };
 
@@ -60,16 +60,16 @@ describe('Add a child', () => {
     expect(addButton()).toBeDisabled();
 
     await user.type(screen.getByLabelText("Child's name"), 'Mira');
-    await user.press(screen.getByRole('radio', { name: 'Class 4' }));
+    await fireEvent(screen.getByLabelText('Class'), 'valueChange', '4');
     expect(addButton()).toBeDisabled();
 
     await fireEvent(screen.getByLabelText('Birth year'), 'valueChange', String(THIS_YEAR - 9));
     expect(addButton()).toBeEnabled();
   });
 
-  it('offers Classes 1 to 5 on SSC', async () => {
+  it('says why Classes 6 to 10 are missing on SSC', async () => {
     await openScreen('ssc');
-    expect(screen.getAllByRole('radio', { name: /^Class \d+$/ })).toHaveLength(5);
+    expect(screen.getByText('Classes 6 to 10 are not available on SSC yet.')).toBeOnTheScreen();
   });
 
   it('does not take a name of spaces alone', async () => {

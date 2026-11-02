@@ -3,6 +3,7 @@ import { ScrollView, Text, View } from 'react-native';
 import { useStrings } from '../shared/i18n';
 import { ChildSheet } from './ChildSheet';
 import { ChildSwitcherButton } from './ChildSwitcherButton';
+import { FamilyStatus } from './FamilyStatus';
 import type { DayPart } from './greeting';
 import { HomeHeader } from './HomeHeader';
 import { HomeTabs } from './HomeTabs';
@@ -46,6 +47,9 @@ export function HomeView(props: Props) {
           {greeting}
         </Text>
         {locked ? <UnlockNotice onUnlock={props.onUnlock} /> : null}
+        {activeChild || locked ? null : (
+          <FamilyStatus failed={subjects.status === 'failed'} onTryAgain={props.onTryAgain} />
+        )}
         {activeChild ? (
           <>
             <ChildSwitcherButton name={activeChild.name} onPress={props.onOpenSheet} />

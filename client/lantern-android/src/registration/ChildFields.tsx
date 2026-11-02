@@ -7,27 +7,17 @@ import { TextField } from '../shared/ui/TextField';
 import type { Board } from './board';
 import { NAME_MAX_LENGTH, SCHOOL_MAX_LENGTH, classChoices } from './child';
 import type { ChildDraft } from './child';
-import { ClassChips } from './ClassChips';
 
 type Props = {
   child: ChildDraft;
   board: Board;
   years: string[];
-  // The first Child picks the Class from a row of buttons; an extra Child's card is shorter, so a list.
-  classAsList?: boolean;
   // Names the fields for the Maestro flows, which find one by its id.
   idPrefix: string;
   onChange: (changes: Partial<ChildDraft>) => void;
 };
 
-export function ChildFields({
-  child,
-  board,
-  years,
-  classAsList = false,
-  idPrefix,
-  onChange,
-}: Props) {
+export function ChildFields({ child, board, years, idPrefix, onChange }: Props) {
   const strings = useStrings().registration.firstChild;
   const levels = classChoices(board);
   const hint = board === 'ssc' ? strings.sscHint : undefined;
@@ -43,28 +33,19 @@ export function ChildFields({
         icon={<UserIcon />}
         maxLength={NAME_MAX_LENGTH}
       />
-      {classAsList ? (
-        <Picker
-          testID={`${idPrefix}-class`}
-          label={strings.classLabel}
-          placeholder={strings.classPlaceholder}
-          value={child.classLevel === null ? '' : String(child.classLevel)}
-          options={levels.map((level) => ({
-            value: String(level),
-            label: strings.classOption(level),
-          }))}
-          onChange={(value) => onChange({ classLevel: value === '' ? null : Number(value) })}
-          icon={<BookIcon />}
-          hint={hint}
-        />
-      ) : (
-        <ClassChips
-          levels={levels}
-          selected={child.classLevel}
-          onSelect={(classLevel) => onChange({ classLevel })}
-          hint={hint}
-        />
-      )}
+      <Picker
+        testID={`${idPrefix}-class`}
+        label={strings.classLabel}
+        placeholder={strings.classPlaceholder}
+        value={child.classLevel === null ? '' : String(child.classLevel)}
+        options={levels.map((level) => ({
+          value: String(level),
+          label: strings.classOption(level),
+        }))}
+        onChange={(value) => onChange({ classLevel: value === '' ? null : Number(value) })}
+        icon={<BookIcon />}
+        hint={hint}
+      />
       <Picker
         testID={`${idPrefix}-year`}
         label={strings.birthYearLabel}

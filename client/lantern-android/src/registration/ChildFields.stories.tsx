@@ -24,7 +24,6 @@ const filled = { name: 'Aarav', classLevel: 4, birthYear: '2017', school: 'St. M
 
 export const Empty: Story = {};
 export const Filled: Story = { args: { child: filled } };
-export const ClassAsList: Story = { args: { child: filled, classAsList: true } };
 export const SscBoard: Story = { args: { child: filled, board: 'ssc' } };
 export const LongName: Story = {
   args: {

@@ -67,7 +67,6 @@ export function MoreChildren({
               child={draft}
               board={board}
               years={years}
-              classAsList
               onChange={(changes) => onChange(index, changes)}
             />
           </ChildCard>

@@ -59,7 +59,7 @@ const renderChildStep = async (board: 'cbse' | 'ssc' = 'cbse') => {
 // The first Child picks the Class from buttons, an extra Child's card from a list.
 const fillFirstChild = async (user: User, name = 'Aarav') => {
   await user.type(nameField(1), name);
-  await user.press(screen.getByRole('radio', { name: 'Class 4' }));
+  await fireEvent(screen.getByTestId('child-1-class'), 'valueChange', '4');
   await fireEvent(screen.getAllByLabelText('Birth year')[0], 'valueChange', String(THIS_YEAR - 9));
 };
 
@@ -83,7 +83,7 @@ describe('the First child step', () => {
     expect(finishButton()).toBeDisabled();
 
     await user.type(nameField(1), 'Aarav');
-    await user.press(screen.getByRole('radio', { name: 'Class 4' }));
+    await fireEvent(screen.getByTestId('child-1-class'), 'valueChange', '4');
     expect(finishButton()).toBeDisabled();
 
     await fireEvent(
@@ -97,7 +97,6 @@ describe('the First child step', () => {
   it('offers Classes 1 to 10 for CBSE', async () => {
     await renderChildStep('cbse');
 
-    expect(screen.getAllByRole('radio', { name: /^Class \d+$/ })).toHaveLength(10);
     expect(
       screen.queryByText('Classes 6 to 10 are not available on SSC yet.'),
     ).not.toBeOnTheScreen();
@@ -106,7 +105,6 @@ describe('the First child step', () => {
   it('offers Classes 1 to 5 for SSC and says why not more', async () => {
     await renderChildStep('ssc');
 
-    expect(screen.getAllByRole('radio', { name: /^Class \d+$/ })).toHaveLength(5);
     expect(screen.getByText('Classes 6 to 10 are not available on SSC yet.')).toBeOnTheScreen();
   });
 

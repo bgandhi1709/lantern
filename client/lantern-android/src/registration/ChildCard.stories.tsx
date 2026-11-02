@@ -19,7 +19,6 @@ function CardWithFields({
         child={child}
         board="cbse"
         years={birthYearChoices(new Date('2026-10-13'))}
-        classAsList
         onChange={fn()}
       />
     </ChildCard>

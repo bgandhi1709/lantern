@@ -216,6 +216,8 @@ export const en = {
     chapterCount: (count: number) => (count === 1 ? '1 Chapter' : `${count} Chapters`),
     subjectsLoading: (name: string) => `Getting ${name}'s Subjects ready…`,
     subjectsFailed: "Can't load the Subjects",
+    familyLoading: 'Getting your family ready…',
+    familyFailed: "Can't load your family",
     tryAgain: 'Try again',
     tabs: {
       label: 'Main',
