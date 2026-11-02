@@ -47,16 +47,16 @@ export function BoardCard({ board, title, subtitle, classes, selected, onSelect 
       accessibilityRole="radio"
       accessibilityState={{ checked: selected }}
       onPress={onSelect}
-      className={`flex-1 items-center gap-3 rounded-card ${selected ? 'border-[3px] border-primary bg-tile px-[11px] pb-[15px] pt-[19px]' : 'border-2 border-field bg-card px-3 pb-4 pt-5'}`}
+      className={`flex-1 items-center gap-3 rounded-card ${selected ? 'lantern-pick-row-selected border-[3px] px-[11px] pb-[15px] pt-[19px]' : 'lantern-pick-row-unselected border-2 px-3 pb-4 pt-5'}`}
     >
       <View className="size-22 items-center justify-center rounded-full bg-tile">
         <Image source={LOGOS[board]} resizeMode="contain" accessible={false} className="size-22" />
       </View>
       <View className="flex-1 items-center gap-0.5">
-        <Text className="text-center font-inter-bold text-lead text-ink">{title}</Text>
-        <Text className="text-center font-inter-medium text-small text-muted">{subtitle}</Text>
+        <Text className="text-center lantern-item-title">{title}</Text>
+        <Text className="text-center lantern-hint">{subtitle}</Text>
       </View>
-      <Text className="text-center font-inter-semibold text-small text-muted">{classes}</Text>
+      <Text className="text-center lantern-small-label">{classes}</Text>
       {selected ? <Tick /> : null}
     </Pressable>
   );

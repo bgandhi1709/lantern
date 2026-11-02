@@ -11,12 +11,9 @@ export function PreviewCard() {
   const colors = useColors();
 
   return (
-    <View className="gap-3 rounded-card border border-line bg-card p-4">
+    <View className="gap-3 lantern-card-padded">
       <View className="flex-row items-center gap-3">
-        <View
-          importantForAccessibility="no-hide-descendants"
-          className="size-11 items-center justify-center rounded-control bg-tile"
-        >
+        <View importantForAccessibility="no-hide-descendants" className="lantern-icon-badge">
           <Svg width={BOOK_SIZE} height={BOOK_SIZE} viewBox="0 0 24 24" fill="none">
             <Path
               d="M12 6c-2-1.5-5-2-8-2v14c3 0 6 .5 8 2 2-1.5 5-2 8-2V4c-3 0-6 .5-8 2zM12 6v14"
@@ -28,11 +25,11 @@ export function PreviewCard() {
           </Svg>
         </View>
         <View className="shrink">
-          <Text className="font-inter-bold text-body text-ink">{preview.title}</Text>
-          <Text className="font-inter-medium text-small text-muted">{preview.meta}</Text>
+          <Text className="lantern-label">{preview.title}</Text>
+          <Text className="lantern-hint">{preview.meta}</Text>
         </View>
       </View>
-      <Text className="font-inter-medium text-body text-ink">{preview.body}</Text>
+      <Text className="lantern-paragraph">{preview.body}</Text>
       <View className="h-2 rounded-full bg-track">
         <View className="h-2 w-3/5 rounded-full bg-primary" />
       </View>

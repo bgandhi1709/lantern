@@ -9,6 +9,8 @@ import { PrimaryButton } from '../shared/ui/PrimaryButton';
 import { RecoveryCodeCard } from './RecoveryCodeCard';
 import { StepHeader } from './StepHeader';
 import { REGISTRATION_STEP_COUNT } from './steps';
+import { ErrorText } from '../shared/ui/ErrorText';
+import { ScreenHeading } from '../shared/ui/ScreenHeading';
 
 type Props = {
   code: string | null;
@@ -40,47 +42,28 @@ export function RecoveryCodeView({
   const strings = useStrings().registration.recovery;
 
   return (
-    <View className="flex-1 bg-ground px-6 pb-safe pt-safe">
+    <View className="lantern-screen">
       <StepHeader step={3} total={REGISTRATION_STEP_COUNT} onBack={onBack} />
       <ScrollView contentContainerClassName="gap-4 pb-3">
-        <View className="mt-5 gap-2">
-          <Text accessibilityRole="header" className="font-inter-bold text-heading text-ink">
-            {strings.heading}
-          </Text>
-          <Text className="font-inter-medium text-body text-muted">{strings.intro}</Text>
-        </View>
+        <ScreenHeading className="mt-5" heading={strings.heading} intro={strings.intro} />
         {code === null ? null : <RecoveryCodeCard code={code} />}
         {makeFailed ? (
           <View className="gap-3">
-            <Text
-              accessibilityLiveRegion="polite"
-              className="font-inter-semibold text-small text-danger"
-            >
-              {strings.makeFailed}
-            </Text>
+            <ErrorText>{strings.makeFailed}</ErrorText>
             <OutlineButton label={strings.tryAgain} onPress={onMakeAgain} />
           </View>
         ) : null}
         <OutlineButton label={strings.email} onPress={onEmail} icon={<MailIcon />} />
         <OutlineButton label={strings.save} onPress={onSave} icon={<ShareIcon />} />
-        {shareFailed ? (
-          <Text
-            accessibilityLiveRegion="polite"
-            className="font-inter-semibold text-small text-danger"
-          >
-            {strings.shareFailed}
-          </Text>
-        ) : null}
-        <Text className="font-inter-medium text-small text-muted">{strings.hint}</Text>
+        {shareFailed ? <ErrorText>{strings.shareFailed}</ErrorText> : null}
+        <Text className="lantern-hint">{strings.hint}</Text>
         <CheckRow checked={saved} onToggle={onSavedToggle} accessibilityLabel={strings.saved}>
-          <Text className="font-inter-medium text-body text-ink">{strings.saved}</Text>
+          <Text className="lantern-paragraph">{strings.saved}</Text>
         </CheckRow>
       </ScrollView>
       <View className="pb-6 pt-2">
         {emailed ? null : (
-          <Text className="pb-2 text-center font-inter-medium text-small text-muted">
-            {strings.emailFirst}
-          </Text>
+          <Text className="pb-2 text-center lantern-hint">{strings.emailFirst}</Text>
         )}
         <PrimaryButton
           label={strings.continue}

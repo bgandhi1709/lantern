@@ -1,8 +1,9 @@
-import { Pressable, Text, View } from 'react-native';
+import { View } from 'react-native';
 
 import { ChildAvatar } from '../home';
 import type { HomeChild } from '../home';
 import { useStrings } from '../shared/i18n';
+import { ChoiceRow } from '../shared/ui/ChoiceRow';
 import { CheckCircleIcon } from '../shared/ui/icons';
 
 type Props = { options: HomeChild[]; pickedId: string | null; onPick: (childId: string) => void };
@@ -17,24 +18,19 @@ export function ChildChoices({ options, pickedId, onPick }: Props) {
       className="gap-2"
     >
       {options.map((child) => {
-        const checked = child.id === pickedId;
         const classLabel = strings.home.classLabel(child.classLevel);
         return (
-          <Pressable
+          <ChoiceRow
             key={child.id}
-            accessibilityRole="radio"
-            accessibilityState={{ checked }}
-            accessibilityLabel={`${child.name}, ${classLabel}`}
+            role="radio"
+            selected={child.id === pickedId}
+            label={`${child.name}, ${classLabel}`}
             onPress={() => onPick(child.id)}
-            className={`min-h-16 flex-row items-center gap-3 rounded-card border-2 px-3.5 py-2.5 ${checked ? 'border-primary bg-tile' : 'border-field bg-card'}`}
-          >
-            <ChildAvatar name={child.name} large />
-            <View className="flex-1">
-              <Text className="font-inter-bold text-lead text-ink">{child.name}</Text>
-              <Text className="font-inter-medium text-small text-muted">{classLabel}</Text>
-            </View>
-            {checked ? <CheckCircleIcon /> : null}
-          </Pressable>
+            leading={<ChildAvatar name={child.name} large />}
+            title={child.name}
+            subtitle={classLabel}
+            trailing={<CheckCircleIcon />}
+          />
         );
       })}
     </View>

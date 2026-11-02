@@ -16,7 +16,7 @@ export function SettingRow({ title, value, open, onToggle, children }: Props) {
   const rowLabel = useStrings().settings.rowLabel;
 
   return (
-    <View className="overflow-hidden rounded-card border border-line bg-card">
+    <View className="overflow-hidden lantern-card">
       <Pressable
         accessibilityRole="button"
         accessibilityState={{ expanded: open }}
@@ -24,8 +24,8 @@ export function SettingRow({ title, value, open, onToggle, children }: Props) {
         onPress={onToggle}
         className="min-h-14 flex-row items-center gap-3 px-3.5 py-2"
       >
-        <Text className="flex-1 font-inter-bold text-body text-ink">{title}</Text>
-        <Text className="font-inter-medium text-small text-muted">{value}</Text>
+        <Text className="flex-1 lantern-label">{title}</Text>
+        <Text className="lantern-hint">{value}</Text>
         <View className={open ? 'rotate-180' : ''}>
           <ChevronDownIcon />
         </View>

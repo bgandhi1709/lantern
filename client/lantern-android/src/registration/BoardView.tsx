@@ -1,4 +1,4 @@
-import { ScrollView, Text, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 
 import { useStrings } from '../shared/i18n';
 import { PrimaryButton } from '../shared/ui/PrimaryButton';
@@ -7,6 +7,7 @@ import type { Board } from './board';
 import { BoardCard } from './BoardCard';
 import { StepHeader } from './StepHeader';
 import { REGISTRATION_STEP_COUNT } from './steps';
+import { ScreenHeading } from '../shared/ui/ScreenHeading';
 
 type Props = {
   board: Board | null;
@@ -19,15 +20,10 @@ export function BoardView({ board, onSelect, onContinue, onBack }: Props) {
   const strings = useStrings().registration.board;
 
   return (
-    <View className="flex-1 bg-ground px-6 pb-safe pt-safe">
+    <View className="lantern-screen">
       <StepHeader step={2} total={REGISTRATION_STEP_COUNT} onBack={onBack} />
       <ScrollView contentContainerClassName="gap-6 pb-3">
-        <View className="mt-5 gap-2">
-          <Text accessibilityRole="header" className="font-inter-bold text-heading text-ink">
-            {strings.heading}
-          </Text>
-          <Text className="font-inter-medium text-body text-muted">{strings.intro}</Text>
-        </View>
+        <ScreenHeading className="mt-5" heading={strings.heading} intro={strings.intro} />
         <View
           accessibilityRole="radiogroup"
           accessibilityLabel={strings.groupLabel}
@@ -44,7 +40,7 @@ export function BoardView({ board, onSelect, onContinue, onBack }: Props) {
           ))}
         </View>
       </ScrollView>
-      <View className="pb-6 pt-2">
+      <View className="lantern-screen-footer">
         <PrimaryButton label={strings.continue} onPress={onContinue} disabled={board === null} />
       </View>
     </View>

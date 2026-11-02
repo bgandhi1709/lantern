@@ -17,7 +17,7 @@ const meta = {
   },
   render: (args) => (
     <SettingRow {...args}>
-      <Text className="font-inter-medium text-body text-ink">{en.appearance.theme.note}</Text>
+      <Text className="lantern-paragraph">{en.appearance.theme.note}</Text>
     </SettingRow>
   ),
 } satisfies Meta<typeof SettingRow>;

@@ -5,6 +5,7 @@ import { Mark } from '../shared/ui/Mark';
 import { FeatureList } from './FeatureList';
 import { GoogleButton } from './GoogleButton';
 import type { SignInStatus } from './useGoogleSignIn';
+import { ErrorText } from '../shared/ui/ErrorText';
 
 type Props = { status: SignInStatus; onSignIn: () => void };
 
@@ -20,28 +21,18 @@ export function StartView({ status, onSignIn }: Props) {
         <View className="items-center">
           <Mark />
         </View>
-        <Text
-          accessibilityRole="header"
-          className="text-center font-inter-bold text-heading text-ink"
-        >
+        <Text accessibilityRole="header" className="text-center lantern-screen-title">
           {strings.start.heading}
         </Text>
-        <Text className="text-center font-inter-medium text-body text-muted">
-          {strings.start.subheading}
-        </Text>
+        <Text className="text-center lantern-intro-text">{strings.start.subheading}</Text>
         <FeatureList />
       </ScrollView>
       <View className="gap-2 px-6 pb-6">
-        <Text
-          accessibilityLiveRegion="polite"
-          className="text-center font-inter-semibold text-small text-danger"
-        >
+        <ErrorText className="text-center">
           {status === 'failed' ? strings.start.signInFailed : null}
-        </Text>
+        </ErrorText>
         <GoogleButton busy={status === 'signingIn'} onPress={onSignIn} />
-        <Text className="text-center font-inter-medium text-caption text-muted">
-          {strings.start.note}
-        </Text>
+        <Text className="text-center lantern-footnote">{strings.start.note}</Text>
       </View>
     </View>
   );

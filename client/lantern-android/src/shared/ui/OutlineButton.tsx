@@ -32,7 +32,7 @@ export function OutlineButton({
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       onPress={onPress}
-      className={`min-h-12 flex-row items-center justify-center gap-2 rounded-control border-2 bg-card px-6 py-3 ${classes.border}`}
+      className={`lantern-button flex-row items-center gap-2 border-2 bg-card ${classes.border}`}
     >
       {icon ? <View>{icon}</View> : null}
       <Text className={`shrink text-center font-inter-bold text-body ${classes.text}`}>

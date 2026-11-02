@@ -1,10 +1,12 @@
-import { KeyboardAvoidingView, ScrollView, Text, View } from 'react-native';
+import { KeyboardAvoidingView, ScrollView, View } from 'react-native';
 
 import { useStrings } from '../shared/i18n';
 import { BackButton } from '../shared/ui/BackButton';
 import { OutlineButton } from '../shared/ui/OutlineButton';
 import { PrimaryButton } from '../shared/ui/PrimaryButton';
 import { TextField } from '../shared/ui/TextField';
+import { ErrorText } from '../shared/ui/ErrorText';
+import { ScreenHeading } from '../shared/ui/ScreenHeading';
 
 const UNLOCK_FIELD_MAX_LENGTH = 100;
 
@@ -34,18 +36,13 @@ export function UnlockView(props: Props) {
       : strings.open;
 
   return (
-    <View className="flex-1 bg-ground px-6 pb-safe pt-safe">
+    <View className="lantern-screen">
       <KeyboardAvoidingView behavior="padding" className="flex-1">
         <View className="h-16 justify-center">
           <BackButton onBack={props.onBack} />
         </View>
         <ScrollView contentContainerClassName="gap-4 pb-3" keyboardShouldPersistTaps="handled">
-          <View className="gap-2">
-            <Text accessibilityRole="header" className="font-inter-bold text-heading text-ink">
-              {strings.heading}
-            </Text>
-            <Text className="font-inter-medium text-body text-muted">{strings.intro}</Text>
-          </View>
+          <ScreenHeading heading={strings.heading} intro={strings.intro} />
           <TextField
             secret
             testID="unlock-field"
@@ -57,33 +54,14 @@ export function UnlockView(props: Props) {
           />
           {props.phase === 'failed' ? (
             <View className="gap-3">
-              <Text
-                accessibilityLiveRegion="polite"
-                className="font-inter-semibold text-small text-danger"
-              >
-                {strings.loadFailed}
-              </Text>
+              <ErrorText>{strings.loadFailed}</ErrorText>
               <OutlineButton label={strings.tryAgain} onPress={props.onLoadAgain} />
             </View>
           ) : null}
-          {props.somethingWentWrong ? (
-            <Text
-              accessibilityLiveRegion="polite"
-              className="font-inter-semibold text-small text-danger"
-            >
-              {strings.failed}
-            </Text>
-          ) : null}
+          {props.somethingWentWrong ? <ErrorText>{strings.failed}</ErrorText> : null}
         </ScrollView>
         <View className="gap-1 pb-4 pt-2">
-          {props.wrong ? (
-            <Text
-              accessibilityLiveRegion="polite"
-              className="pb-2 font-inter-semibold text-small text-danger"
-            >
-              {strings.wrong}
-            </Text>
-          ) : null}
+          {props.wrong ? <ErrorText className="pb-2">{strings.wrong}</ErrorText> : null}
           <PrimaryButton
             label={props.phase === 'loading' ? strings.loading : buttonLabel}
             onPress={props.onOpen}

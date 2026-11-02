@@ -43,4 +43,8 @@ export const SwitcherOpen: Story = { args: { sheetOpen: true } };
 export const SixChildren: Story = {
   args: { sheetOpen: true, switcherChildren: SIX_CHILDREN, canAddChild: false },
 };
+export const FamilyLoading: Story = {
+  args: { activeChild: null, subjects: { status: 'loading' } },
+};
+export const FamilyFailed: Story = { args: { activeChild: null, subjects: { status: 'failed' } } };
 export const Locked: Story = { args: { locked: true, activeChild: null } };

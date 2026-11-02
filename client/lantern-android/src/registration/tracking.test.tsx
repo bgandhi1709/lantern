@@ -42,7 +42,7 @@ const register = async () => {
   await user.press(screen.getByRole('checkbox', { name: 'I have sent the email to myself.' }));
   await user.press(screen.getByRole('button', { name: 'Continue' }));
   await user.type(await screen.findByTestId('child-1-name'), 'Aarav');
-  await user.press(screen.getByRole('radio', { name: 'Class 4' }));
+  await fireEvent(screen.getByTestId('child-1-class'), 'valueChange', '4');
   await fireEvent(screen.getAllByLabelText('Birth year')[0], 'valueChange', String(THIS_YEAR - 9));
   await user.press(screen.getByRole('button', { name: 'Finish' }));
   await screen.findByText('Home');

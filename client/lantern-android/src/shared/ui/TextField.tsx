@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { Text, TextInput, View } from 'react-native';
 
 import { useColors } from '../theme';
+import { ErrorText } from './ErrorText';
 
 type Props = {
   label: string;
@@ -36,7 +37,7 @@ export function TextField({
   const colors = useColors();
   return (
     <View>
-      <Text importantForAccessibility="no" className="font-inter-bold text-body text-ink">
+      <Text importantForAccessibility="no" className="lantern-label">
         {label}
       </Text>
       <View className="mt-1.5 justify-center">
@@ -56,18 +57,11 @@ export function TextField({
           autoComplete="off"
           importantForAutofill={secret ? 'no' : 'auto'}
           returnKeyType="done"
-          className={`h-14 rounded-control border-2 border-field bg-card pr-4 font-inter-medium text-ink focus:border-primary-deep ${numeric ? 'text-center text-heading' : `text-lead ${icon ? 'pl-12' : 'pl-4'}`}`}
+          className={`h-14 lantern-input-box pr-4 font-inter-medium text-ink focus:border-primary-deep ${numeric ? 'text-center text-heading' : `text-lead ${icon ? 'pl-12' : 'pl-4'}`}`}
         />
       </View>
-      {hint ? <Text className="mt-1 font-inter-medium text-small text-muted">{hint}</Text> : null}
-      {error ? (
-        <Text
-          accessibilityLiveRegion="polite"
-          className="mt-1 font-inter-semibold text-small text-danger"
-        >
-          {error}
-        </Text>
-      ) : null}
+      {hint ? <Text className="mt-1 lantern-hint">{hint}</Text> : null}
+      {error ? <ErrorText className="mt-1">{error}</ErrorText> : null}
     </View>
   );
 }

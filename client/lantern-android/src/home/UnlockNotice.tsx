@@ -7,11 +7,11 @@ export function UnlockNotice({ onUnlock }: { onUnlock: () => void }) {
   const strings = useStrings().home.locked;
 
   return (
-    <View className="gap-3 rounded-card border border-line bg-card p-4">
-      <Text accessibilityRole="header" className="font-inter-bold text-lead text-ink">
+    <View className="gap-3 lantern-card-padded">
+      <Text accessibilityRole="header" className="lantern-item-title">
         {strings.heading}
       </Text>
-      <Text className="font-inter-medium text-small text-muted">{strings.text}</Text>
+      <Text className="lantern-hint">{strings.text}</Text>
       <PrimaryButton label={strings.unlock} onPress={onUnlock} />
     </View>
   );

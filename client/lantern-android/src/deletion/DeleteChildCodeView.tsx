@@ -6,9 +6,10 @@ import { OutlineButton } from '../shared/ui/OutlineButton';
 import { PrimaryButton } from '../shared/ui/PrimaryButton';
 import { TextField } from '../shared/ui/TextField';
 import type { DeleteFailure } from './deleteFailure';
-import { FailureText } from './FailureText';
 import { CODE_LENGTH } from './useOneTimeCode';
 import type { Work } from './useOneTimeCode';
+import { ScreenHeading } from '../shared/ui/ScreenHeading';
+import { ErrorText } from '../shared/ui/ErrorText';
 
 type Props = {
   email: string;
@@ -30,20 +31,13 @@ export function DeleteChildCodeView(props: Props) {
   const hint = hintFor(props, strings);
 
   return (
-    <View className="flex-1 bg-ground px-6 pb-safe pt-safe">
+    <View className="lantern-screen">
       <KeyboardAvoidingView behavior="padding" className="flex-1">
         <View className="h-16 flex-row items-center">
           <BackButton onBack={props.onBack} />
         </View>
         <ScrollView contentContainerClassName="gap-4 pb-3 pt-1" keyboardShouldPersistTaps="handled">
-          <View className="gap-2">
-            <Text accessibilityRole="header" className="font-inter-bold text-heading text-ink">
-              {strings.codeHeading}
-            </Text>
-            <Text className="font-inter-medium text-body text-muted">
-              {strings.codeIntro(props.email)}
-            </Text>
-          </View>
+          <ScreenHeading heading={strings.codeHeading} intro={strings.codeIntro(props.email)} />
           <TextField
             numeric
             label={strings.codeLabel}
@@ -52,19 +46,17 @@ export function DeleteChildCodeView(props: Props) {
             onChangeText={props.onTypeCode}
             maxLength={CODE_LENGTH}
           />
-          <FailureText message={props.failure && strings.failures[props.failure]} />
+          {props.failure ? <ErrorText>{strings.failures[props.failure]}</ErrorText> : null}
           <Pressable
             accessibilityRole="button"
             onPress={props.onResend}
             disabled={props.work !== null}
             className="min-h-12 justify-center"
           >
-            <Text className="font-inter-bold text-body text-primary-deep underline">
-              {strings.resend}
-            </Text>
+            <Text className="lantern-link underline">{strings.resend}</Text>
           </Pressable>
         </ScrollView>
-        <View className="gap-3 pb-6 pt-2">
+        <View className="lantern-screen-footer">
           <PrimaryButton
             label={deleting ? strings.deleting : strings.delete}
             onPress={props.onDelete}

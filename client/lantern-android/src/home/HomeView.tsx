@@ -3,6 +3,7 @@ import { ScrollView, Text, View } from 'react-native';
 import { useStrings } from '../shared/i18n';
 import { ChildSheet } from './ChildSheet';
 import { ChildSwitcherButton } from './ChildSwitcherButton';
+import { FamilyStatus } from './FamilyStatus';
 import type { DayPart } from './greeting';
 import { HomeHeader } from './HomeHeader';
 import { HomeTabs } from './HomeTabs';
@@ -42,10 +43,13 @@ export function HomeView(props: Props) {
     <View className="flex-1 bg-ground pt-safe">
       <HomeHeader onOpenSettings={props.onOpenSettings} onSignOut={props.onSignOut} />
       <ScrollView contentContainerClassName="gap-4 px-4 pb-4 pt-1">
-        <Text accessibilityRole="header" className="font-inter-bold text-heading text-ink">
+        <Text accessibilityRole="header" className="lantern-screen-title">
           {greeting}
         </Text>
         {locked ? <UnlockNotice onUnlock={props.onUnlock} /> : null}
+        {activeChild || locked ? null : (
+          <FamilyStatus failed={subjects.status === 'failed'} onTryAgain={props.onTryAgain} />
+        )}
         {activeChild ? (
           <>
             <ChildSwitcherButton name={activeChild.name} onPress={props.onOpenSheet} />

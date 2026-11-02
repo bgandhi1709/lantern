@@ -10,10 +10,11 @@ import { WarningCard } from '../shared/ui/WarningCard';
 import { ChildChoices } from './ChildChoices';
 import type { HomeChild } from '../home';
 import type { DeleteFailure } from './deleteFailure';
-import { FailureText } from './FailureText';
 import { OnlyChildNotice } from './OnlyChildNotice';
 import { childrenOf } from './useDeletableFamily';
 import type { FamilyState } from './useDeletableFamily';
+import { ScreenHeading } from '../shared/ui/ScreenHeading';
+import { ErrorText } from '../shared/ui/ErrorText';
 
 const NAME_MAX_LENGTH = 50;
 
@@ -44,20 +45,15 @@ export function DeleteChildConfirmView(props: Props) {
       : props.failure && strings.failures[props.failure];
 
   return (
-    <View className="flex-1 bg-ground px-6 pb-safe pt-safe">
+    <View className="lantern-screen">
       <KeyboardAvoidingView behavior="padding" className="flex-1">
         <View className="h-16 flex-row items-center">
           <BackButton onBack={props.onBack} />
         </View>
         <ScrollView contentContainerClassName="gap-4 pb-3 pt-1" keyboardShouldPersistTaps="handled">
-          <View className="gap-2">
-            <Text accessibilityRole="header" className="font-inter-bold text-heading text-ink">
-              {strings.heading}
-            </Text>
-            <Text className="font-inter-medium text-body text-muted">{strings.intro}</Text>
-          </View>
+          <ScreenHeading heading={strings.heading} intro={strings.intro} />
           {family.status === 'loading' ? (
-            <Text className="font-inter-medium text-body text-muted">{strings.loading}</Text>
+            <Text className="lantern-intro-text">{strings.loading}</Text>
           ) : null}
           {family.status === 'ready' && children.length < 2 ? (
             <OnlyChildNotice onDeleteFamily={props.onDeleteFamily} />
@@ -80,15 +76,13 @@ export function DeleteChildConfirmView(props: Props) {
               />
               <View className="flex-row items-start gap-2.5">
                 <MailIcon />
-                <Text className="flex-1 font-inter-medium text-small text-muted">
-                  {strings.emailNote(props.email)}
-                </Text>
+                <Text className="flex-1 lantern-hint">{strings.emailNote(props.email)}</Text>
               </View>
             </>
           )}
-          <FailureText message={failureMessage} />
+          {failureMessage ? <ErrorText>{failureMessage}</ErrorText> : null}
         </ScrollView>
-        <View className="gap-3 pb-6 pt-2">
+        <View className="lantern-screen-footer">
           <PrimaryButton
             label={props.sending ? strings.sending : strings.sendCode}
             onPress={props.onSend}

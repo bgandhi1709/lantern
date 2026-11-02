@@ -17,7 +17,7 @@ export function LoadingOverlay({ label }: Props) {
       className="absolute inset-0 items-center justify-center gap-4 bg-ground"
     >
       <PageTurnLoader still={reduceMotion} />
-      <Text className="px-6 text-center font-inter-medium text-body text-muted">{label}</Text>
+      <Text className="px-6 text-center lantern-intro-text">{label}</Text>
     </View>
   );
 }

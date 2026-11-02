@@ -49,18 +49,15 @@ const requiredStories: Record<string, string[]> = {
     'WithError',
     'Numeric',
   ],
+  'shared/ui/ChoiceRow.stories.tsx': ['Unselected', 'Selected', 'Radio', 'LongTitle'],
+  'shared/ui/ErrorText.stories.tsx': ['Default', 'Centered', 'LongMessage'],
+  'shared/ui/ScreenHeading.stories.tsx': ['Default', 'BelowAStepHeader', 'LongIntro'],
+  'shared/ui/TopBar.stories.tsx': ['Default', 'LongTitle'],
   'shared/ui/CheckRow.stories.tsx': ['Unchecked', 'Checked', 'LongLabel', 'WithoutIcon'],
   'shared/ui/OutlineButton.stories.tsx': ['WithIcon', 'WithoutIcon', 'Danger', 'LongLabel'],
   'registration/NoticeView.stories.tsx': ['Default'],
   'shared/ui/Picker.stories.tsx': ['Empty', 'Selected', 'WithHint', 'WithoutIcon', 'LongLabel'],
-  'registration/ClassChips.stories.tsx': ['NothingPicked', 'Picked', 'SscClasses'],
-  'registration/ChildFields.stories.tsx': [
-    'Empty',
-    'Filled',
-    'ClassAsList',
-    'SscBoard',
-    'LongName',
-  ],
+  'registration/ChildFields.stories.tsx': ['Empty', 'Filled', 'SscBoard', 'LongName'],
   'registration/ChildCard.stories.tsx': [
     'Optional',
     'NeedsMore',
@@ -115,7 +112,10 @@ const requiredStories: Record<string, string[]> = {
     'SwitcherOpen',
     'SixChildren',
     'Locked',
+    'FamilyLoading',
+    'FamilyFailed',
   ],
+  'home/FamilyStatus.stories.tsx': ['Loading', 'Failed'],
   'home/SubjectList.stories.tsx': ['Ready', 'Loading', 'Failed'],
   'home/SubjectRow.stories.tsx': ['Default', 'OneChapter', 'LongName', 'SocialScience'],
   'home/ChildSheet.stories.tsx': ['TwoChildren', 'OneStillBeingMade', 'SixChildren'],
@@ -282,8 +282,6 @@ const withoutStory: Record<string, string> = {
   'home/homeIcons.tsx': 'SVG parts used by the Home components',
   'deletion/DeleteChildScreen.tsx':
     'container for the Delete a child views, which have the stories',
-  'deletion/FailureText.tsx':
-    'the failure line of the Delete a child views, whose stories show every failure',
   'settings/SettingsScreen.tsx': 'container for SettingsView, which has the stories',
   'shared/theme/LookProvider.tsx': 'provider with nothing to draw; the Appearance stories use it',
   'shared/theme/ThemeProvider.tsx':

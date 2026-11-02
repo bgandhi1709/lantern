@@ -2,7 +2,6 @@ import { ActivityIndicator, FlatList, Text, View } from 'react-native';
 
 import { useStrings } from '../shared/i18n';
 import { useColors } from '../shared/theme';
-import { BackButton } from '../shared/ui/BackButton';
 import { PagingFooter } from '../shared/ui/PagingFooter';
 import { PrimaryButton } from '../shared/ui/PrimaryButton';
 import { ChapterCard } from './ChapterCard';
@@ -16,6 +15,7 @@ import { SubjectPill } from './SubjectPill';
 import { SubjectSheet } from './SubjectSheet';
 import type { ChaptersList } from './useChapters';
 import type { HomeChild, SwitcherChild } from './useHome';
+import { TopBar } from '../shared/ui/TopBar';
 
 const LOAD_MORE_AT_REMAINING = 0.5;
 
@@ -57,7 +57,7 @@ export function ChaptersView(props: Props) {
     <View className="gap-4 pb-4">
       {subjectName ? (
         <View className="flex-row items-center gap-2">
-          <Text className="font-inter-semibold text-small text-muted">{text.subjectLabel}</Text>
+          <Text className="lantern-small-label">{text.subjectLabel}</Text>
           <SubjectPill name={subjectName} onPress={props.onOpenSubjectSheet} />
         </View>
       ) : null}
@@ -81,30 +81,24 @@ export function ChaptersView(props: Props) {
         className="flex-row items-center gap-3 py-4"
       >
         <ActivityIndicator color={colors.accent} />
-        <Text className="shrink font-inter-medium text-small text-muted">{text.loading}</Text>
+        <Text className="shrink lantern-hint">{text.loading}</Text>
       </View>
     ) : chapters.status === 'failed' ? (
       <View className="items-start gap-3 py-2">
-        <Text accessibilityLiveRegion="polite" className="font-inter-medium text-body text-danger">
+        <Text accessibilityLiveRegion="polite" className="lantern-error-message">
           {text.failed}
         </Text>
         <PrimaryButton label={home.tryAgain} onPress={props.onTryAgain} />
       </View>
     ) : props.query.trim() !== '' && subjectName ? (
-      <Text className="rounded-card border border-line bg-card p-4 font-inter-medium text-body text-muted">
-        {text.noMatch(subjectName)}
-      </Text>
+      <Text className="lantern-card-padded lantern-intro-text">{text.noMatch(subjectName)}</Text>
     ) : null;
 
   return (
     <View className="flex-1 bg-ground pt-safe">
-      <View className="h-16 flex-row items-center gap-1 pl-4 pr-3">
-        <BackButton onBack={props.onBack} />
-        <Text accessibilityRole="header" className="flex-1 font-inter-bold text-lead text-ink">
-          {text.title}
-        </Text>
+      <TopBar title={text.title} onBack={props.onBack}>
         {activeChild ? <ChildPill name={activeChild.name} onPress={props.onOpenSheet} /> : null}
-      </View>
+      </TopBar>
       <FlatList
         testID="chapters-list"
         data={chapters.items}

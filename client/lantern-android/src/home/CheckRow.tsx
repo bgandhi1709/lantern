@@ -16,10 +16,8 @@ export function CheckRow({ check }: { check: Check }) {
         <Text className="font-inter-semibold text-body text-ink">
           {text.checkTitle(check.checkNumber)}
         </Text>
-        <Text className="font-inter-medium text-caption text-muted">
-          {shortDate(check.takenAt)}
-        </Text>
-        <Text className="mt-0.5 font-inter-medium text-small text-muted">
+        <Text className="lantern-footnote">{shortDate(check.takenAt)}</Text>
+        <Text className="mt-0.5 lantern-hint">
           {text.wrong(check.wrong.map((concept) => concept.title))}
         </Text>
       </View>

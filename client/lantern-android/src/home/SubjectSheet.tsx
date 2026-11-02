@@ -26,7 +26,7 @@ export function SubjectSheet({ visible, subjects, selectedId, onPick, onClose }:
         />
         <View className="gap-3 rounded-t-3xl bg-card px-4 pb-safe pt-3">
           <View className="h-1 w-10 self-center rounded-full bg-track" />
-          <Text accessibilityRole="header" className="font-inter-bold text-lead text-ink">
+          <Text accessibilityRole="header" className="lantern-item-title">
             {home.chapters.sheetTitle}
           </Text>
           <ScrollView className="max-h-96 grow-0" contentContainerClassName="gap-2">

@@ -58,7 +58,7 @@ export function AppSettings({ look, outline }: Props) {
               accessibilityLabel: text.theme[value],
             }))}
           />
-          <Text className="font-inter-medium text-small text-muted">{text.theme.note}</Text>
+          <Text className="lantern-hint">{text.theme.note}</Text>
         </SettingRow>
       ) : null}
       {outline.matches('textSize') ? (
@@ -74,7 +74,7 @@ export function AppSettings({ look, outline }: Props) {
               textClassName: SAMPLE_CLASS[value],
             }))}
           />
-          <Text className="font-inter-medium text-small text-muted">{text.textSize.note}</Text>
+          <Text className="lantern-hint">{text.textSize.note}</Text>
         </SettingRow>
       ) : null}
       {outline.matches('colour') ? (

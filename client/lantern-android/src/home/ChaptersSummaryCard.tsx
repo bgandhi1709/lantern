@@ -22,12 +22,12 @@ export function ChaptersSummaryCard({ subjectName, childName, progress }: Props)
   ];
 
   return (
-    <View className="gap-2.5 rounded-card border border-line bg-card px-4 py-3.5">
+    <View className="gap-2.5 lantern-card px-4 py-3.5">
       <View className="flex-row items-baseline justify-between gap-2">
-        <Text accessibilityRole="header" className="shrink font-inter-bold text-lead text-ink">
+        <Text accessibilityRole="header" className="shrink lantern-item-title">
           {text.summaryTitle(subjectName, childName)}
         </Text>
-        <Text className="font-inter-bold text-small text-primary-deep">
+        <Text className="lantern-chapter-meta">
           {text.checkedOf(progress.checked, progress.states.length)}
         </Text>
       </View>
@@ -45,7 +45,7 @@ export function ChaptersSummaryCard({ subjectName, childName, progress }: Props)
                 importantForAccessibility="no-hide-descendants"
                 className={`size-2.5 rounded-full ${SEGMENT[state]}`}
               />
-              <Text className="font-inter-medium text-caption text-muted">{label}</Text>
+              <Text className="lantern-footnote">{label}</Text>
             </View>
           ))}
       </View>

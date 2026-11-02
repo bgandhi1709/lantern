@@ -33,10 +33,10 @@ export function Picker({
   const itemStyle = { backgroundColor: colors.card };
   return (
     <View>
-      <Text importantForAccessibility="no" className="font-inter-bold text-body text-ink">
+      <Text importantForAccessibility="no" className="lantern-label">
         {label}
       </Text>
-      <View className="mt-1.5 h-14 justify-center rounded-control border-2 border-field bg-card">
+      <View className="mt-1.5 h-14 justify-center rounded-control bg-card">
         {icon ? <View className="absolute left-3.5 z-10">{icon}</View> : null}
         <View className={icon ? 'pl-9' : ''}>
           <NativePicker
@@ -64,8 +64,12 @@ export function Picker({
             ))}
           </NativePicker>
         </View>
+        <View
+          pointerEvents="none"
+          className="absolute inset-0 rounded-control border-2 border-field"
+        />
       </View>
-      {hint ? <Text className="mt-1 font-inter-medium text-small text-muted">{hint}</Text> : null}
+      {hint ? <Text className="mt-1 lantern-hint">{hint}</Text> : null}
     </View>
   );
 }

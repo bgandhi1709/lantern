@@ -4,6 +4,7 @@ import { useStrings } from '../shared/i18n';
 import type { ChapterState } from './chaptersApi';
 import { TickIcon } from './homeIcons';
 
+const MIN_LABEL_FONT_SCALE = 0.7;
 const STEPS = ['planned', 'taught', 'checked'] as const;
 const STEPS_REACHED: Record<ChapterState, number> = {
   'not-started': 0,
@@ -33,6 +34,9 @@ export function ChapterStateTracker({ state }: { state: ChapterState }) {
               {done ? <TickIcon /> : null}
             </View>
             <Text
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={MIN_LABEL_FONT_SCALE}
               className={`text-caption ${done ? 'font-inter-bold text-ink' : 'font-inter-medium text-muted'}`}
             >
               {steps[step]}
