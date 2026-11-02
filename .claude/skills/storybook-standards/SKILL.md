@@ -22,7 +22,7 @@ Storybook (ADR-0012) is where the founder and the agent look at the same compone
 
 - Component Story Format with TypeScript: a `meta` object `satisfies Meta<typeof Component>`, then `export const Name: StoryObj<typeof meta>`. Names are UpperCamelCase and say the state (`SigningIn`, not `Story2`). Titles are static strings, `Feature/Component`.
 - Drive stories with `args`; put the shared ones on the meta. A callback is `fn()` from `storybook/test`, so Actions shows the press.
-- Styling follows ADR-0011: class names only, no `StyleSheet` and no style objects (lint applies to stories too). A story holds no colours of its own; the Backgrounds addon already offers `ground`, `card` and `primary`.
+- Styling follows ADR-0011: class names only, composite classes from `global.css` first (`type-*`, `surface`, `panel`, `choice-row`), no `StyleSheet` and no style objects (lint applies to stories too). A story holds no colours of its own; the Backgrounds addon already offers `ground`, `card` and `primary`.
 - Text in a story comes from `src/shared/i18n` through the component. A long-label story is the one place a literal string is allowed, because it tests the layout.
 - Fixed data only: no API, no Firebase, no storage in a story. Anything it needs is an arg.
 

@@ -20,3 +20,8 @@ Screens in `client/lantern-android` style themselves with Tailwind class names t
 - A component that animates keeps an `Animated.View` with a `style` object and puts its class names on a plain `View` or `Text` inside or around it.
 
 Considered and rejected: `StyleSheet.create` blocks with shared text styles in `theme.ts` (no new library, but not the classes the founder asked for), and a styles file per component (separates the code but does not remove the duplication).
+
+## Addendum (issue #198, D128): composite classes
+
+Repeated class combinations are named once in `global.css` with `@utility` and `@apply`, and used in markup like any other class: `type-small-muted` for `font-inter-medium text-small text-muted`, `surface` for the bordered card, `panel` for `surface p-4` (one composite may build on another), `screen` for the full-screen frame. Tailwind flattens the nesting and NativeWind compiles the result to the same declarations as the classes it names, so the runtime `--app-*` overrides keep working. A composite exists for a combination used at least three times, and a Jest test (`classStrings.test.ts`) fails when a screen or story spells out the classes of one, so adding a role to `global.css` is also what enforces it. Structure that repeats (the choice row, the screen heading, the top bar, the error line) is a shared component with a story, not a class. The `StyleSheet.create` and text-component options stay rejected.
+
