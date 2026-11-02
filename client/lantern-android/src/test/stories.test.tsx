@@ -49,6 +49,7 @@ const requiredStories: Record<string, string[]> = {
     'WithError',
     'Numeric',
   ],
+  'shared/ui/ChoiceRow.stories.tsx': ['Unselected', 'Selected', 'Radio', 'LongTitle'],
   'shared/ui/CheckRow.stories.tsx': ['Unchecked', 'Checked', 'LongLabel', 'WithoutIcon'],
   'shared/ui/OutlineButton.stories.tsx': ['WithIcon', 'WithoutIcon', 'Danger', 'LongLabel'],
   'registration/NoticeView.stories.tsx': ['Default'],

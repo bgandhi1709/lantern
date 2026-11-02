@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { View } from 'react-native';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
 import { useColors } from '../shared/theme';
@@ -119,6 +120,12 @@ export const TickIcon = () => (
   <Glyph size={18} tone="onPrimary" strokeWidth={3.5}>
     <Path d="M5 12.5l4.5 4.5L19 7.5" />
   </Glyph>
+);
+
+export const SelectedMark = () => (
+  <View className="size-7 items-center justify-center rounded-full bg-primary">
+    <TickIcon />
+  </View>
 );
 
 const TAB_ICON_SIZE = 24;
