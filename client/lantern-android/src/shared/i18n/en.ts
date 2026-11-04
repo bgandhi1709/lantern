@@ -1,5 +1,7 @@
 // Every piece of text the Parent sees. A new language is a copy of this file with the values
 // translated; its type is Strings, so a missing or extra key fails the build.
+const KEEP_FAMILY = 'Keep my Family';
+
 export const en = {
   appName: 'Lantern',
   common: {
@@ -322,7 +324,7 @@ export const en = {
     warning:
       'Starting again deletes this Family and its Children from Lantern, then takes you to registration to make a new one. This cannot be undone.',
     delete: 'Continue to delete my Family',
-    keep: 'Keep my Family',
+    keep: KEEP_FAMILY,
   },
   appearance: {
     unlockRow: {
@@ -417,9 +419,14 @@ export const en = {
       `Your Family and every Child in it (${names}) are deleted, with all their Plans, Checks, marks and progress. This cannot be undone and nothing can be recovered.`,
     warning:
       'Your Family and every Child in it are deleted, with all their Plans, Checks, marks and progress. This cannot be undone and nothing can be recovered.',
-    typeLabel: 'Type DELETE to confirm',
+    confirmWord: 'DELETE',
+    typeLabel: (word: string) => `Type ${word} to confirm`,
+    names: (names: string[]) =>
+      names.length < 2
+        ? names.join('')
+        : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`,
     typeHint: 'Use capital letters, exactly as shown.',
-    keep: 'Keep my Family',
+    keep: KEEP_FAMILY,
     codeIntro: (email: string) =>
       `We emailed a 6-digit code to ${email}. Type it to delete your Family.`,
     lastStep: 'This is the last step. There is no undo.',

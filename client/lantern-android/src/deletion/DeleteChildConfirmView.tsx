@@ -1,13 +1,12 @@
-import { KeyboardAvoidingView, ScrollView, Text, View } from 'react-native';
+import { Text } from 'react-native';
 
 import { useStrings } from '../shared/i18n';
-import { BackButton } from '../shared/ui/BackButton';
-import { MailIcon } from '../shared/ui/icons';
-import { OutlineButton } from '../shared/ui/OutlineButton';
-import { PrimaryButton } from '../shared/ui/PrimaryButton';
 import { TextField } from '../shared/ui/TextField';
 import { WarningCard } from '../shared/ui/WarningCard';
 import { ChildChoices } from './ChildChoices';
+import { DeletionPage } from './DeletionPage';
+import { EmailNote } from './EmailNote';
+import { SendCodeButtons } from './SendCodeButtons';
 import type { HomeChild } from '../home';
 import type { DeleteFailure } from './deleteFailure';
 import { OnlyChildNotice } from './OnlyChildNotice';
@@ -43,53 +42,45 @@ export function DeleteChildConfirmView(props: Props) {
   const failureMessage =
     family.status === 'failed' ? strings.loadFailed : props.failure && code.failures[props.failure];
 
+  const footer = (
+    <SendCodeButtons
+      canSend={props.canSend}
+      sending={props.sending}
+      cancelLabel={code.cancel}
+      onSend={props.onSend}
+      onCancel={props.onCancel}
+    />
+  );
+
   return (
-    <View className="lantern-screen">
-      <KeyboardAvoidingView behavior="padding" className="flex-1">
-        <View className="h-16 flex-row items-center">
-          <BackButton onBack={props.onBack} />
-        </View>
-        <ScrollView contentContainerClassName="gap-4 pb-3 pt-1" keyboardShouldPersistTaps="handled">
-          <ScreenHeading heading={strings.heading} intro={strings.intro} />
-          {family.status === 'loading' ? (
-            <Text className="lantern-intro-text">{strings.loading}</Text>
-          ) : null}
-          {family.status === 'ready' && children.length < 2 ? (
-            <OnlyChildNotice onDeleteFamily={props.onDeleteFamily} />
-          ) : null}
-          {children.length >= 2 ? (
-            <ChildChoices options={children} pickedId={picked?.id ?? null} onPick={props.onPick} />
-          ) : null}
-          {picked === null ? null : (
-            <>
-              <WarningCard
-                heading={strings.warningHeading(picked.name)}
-                text={strings.warning(picked.name)}
-              />
-              <TextField
-                label={strings.nameLabel(picked.name)}
-                hint={strings.nameHint}
-                value={props.typedName}
-                onChangeText={props.onTypeName}
-                maxLength={NAME_MAX_LENGTH}
-              />
-              <View className="flex-row items-start gap-2.5">
-                <MailIcon />
-                <Text className="flex-1 lantern-hint">{code.emailNote(props.email)}</Text>
-              </View>
-            </>
-          )}
-          {failureMessage ? <ErrorText>{failureMessage}</ErrorText> : null}
-        </ScrollView>
-        <View className="lantern-screen-footer">
-          <PrimaryButton
-            label={props.sending ? code.sending : code.sendCode}
-            onPress={props.onSend}
-            disabled={!props.canSend || props.sending}
+    <DeletionPage onBack={props.onBack} footer={footer}>
+      <ScreenHeading heading={strings.heading} intro={strings.intro} />
+      {family.status === 'loading' ? (
+        <Text className="lantern-intro-text">{strings.loading}</Text>
+      ) : null}
+      {family.status === 'ready' && children.length < 2 ? (
+        <OnlyChildNotice onDeleteFamily={props.onDeleteFamily} />
+      ) : null}
+      {children.length >= 2 ? (
+        <ChildChoices options={children} pickedId={picked?.id ?? null} onPick={props.onPick} />
+      ) : null}
+      {picked === null ? null : (
+        <>
+          <WarningCard
+            heading={strings.warningHeading(picked.name)}
+            text={strings.warning(picked.name)}
           />
-          <OutlineButton label={code.cancel} onPress={props.onCancel} />
-        </View>
-      </KeyboardAvoidingView>
-    </View>
+          <TextField
+            label={strings.nameLabel(picked.name)}
+            hint={strings.nameHint}
+            value={props.typedName}
+            onChangeText={props.onTypeName}
+            maxLength={NAME_MAX_LENGTH}
+          />
+          <EmailNote text={code.emailNote(props.email)} />
+        </>
+      )}
+      {failureMessage ? <ErrorText>{failureMessage}</ErrorText> : null}
+    </DeletionPage>
   );
 }

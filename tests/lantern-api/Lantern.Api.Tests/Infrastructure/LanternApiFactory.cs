@@ -16,7 +16,6 @@ namespace Lantern.Api.Tests.Infrastructure;
 // Only the signing-key source is replaced; issuer, audience, lifetime and signature checks are the production settings.
 public sealed class LanternApiFactory(string connectionString, IReadOnlyDictionary<string, string> settings = null) : WebApplicationFactory<Program>
 {
-
     public CapturingLoggerProvider Logs { get; } = new();
 
     public RecordingPublishingService Sender { get; } = new();

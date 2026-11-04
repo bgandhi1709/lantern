@@ -267,6 +267,12 @@ const withoutStory: Record<string, string> = {
     'the Family management group of SettingsView, whose stories show it',
   'unlock/UnlockScreen.tsx': 'container for UnlockView, which has the stories',
   'unlock/StartAgainScreen.tsx': 'container for StartAgainView, which has the stories',
+  'deletion/DeletionPage.tsx':
+    'the page shell of DeleteChildConfirmView, DeleteFamilyConfirmView and DeleteCodeView, whose stories show it',
+  'deletion/EmailNote.tsx':
+    'the email line of DeleteChildConfirmView and DeleteFamilyConfirmView, whose stories show it',
+  'deletion/SendCodeButtons.tsx':
+    'the footer of DeleteChildConfirmView and DeleteFamilyConfirmView, whose stories show it',
   'deletion/DeleteFamilyScreen.tsx':
     'container for DeleteFamilyConfirmView and DeleteCodeView, which have the stories',
   'registration/FirstChildScreen.tsx': 'container for FirstChildView, which has the stories',

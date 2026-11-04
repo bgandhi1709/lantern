@@ -1,12 +1,14 @@
 import { useState } from 'react';
 
+import { useStrings } from '../shared/i18n';
+import { useIsMounted } from '../shared/lifecycle/useIsMounted';
 import { deleteFamily } from './deleteFamily';
 import { codeStepOf, useOneTimeCode } from './useOneTimeCode';
 import { useDeletableFamily } from './useDeletableFamily';
 
-export const CONFIRM_WORD = 'DELETE';
-
 export function useDeleteFamily(onDeleted: () => void) {
+  const confirmWord = useStrings().deleteFamily.confirmWord;
+  const mounted = useIsMounted();
   const family = useDeletableFamily();
   const oneTimeCode = useOneTimeCode('delete-family');
   const [typed, setTyped] = useState('');
@@ -16,7 +18,7 @@ export function useDeleteFamily(onDeleted: () => void) {
     family,
     typed,
     ...codeStepOf(oneTimeCode),
-    wordMatches: typed === CONFIRM_WORD && family.status !== 'loading',
+    wordMatches: typed === confirmWord && family.status !== 'loading',
     emailCode: (again: boolean) => request(undefined, again),
     typeWord: (text: string) => {
       setTyped(text);
@@ -26,7 +28,7 @@ export function useDeleteFamily(onDeleted: () => void) {
       proof &&
       run('acting', async () => {
         await deleteFamily(proof);
-        onDeleted();
+        if (mounted.current) onDeleted();
       }),
   };
 }

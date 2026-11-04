@@ -90,8 +90,8 @@ Work that runs after the request. The API publishes it once to the `lantern.acti
 5. **Log.** A `[LoggerMessage]` in `FunctionLog` with a new event id.
 6. **Subscribe.** Add the queue and its binding (key = wire name) to `infra/topology.json`; a property on `ActionQueueOptions` and the setting to `actions` in
    `infra/params/lantern.uat.bicepparam` and `main.bicep` (the Functions app's env and its KEDA rule); the env var to the
-   Functions container in `deploy/local/docker-compose.yml`; and the type to `ActionDelivery` in the in-process tests.
-7. **Tests.** A wire-name test, an in-process test that delivers the sent message (`factory.DeliverAsync()`), a
+   Functions container in `deploy/local/docker-compose.yml`; and the type to `ActionDelivery` in `Lantern.Functions.Tests`.
+7. **Tests.** A wire-name test, an API test that asserts the message sent (`factory.Sender.Sent`), a `Lantern.Functions.Tests` test that delivers it (`host.DeliverAsync()`), a
    redelivery or repeat test, and a failure-then-redelivery test.
 8. **A second subscriber to an existing action** is the same, without a new `ActionType`: its own Function and
    queue bound to the same key. The publisher and the first subscriber do not change.
@@ -131,7 +131,7 @@ would make that service depend on a peer. Until then, keep the logic in the serv
    (`{Section}__{Property}`) on each Container App that reads it.
 4. Add the key with an empty value to `appsettings.json`, the local value to `appsettings.Development.json`, and to
    `deploy/local/docker-compose.yml` for the Functions container if it reads it.
-5. In-process tests read it from `tests/lantern-api/Lantern.Api.Tests/appsettings.Testing.json`, which `LanternApiFactory` loads (D83). Add the value there, never in test code; only values a test run decides, such as the Azurite connection string, are set in the factory.
+5. In-process tests read it from `tests/lantern-api/Lantern.Api.Tests/appsettings.Testing.json`, which `LanternApiFactory` and `FunctionsHost` load (D83). Add the value there, never in test code; only values a test run decides, such as the Azurite connection string, are set in the factory.
 
 Storage formats, wire names and product rules are never settings ([D36](../ideation/decision-log.md)).
 
