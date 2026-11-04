@@ -11,4 +11,7 @@ public sealed class ActionOptions
 
     [Range(typeof(TimeSpan), "00:00:01", "1.00:00:00")]
     public TimeSpan ResendAfter { get; set; }
+
+    [Range(typeof(TimeSpan), "00:00:01", "1.00:00:00")]
+    public TimeSpan DoneExpiry { get; set; }
 }

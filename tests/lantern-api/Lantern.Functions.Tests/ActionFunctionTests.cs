@@ -15,14 +15,14 @@ public sealed class ActionFunctionTests
     public ActionFunctionTests() => function = new RecordingFunction(ledger.Object);
 
     [Fact]
-    public async Task RunAsync_APendingAction_RunsTheWork_ThenCompletesTheLedgerRow()
+    public async Task RunAsync_APendingAction_RunsTheWork_ThenRecordsItsDoneMarker()
     {
-        ledger.Setup(l => l.IsPendingAsync(ActionType.RemoveWorkspace, "id", It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        ledger.Setup(l => l.IsPendingAsync(ActionType.RemoveWorkspace, "id", "recording", It.IsAny<CancellationToken>())).ReturnsAsync(true);
 
         await function.RunAsync(Body("{\"familyId\":\"x\"}"), CancellationToken.None);
 
         Assert.Equal(1, function.Handled);
-        ledger.Verify(l => l.CompleteAsync(ActionType.RemoveWorkspace, "id", It.IsAny<CancellationToken>()), Times.Once);
+        ledger.Verify(l => l.MarkDoneAsync(ActionType.RemoveWorkspace, "id", "recording", It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -31,7 +31,7 @@ public sealed class ActionFunctionTests
         await function.RunAsync(Body("{}"), CancellationToken.None);
 
         Assert.Equal(0, function.Handled);
-        ledger.Verify(l => l.CompleteAsync(It.IsAny<ActionType>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        ledger.Verify(l => l.MarkDoneAsync(It.IsAny<ActionType>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Theory]

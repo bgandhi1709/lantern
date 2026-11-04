@@ -64,8 +64,9 @@ HTTP ─▶ Controller ─▶ (Interactor) ─▶ Service ─▶ Repository / St
   `[RabbitMQTrigger]` method that calls `ExecuteAsync(body)`, and finishes the action in `HandleAsync(payload)`, with steps
   that are safe to repeat. The broker, not code, decides which Function gets a message. There is no dispatcher and no
   separate handler class (D123).
-- Base: `ActionFunction<{Verb}{Noun}Payload>`; the base decodes the body, skips an action whose ledger row is gone and
-  completes the row after `HandleAsync`. A body that is not an action throws, so the broker parks it.
+- Base: `ActionFunction<{Verb}{Noun}Payload>`; the base decodes the body, skips an action whose ledger row is gone or already lists
+  this Function, and records the Function's done marker after `HandleAsync`. The marker is the class name without
+  `Function` in kebab-case (`RemoveWorkspaceFunction` is `remove-workspace`), so each subscriber of a key needs a distinct class name. A body that is not an action throws, so the broker parks it.
 - Calls repositories and stores (or services); never the ledger, never HTTP. The trigger attribute is the only broker
   type, and an architecture test confines it to `*Function` classes.
 - Registered in `FunctionsModule` with `TryAddScoped` so the in-process tests can resolve it.
@@ -158,7 +159,7 @@ HTTP ─▶ Controller ─▶ (Interactor) ─▶ Service ─▶ Repository / St
   handed it (`EnsureValid(layout.ClassManifestSchema)`). Tests that pin the real names write them as literals on purpose.
 - Not for environment values (those are Options) and not for fixed sets of values (those are enums).
 
-**Ledger** (`IActionLedger`): the record of accepted events no Function has finished.
+**Ledger** (`IActionLedger`): the record of accepted events. A subscriber records its done marker on the row; a row with a marker expires after `Actions:DoneExpiry`, and a row without one is resent when the API starts (D132).
 
 **Action types** (`Actions/`)
 - `ActionType`: the enum of events, each with a kebab-case wire name (`create-workspace`). **(tested: pinned)**
@@ -224,7 +225,7 @@ constant, so every enum lives in `Lantern.Core.Constants`. Never a static class 
   no class, method or comment names a copy's file list that. Not a Manifest either: these were called `ContentManifest` and
   `BookManifest` until ADR-0014 gave that word to the derived documents in Core.
 
-**Ledger** (`ActionLedger`): the action ledger's table operations.
+**Ledger** (`ActionLedger`): the action ledger's table operations. `DoneBy` is a comma-separated list of subscriber names, changed with an ETag check and a retry on 412.
 
 **Progress repository** (`ProgressRepository`, no base class): the `progress` table's operations, for the rows that are not one per id: a Chapter's summary, Attempt and Check rows (ADR-0016). Like `ActionLedger` it is purpose-built, and it is the only holder of those three entities. Each change is one table transaction in the Family partition, retried when a race is lost.
 

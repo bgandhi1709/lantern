@@ -182,6 +182,8 @@ public sealed class ContentSliceTests(AzuriteFixture azurite) : IDisposable
 
         Assert.Equal(ApiBoardMasters.NcertSlice(7), await SliceAsync(family.FamilyId, family.Children[0].ChildId, 7));
         Assert.Empty(await PendingAsync(family.FamilyId, family.Children));
+        var action = new CreateWorkspacePayload(family.FamilyId, family.Children[0].ChildId, 7).ActionId();
+        Assert.Equal("create-workspace", Assert.Single(await Actions.QueryAsync<TableEntity>(row => row.PartitionKey == nameof(ActionType.CreateWorkspace) && row.RowKey == action).ToListAsync()).GetString("DoneBy"));
     }
 
     [Fact]
@@ -271,7 +273,7 @@ public sealed class ContentSliceTests(AzuriteFixture azurite) : IDisposable
         foreach (var child in children)
         {
             var id = new CreateWorkspacePayload(familyId, child.ChildId, child.ClassLevel).ActionId();
-            rows.AddRange(await Actions.QueryAsync<TableEntity>(row => row.PartitionKey == nameof(ActionType.CreateWorkspace) && row.RowKey == id).ToListAsync());
+            rows.AddRange((await Actions.QueryAsync<TableEntity>(row => row.PartitionKey == nameof(ActionType.CreateWorkspace) && row.RowKey == id).ToListAsync()).Where(StorageProbe.IsUnfinished));
         }
 
         return rows;

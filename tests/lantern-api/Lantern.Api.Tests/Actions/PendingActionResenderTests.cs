@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using Lantern.Api.Services;
+using Lantern.Api.Tests.Infrastructure;
 using Lantern.Core.Actions;
 using Lantern.Core.Configuration;
 using Lantern.Core.Constants;
@@ -44,5 +45,24 @@ public sealed class PendingActionResenderTests
         var activity = Assert.Single(started);
         Assert.Equal(linked, activity.Links.Any(link => link.Context.TraceId.ToString() == TraceId));
         Assert.NotEqual(TraceId, activity.TraceId.ToString());
+    }
+
+    [Fact]
+    public async Task RunOnceAsync_RemovesRowsASubscriberFinishedOnceTheyAreOlderThanDoneExpiry_ThenResendsTheRest()
+    {
+        var clock = new TestClock();
+        var ledger = new Mock<IActionLedger>();
+        ledger.Setup(l => l.UnsentSinceAsync(It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>())).ReturnsAsync([]);
+        var resender = new PendingActionResender(
+            ledger.Object,
+            Mock.Of<IActionPublisher>(),
+            Options.Create(new ActionOptions { Exchange = "exchange", ResendAfter = TimeSpan.FromMinutes(5), DoneExpiry = TimeSpan.FromHours(12) }),
+            clock,
+            NullLogger<PendingActionResender>.Instance
+        );
+
+        await resender.RunOnceAsync(CancellationToken.None);
+
+        ledger.Verify(l => l.ExpireDoneAsync(clock.GetUtcNow() - TimeSpan.FromHours(12), It.IsAny<CancellationToken>()), Times.Once);
     }
 }

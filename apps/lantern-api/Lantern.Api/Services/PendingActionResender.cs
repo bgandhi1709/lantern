@@ -7,8 +7,6 @@ using Microsoft.Extensions.Options;
 
 namespace Lantern.Api.Services;
 
-// Runs once when the API starts, not on a timer: it sends again any action whose message may have been lost between
-// the ledger row and the queue. The handlers are safe to repeat, so a message that was not lost does no harm.
 internal sealed class PendingActionResender(
     IActionLedger ledger,
     IActionPublisher publisher,
@@ -38,6 +36,8 @@ internal sealed class PendingActionResender(
 
     internal async Task RunOnceAsync(CancellationToken cancellationToken)
     {
+        await ledger.ExpireDoneAsync(clock.GetUtcNow() - options.Value.DoneExpiry, cancellationToken);
+
         await Parallel.ForEachAsync(
             await ledger.UnsentSinceAsync(clock.GetUtcNow() - options.Value.ResendAfter, cancellationToken),
             new ParallelOptions { MaxDegreeOfParallelism = MaxParallelSends, CancellationToken = cancellationToken },

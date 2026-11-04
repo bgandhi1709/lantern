@@ -36,13 +36,21 @@ internal sealed class StorageProbe(AzuriteFixture azurite)
         return names;
     }
 
-    public async Task<List<TableEntity>> LedgerAsync(ActionType type, string rowKey) =>
-        await Actions.QueryAsync<TableEntity>(row => row.PartitionKey == type.ToString() && row.RowKey == rowKey).ToListAsync();
+    public static bool IsUnfinished(TableEntity row) => string.IsNullOrEmpty(row.GetString("DoneBy"));
+
+    public async Task<List<TableEntity>> PendingLedgerAsync(ActionType type, string rowKey) =>
+        [.. (await Actions.QueryAsync<TableEntity>(row => row.PartitionKey == type.ToString() && row.RowKey == rowKey).ToListAsync()).Where(IsUnfinished)];
+
+    public async Task<string> DoneByAsync(ActionType type, string rowKey) =>
+        (await Actions.QueryAsync<TableEntity>(row => row.PartitionKey == type.ToString() && row.RowKey == rowKey).ToListAsync()).Single().GetString("DoneBy");
 
     public async Task<List<TableEntity>> RemoveWorkspaceLedgerAsync(Guid familyId) =>
         await Actions
             .QueryAsync<TableEntity>(row => row.PartitionKey == nameof(ActionType.RemoveWorkspace) && row.RowKey.CompareTo($"{familyId:N}_") >= 0 && row.RowKey.CompareTo($"{familyId:N}`") < 0)
             .ToListAsync();
+
+    public async Task<List<TableEntity>> PendingRemoveWorkspaceLedgerAsync(Guid familyId) =>
+        [.. (await RemoveWorkspaceLedgerAsync(familyId)).Where(IsUnfinished)];
 
     public async Task<List<TableEntity>> FamilyRowsAsync(Guid familyId) =>
         await Families.QueryAsync<TableEntity>(row => row.PartitionKey == familyId.ToString()).ToListAsync();
