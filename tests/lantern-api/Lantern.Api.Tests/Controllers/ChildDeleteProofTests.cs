@@ -124,7 +124,6 @@ public sealed class ChildDeleteProofTests(AzuriteFixture azurite) : IDisposable
     {
         var client = factory.CreateClient().WithBearer(TestTokens.Create($"uid-{Guid.NewGuid():N}", email: email, emailVerified: emailVerified));
         Assert.Equal(HttpStatusCode.Created, (await client.RegisterAsync(RegisterBody())).StatusCode);
-        await factory.DeliverAsync();
 
         return client;
     }

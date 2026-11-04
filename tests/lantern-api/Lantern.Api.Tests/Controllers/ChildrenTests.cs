@@ -1,9 +1,5 @@
-extern alias Functions;
-
 using System.Net;
 using System.Net.Http.Json;
-using System.Text.Json;
-using Azure;
 using Azure.Data.Tables;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
@@ -11,12 +7,9 @@ using Lantern.Api.Models;
 using Lantern.Api.Services;
 using Lantern.Core.Actions;
 using Lantern.Core.Constants;
-using Lantern.Core.Repository;
 using Lantern.Repository;
 using Lantern.Api.Tests.Infrastructure;
-using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
-using Moq;
 
 namespace Lantern.Api.Tests.Controllers;
 
@@ -42,11 +35,11 @@ public sealed class ChildrenTests(AzuriteFixture azurite) : IDisposable
     // ---- add ----
 
     [Fact]
-    public async Task Add_Valid_Returns201_ListsItAfterTheOthersAndStartsItsWorkspace()
+    public async Task Add_Valid_Returns201_ListsItAfterTheOthers_AndSendsOneCreateWorkspace()
     {
         using var client = await RegisteredAsync();
-        var me = await MeAsync(client);
         var id = Guid.NewGuid();
+        var sentBefore = factory.Sender.Sent.Count;
 
         var response = await client.PostAsJsonAsync(ApiClientExtensions.Children, NewChild(id, "Kavya", 4, "Green School"));
 
@@ -56,11 +49,7 @@ public sealed class ChildrenTests(AzuriteFixture azurite) : IDisposable
         Assert.Equal((id, "Kavya", "Green School", 4), (created!.ChildId, created.Name, created.School, created.ClassLevel));
         var after = await MeAsync(client);
         Assert.Equal(["Aarav", "Diya", "Kavya"], after.Children.Select(c => c.Name));
-        Assert.False(await Blobs.GetBlobClient($"{me.FamilyId:D}/{id:D}/4/class.json").ExistsAsync());
-
-        await factory.DeliverAsync();
-
-        Assert.True(await Blobs.GetBlobClient($"{me.FamilyId:D}/{id:D}/4/class.json").ExistsAsync());
+        Assert.Single(factory.Sender.Sent.Skip(sentBefore), m => m.Type == ActionType.CreateWorkspace && m.Payload.Contains(id.ToString(), StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
@@ -102,7 +91,6 @@ public sealed class ChildrenTests(AzuriteFixture azurite) : IDisposable
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
         Assert.Equal("child-limit-reached", await response.ProblemCodeAsync());
         Assert.Equal(6, (await MeAsync(client)).Children.Count);
-        await factory.DeliverAsync();
         Assert.False(await Blobs.GetBlobClient($"{me.FamilyId:D}/{seventh:D}/1/class.json").ExistsAsync());
     }
 
@@ -165,43 +153,6 @@ public sealed class ChildrenTests(AzuriteFixture azurite) : IDisposable
         Assert.Equal(HttpStatusCode.Unauthorized, denied.StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, missing.StatusCode);
         Assert.Equal("not-registered", await missing.ProblemCodeAsync());
-    }
-
-    [Fact]
-    public async Task Add_WhenTheWorkspaceFails_KeepsTheChild_AndRedeliveryStartsIt()
-    {
-        using var client = await RegisteredAsync();
-        var me = await MeAsync(client);
-        var id = Guid.NewGuid();
-        var workspaces = new Mock<IWorkspaceStore>();
-        workspaces
-            .Setup(s => s.CreateAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), 9, It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new RequestFailedException(500, "blob down"));
-        using var failing = factory.WithWebHostBuilder(b => b.ConfigureTestServices(s => s.AddSingleton(workspaces.Object)));
-
-        Assert.Equal(HttpStatusCode.Created, (await client.PostAsJsonAsync(ApiClientExtensions.Children, NewChild(id, "Kavya", 9))).StatusCode);
-        await Assert.ThrowsAsync<RequestFailedException>(() =>
-            failing.Services.DeliverAsync(factory.Sender.Sent[^1], CancellationToken.None)
-        );
-        await factory.DeliverAsync();
-
-        Assert.Equal(3, (await MeAsync(client)).Children.Count);
-        Assert.True(await Blobs.GetBlobClient($"{me.FamilyId:D}/{id:D}/9/class.json").ExistsAsync());
-    }
-
-    [Fact]
-    public async Task Add_ThenDeleteBeforeTheWorkspaceStarts_LeavesNoBlobs()
-    {
-        using var client = await RegisteredAsync();
-        var me = await MeAsync(client);
-        var id = Guid.NewGuid();
-        await client.PostAsJsonAsync(ApiClientExtensions.Children, NewChild(id, "Kavya", 4));
-        await client.DeleteChildAsync(id);
-
-        await factory.DeliverAsync();
-
-        Assert.Empty(await BlobNamesAsync($"{me.FamilyId:D}/{id:D}/"));
-        Assert.Empty(await LedgerAsync(me.FamilyId));
     }
 
     [Fact]
@@ -352,13 +303,11 @@ public sealed class ChildrenTests(AzuriteFixture azurite) : IDisposable
     // ---- delete ----
 
     [Fact]
-    public async Task Delete_Returns202_HidesTheChildAtOnce_AndTheFunctionRemovesEverythingOfItAndNothingElse()
+    public async Task Delete_Returns202_HidesTheChildAtOnce_AndSendsOneRemoval()
     {
         using var client = await RegisteredAsync();
         var me = await MeAsync(client);
         var (gone, kept) = (me.Children[0], me.Children[1]);
-        // The Child moved from Class 5 to Class 6 (issue #50 will do this): two Workspaces.
-        await PlainWorkspaceStore.Over(Blobs, createContainer: false).CreateAsync(me.FamilyId, gone.ChildId, 6, CancellationToken.None);
 
         var response = await client.DeleteChildAsync(gone.ChildId);
 
@@ -367,32 +316,20 @@ public sealed class ChildrenTests(AzuriteFixture azurite) : IDisposable
         var message = Assert.Single(Removals);
         Assert.Equal(ActionType.RemoveWorkspace, message.Type);
         Assert.Single(await LedgerAsync(me.FamilyId));
-        Assert.True(await Blobs.GetBlobClient($"{me.FamilyId:D}/{gone.ChildId:D}/{gone.ClassLevel}/class.json").ExistsAsync());
-
-        await factory.DeliverAsync();
-
-        Assert.Empty(await BlobNamesAsync($"{me.FamilyId:D}/{gone.ChildId:D}/"));
-        Assert.True(await Blobs.GetBlobClient($"{me.FamilyId:D}/{kept.ChildId:D}/{kept.ClassLevel}/class.json").ExistsAsync());
-        Assert.Empty(await LedgerAsync(me.FamilyId));
-        Assert.Empty(await Families.QueryAsync<TableEntity>(r => r.PartitionKey == KeyService.FamilyPartition(me.FamilyId) && r.RowKey == KeyService.ChildRowKey(gone.ChildId)).ToListAsync());
     }
 
     [Fact]
-    public async Task Delete_Repeated_Returns202_SendsAgain_AndTheSecondDeliveryDoesNothing()
+    public async Task Delete_Repeated_Returns202_AndSendsAgain()
     {
         using var client = await RegisteredAsync();
         var child = (await MeAsync(client)).Children[0];
-
         var proof = await client.ProofAsync(new { operation = "delete-child", target = child.ChildId });
 
         var first = await client.DeleteChildAsync(child.ChildId, proof);
         var second = await client.DeleteChildAsync(child.ChildId, proof);
-        await factory.DeliverAsync();
-        var third = await client.DeleteChildAsync(child.ChildId, proof);
 
         Assert.Equal(HttpStatusCode.Accepted, first.StatusCode);
         Assert.Equal(HttpStatusCode.Accepted, second.StatusCode);
-        Assert.Equal(HttpStatusCode.NotFound, third.StatusCode);
         Assert.Equal(2, Removals.Count);
     }
 
@@ -405,13 +342,11 @@ public sealed class ChildrenTests(AzuriteFixture azurite) : IDisposable
         var theirChild = theirFamily.Children[0];
 
         var response = await mine.DeleteChildAsync(theirChild.ChildId);
-        await factory.DeliverAsync();
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         Assert.Equal("child-not-found", await response.ProblemCodeAsync());
         Assert.Empty(Removals);
         Assert.Equal(2, (await MeAsync(theirs)).Children.Count);
-        Assert.NotEmpty(await BlobNamesAsync($"{theirFamily.FamilyId:D}/{theirChild.ChildId:D}/"));
         Assert.Empty(await LedgerAsync(theirFamily.FamilyId));
         var row = await Families.GetEntityAsync<TableEntity>(KeyService.FamilyPartition(theirFamily.FamilyId), KeyService.ChildRowKey(theirChild.ChildId));
         Assert.Equal("Active", row.Value.GetString("Status"));
@@ -439,7 +374,6 @@ public sealed class ChildrenTests(AzuriteFixture azurite) : IDisposable
         {
             Assert.Equal(HttpStatusCode.Accepted, (await client.DeleteChildAsync(child.ChildId)).StatusCode);
         }
-        await factory.DeliverAsync();
 
         Assert.Empty((await MeAsync(client)).Children);
         Assert.Equal(HttpStatusCode.Created, (await client.PostAsJsonAsync(ApiClientExtensions.Children, NewChild(Guid.NewGuid(), "Fresh"))).StatusCode);
@@ -463,10 +397,8 @@ public sealed class ChildrenTests(AzuriteFixture azurite) : IDisposable
         factory.Sender.Down = false;
         await AgeLedgerAsync(me.FamilyId);
         await Resender.RunOnceAsync(CancellationToken.None);
-        await factory.DeliverAsync();
 
-        Assert.Empty(await LedgerAsync(me.FamilyId));
-        Assert.Empty(await BlobNamesAsync($"{me.FamilyId:D}/{child.ChildId:D}/"));
+        Assert.Single(Removals);
     }
 
     [Fact]
@@ -479,93 +411,6 @@ public sealed class ChildrenTests(AzuriteFixture azurite) : IDisposable
         await Resender.RunOnceAsync(CancellationToken.None);
 
         Assert.Single(Removals);
-    }
-
-    [Fact]
-    public async Task Function_WhenTheBlobStepFails_KeepsTheRowAndTheLedger_AndFinishesWhenTheMessageIsDeliveredAgain()
-    {
-        using var client = await RegisteredAsync();
-        var me = await MeAsync(client);
-        var child = me.Children[0];
-        await client.DeleteChildAsync(child.ChildId);
-        var failing = new Mock<IWorkspaceStore>();
-        failing
-            .Setup(s => s.RemoveAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new RequestFailedException(503, "blob down"));
-        using var broken = factory.WithWebHostBuilder(b => b.ConfigureTestServices(s => s.AddSingleton(failing.Object)));
-
-        await Assert.ThrowsAsync<RequestFailedException>(() =>
-            broken.Services.DeliverAsync(Removals[0], CancellationToken.None)
-        );
-
-        Assert.Single(await LedgerAsync(me.FamilyId));
-        Assert.True(await Families.GetEntityIfExistsAsync<TableEntity>(KeyService.FamilyPartition(me.FamilyId), KeyService.ChildRowKey(child.ChildId)) is { HasValue: true });
-        Assert.NotEmpty(await BlobNamesAsync($"{me.FamilyId:D}/{child.ChildId:D}/"));
-        Assert.Single((await MeAsync(client)).Children);
-
-        await factory.DeliverAsync();
-
-        Assert.Empty(await LedgerAsync(me.FamilyId));
-        Assert.Empty(await BlobNamesAsync($"{me.FamilyId:D}/{child.ChildId:D}/"));
-    }
-
-    [Fact]
-    public async Task Function_ResumesAfterACrashBetweenTheRowDeleteAndTheLastStep()
-    {
-        using var client = await RegisteredAsync();
-        var me = await MeAsync(client);
-        var child = me.Children[0];
-        await client.DeleteChildAsync(child.ChildId);
-        await Blobs.DeleteBlobIfExistsAsync($"{me.FamilyId:D}/{child.ChildId:D}/{child.ClassLevel}/class.json");
-        await Families.DeleteEntityAsync(KeyService.FamilyPartition(me.FamilyId), KeyService.ChildRowKey(child.ChildId));
-
-        await factory.DeliverAsync();
-
-        Assert.Empty(await LedgerAsync(me.FamilyId));
-    }
-
-    [Fact]
-    public async Task Function_TheSameMessageTwiceAtOnce_FinishesWithoutError()
-    {
-        using var client = await RegisteredAsync();
-        var me = await MeAsync(client);
-        await client.DeleteChildAsync(me.Children[0].ChildId);
-        var host = factory.Services;
-        var message = Removals[0];
-
-        await Task.WhenAll(
-            host.DeliverAsync(message, CancellationToken.None),
-            host.DeliverAsync(message, CancellationToken.None)
-        );
-
-        Assert.Empty(await LedgerAsync(me.FamilyId));
-        Assert.Empty(await BlobNamesAsync($"{me.FamilyId:D}/{me.Children[0].ChildId:D}/"));
-    }
-
-    [Fact]
-    public async Task Function_AMessageWithNoLedgerRow_TouchesNothing_AndTheAnswerLibraryIsNeverReached()
-    {
-        using var client = await RegisteredAsync();
-        using var other = await RegisteredAsync();
-        var me = await MeAsync(client);
-        var otherFamily = await MeAsync(other);
-        await Blobs.GetBlobClient("answers/stage-3/q1.json").UploadAsync(BinaryData.FromString("{}"), overwrite: true);
-        await Families.UpsertEntityAsync(new TableEntity("answer-library", "q1") { ["Text"] = "scrubbed" });
-        // A delivery that outlives its action (or one that was never recorded) names the other Family's Child.
-        var stray = new ActionMessage(
-            "stray",
-            ActionType.RemoveWorkspace,
-            JsonSerializer.Serialize(new RemoveWorkspacePayload(otherFamily.FamilyId, otherFamily.Children[0].ChildId), JsonSerializerOptions.Web)
-        );
-        await client.DeleteChildAsync(me.Children[0].ChildId);
-
-        await factory.Services.DeliverAsync(stray, CancellationToken.None);
-        await factory.DeliverAsync();
-
-        Assert.NotEmpty(await BlobNamesAsync($"{otherFamily.FamilyId:D}/{otherFamily.Children[0].ChildId:D}/"));
-        Assert.True(await Blobs.GetBlobClient("answers/stage-3/q1.json").ExistsAsync());
-        Assert.True((await Families.GetEntityIfExistsAsync<TableEntity>("answer-library", "q1")).HasValue);
-        Assert.Equal(2, (await MeAsync(other)).Children.Count);
     }
 
     // ---- cross-cutting ----
@@ -610,7 +455,6 @@ public sealed class ChildrenTests(AzuriteFixture azurite) : IDisposable
         await client.PostAsJsonAsync(ApiClientExtensions.Children, NewChild(id, name, 2, school));
         await client.PutAsJsonAsync(ApiClientExtensions.Child(id), new { Name = name + "x", School = school + "x", BirthYear = "y" });
         await client.DeleteChildAsync(id);
-        await factory.DeliverAsync();
 
         Assert.NotEmpty(factory.Logs.Entries);
         Assert.DoesNotContain(factory.Logs.Entries, e => e.Contains(name, StringComparison.Ordinal) || e.Contains(school, StringComparison.Ordinal));
@@ -622,7 +466,6 @@ public sealed class ChildrenTests(AzuriteFixture azurite) : IDisposable
     {
         var client = factory.CreateClient().WithBearer(TestTokens.Create(NewUid()));
         Assert.Equal(HttpStatusCode.Created, (await client.RegisterAsync(RegisterBody(board))).StatusCode);
-        await factory.DeliverAsync();
 
         return client;
     }

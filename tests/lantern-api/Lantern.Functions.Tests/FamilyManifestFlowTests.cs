@@ -1,33 +1,28 @@
-extern alias Functions;
-
-using System.Net;
-using System.Net.Http.Json;
 using System.Text.Json.Nodes;
 using Azure.Storage.Blobs;
-using Lantern.Api.Models;
 using Lantern.Api.Tests.Infrastructure;
 using Lantern.Core.Constants;
 using Lantern.Core.Models;
 using Lantern.Core.Repository;
-using Microsoft.AspNetCore.TestHost;
+using Lantern.Functions.Tests.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Lantern.Api.Tests.Controllers;
+namespace Lantern.Functions.Tests;
 
-[Collection(ApiCollection.Name)]
+[Collection(FunctionsCollection.Name)]
 public sealed class FamilyManifestFlowTests(AzuriteFixture azurite) : IDisposable
 {
-    private readonly LanternApiFactory factory = new(azurite.ConnectionString);
+    private readonly FunctionsHost host = new(azurite.ConnectionString);
 
     private BlobContainerClient Family => azurite.CreateBlobClient().GetBlobContainerClient(TestSettings.WorkspaceContainer);
 
     [Fact]
     public async Task Register_ThreeChildren_EndsWithAllThreeEntriesInOneManifest()
     {
-        using var client = Client(NewUid());
-        var family = await RegisterAsync(client, BoardType.Cbse, 3, 6, 6);
+        using var client = host.Caller(NewUid());
+        var family = await client.RegisterAsync(BoardType.Cbse, 3, 6, 6);
 
-        await factory.DeliverAsync();
+        await host.DeliverAsync();
 
         AssertJson(Manifest("cbse", family.Children.Select(child => Ncert(child.ChildId, child.ClassLevel))), await ManifestAsync(family.FamilyId));
     }
@@ -35,10 +30,10 @@ public sealed class FamilyManifestFlowTests(AzuriteFixture azurite) : IDisposabl
     [Fact]
     public async Task Register_AnSscFamily_CarriesTheSscSubjectsAndProfile()
     {
-        using var client = Client(NewUid());
-        var family = await RegisterAsync(client, BoardType.Ssc, 2);
+        using var client = host.Caller(NewUid());
+        var family = await client.RegisterAsync(BoardType.Ssc, 2);
 
-        await factory.DeliverAsync();
+        await host.DeliverAsync();
 
         AssertJson(Manifest("ssc", [Ssc(family.Children.Single().ChildId, 2)]), await ManifestAsync(family.FamilyId));
     }
@@ -46,13 +41,13 @@ public sealed class FamilyManifestFlowTests(AzuriteFixture azurite) : IDisposabl
     [Fact]
     public async Task AddChild_AddsTheEntryLater_AndKeepsTheFirst()
     {
-        using var client = Client(NewUid());
-        var family = await RegisterAsync(client, BoardType.Cbse, 3);
-        await factory.DeliverAsync();
+        using var client = host.Caller(NewUid());
+        var family = await client.RegisterAsync(BoardType.Cbse, 3);
+        await host.DeliverAsync();
         var added = Guid.NewGuid();
 
-        Assert.Equal(HttpStatusCode.Created, (await client.PostAsJsonAsync(ApiClientExtensions.Children, NewChild(added, 4))).StatusCode);
-        await factory.DeliverAsync();
+        await client.Children.AddAsync(NewChild(added, 4), CancellationToken.None);
+        await host.DeliverAsync();
 
         AssertJson(Manifest("cbse", [Ncert(family.Children[0].ChildId, 3), Ncert(added, 4)]), await ManifestAsync(family.FamilyId));
     }
@@ -60,15 +55,14 @@ public sealed class FamilyManifestFlowTests(AzuriteFixture azurite) : IDisposabl
     [Fact]
     public async Task EveryMessageDeliveredAgain_ChangesNothing()
     {
-        using var client = Client(NewUid());
-        var family = await RegisterAsync(client, BoardType.Cbse, 3, 4);
-        await factory.DeliverAsync();
+        using var client = host.Caller(NewUid());
+        var family = await client.RegisterAsync(BoardType.Cbse, 3, 4);
+        await host.DeliverAsync();
         var before = await ManifestEtagAsync(family.FamilyId);
-        var host = factory.Services;
 
-        foreach (var message in factory.Sender.Sent.Where(sent => sent.Type == ActionType.CreateWorkspace))
+        foreach (var message in host.Sender.Sent.Where(sent => sent.Type == ActionType.CreateWorkspace))
         {
-            await host.DeliverAsync(message, CancellationToken.None);
+            await host.Services.DeliverAsync(message, CancellationToken.None);
         }
 
         Assert.Equal(before, await ManifestEtagAsync(family.FamilyId));
@@ -78,13 +72,13 @@ public sealed class FamilyManifestFlowTests(AzuriteFixture azurite) : IDisposabl
     [Fact]
     public async Task DeletingAChild_RemovesOnlyItsEntry()
     {
-        using var client = Client(NewUid());
-        var family = await RegisterAsync(client, BoardType.Cbse, 3, 6);
-        await factory.DeliverAsync();
+        using var client = host.Caller(NewUid());
+        var family = await client.RegisterAsync(BoardType.Cbse, 3, 6);
+        await host.DeliverAsync();
         var (gone, kept) = (family.Children[0], family.Children[1]);
 
-        await client.DeleteChildAsync(gone.ChildId);
-        await factory.DeliverAsync();
+        await client.Children.RemoveAsync(gone.ChildId, CancellationToken.None);
+        await host.DeliverAsync();
 
         AssertJson(Manifest("cbse", [Ncert(kept.ChildId, 6)]), await ManifestAsync(family.FamilyId));
     }
@@ -92,12 +86,12 @@ public sealed class FamilyManifestFlowTests(AzuriteFixture azurite) : IDisposabl
     [Fact]
     public async Task DeletingTheFamily_LeavesNoManifest()
     {
-        using var client = Client(NewUid());
-        var family = await RegisterAsync(client, BoardType.Cbse, 3, 6);
-        await factory.DeliverAsync();
+        using var client = host.Caller(NewUid());
+        var family = await client.RegisterAsync(BoardType.Cbse, 3, 6);
+        await host.DeliverAsync();
 
-        await client.DeleteFamilyAsync();
-        await factory.DeliverAsync();
+        await client.EraseFamilyAsync();
+        await host.DeliverAsync();
 
         Assert.False(await Family.GetBlobClient($"{family.FamilyId:D}/manifest.json").ExistsAsync());
     }
@@ -105,32 +99,31 @@ public sealed class FamilyManifestFlowTests(AzuriteFixture azurite) : IDisposabl
     [Fact]
     public async Task EditingAChild_LeavesTheManifestUntouched()
     {
-        using var client = Client(NewUid());
-        var family = await RegisterAsync(client, BoardType.Cbse, 3);
-        await factory.DeliverAsync();
+        using var client = host.Caller(NewUid());
+        var family = await client.RegisterAsync(BoardType.Cbse, 3);
+        await host.DeliverAsync();
         var before = await ManifestEtagAsync(family.FamilyId);
         var child = family.Children.Single();
 
-        var response = await client.PutAsJsonAsync(
-            ApiClientExtensions.Child(child.ChildId),
-            new ChildUpdateModel { Name = Locked("Renamed"), BirthYear = Locked("2017"), School = Locked("Other School") }
-        );
+        child.Name = Locked("Renamed");
+        child.BirthYear = Locked("2017");
+        child.School = Locked("Other School");
+        await client.Children.UpdateAsync(child, CancellationToken.None);
 
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal(before, await ManifestEtagAsync(family.FamilyId));
     }
 
     [Fact]
     public async Task AChildDeletedBeforeItsMessageRuns_NeverGetsAnEntry()
     {
-        using var client = Client(NewUid());
-        var family = await RegisterAsync(client, BoardType.Cbse, 3);
-        await factory.DeliverAsync();
+        using var client = host.Caller(NewUid());
+        var family = await client.RegisterAsync(BoardType.Cbse, 3);
+        await host.DeliverAsync();
         var added = Guid.NewGuid();
-        await client.PostAsJsonAsync(ApiClientExtensions.Children, NewChild(added, 4));
+        await client.Children.AddAsync(NewChild(added, 4), CancellationToken.None);
 
-        await client.DeleteChildAsync(added);
-        await factory.DeliverAsync();
+        await client.Children.RemoveAsync(added, CancellationToken.None);
+        await host.DeliverAsync();
 
         AssertJson(Manifest("cbse", [Ncert(family.Children[0].ChildId, 3)]), await ManifestAsync(family.FamilyId));
     }
@@ -138,18 +131,18 @@ public sealed class FamilyManifestFlowTests(AzuriteFixture azurite) : IDisposabl
     [Fact]
     public async Task WhenTheManifestWriteFailsAfterTheSliceIsReady_TheRedeliveryAddsTheEntry()
     {
-        using var client = Client(NewUid());
-        var family = await RegisterAsync(client, BoardType.Cbse, 3);
-        var outage = new ManifestOutageStore(factory.Services.GetRequiredService<IWorkspaceStore>(), failAdd: true);
-        using var broken = factory.WithWebHostBuilder(builder => builder.ConfigureTestServices(services => services.AddSingleton<IWorkspaceStore>(outage)));
-        var message = factory.Sender.Sent.Single(sent => sent.Type == ActionType.CreateWorkspace);
+        using var client = host.Caller(NewUid());
+        var family = await client.RegisterAsync(BoardType.Cbse, 3);
+        var outage = new ManifestOutageStore(host.Services.GetRequiredService<IWorkspaceStore>(), failAdd: true);
+        using var broken = new FunctionsHost(azurite.ConnectionString, configure: services => services.AddSingleton<IWorkspaceStore>(outage));
+        var message = host.Sender.Sent.Single(sent => sent.Type == ActionType.CreateWorkspace);
 
         await Assert.ThrowsAsync<IOException>(() => broken.Services.DeliverAsync(message, CancellationToken.None));
 
         Assert.True(await Family.GetBlobClient($"{family.FamilyId:D}/{family.Children[0].ChildId:D}/3/content/version.json").ExistsAsync());
         Assert.False(await Family.GetBlobClient($"{family.FamilyId:D}/manifest.json").ExistsAsync());
 
-        await factory.DeliverAsync();
+        await host.DeliverAsync();
 
         AssertJson(Manifest("cbse", [Ncert(family.Children[0].ChildId, 3)]), await ManifestAsync(family.FamilyId));
     }
@@ -157,16 +150,16 @@ public sealed class FamilyManifestFlowTests(AzuriteFixture azurite) : IDisposabl
     [Fact]
     public async Task AChildDeletedWhileTheirSliceWasBeingCopied_IsNeverAddedToTheManifest_SoNothingIsWrittenOnlyToBeUndone()
     {
-        using var client = Client(NewUid());
-        var family = await RegisterAsync(client, BoardType.Cbse, 3);
+        using var client = host.Caller(NewUid());
+        var family = await client.RegisterAsync(BoardType.Cbse, 3);
         var child = family.Children.Single();
         var deleteIt = new ManifestOutageStore(
-            factory.Services.GetRequiredService<IWorkspaceStore>(),
-            afterCopy: () => client.DeleteChildAsync(child.ChildId)
+            host.Services.GetRequiredService<IWorkspaceStore>(),
+            afterCopy: () => client.Children.RemoveAsync(child.ChildId, CancellationToken.None)
         );
-        using var racing = factory.WithWebHostBuilder(builder => builder.ConfigureTestServices(services => services.AddSingleton<IWorkspaceStore>(deleteIt)));
+        using var racing = new FunctionsHost(azurite.ConnectionString, configure: services => services.AddSingleton<IWorkspaceStore>(deleteIt));
 
-        await racing.Services.DeliverAsync(factory.Sender.Sent.Single(sent => sent.Type == ActionType.CreateWorkspace), CancellationToken.None);
+        await racing.Services.DeliverAsync(host.Sender.Sent.Single(sent => sent.Type == ActionType.CreateWorkspace), CancellationToken.None);
 
         Assert.Equal(0, deleteIt.AddCalls);
         Assert.False(await Family.GetBlobClient($"{family.FamilyId:D}/manifest.json").ExistsAsync());
@@ -176,17 +169,17 @@ public sealed class FamilyManifestFlowTests(AzuriteFixture azurite) : IDisposabl
     [Fact]
     public async Task AChildDeletedJustAfterTheirEntryWasAdded_IsCleanedUpByTheRemoveMessage()
     {
-        using var client = Client(NewUid());
-        var family = await RegisterAsync(client, BoardType.Cbse, 3);
+        using var client = host.Caller(NewUid());
+        var family = await client.RegisterAsync(BoardType.Cbse, 3);
         var child = family.Children.Single();
         var deleteIt = new ManifestOutageStore(
-            factory.Services.GetRequiredService<IWorkspaceStore>(),
-            afterAdd: () => client.DeleteChildAsync(child.ChildId)
+            host.Services.GetRequiredService<IWorkspaceStore>(),
+            afterAdd: () => client.Children.RemoveAsync(child.ChildId, CancellationToken.None)
         );
-        using var racing = factory.WithWebHostBuilder(builder => builder.ConfigureTestServices(services => services.AddSingleton<IWorkspaceStore>(deleteIt)));
+        using var racing = new FunctionsHost(azurite.ConnectionString, configure: services => services.AddSingleton<IWorkspaceStore>(deleteIt));
 
-        await racing.Services.DeliverAsync(factory.Sender.Sent.Single(sent => sent.Type == ActionType.CreateWorkspace), CancellationToken.None);
-        await factory.DeliverAsync();
+        await racing.Services.DeliverAsync(host.Sender.Sent.Single(sent => sent.Type == ActionType.CreateWorkspace), CancellationToken.None);
+        await host.DeliverAsync();
 
         Assert.Null(TestServices.FamilyManifest(await ManifestAsync(family.FamilyId)).SubjectsOf(child.ChildId));
         Assert.Empty(await NamesAsync($"{family.FamilyId:D}/{child.ChildId:D}/"));
@@ -195,21 +188,21 @@ public sealed class FamilyManifestFlowTests(AzuriteFixture azurite) : IDisposabl
     [Fact]
     public async Task AChildFullyRemovedWhileTheirSliceWasBeingCopied_LeavesNothingBehind_BecauseTheCreateChecksAfterItsCopy()
     {
-        using var client = Client(NewUid());
-        var family = await RegisterAsync(client, BoardType.Cbse, 3);
+        using var client = host.Caller(NewUid());
+        var family = await client.RegisterAsync(BoardType.Cbse, 3);
         var child = family.Children.Single();
-        var inner = factory.Services.GetRequiredService<IWorkspaceStore>();
+        var inner = host.Services.GetRequiredService<IWorkspaceStore>();
         var removeFirst = new ManifestOutageStore(
             inner,
             beforeCopy: async () =>
             {
-                await client.DeleteChildAsync(child.ChildId);
-                await factory.Services.DeliverAsync(factory.Sender.Sent.Single(sent => sent.Type == ActionType.RemoveWorkspace), CancellationToken.None);
+                await client.Children.RemoveAsync(child.ChildId, CancellationToken.None);
+                await host.Services.DeliverAsync(host.Sender.Sent.Single(sent => sent.Type == ActionType.RemoveWorkspace), CancellationToken.None);
             }
         );
-        using var racing = factory.WithWebHostBuilder(builder => builder.ConfigureTestServices(services => services.AddSingleton<IWorkspaceStore>(removeFirst)));
+        using var racing = new FunctionsHost(azurite.ConnectionString, configure: services => services.AddSingleton<IWorkspaceStore>(removeFirst));
 
-        await racing.Services.DeliverAsync(factory.Sender.Sent.Single(sent => sent.Type == ActionType.CreateWorkspace), CancellationToken.None);
+        await racing.Services.DeliverAsync(host.Sender.Sent.Single(sent => sent.Type == ActionType.CreateWorkspace), CancellationToken.None);
 
         Assert.Equal(0, removeFirst.AddCalls);
         Assert.Empty(await NamesAsync($"{family.FamilyId:D}/{child.ChildId:D}/"));
@@ -221,20 +214,20 @@ public sealed class FamilyManifestFlowTests(AzuriteFixture azurite) : IDisposabl
     [InlineData("afterCopy")]
     public async Task AChildFullyRemovedAtAnyPointOfTheirCreate_LeavesNothingBehind_WithoutASecondSweep(string point)
     {
-        using var client = Client(NewUid());
-        var family = await RegisterAsync(client, BoardType.Cbse, 3);
+        using var client = host.Caller(NewUid());
+        var family = await client.RegisterAsync(BoardType.Cbse, 3);
         var child = family.Children.Single();
         async Task DeleteAndRemoveAsync()
         {
-            await client.DeleteChildAsync(child.ChildId);
-            await factory.Services.DeliverAsync(factory.Sender.Sent.Single(sent => sent.Type == ActionType.RemoveWorkspace), CancellationToken.None);
+            await client.Children.RemoveAsync(child.ChildId, CancellationToken.None);
+            await host.Services.DeliverAsync(host.Sender.Sent.Single(sent => sent.Type == ActionType.RemoveWorkspace), CancellationToken.None);
         }
 
-        var inner = factory.Services.GetRequiredService<IWorkspaceStore>();
+        var inner = host.Services.GetRequiredService<IWorkspaceStore>();
         var store = point == "beforeCreate" ? new ManifestOutageStore(inner, beforeCreate: DeleteAndRemoveAsync) : new ManifestOutageStore(inner, afterCopy: DeleteAndRemoveAsync);
-        using var racing = factory.WithWebHostBuilder(builder => builder.ConfigureTestServices(services => services.AddSingleton<IWorkspaceStore>(store)));
+        using var racing = new FunctionsHost(azurite.ConnectionString, configure: services => services.AddSingleton<IWorkspaceStore>(store));
 
-        await racing.Services.DeliverAsync(factory.Sender.Sent.Single(sent => sent.Type == ActionType.CreateWorkspace), CancellationToken.None);
+        await racing.Services.DeliverAsync(host.Sender.Sent.Single(sent => sent.Type == ActionType.CreateWorkspace), CancellationToken.None);
 
         Assert.Equal(0, store.AddCalls);
         Assert.Empty(await NamesAsync($"{family.FamilyId:D}/{child.ChildId:D}/"));
@@ -244,22 +237,22 @@ public sealed class FamilyManifestFlowTests(AzuriteFixture azurite) : IDisposabl
     [Fact]
     public async Task DeletingAChild_IsOneCallToTheStore_AndTheEntryIsGoneWithTheWorkspace()
     {
-        using var client = Client(NewUid());
-        var family = await RegisterAsync(client, BoardType.Cbse, 3, 6);
-        await factory.DeliverAsync();
+        using var client = host.Caller(NewUid());
+        var family = await client.RegisterAsync(BoardType.Cbse, 3, 6);
+        await host.DeliverAsync();
         var (gone, kept) = (family.Children[0], family.Children[1]);
-        var counting = new ManifestOutageStore(factory.Services.GetRequiredService<IWorkspaceStore>());
-        using var counted = factory.WithWebHostBuilder(builder => builder.ConfigureTestServices(services => services.AddSingleton<IWorkspaceStore>(counting)));
-        await client.DeleteChildAsync(gone.ChildId);
+        var counting = new ManifestOutageStore(host.Services.GetRequiredService<IWorkspaceStore>());
+        using var counted = new FunctionsHost(azurite.ConnectionString, configure: services => services.AddSingleton<IWorkspaceStore>(counting));
+        await client.Children.RemoveAsync(gone.ChildId, CancellationToken.None);
 
-        await counted.Services.DeliverAsync(factory.Sender.Sent.Single(sent => sent.Type == ActionType.RemoveWorkspace), CancellationToken.None);
+        await counted.Services.DeliverAsync(host.Sender.Sent.Single(sent => sent.Type == ActionType.RemoveWorkspace), CancellationToken.None);
 
         Assert.Equal(1, counting.RemoveCalls);
         AssertJson(Manifest("cbse", [Ncert(kept.ChildId, 6)]), await ManifestAsync(family.FamilyId));
         Assert.Empty(await NamesAsync($"{family.FamilyId:D}/{gone.ChildId:D}/"));
     }
 
-    public void Dispose() => factory.Dispose();
+    public void Dispose() => host.Dispose();
 
     private static (Guid ChildId, int ClassLevel, string Profile, string Subjects) Ncert(Guid childId, int classLevel) =>
         (childId, classLevel, "cbse-v1", """[ { "subjectId": "mathematics", "name": "Mathematics", "icon": "maths", "chapterCount": 2 } ]""");
@@ -304,45 +297,12 @@ public sealed class FamilyManifestFlowTests(AzuriteFixture azurite) : IDisposabl
         return [.. names];
     }
 
-    private HttpClient Client(string uid) => factory.CreateClient().WithBearer(TestTokens.Create(uid));
-
     private static string NewUid() => $"uid-{Guid.NewGuid():N}";
 
     private static string Locked(string plaintext) => $"v1.{Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(plaintext))}.{Guid.NewGuid():N}";
 
-    private static ChildAddModel NewChild(Guid id, int classLevel) =>
+    private static Child NewChild(Guid id, int classLevel) =>
         new() { ChildId = id, Name = Locked("Kavya"), ClassLevel = classLevel, BirthYear = Locked("2018"), School = Locked("Green School") };
-
-    private static async Task<FamilyModel> RegisterAsync(HttpClient client, BoardType board, params int[] classes)
-    {
-        var body = new FamilyRegisterRequest
-        {
-            FamilyId = Guid.NewGuid(),
-            Region = "Gujarat",
-            Board = board,
-            Language = "gu",
-            ParentName = Locked("Meena Patel"),
-            ParentEmail = Locked("meena@example.test"),
-            RecoveryWrappedKey = Locked("recovery-key"),
-            RecoverySalt = Locked("recovery-salt"),
-            Consent = new ConsentModel { Accepted = true, NoticeVersion = "2026-09" },
-            Children =
-            [
-                .. classes.Select(classLevel => new ChildSaveModel
-                {
-                    Name = Locked("Child"),
-                    ClassLevel = classLevel,
-                    BirthYear = Locked("2018"),
-                    School = Locked("Sunrise School"),
-                }),
-            ],
-        };
-
-        var response = await client.RegisterAsync(body);
-        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
-
-        return (await response.Content.ReadFromJsonAsync<FamilyModel>())!;
-    }
 
     private sealed class ManifestOutageStore(
         IWorkspaceStore inner,

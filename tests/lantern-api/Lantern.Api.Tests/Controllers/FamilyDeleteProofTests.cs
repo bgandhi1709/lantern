@@ -80,7 +80,6 @@ public sealed class FamilyDeleteProofTests(AzuriteFixture azurite) : IDisposable
             .CreateClient()
             .WithBearer(TestTokens.Create($"uid-{Guid.NewGuid():N}", email: "parent@example.com", emailVerified: true));
         Assert.Equal(HttpStatusCode.Created, (await client.RegisterAsync(RegisterBody())).StatusCode);
-        await factory.DeliverAsync();
 
         return client;
     }

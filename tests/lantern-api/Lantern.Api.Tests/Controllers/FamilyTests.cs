@@ -276,7 +276,7 @@ public sealed class FamilyTests(AzuriteFixture azurite) : IDisposable
     }
 
     [Fact]
-    public async Task Register_StartsAWorkspaceForEachChildAtTheirClass()
+    public async Task Register_SendsACreateWorkspaceForEachChildAtTheirClass()
     {
         using var client = Client(NewUid());
 
@@ -284,12 +284,10 @@ public sealed class FamilyTests(AzuriteFixture azurite) : IDisposable
 
         var family = await response.Content.ReadFromJsonAsync<FamilyModel>();
         Assert.NotNull(family);
-        await factory.DeliverAsync();
-        var container = azurite.CreateBlobClient().GetBlobContainerClient(TestSettings.WorkspaceContainer);
         foreach (var child in family.Children)
         {
-            var marker = container.GetBlobClient($"{family.FamilyId:D}/{child.ChildId:D}/{child.ClassLevel}/class.json");
-            Assert.True(await marker.ExistsAsync());
+            var payload = new CreateWorkspacePayload(family.FamilyId, child.ChildId, child.ClassLevel).ActionId();
+            Assert.Single(factory.Sender.Sent, m => m.Type == ActionType.CreateWorkspace && m.Id == payload);
         }
     }
 
@@ -365,12 +363,11 @@ public sealed class FamilyTests(AzuriteFixture azurite) : IDisposable
     // ---- delete ----
 
     [Fact]
-    public async Task Delete_Returns204_LocksTheCallerOutAtOnce_AndTheFunctionErasesEverythingOfItAndNothingElse()
+    public async Task Delete_Returns204_LocksTheCallerOutAtOnce_AndSendsOneErasure()
     {
         using var client = await RegisteredAsync();
         using var other = await RegisteredAsync();
         var me = await client.GetFromJsonAsync<FamilyModel>(ApiClientExtensions.Me);
-        var theirs = await other.GetFromJsonAsync<FamilyModel>(ApiClientExtensions.Me);
 
         var response = await client.DeleteFamilyAsync();
 
@@ -380,31 +377,22 @@ public sealed class FamilyTests(AzuriteFixture azurite) : IDisposable
         Assert.Empty(await ProfilesAsync(me.FamilyId));
         Assert.Single(Erasures);
         Assert.Single(await LedgerAsync(me.FamilyId));
-
-        await factory.DeliverAsync();
-
-        Assert.Empty(await RowsAsync(me.FamilyId));
-        Assert.Empty(await BlobNamesAsync($"{me.FamilyId:D}/"));
-        Assert.Empty(await LedgerAsync(me.FamilyId));
         Assert.Equal(2, (await other.GetFromJsonAsync<FamilyModel>(ApiClientExtensions.Me))!.Children.Count);
-        Assert.NotEmpty(await BlobNamesAsync($"{theirs!.FamilyId:D}/"));
     }
 
     [Fact]
-    public async Task Delete_ThenRegisterBeforeTheHandlerRuns_StartsANewFamily_ThatTheErasureLeavesAlone()
+    public async Task Delete_ThenRegisterAgain_StartsANewFamily()
     {
         using var client = await RegisteredAsync();
         var old = await client.GetFromJsonAsync<FamilyModel>(ApiClientExtensions.Me);
 
         await client.DeleteFamilyAsync();
         var again = await client.RegisterAsync(ValidBody());
-        await factory.DeliverAsync();
 
         Assert.Equal(HttpStatusCode.Created, again.StatusCode);
         var now = await client.GetFromJsonAsync<FamilyModel>(ApiClientExtensions.Me);
         Assert.NotEqual(old!.FamilyId, now!.FamilyId);
         Assert.Equal(2, now.Children.Count);
-        Assert.Empty(await RowsAsync(old.FamilyId));
     }
 
     [Fact]
@@ -420,66 +408,6 @@ public sealed class FamilyTests(AzuriteFixture azurite) : IDisposable
         Assert.Single(Erasures);
     }
 
-    [Fact]
-    public async Task Function_WhenTheBlobStepFails_KeepsTheLedger_AndFinishesWhenTheMessageIsDeliveredAgain()
-    {
-        using var client = await RegisteredAsync();
-        var me = await client.GetFromJsonAsync<FamilyModel>(ApiClientExtensions.Me);
-        await client.DeleteFamilyAsync();
-        var failing = new Mock<IWorkspaceStore>();
-        failing
-            .Setup(s => s.RemoveFamilyAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new RequestFailedException(503, "blob down"));
-        using var broken = factory.WithWebHostBuilder(b => b.ConfigureTestServices(s => s.AddSingleton(failing.Object)));
-
-        await Assert.ThrowsAsync<RequestFailedException>(() =>
-            broken.Services.DeliverAsync(Erasures[0], CancellationToken.None)
-        );
-
-        Assert.Single(await LedgerAsync(me!.FamilyId));
-        Assert.NotEmpty(await BlobNamesAsync($"{me.FamilyId:D}/"));
-
-        await factory.DeliverAsync();
-
-        Assert.Empty(await LedgerAsync(me.FamilyId));
-        Assert.Empty(await BlobNamesAsync($"{me.FamilyId:D}/"));
-        Assert.Empty(await RowsAsync(me.FamilyId));
-    }
-
-    [Fact]
-    public async Task Function_TheSameMessageTwiceAtOnce_FinishesWithoutError()
-    {
-        using var client = await RegisteredAsync();
-        var me = await client.GetFromJsonAsync<FamilyModel>(ApiClientExtensions.Me);
-        await client.DeleteFamilyAsync();
-        var host = factory.Services;
-
-        await Task.WhenAll(
-            host.DeliverAsync(Erasures[0], CancellationToken.None),
-            host.DeliverAsync(Erasures[0], CancellationToken.None)
-        );
-
-        Assert.Empty(await LedgerAsync(me!.FamilyId));
-        Assert.Empty(await RowsAsync(me.FamilyId));
-    }
-
-    [Fact]
-    public async Task Function_AMessageWithNoLedgerRow_TouchesNothing()
-    {
-        using var client = await RegisteredAsync();
-        var me = await client.GetFromJsonAsync<FamilyModel>(ApiClientExtensions.Me);
-        var stray = new ActionMessage(
-            "stray",
-            ActionType.RemoveFamily,
-            JsonSerializer.Serialize(new RemoveFamilyPayload(me!.FamilyId), JsonSerializerOptions.Web)
-        );
-
-        await factory.Services.DeliverAsync(stray, CancellationToken.None);
-
-        Assert.Equal(2, (await client.GetFromJsonAsync<FamilyModel>(ApiClientExtensions.Me))!.Children.Count);
-        Assert.NotEmpty(await BlobNamesAsync($"{me.FamilyId:D}/"));
-    }
-
     private HttpClient Client(string uid, string name = null, string email = null) =>
         factory.CreateClient().WithBearer(TestTokens.Create(uid, name, email ?? "parent@example.com"));
 
@@ -487,7 +415,6 @@ public sealed class FamilyTests(AzuriteFixture azurite) : IDisposable
     {
         var client = Client(NewUid());
         Assert.Equal(HttpStatusCode.Created, (await client.RegisterAsync(ValidBody())).StatusCode);
-        await factory.DeliverAsync();
 
         return client;
     }
