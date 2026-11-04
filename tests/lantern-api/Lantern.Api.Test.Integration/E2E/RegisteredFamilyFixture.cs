@@ -76,22 +76,33 @@ public sealed class RegisteredFamilyFixture : IAsyncLifetime
             ],
         };
 
-    public async Task<HttpResponseMessage> DeleteChildWithCodeAsync(Guid childId)
+    public async Task<HttpResponseMessage> DeleteChildWithCodeAsync(Guid childId) =>
+        await DeleteChildAsync(childId, await ProofAsync(new { operation = "delete-child", target = childId }));
+
+    public async Task<HttpResponseMessage> DeleteFamilyWithCodeAsync() =>
+        await DeleteFamilyAsync(await ProofAsync(new { operation = "delete-family" }));
+
+    public async Task<string> ProofAsync(object scope)
     {
-        var requested = await Client.PostAsJsonAsync(SecurityCodeUri, new { operation = "delete-child", target = childId });
+        var requested = await Client.PostAsJsonAsync(SecurityCodeUri, scope);
         requested.EnsureSuccessStatusCode();
         var challenge = (await requested.Content.ReadFromJsonAsync<CodeChallengeModel>())!.Challenge;
 
         var verified = await Client.PostAsJsonAsync(VerifyUri, new { challenge, code = await EmailedCodeAsync() });
         verified.EnsureSuccessStatusCode();
-        var proof = (await verified.Content.ReadFromJsonAsync<CodeProofModel>())!.Proof;
 
-        return await DeleteChildAsync(childId, proof);
+        return (await verified.Content.ReadFromJsonAsync<CodeProofModel>())!.Proof;
     }
 
-    public Task<HttpResponseMessage> DeleteChildAsync(Guid childId, string proof)
+    public Task<HttpResponseMessage> DeleteFamilyAsync(string proof) =>
+        SendDeleteAsync(new Uri("/v1/family", UriKind.Relative), proof);
+
+    public Task<HttpResponseMessage> DeleteChildAsync(Guid childId, string proof) =>
+        SendDeleteAsync(new Uri($"/v1/family/children/{childId}", UriKind.Relative), proof);
+
+    private Task<HttpResponseMessage> SendDeleteAsync(Uri uri, string proof)
     {
-        using var request = new HttpRequestMessage(HttpMethod.Delete, new Uri($"/v1/family/children/{childId}", UriKind.Relative));
+        using var request = new HttpRequestMessage(HttpMethod.Delete, uri);
 
         if (proof is not null)
         {

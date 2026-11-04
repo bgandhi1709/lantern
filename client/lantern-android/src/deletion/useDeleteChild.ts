@@ -4,7 +4,7 @@ import { useIsMounted } from '../shared/lifecycle/useIsMounted';
 import { deleteChild } from './deleteChild';
 import { childrenOf, useDeletableFamily } from './useDeletableFamily';
 import type { OneTimeCodeOperation } from './oneTimeCodeApi';
-import { useOneTimeCode } from './useOneTimeCode';
+import { codeStepOf, useOneTimeCode } from './useOneTimeCode';
 
 const OPERATION: OneTimeCodeOperation = 'delete-child';
 
@@ -25,16 +25,8 @@ export function useDeleteChild(onDeleted: () => void) {
     family,
     picked,
     typedName,
-    step: oneTimeCode.issued ? 'code' : 'confirm',
+    ...codeStepOf(oneTimeCode),
     nameMatches: picked !== null && typedName === picked.name,
-    code: oneTimeCode.code,
-    verified: proof !== null,
-    work: oneTimeCode.work,
-    failure: oneTimeCode.failure,
-    resent: oneTimeCode.resent,
-    isBusy: oneTimeCode.isBusy,
-    typeCode: oneTimeCode.typeCode,
-    backToName: oneTimeCode.forget,
     emailCode: (again: boolean) => picked && request(picked.id, again),
     pick: (childId: string) => {
       setPickedId(childId);

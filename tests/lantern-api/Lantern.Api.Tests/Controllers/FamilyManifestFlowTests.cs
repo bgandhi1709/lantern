@@ -96,7 +96,7 @@ public sealed class FamilyManifestFlowTests(AzuriteFixture azurite) : IDisposabl
         var family = await RegisterAsync(client, BoardType.Cbse, 3, 6);
         await factory.DeliverAsync();
 
-        await client.DeleteAsync(ApiClientExtensions.Family);
+        await client.DeleteFamilyAsync();
         await factory.DeliverAsync();
 
         Assert.False(await Family.GetBlobClient($"{family.FamilyId:D}/manifest.json").ExistsAsync());

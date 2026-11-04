@@ -70,8 +70,8 @@ export const Numeric: Story = {
   args: {
     bare: true,
     numeric: true,
-    label: en.deleteChild.codeLabel,
-    hint: en.deleteChild.codeHint,
+    label: en.deleteCode.codeLabel,
+    hint: en.deleteCode.codeHint,
     value: '482917',
     maxLength: 6,
   },

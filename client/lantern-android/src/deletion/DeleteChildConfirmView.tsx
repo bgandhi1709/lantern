@@ -36,13 +36,12 @@ type Props = {
 
 export function DeleteChildConfirmView(props: Props) {
   const strings = useStrings().deleteChild;
+  const code = useStrings().deleteCode;
   const { family, picked } = props;
   const children = childrenOf(family);
 
   const failureMessage =
-    family.status === 'failed'
-      ? strings.loadFailed
-      : props.failure && strings.failures[props.failure];
+    family.status === 'failed' ? strings.loadFailed : props.failure && code.failures[props.failure];
 
   return (
     <View className="lantern-screen">
@@ -76,7 +75,7 @@ export function DeleteChildConfirmView(props: Props) {
               />
               <View className="flex-row items-start gap-2.5">
                 <MailIcon />
-                <Text className="flex-1 lantern-hint">{strings.emailNote(props.email)}</Text>
+                <Text className="flex-1 lantern-hint">{code.emailNote(props.email)}</Text>
               </View>
             </>
           )}
@@ -84,11 +83,11 @@ export function DeleteChildConfirmView(props: Props) {
         </ScrollView>
         <View className="lantern-screen-footer">
           <PrimaryButton
-            label={props.sending ? strings.sending : strings.sendCode}
+            label={props.sending ? code.sending : code.sendCode}
             onPress={props.onSend}
             disabled={!props.canSend || props.sending}
           />
-          <OutlineButton label={strings.cancel} onPress={props.onCancel} />
+          <OutlineButton label={code.cancel} onPress={props.onCancel} />
         </View>
       </KeyboardAvoidingView>
     </View>

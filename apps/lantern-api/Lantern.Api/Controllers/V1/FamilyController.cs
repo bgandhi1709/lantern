@@ -34,9 +34,12 @@ public sealed class FamilyController(IFamilyService families, IMapper mapper)
     // 204: the caller is unregistered at once; the rest of the erasure finishes in Lantern.Functions.
     [HttpDelete("family")]
     [EnableRateLimiting(RateLimits.Children)]
-    public async Task<IActionResult> Delete(CancellationToken cancellationToken)
+    public async Task<IActionResult> Delete(
+        [FromHeader(Name = "Lantern-Code-Proof")] string proof,
+        CancellationToken cancellationToken
+    )
     {
-        await families.EraseAsync(cancellationToken);
+        await families.EraseAsync(proof, cancellationToken);
 
         return NoContent();
     }

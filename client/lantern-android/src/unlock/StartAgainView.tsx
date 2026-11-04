@@ -4,12 +4,11 @@ import { useStrings } from '../shared/i18n';
 import { OutlineButton } from '../shared/ui/OutlineButton';
 import { PrimaryButton } from '../shared/ui/PrimaryButton';
 import { WarningCard } from '../shared/ui/WarningCard';
-import { ErrorText } from '../shared/ui/ErrorText';
 import { ScreenHeading } from '../shared/ui/ScreenHeading';
 
-type Props = { deleting: boolean; failed: boolean; onDelete: () => void; onKeep: () => void };
+type Props = { onDelete: () => void; onKeep: () => void };
 
-export function StartAgainView({ deleting, failed, onDelete, onKeep }: Props) {
+export function StartAgainView({ onDelete, onKeep }: Props) {
   const strings = useStrings().startAgain;
 
   return (
@@ -17,15 +16,10 @@ export function StartAgainView({ deleting, failed, onDelete, onKeep }: Props) {
       <ScrollView contentContainerClassName="gap-4 pb-3 pt-6">
         <ScreenHeading heading={strings.heading} intro={strings.intro} />
         <WarningCard heading={strings.warningHeading} text={strings.warning} />
-        {failed ? <ErrorText>{strings.failed}</ErrorText> : null}
       </ScrollView>
       <View className="lantern-screen-footer">
-        <OutlineButton
-          tone="danger"
-          label={deleting ? strings.deleting : strings.delete}
-          onPress={deleting ? () => undefined : onDelete}
-        />
-        <PrimaryButton label={strings.keep} onPress={onKeep} disabled={deleting} />
+        <OutlineButton tone="danger" label={strings.delete} onPress={onDelete} />
+        <PrimaryButton label={strings.keep} onPress={onKeep} />
       </View>
     </View>
   );

@@ -1,14 +1,17 @@
 import { useEffect } from 'react';
 import { BackHandler } from 'react-native';
 
+import { useStrings } from '../shared/i18n';
 import { getParent } from '../shared/session';
-import { DeleteChildCodeView } from './DeleteChildCodeView';
+import { DeleteCodeView } from './DeleteCodeView';
 import { DeleteChildConfirmView } from './DeleteChildConfirmView';
 import { useDeleteChild } from './useDeleteChild';
 
 type Props = { onDeleted: () => void; onBack: () => void; onDeleteFamily: () => void };
 
 export function DeleteChildScreen({ onDeleted, onBack, onDeleteFamily }: Props) {
+  const strings = useStrings().deleteChild;
+  const cancelLabel = useStrings().deleteCode.cancel;
   const deletion = useDeleteChild(onDeleted);
   const email = getParent().email;
   const inCode = deletion.step === 'code';
@@ -31,8 +34,10 @@ export function DeleteChildScreen({ onDeleted, onBack, onDeleteFamily }: Props) 
 
   if (inCode) {
     return (
-      <DeleteChildCodeView
-        email={email}
+      <DeleteCodeView
+        intro={strings.codeIntro(email)}
+        deleteLabel={strings.delete}
+        cancelLabel={cancelLabel}
         code={deletion.code}
         verified={deletion.verified}
         work={deletion.work}

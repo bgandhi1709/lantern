@@ -3,12 +3,12 @@ import type { Meta, StoryObj } from '@storybook/react-native';
 import { en } from '../i18n/en';
 import { ErrorText } from './ErrorText';
 
-const LONG_MESSAGE = `${en.deleteChild.failures.wrongCode} ${en.deleteChild.failures.wrongCode}`;
+const LONG_MESSAGE = `${en.deleteCode.failures.wrongCode} ${en.deleteCode.failures.wrongCode}`;
 
 const meta = {
   title: 'Shared/ErrorText',
   component: ErrorText,
-  args: { children: en.deleteChild.failures.wrongCode },
+  args: { children: en.deleteCode.failures.wrongCode },
 } satisfies Meta<typeof ErrorText>;
 
 export default meta;

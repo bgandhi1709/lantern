@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http.Json;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 
@@ -8,7 +9,7 @@ namespace Lantern.Api.Test.Integration.E2E;
 [Trait("Category", "E2E")]
 public sealed class FamilyDeleteE2ETests(RegisteredFamilyFixture fixture) : IClassFixture<RegisteredFamilyFixture>
 {
-    private static readonly Uri Family = new("/v1/family", UriKind.Relative);
+    private static readonly Uri Register = new("/v1/register", UriKind.Relative);
     private static readonly Uri Me = new("/v1/me", UriKind.Relative);
 
     // Azurite's published development account; not a secret.
@@ -24,10 +25,15 @@ public sealed class FamilyDeleteE2ETests(RegisteredFamilyFixture fixture) : ICla
         var prefix = $"{fixture.Family.FamilyId:D}/";
         Assert.True(await WaitAsync(() => AnyAsync(container, prefix)), "The worker did not start the Workspace in time.");
 
-        var deleted = await fixture.Client.DeleteAsync(Family);
+        var refused = await fixture.DeleteFamilyAsync(proof: null);
+        Assert.Equal(HttpStatusCode.Forbidden, refused.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await fixture.Client.GetAsync(Me)).StatusCode);
+
+        var deleted = await fixture.DeleteFamilyWithCodeAsync();
 
         Assert.Equal(HttpStatusCode.NoContent, deleted.StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, (await fixture.Client.GetAsync(Me)).StatusCode);
+        Assert.Equal(HttpStatusCode.Created, (await fixture.Client.PostAsJsonAsync(Register, RegisteredFamilyFixture.ValidBody())).StatusCode);
         Assert.True(await WaitAsync(async () => !await AnyAsync(container, prefix)), "The worker did not erase the Family in time.");
     }
 

@@ -147,7 +147,7 @@ public sealed class ContentSliceTests(AzuriteFixture azurite) : IDisposable
         var family = await RegisterAsync(client, BoardType.Cbse, 1, 4, 4);
         await factory.DeliverAsync();
 
-        await client.DeleteAsync(ApiClientExtensions.Family);
+        await client.DeleteFamilyAsync();
         await factory.DeliverAsync();
 
         Assert.Empty(await NamesAsync($"{family.FamilyId:D}/"));

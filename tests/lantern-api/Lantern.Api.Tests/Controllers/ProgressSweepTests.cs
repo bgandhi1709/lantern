@@ -54,7 +54,7 @@ public sealed class ProgressSweepTests(AzuriteFixture azurite) : IDisposable
 
         await WorkedOnAsync(other.FamilyId, other.Children[0].ChildId, 7);
 
-        Assert.Equal(HttpStatusCode.NoContent, (await client.DeleteAsync(ApiClientExtensions.Family)).StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, (await client.DeleteFamilyAsync()).StatusCode);
         await factory.DeliverAsync();
 
         Assert.All(family.Children, child => Assert.Empty(ChaptersAsync(family.FamilyId, child.ChildId, 7).Result));

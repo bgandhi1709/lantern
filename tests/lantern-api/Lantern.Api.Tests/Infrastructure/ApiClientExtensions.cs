@@ -46,9 +46,20 @@ internal static class ApiClientExtensions
         return (await verified.Content.ReadFromJsonAsync<Lantern.Api.Models.CodeProofModel>())!.Proof;
     }
 
-    public static Task<HttpResponseMessage> DeleteChildAsync(this HttpClient client, Guid childId, string proof)
+    public static Task<HttpResponseMessage> DeleteChildAsync(this HttpClient client, Guid childId, string proof) =>
+        client.SendDeleteAsync(Child(childId), proof);
+
+    public static readonly object FamilyScope = new { operation = "delete-family" };
+
+    public static async Task<HttpResponseMessage> DeleteFamilyAsync(this HttpClient client) =>
+        await client.DeleteFamilyAsync(await client.ProofAsync(FamilyScope));
+
+    public static Task<HttpResponseMessage> DeleteFamilyAsync(this HttpClient client, string proof) =>
+        client.SendDeleteAsync(Family, proof);
+
+    private static Task<HttpResponseMessage> SendDeleteAsync(this HttpClient client, Uri uri, string proof)
     {
-        using var request = new HttpRequestMessage(HttpMethod.Delete, Child(childId));
+        using var request = new HttpRequestMessage(HttpMethod.Delete, uri);
 
         if (proof is not null)
         {

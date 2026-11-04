@@ -14,12 +14,15 @@ internal sealed class FamilyService(
     IFamilyRepository families,
     IChildRepository children,
     IActionPublisher actions,
+    IOneTimeCodeService codes,
     IIdentityResolver identityResolver,
     IValidator<Registration> validator,
     TimeProvider clock,
     ILogger<FamilyService> logger
 ) : ServiceBase<Family, IFamilyRepository>(families, identityResolver, families), IFamilyService
 {
+    private const string EraseOperation = "delete-family";
+
     public async Task<Family> RegisterAsync(Registration registration, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(registration);
@@ -121,8 +124,10 @@ internal sealed class FamilyService(
 
     // The ledger row is the commit point; removing the profiles locks every Parent out without a status check on
     // each request.
-    public async Task EraseAsync(CancellationToken cancellationToken)
+    public async Task EraseAsync(string proof, CancellationToken cancellationToken)
     {
+        codes.RequireProof(proof, EraseOperation, string.Empty);
+
         var familyId = await FamilyIdAsync(cancellationToken);
         var payload = new RemoveFamilyPayload(familyId);
         var message = await actions.RecordAsync(ActionType.RemoveFamily, familyId.ToString("N"), payload, cancellationToken);

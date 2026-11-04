@@ -372,7 +372,7 @@ public sealed class FamilyTests(AzuriteFixture azurite) : IDisposable
         var me = await client.GetFromJsonAsync<FamilyModel>(ApiClientExtensions.Me);
         var theirs = await other.GetFromJsonAsync<FamilyModel>(ApiClientExtensions.Me);
 
-        var response = await client.DeleteAsync(ApiClientExtensions.Family);
+        var response = await client.DeleteFamilyAsync();
 
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
         Assert.Equal("not-registered", await (await client.GetAsync(ApiClientExtensions.Me)).ProblemCodeAsync());
@@ -396,7 +396,7 @@ public sealed class FamilyTests(AzuriteFixture azurite) : IDisposable
         using var client = await RegisteredAsync();
         var old = await client.GetFromJsonAsync<FamilyModel>(ApiClientExtensions.Me);
 
-        await client.DeleteAsync(ApiClientExtensions.Family);
+        await client.DeleteFamilyAsync();
         var again = await client.RegisterAsync(ValidBody());
         await factory.DeliverAsync();
 
@@ -413,10 +413,10 @@ public sealed class FamilyTests(AzuriteFixture azurite) : IDisposable
         using var client = await RegisteredAsync();
         using var anonymous = factory.CreateClient();
 
-        await client.DeleteAsync(ApiClientExtensions.Family);
+        await client.DeleteFamilyAsync();
 
-        Assert.Equal("not-registered", await (await client.DeleteAsync(ApiClientExtensions.Family)).ProblemCodeAsync());
-        Assert.Equal(HttpStatusCode.Unauthorized, (await anonymous.DeleteAsync(ApiClientExtensions.Family)).StatusCode);
+        Assert.Equal("not-registered", await (await client.DeleteFamilyAsync()).ProblemCodeAsync());
+        Assert.Equal(HttpStatusCode.Unauthorized, (await anonymous.DeleteFamilyAsync("any")).StatusCode);
         Assert.Single(Erasures);
     }
 
@@ -425,7 +425,7 @@ public sealed class FamilyTests(AzuriteFixture azurite) : IDisposable
     {
         using var client = await RegisteredAsync();
         var me = await client.GetFromJsonAsync<FamilyModel>(ApiClientExtensions.Me);
-        await client.DeleteAsync(ApiClientExtensions.Family);
+        await client.DeleteFamilyAsync();
         var failing = new Mock<IWorkspaceStore>();
         failing
             .Setup(s => s.RemoveFamilyAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
@@ -451,7 +451,7 @@ public sealed class FamilyTests(AzuriteFixture azurite) : IDisposable
     {
         using var client = await RegisteredAsync();
         var me = await client.GetFromJsonAsync<FamilyModel>(ApiClientExtensions.Me);
-        await client.DeleteAsync(ApiClientExtensions.Family);
+        await client.DeleteFamilyAsync();
         var host = factory.Services;
 
         await Task.WhenAll(

@@ -12,7 +12,10 @@ import { ScreenHeading } from '../shared/ui/ScreenHeading';
 import { ErrorText } from '../shared/ui/ErrorText';
 
 type Props = {
-  email: string;
+  intro: string;
+  deleteLabel: string;
+  cancelLabel: string;
+  lastStep?: string;
   code: string;
   verified: boolean;
   work: Work | null;
@@ -25,8 +28,8 @@ type Props = {
   onBack: () => void;
 };
 
-export function DeleteChildCodeView(props: Props) {
-  const strings = useStrings().deleteChild;
+export function DeleteCodeView(props: Props) {
+  const strings = useStrings().deleteCode;
   const deleting = props.work === 'acting';
   const hint = hintFor(props, strings);
 
@@ -37,7 +40,7 @@ export function DeleteChildCodeView(props: Props) {
           <BackButton onBack={props.onBack} />
         </View>
         <ScrollView contentContainerClassName="gap-4 pb-3 pt-1" keyboardShouldPersistTaps="handled">
-          <ScreenHeading heading={strings.codeHeading} intro={strings.codeIntro(props.email)} />
+          <ScreenHeading heading={strings.codeHeading} intro={props.intro} />
           <TextField
             numeric
             label={strings.codeLabel}
@@ -57,19 +60,22 @@ export function DeleteChildCodeView(props: Props) {
           </Pressable>
         </ScrollView>
         <View className="lantern-screen-footer">
+          {props.verified && props.lastStep ? (
+            <Text className="text-center lantern-field-error">{props.lastStep}</Text>
+          ) : null}
           <PrimaryButton
-            label={deleting ? strings.deleting : strings.delete}
+            label={deleting ? strings.deleting : props.deleteLabel}
             onPress={props.onDelete}
             disabled={!props.verified || deleting}
           />
-          <OutlineButton label={strings.cancel} onPress={props.onCancel} />
+          <OutlineButton label={props.cancelLabel} onPress={props.onCancel} />
         </View>
       </KeyboardAvoidingView>
     </View>
   );
 }
 
-function hintFor(props: Props, strings: ReturnType<typeof useStrings>['deleteChild']) {
+function hintFor(props: Props, strings: ReturnType<typeof useStrings>['deleteCode']) {
   if (props.verified) return strings.verified;
   if (props.work === 'verifying') return strings.checking;
   if (props.work === 'requesting') return strings.resending;
