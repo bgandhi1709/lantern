@@ -51,5 +51,7 @@ public sealed class ContentLayoutTests
         Assert.Equal("summaries/cesa1/", layout.SummariesFolder("cesa1"));
         Assert.Equal("summaries/cesa1/cesa101.json", layout.SummaryOf("refined/cesa1/cesa101.json"));
         Assert.Equal("toc/ssc3-maths.json", layout.BookFile("toc", "ssc3-maths"));
+        Assert.Equal("plans/cesa1/", layout.PlansFolder("cesa1"));
+        Assert.Equal("plans/cesa1/cesa101.plan.json", layout.PlanOf("refined/cesa1/cesa101.json"));
     }
 }

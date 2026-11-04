@@ -11,6 +11,13 @@ namespace Lantern.Api.Test.Integration.Host;
 // and guidance per Book. Both carry the build leftovers a Child must never be given. Safe to run again.
 internal static class LocalBoardMasters
 {
+    private static string[] PlanFiles(string book, string chapter) =>
+    [
+        $"plans/{book}/{chapter}.plan.json",
+        $"plans/{book}/{chapter}/{chapter}-c1/poster.webp",
+        $"plans/{book}/{chapter}/{chapter}-c1/video.mp4",
+    ];
+
     public static async Task SeedAsync(BlobServiceClient blobs, CatalogOptions catalog, CancellationToken cancellationToken)
     {
         var ncert = blobs.GetBlobContainerClient(catalog.NcertContainer);
@@ -30,6 +37,11 @@ internal static class LocalBoardMasters
                 {
                     await PutAsync(ncert, $"{folder}/{book}/{book}{chapter}.json", null, cancellationToken);
                 }
+
+                foreach (var plan in PlanFiles(book, $"{book}{chapter}"))
+                {
+                    await PutAsync(ncert, plan, null, cancellationToken);
+                }
             }
         }
 
@@ -42,6 +54,11 @@ internal static class LocalBoardMasters
                 foreach (var folder in new[] { "refined", "summaries", "text", "chapters", "drafts" })
                 {
                     await PutAsync(ssc, $"{folder}/{book}/{book}-01.json", null, cancellationToken);
+                }
+
+                foreach (var plan in PlanFiles(book, $"{book}-01"))
+                {
+                    await PutAsync(ssc, plan, null, cancellationToken);
                 }
 
                 await PutAsync(ssc, $"toc/{book}.json", null, cancellationToken);
