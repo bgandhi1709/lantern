@@ -93,7 +93,7 @@ How a Board's Books are built: what a Chapter is (an English Balbharati Unit, an
 _Avoid_: Schema, template
 
 **Content slice**:
-The copy of a Board's Books for one Child's Class, kept inside that Class's folder of the Child's Workspace. Plan, Ask and Check read it and never the shared Board container, so a Family needs nothing outside its own storage. It is made in the background when the Child is registered or changes Class, is ready once its `version.json` exists, and stays pinned to the version it was copied from until a refresh. Only the runtime JSON is copied.
+The copy of a Board's Books for one Child's Class, kept inside that Class's folder of the Child's Workspace. Plan, Ask and Check read it and never the shared Board container, so a Family needs nothing outside its own storage. It is made in the background when the Child is registered or changes Class, is ready once its `version.json` exists, and stays pinned to the version it was copied from until a refresh. What the runtime reads is copied: the JSON, and each Chapter's Plan with the videos and posters of its Concepts.
 _Avoid_: Cache, snapshot, local copy
 
 **Board profile**:

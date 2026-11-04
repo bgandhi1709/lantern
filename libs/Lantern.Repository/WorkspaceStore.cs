@@ -401,10 +401,10 @@ internal sealed partial class WorkspaceStore(
             throw new InvalidOperationException($"Book {book} has refined content with no summary: {unsummarised}.");
         }
 
-        var unplanned = refined.Keys.Select(layout.PlanOf).FirstOrDefault(plan => !plans.ContainsKey(plan));
-        if (unplanned is not null)
+        var missingPlan = refined.Keys.Select(layout.PlanOf).FirstOrDefault(planFile => !plans.ContainsKey(planFile));
+        if (missingPlan is not null)
         {
-            throw new InvalidOperationException($"Book {book} has refined content with no Plan: {unplanned}.");
+            throw new InvalidOperationException($"Book {book} has refined content with no Plan: {missingPlan}.");
         }
 
         var files = new Dictionary<string, ETag>(refined.Concat(summaries).Concat(plans), StringComparer.Ordinal);
