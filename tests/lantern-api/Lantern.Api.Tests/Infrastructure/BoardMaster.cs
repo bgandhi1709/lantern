@@ -54,7 +54,10 @@ internal sealed class BoardMaster(BlobContainerClient container)
         {
             await master.PutAsync($"refined/{chapter}.json");
             await master.PutAsync($"summaries/{chapter}.json");
+            await master.PutPlanAsync(chapter);
         }
+
+        await master.PutPlanAsync("chin1/chin101");
 
         // Build leftovers that must never reach a Child, for the Books of Class 3 and the others.
         foreach (var chapter in new[] { "cxyz1/cxyz101", "cxyz1/cxyz102", "cmat1/cmat101", "cmat1/cmat102", "cxyz10/cxyz1001", "dxyz1/dxyz101" })
@@ -112,6 +115,7 @@ internal sealed class BoardMaster(BlobContainerClient container)
         {
             await master.PutAsync($"refined/{chapter}.json");
             await master.PutAsync($"summaries/{chapter}.json");
+            await master.PutPlanAsync(chapter);
             await master.PutAsync($"text/{chapter}.json");
             await master.PutAsync($"chapters/{chapter}.json");
             await master.PutAsync($"drafts/{chapter}.json");
@@ -136,10 +140,19 @@ internal sealed class BoardMaster(BlobContainerClient container)
     }
 
     /// <summary>Writes a blob; without content, its bytes are its own name plus a fresh id, so no two blobs are alike.</summary>
-    public async Task PutAsync(string name, string content = null)
+    public async Task PutAsync(string name, string content = null, string contentType = null)
     {
         var text = content ?? $"{name} :: {Guid.NewGuid():N} :: नमस्ते";
-        await Container.GetBlobClient(name).UploadAsync(BinaryData.FromBytes(Encoding.UTF8.GetBytes(text)), overwrite: true);
+        var options = new BlobUploadOptions { HttpHeaders = new BlobHttpHeaders { ContentType = contentType } };
+        await Container.GetBlobClient(name).UploadAsync(BinaryData.FromBytes(Encoding.UTF8.GetBytes(text)), options);
+    }
+
+    public async Task PutPlanAsync(string chapter)
+    {
+        var concept = $"plans/{chapter}/{chapter[(chapter.IndexOf('/') + 1)..]}-c1/";
+        await PutAsync($"plans/{chapter}.plan.json", contentType: "application/json");
+        await PutAsync(concept + "video.mp4", contentType: "video/mp4");
+        await PutAsync(concept + "poster.webp", contentType: "image/webp");
     }
 
     public Task RemoveAsync(string name) => Container.GetBlobClient(name).DeleteIfExistsAsync();

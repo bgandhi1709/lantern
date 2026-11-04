@@ -21,11 +21,20 @@ internal static class ApiBoardMasters
 
     public static string[] SscBooks(int classLevel) => [$"sbk{classLevel}-maths", $"sbk{classLevel}-english"];
 
+    public static string[] PlanFiles(string book, string chapter) =>
+    [
+        $"plans/{book}/{chapter}.plan.json",
+        $"plans/{book}/{chapter}/{chapter}-c1/poster.webp",
+        $"plans/{book}/{chapter}/{chapter}-c1/video.mp4",
+    ];
+
     /// <summary>What a Child of this Class gets from NCERT, written out by hand, sorted.</summary>
     public static string[] NcertSlice(int classLevel) =>
     [
         "catalog.json",
         "manifest.json",
+        .. PlanFiles(NcertBook(classLevel), $"{NcertBook(classLevel)}01"),
+        .. PlanFiles(NcertBook(classLevel), $"{NcertBook(classLevel)}02"),
         $"refined/{NcertBook(classLevel)}/{NcertBook(classLevel)}01.json",
         $"refined/{NcertBook(classLevel)}/{NcertBook(classLevel)}02.json",
         $"summaries/{NcertBook(classLevel)}/{NcertBook(classLevel)}01.json",
@@ -45,6 +54,8 @@ internal static class ApiBoardMasters
             $"guidance/{english}.json",
             $"guidance/{maths}.json",
             "manifest.json",
+            .. PlanFiles(english, $"{english}-01"),
+            .. PlanFiles(maths, $"{maths}-01"),
             $"refined/{english}/{english}-01.json",
             $"refined/{maths}/{maths}-01.json",
             $"summaries/{english}/{english}-01.json",
@@ -75,6 +86,11 @@ internal static class ApiBoardMasters
                 {
                     await PutAsync(ncert, $"{folder}/{book}/{book}{chapter}.json");
                 }
+
+                foreach (var plan in PlanFiles(book, $"{book}{chapter}"))
+                {
+                    await PutAsync(ncert, plan);
+                }
             }
         }
 
@@ -86,6 +102,11 @@ internal static class ApiBoardMasters
                 foreach (var folder in new[] { "refined", "summaries", "text", "chapters", "drafts" })
                 {
                     await PutAsync(ssc, $"{folder}/{book}/{book}-01.json");
+                }
+
+                foreach (var plan in PlanFiles(book, $"{book}-01"))
+                {
+                    await PutAsync(ssc, plan);
                 }
 
                 await PutAsync(ssc, $"toc/{book}.json");

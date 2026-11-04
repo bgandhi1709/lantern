@@ -385,7 +385,8 @@ internal sealed partial class WorkspaceStore(
 
         var refinedTask = ListAsync(master, layout.RefinedFolder(book), cancellationToken);
         var summariesTask = ListAsync(master, layout.SummariesFolder(book), cancellationToken);
-        var (refined, summaries) = (await refinedTask, await summariesTask);
+        var plansTask = ListAsync(master, layout.PlansFolder(book), cancellationToken);
+        var (refined, summaries, plans) = (await refinedTask, await summariesTask, await plansTask);
 
         if (refined.Count == 0)
         {
@@ -400,7 +401,13 @@ internal sealed partial class WorkspaceStore(
             throw new InvalidOperationException($"Book {book} has refined content with no summary: {unsummarised}.");
         }
 
-        var files = new Dictionary<string, ETag>(refined.Concat(summaries), StringComparer.Ordinal);
+        var missingPlan = refined.Keys.Select(layout.PlanOf).FirstOrDefault(planFile => !plans.ContainsKey(planFile));
+        if (missingPlan is not null)
+        {
+            throw new InvalidOperationException($"Book {book} has refined content with no Plan: {missingPlan}.");
+        }
+
+        var files = new Dictionary<string, ETag>(refined.Concat(summaries).Concat(plans), StringComparer.Ordinal);
         foreach (var (name, etag) in await Task.WhenAll(rules.BookFiles.Select(folder => RequiredAsync(master, layout.BookFile(folder, book), cancellationToken))))
         {
             files[name] = etag;
