@@ -23,7 +23,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <InternalsVisibleTo Include="Lantern.Api.Tests" />
     <InternalsVisibleTo Include="Lantern.Functions.Tests" />
   </ItemGroup>
 

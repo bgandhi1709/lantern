@@ -1,7 +1,18 @@
 import { useRouter } from 'expo-router';
 
-import { ComingNextView } from '../src/home';
+import { useRegistrationCheck } from '../src/auth';
+import { DeleteFamilyScreen } from '../src/deletion';
 
 export default function DeleteFamilyRoute() {
-  return <ComingNextView onBack={useRouter().back} />;
+  const router = useRouter();
+  const { recheck } = useRegistrationCheck();
+  return (
+    <DeleteFamilyScreen
+      onDeleted={() => {
+        recheck();
+        router.dismissTo('/');
+      }}
+      onBack={() => router.back()}
+    />
+  );
 }

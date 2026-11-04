@@ -87,7 +87,6 @@ public sealed class CodeLimitsTests(AzuriteFixture azurite) : IDisposable
     {
         var client = factory.CreateClient().WithBearer(TestTokens.Create($"uid-{Guid.NewGuid():N}"));
         Assert.Equal(HttpStatusCode.Created, (await client.RegisterAsync(RegisterBody())).StatusCode);
-        await factory.DeliverAsync();
 
         return client;
     }

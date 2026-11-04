@@ -1,5 +1,7 @@
 // Every piece of text the Parent sees. A new language is a copy of this file with the values
 // translated; its type is Strings, so a missing or extra key fails the build.
+const KEEP_FAMILY = 'Keep my Family';
+
 export const en = {
   appName: 'Lantern',
   common: {
@@ -321,10 +323,8 @@ export const en = {
     warningHeading: 'This deletes your Family',
     warning:
       'Starting again deletes this Family and its Children from Lantern, then takes you to registration to make a new one. This cannot be undone.',
-    delete: 'Delete my Family and start again',
-    deleting: 'Deleting…',
-    keep: 'Keep my Family',
-    failed: 'Could not delete your Family. Nothing was changed. Try again.',
+    delete: 'Continue to delete my Family',
+    keep: KEEP_FAMILY,
   },
   appearance: {
     unlockRow: {
@@ -365,6 +365,32 @@ export const en = {
     },
     savedNote: 'Saved on this phone only. Signing out keeps these.',
   },
+  deleteCode: {
+    emailNote: (email: string) =>
+      `Next, we email a 6-digit code to ${email}. Deleting needs that code.`,
+    sendCode: 'Email me a code',
+    sending: 'Sending…',
+    cancel: 'Cancel',
+    codeHeading: 'Check your email',
+    codeLabel: 'Code',
+    codeHint: 'Check your inbox for "Your Lantern one-time code".',
+    checking: 'Checking the code…',
+    verified: 'Code verified',
+    resend: 'Email me a new code',
+    resending: 'Sending a new code…',
+    resent: 'A new code is on its way',
+    deleting: 'Deleting…',
+    failures: {
+      wrongCode: 'That code is not right. Check it and try again.',
+      codeExpired: 'That code has expired. Email yourself a new one.',
+      tooManyTries: 'Too many wrong tries. Email yourself a new code.',
+      tooSoon: 'Please wait a minute before asking for another code.',
+      emailNotVerified: 'Your Google email is not verified, so Lantern cannot send a code.',
+      emailNotSent: 'We could not send the email. Try again.',
+      unreachable: 'Could not reach Lantern. Check your connection and try again.',
+      other: 'Something went wrong. Nothing was deleted. Try again.',
+    },
+  },
   deleteChild: {
     heading: 'Delete a child',
     intro: 'Choose the child to remove. Your other Children stay.',
@@ -381,33 +407,30 @@ export const en = {
       `${name}’s Plans, Checks, marks and progress are deleted from Lantern. This cannot be undone and nothing can be recovered.`,
     nameLabel: (name: string) => `Type ${name} to confirm`,
     nameHint: 'Type the name exactly as shown, with the same capital letters.',
-    emailNote: (email: string) =>
-      `Next, we email a 6-digit code to ${email}. Deleting needs that code.`,
-    sendCode: 'Email me a code',
-    sending: 'Sending…',
-    cancel: 'Cancel',
-    codeHeading: 'Check your email',
     codeIntro: (email: string) =>
       `We emailed a 6-digit code to ${email}. Type it to delete the child you chose.`,
-    codeLabel: 'Code',
-    codeHint: 'Check your inbox for "Your Lantern one-time code".',
-    checking: 'Checking the code…',
-    verified: 'Code verified',
-    resend: 'Email me a new code',
-    resending: 'Sending a new code…',
-    resent: 'A new code is on its way',
     delete: 'Delete child',
-    deleting: 'Deleting…',
-    failures: {
-      wrongCode: 'That code is not right. Check it and try again.',
-      codeExpired: 'That code has expired. Email yourself a new one.',
-      tooManyTries: 'Too many wrong tries. Email yourself a new code.',
-      tooSoon: 'Please wait a minute before asking for another code.',
-      emailNotVerified: 'Your Google email is not verified, so Lantern cannot send a code.',
-      emailNotSent: 'We could not send the email. Try again.',
-      unreachable: 'Could not reach Lantern. Check your connection and try again.',
-      other: 'Something went wrong. Nothing was deleted. Try again.',
-    },
+  },
+  deleteFamily: {
+    heading: 'Delete your Family',
+    intro: 'This removes the whole Family from Lantern, not just one child.',
+    warningHeading: 'This erases everything, for everyone',
+    warningWithNames: (names: string) =>
+      `Your Family and every Child in it (${names}) are deleted, with all their Plans, Checks, marks and progress. This cannot be undone and nothing can be recovered.`,
+    warning:
+      'Your Family and every Child in it are deleted, with all their Plans, Checks, marks and progress. This cannot be undone and nothing can be recovered.',
+    confirmWord: 'DELETE',
+    typeLabel: (word: string) => `Type ${word} to confirm`,
+    names: (names: string[]) =>
+      names.length < 2
+        ? names.join('')
+        : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`,
+    typeHint: 'Use capital letters, exactly as shown.',
+    keep: KEEP_FAMILY,
+    codeIntro: (email: string) =>
+      `We emailed a 6-digit code to ${email}. Type it to delete your Family.`,
+    lastStep: 'This is the last step. There is no undo.',
+    delete: 'Delete my Family forever',
   },
   settings: {
     title: 'Settings',

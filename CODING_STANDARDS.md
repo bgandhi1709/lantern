@@ -159,8 +159,8 @@ The rules are in `.claude/skills/expo-app-standards/SKILL.md` (the cycle is `doc
   `Lantern.Api.Test.Integration` for E2E, and `Lantern.Api.Test.Integration.Host` for the local Docker host and its
   stand-ins. Reach internals with `InternalsVisibleTo`.
 - Storage behaviour is tested against real Azurite. Fakes are allowed only at the external seams: `IPublishingService`
-  (`RecordingPublishingService`). In-process tests deliver the messages the API published to
-  the real Function of its key from `Lantern.Functions`.
+  (`RecordingPublishingService`). API tests assert the messages the API published; the real Function of its key runs in
+  `Lantern.Functions.Tests` over Azurite, through `FunctionsHost`.
 - Every service override, repository override and Function has tests, and every wire name (action type, problem code)
   has a test that pins it.
 - **A test helper that needs a new production member is a design smell.** Write the rows or call the internals from the

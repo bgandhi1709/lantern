@@ -141,7 +141,7 @@ const requiredStories: Record<string, string[]> = {
     'Dark',
     'LargestText',
   ],
-  'deletion/DeleteChildCodeView.stories.tsx': [
+  'deletion/DeleteCodeView.stories.tsx': [
     'Empty',
     'Typing',
     'Checking',
@@ -152,6 +152,7 @@ const requiredStories: Record<string, string[]> = {
     'Resent',
     'Deleting',
     'DeleteFailed',
+    'ForTheFamily',
     'Dark',
     'LargestText',
   ],
@@ -168,7 +169,19 @@ const requiredStories: Record<string, string[]> = {
     'CannotReachLantern',
     'SomethingWentWrong',
   ],
-  'unlock/StartAgainView.stories.tsx': ['Default', 'Deleting', 'Failed'],
+  'unlock/StartAgainView.stories.tsx': ['Default'],
+  'deletion/DeleteFamilyConfirmView.stories.tsx': [
+    'Default',
+    'Loading',
+    'WithoutNames',
+    'Typing',
+    'Typed',
+    'Sending',
+    'EmailNotSent',
+    'LongNames',
+    'Dark',
+    'LargestText',
+  ],
   'settings/SchemeCard.stories.tsx': ['Unselected', 'Selected', 'LongNote'],
   'settings/PreviewCard.stories.tsx': ['Default'],
   'settings/SettingsView.stories.tsx': [
@@ -254,6 +267,14 @@ const withoutStory: Record<string, string> = {
     'the Family management group of SettingsView, whose stories show it',
   'unlock/UnlockScreen.tsx': 'container for UnlockView, which has the stories',
   'unlock/StartAgainScreen.tsx': 'container for StartAgainView, which has the stories',
+  'deletion/DeletionPage.tsx':
+    'the page shell of DeleteChildConfirmView, DeleteFamilyConfirmView and DeleteCodeView, whose stories show it',
+  'deletion/EmailNote.tsx':
+    'the email line of DeleteChildConfirmView and DeleteFamilyConfirmView, whose stories show it',
+  'deletion/SendCodeButtons.tsx':
+    'the footer of DeleteChildConfirmView and DeleteFamilyConfirmView, whose stories show it',
+  'deletion/DeleteFamilyScreen.tsx':
+    'container for DeleteFamilyConfirmView and DeleteCodeView, which have the stories',
   'registration/FirstChildScreen.tsx': 'container for FirstChildView, which has the stories',
   'addChild/AddChildScreen.tsx': 'container for AddChildView, which has the stories',
   'registration/MoreChildren.tsx':

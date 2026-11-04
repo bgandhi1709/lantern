@@ -4,7 +4,7 @@ import { ApiError, api } from '../shared/api';
 import { LockError, createFamilyKeys, makeFamilyId } from '../shared/crypto';
 import { clearAll, readFamilyKey, readValue } from '../shared/storage';
 import { secureStoreContents } from '../test/fakeSecureStore';
-import { startAgain } from './startAgain';
+import { deleteFamily } from '../deletion';
 import { UnlockWaitError, fetchFamilyLock, unlockFamily } from './unlockFamily';
 import type { FamilyLock } from './unlockFamily';
 import { waitSeconds } from './unlockWait';
@@ -177,7 +177,7 @@ describe('what a locked phone sends to the API', () => {
 
     await fetchFamilyLock();
     await unlockFamily(lock, { uid: UID, typed: recoveryCode, now: NOW });
-    await startAgain();
+    await deleteFamily('proof');
 
     const sent = apiCalls().join('\n');
     for (const secret of [WRONG, recoveryCode, recoveryCode.replace(/-/g, ''), familyKey]) {
@@ -276,7 +276,7 @@ describe('Start again', () => {
     await unlockFamily(lock, { uid: UID, typed: recoveryCode, now: NOW });
     await AsyncStorage.setItem('lantern.v1.theme', JSON.stringify('dark'));
 
-    await startAgain();
+    await deleteFamily('proof');
 
     expect(del).toHaveBeenCalledTimes(1);
     expect(del.mock.calls[0][0]).toBe('/v1/family');
@@ -289,7 +289,7 @@ describe('Start again', () => {
     del.mockRejectedValue(new ApiError('unreachable', null));
     await unlockFamily(lock, { uid: UID, typed: recoveryCode, now: NOW });
 
-    const error = await failedWith(startAgain());
+    const error = await failedWith(deleteFamily('proof'));
 
     expect(error).toBeInstanceOf(ApiError);
     expect(await readFamilyKey(UID)).toBe(familyKey);
@@ -299,7 +299,7 @@ describe('Start again', () => {
     del.mockResolvedValue(undefined);
     await failedWith(unlockFamily(lock, { uid: UID, typed: WRONG, now: NOW }));
 
-    await startAgain();
+    await deleteFamily('proof');
 
     expect(await readValue('unlockWait')).toEqual({ failures: 0, until: 0 });
   });

@@ -1,38 +1,27 @@
-import { useEffect } from 'react';
-import { BackHandler } from 'react-native';
-
+import { useStrings } from '../shared/i18n';
 import { getParent } from '../shared/session';
-import { DeleteChildCodeView } from './DeleteChildCodeView';
+import { DeleteCodeView } from './DeleteCodeView';
 import { DeleteChildConfirmView } from './DeleteChildConfirmView';
 import { useDeleteChild } from './useDeleteChild';
+import { useDeletionBack } from './useDeletionBack';
 
 type Props = { onDeleted: () => void; onBack: () => void; onDeleteFamily: () => void };
 
 export function DeleteChildScreen({ onDeleted, onBack, onDeleteFamily }: Props) {
+  const strings = useStrings().deleteChild;
+  const cancelLabel = useStrings().deleteCode.cancel;
   const deletion = useDeleteChild(onDeleted);
   const email = getParent().email;
   const inCode = deletion.step === 'code';
 
-  const goBack = () => {
-    if (deletion.isBusy()) return;
-    if (inCode) deletion.backToName();
-    else onBack();
-  };
-
-  const cancel = () => (deletion.isBusy() ? undefined : onBack());
-
-  useEffect(() => {
-    const press = BackHandler.addEventListener('hardwareBackPress', () => {
-      goBack();
-      return true;
-    });
-    return () => press.remove();
-  });
+  const { goBack, cancel } = useDeletionBack(deletion, onBack);
 
   if (inCode) {
     return (
-      <DeleteChildCodeView
-        email={email}
+      <DeleteCodeView
+        intro={strings.codeIntro(email)}
+        deleteLabel={strings.delete}
+        cancelLabel={cancelLabel}
         code={deletion.code}
         verified={deletion.verified}
         work={deletion.work}

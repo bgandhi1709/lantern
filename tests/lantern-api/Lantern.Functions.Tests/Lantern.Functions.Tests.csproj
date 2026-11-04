@@ -10,9 +10,29 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Azure.Data.Tables" />
     <PackageReference Include="coverlet.collector" />
     <PackageReference Include="Moq" />
     <PackageReference Include="xunit.v3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\Lantern.Api.Tests\appsettings.Testing.json" Link="appsettings.Testing.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Lantern.Api.Tests\Infrastructure\AzuriteFixture.cs" Link="Shared\AzuriteFixture.cs" />
+    <Compile Include="..\Lantern.Api.Tests\Infrastructure\ApiBoardMasters.cs" Link="Shared\ApiBoardMasters.cs" />
+    <Compile Include="..\Lantern.Api.Tests\Infrastructure\BoardMaster.cs" Link="Shared\BoardMaster.cs" />
+    <Compile Include="..\Lantern.Api.Tests\Infrastructure\TestSettings.cs" Link="Shared\TestSettings.cs" />
+    <Compile Include="..\Lantern.Api.Tests\Infrastructure\TestClock.cs" Link="Shared\TestClock.cs" />
+    <Compile Include="..\Lantern.Api.Tests\Infrastructure\TestServices.cs" Link="Shared\TestServices.cs" />
+    <Compile Include="..\Lantern.Api.Tests\Infrastructure\RecordingPublishingService.cs" Link="Shared\RecordingPublishingService.cs" />
+    <Compile Include="..\Lantern.Api.Tests\Infrastructure\RecordingEmailService.cs" Link="Shared\RecordingEmailService.cs" />
+    <Compile Include="..\Lantern.Api.Tests\Infrastructure\FixedCodeGenerator.cs" Link="Shared\FixedCodeGenerator.cs" />
+    <Compile Include="..\Lantern.Api.Tests\Infrastructure\CapturingLoggerProvider.cs" Link="Shared\CapturingLoggerProvider.cs" />
+    <Compile Include="..\Lantern.Api.Tests\Infrastructure\FamilyManifestSeed.cs" Link="Shared\FamilyManifestSeed.cs" />
+    <Compile Include="..\Lantern.Api.Tests\Infrastructure\PlainWorkspaceStore.cs" Link="Shared\PlainWorkspaceStore.cs" />
   </ItemGroup>
 
   <ItemGroup>

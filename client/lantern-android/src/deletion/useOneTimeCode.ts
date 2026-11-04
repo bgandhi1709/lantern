@@ -64,7 +64,7 @@ export function useOneTimeCode(operation: OneTimeCodeOperation) {
     run,
     isBusy: () => busy.current,
     clearFailure: () => setFailure(null),
-    request: (target: string, again: boolean) =>
+    request: (target: string | undefined, again: boolean) =>
       run('requesting', async () => {
         if (again) {
           clearCode();
@@ -92,4 +92,18 @@ export function useOneTimeCode(operation: OneTimeCodeOperation) {
       setFailure(null);
     },
   };
+}
+
+export function codeStepOf(oneTimeCode: ReturnType<typeof useOneTimeCode>) {
+  return {
+    step: oneTimeCode.issued ? 'code' : 'confirm',
+    code: oneTimeCode.code,
+    verified: oneTimeCode.proof !== null,
+    work: oneTimeCode.work,
+    failure: oneTimeCode.failure,
+    resent: oneTimeCode.resent,
+    isBusy: oneTimeCode.isBusy,
+    typeCode: oneTimeCode.typeCode,
+    backToName: oneTimeCode.forget,
+  } as const;
 }

@@ -3,9 +3,7 @@ using Lantern.Core.Constants;
 using Lantern.Core.Service;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Lantern.Api.Tests.Infrastructure;
-
-extern alias Functions;
+namespace Lantern.Functions.Tests.Infrastructure;
 
 public static class ActionDelivery
 {
@@ -21,9 +19,9 @@ public static class ActionDelivery
         await (
             action.Type switch
             {
-                ActionType.RemoveWorkspace => provider.GetRequiredService<Functions::Lantern.Functions.RemoveWorkspaceFunction>().RunAsync(body, cancellationToken),
-                ActionType.CreateWorkspace => provider.GetRequiredService<Functions::Lantern.Functions.CreateWorkspaceFunction>().RunAsync(body, cancellationToken),
-                ActionType.RemoveFamily => provider.GetRequiredService<Functions::Lantern.Functions.RemoveFamilyFunction>().RunAsync(body, cancellationToken),
+                ActionType.RemoveWorkspace => provider.GetRequiredService<RemoveWorkspaceFunction>().RunAsync(body, cancellationToken),
+                ActionType.CreateWorkspace => provider.GetRequiredService<CreateWorkspaceFunction>().RunAsync(body, cancellationToken),
+                ActionType.RemoveFamily => provider.GetRequiredService<RemoveFamilyFunction>().RunAsync(body, cancellationToken),
                 _ => throw new ArgumentOutOfRangeException(nameof(action)),
             }
         );

@@ -1,6 +1,3 @@
-extern alias Functions;
-
-using Functions::Lantern.Functions;
 using Lantern.Core.Service;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Hosting;
@@ -19,8 +16,6 @@ namespace Lantern.Api.Tests.Infrastructure;
 // Only the signing-key source is replaced; issuer, audience, lifetime and signature checks are the production settings.
 public sealed class LanternApiFactory(string connectionString, IReadOnlyDictionary<string, string> settings = null) : WebApplicationFactory<Program>
 {
-    private int delivered;
-
     public CapturingLoggerProvider Logs { get; } = new();
 
     public RecordingPublishingService Sender { get; } = new();
@@ -30,16 +25,6 @@ public sealed class LanternApiFactory(string connectionString, IReadOnlyDictiona
     public FixedCodeGenerator Codes { get; } = new();
 
     public TestClock Clock { get; } = new();
-
-    public async Task DeliverAsync()
-    {
-        var all = Sender.Sent;
-
-        while (delivered < all.Count)
-        {
-            await Services.DeliverAsync(all[delivered++]);
-        }
-    }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -63,8 +48,6 @@ public sealed class LanternApiFactory(string connectionString, IReadOnlyDictiona
             services.AddSingleton<IEmailService>(Emails);
             services.AddSingleton<IOneTimeCodeGenerator>(Codes);
             services.AddSingleton<TimeProvider>(Clock);
-            // The Functions app's handlers, so a test can deliver what the API sent.
-            services.AddLanternFunctions();
             services.PostConfigure<JwtBearerOptions>(
                 JwtBearerDefaults.AuthenticationScheme,
                 options =>

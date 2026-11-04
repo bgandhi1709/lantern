@@ -2,13 +2,16 @@ import type { Meta, StoryObj } from '@storybook/react-native';
 import { fn } from 'storybook/test';
 
 import { LookProvider } from '../shared/theme';
-import { DeleteChildCodeView } from './DeleteChildCodeView';
+import { DeleteCodeView } from './DeleteCodeView';
 
 const meta = {
-  title: 'Deletion/DeleteChildCodeView',
-  component: DeleteChildCodeView,
+  title: 'Deletion/DeleteCodeView',
+  component: DeleteCodeView,
   args: {
-    email: 'asha.verma@gmail.com',
+    intro:
+      'We emailed a 6-digit code to asha.verma@gmail.com. Type it to delete the child you chose.',
+    deleteLabel: 'Delete child',
+    cancelLabel: 'Cancel',
     code: '',
     verified: false,
     work: null,
@@ -20,7 +23,7 @@ const meta = {
     onCancel: fn(),
     onBack: fn(),
   },
-} satisfies Meta<typeof DeleteChildCodeView>;
+} satisfies Meta<typeof DeleteCodeView>;
 
 export default meta;
 
@@ -59,4 +62,14 @@ export const LargestText: Story = {
       </LookProvider>
     ),
   ],
+};
+export const ForTheFamily: Story = {
+  args: {
+    intro: 'We emailed a 6-digit code to asha.verma@gmail.com. Type it to delete your Family.',
+    deleteLabel: 'Delete my Family forever',
+    cancelLabel: 'Keep my Family',
+    lastStep: 'This is the last step. There is no undo.',
+    code: '482917',
+    verified: true,
+  },
 };

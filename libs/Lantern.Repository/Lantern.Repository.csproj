@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Lantern.Api.Tests" />
+    <InternalsVisibleTo Include="Lantern.Functions.Tests" />
     <InternalsVisibleTo Include="Lantern.Api.Test.Integration.Host" />
   </ItemGroup>
 
