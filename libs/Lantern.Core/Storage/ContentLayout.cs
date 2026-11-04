@@ -28,6 +28,10 @@ public sealed class ContentLayout
 
     public string SummariesFolderName { get; } = "summaries";
 
+    public string PlansFolderName { get; } = "plans";
+
+    public string PlanSuffix { get; } = ".plan.json";
+
     public string MasterManifestFolder { get; } = "manifest";
 
     public string FileExtension { get; } = ".json";
@@ -58,6 +62,10 @@ public sealed class ContentLayout
     public string RefinedFolder(string book) => $"{RefinedFolderName}{Separator}{book}{Separator}";
 
     public string SummariesFolder(string book) => $"{SummariesFolderName}{Separator}{book}{Separator}";
+
+    public string PlansFolder(string book) => $"{PlansFolderName}{Separator}{book}{Separator}";
+
+    public string PlanOf(string refinedName) => $"{PlansFolderName}{Separator}{refinedName[(RefinedFolderName.Length + 1)..^FileExtension.Length]}{PlanSuffix}";
 
     public string SummaryOf(string refinedName) => $"{SummariesFolderName}{Separator}{refinedName[(RefinedFolderName.Length + 1)..]}";
 

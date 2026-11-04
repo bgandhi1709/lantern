@@ -23,6 +23,15 @@ public sealed class WorkspaceStoreContentTests(AzuriteFixture azurite)
     [
         "catalog.json",
         "manifest.json",
+        "plans/cmat1/cmat101.plan.json",
+        "plans/cmat1/cmat101/cmat101-c1/poster.webp",
+        "plans/cmat1/cmat101/cmat101-c1/video.mp4",
+        "plans/cxyz1/cxyz101.plan.json",
+        "plans/cxyz1/cxyz101/cxyz101-c1/poster.webp",
+        "plans/cxyz1/cxyz101/cxyz101-c1/video.mp4",
+        "plans/cxyz1/cxyz102.plan.json",
+        "plans/cxyz1/cxyz102/cxyz102-c1/poster.webp",
+        "plans/cxyz1/cxyz102/cxyz102-c1/video.mp4",
         "refined/cmat1/cmat101.json",
         "refined/cxyz1/cxyz101.json",
         "refined/cxyz1/cxyz102.json",
@@ -41,6 +50,18 @@ public sealed class WorkspaceStoreContentTests(AzuriteFixture azurite)
         "guidance/ssc3-evs1.json",
         "guidance/ssc3-maths.json",
         "manifest.json",
+        "plans/ssc3-english/ssc3-english-01.plan.json",
+        "plans/ssc3-english/ssc3-english-01/ssc3-english-01-c1/poster.webp",
+        "plans/ssc3-english/ssc3-english-01/ssc3-english-01-c1/video.mp4",
+        "plans/ssc3-evs1/ssc3-evs1-01.plan.json",
+        "plans/ssc3-evs1/ssc3-evs1-01/ssc3-evs1-01-c1/poster.webp",
+        "plans/ssc3-evs1/ssc3-evs1-01/ssc3-evs1-01-c1/video.mp4",
+        "plans/ssc3-maths/ssc3-maths-01.plan.json",
+        "plans/ssc3-maths/ssc3-maths-01/ssc3-maths-01-c1/poster.webp",
+        "plans/ssc3-maths/ssc3-maths-01/ssc3-maths-01-c1/video.mp4",
+        "plans/ssc3-maths/ssc3-maths-02.plan.json",
+        "plans/ssc3-maths/ssc3-maths-02/ssc3-maths-02-c1/poster.webp",
+        "plans/ssc3-maths/ssc3-maths-02/ssc3-maths-02-c1/video.mp4",
         "refined/ssc3-english/ssc3-english-01.json",
         "refined/ssc3-evs1/ssc3-evs1-01.json",
         "refined/ssc3-maths/ssc3-maths-01.json",
@@ -157,6 +178,10 @@ public sealed class WorkspaceStoreContentTests(AzuriteFixture azurite)
     [InlineData(BoardType.Ssc, "manifest/class-3.json")]
     [InlineData(BoardType.Cbse, "summaries/cxyz1/cxyz102.json")]
     [InlineData(BoardType.Cbse, "summaries/cmat1/cmat101.json")]
+    [InlineData(BoardType.Ssc, "plans/ssc3-maths/ssc3-maths-02.plan.json")]
+    [InlineData(BoardType.Ssc, "plans/ssc3-english/ssc3-english-01.plan.json")]
+    [InlineData(BoardType.Cbse, "plans/cxyz1/cxyz102.plan.json")]
+    [InlineData(BoardType.Cbse, "plans/cmat1/cmat101.plan.json")]
     public async Task CopyContentAsync_ARequiredFileIsMissing_Throws_AndLeavesNothingBehind(BoardType board, string missing)
     {
         var master = board == BoardType.Ssc ? await BoardMaster.SscAsync(azurite) : await BoardMaster.NcertAsync(azurite);
@@ -168,6 +193,44 @@ public sealed class WorkspaceStoreContentTests(AzuriteFixture azurite)
         );
 
         Assert.Empty(await ContentNamesAsync(familyId, childId, ClassThree));
+    }
+
+    [Theory]
+    [InlineData(BoardType.Ssc, "plans/ssc3-maths/ssc3-maths-02.plan.json")]
+    [InlineData(BoardType.Cbse, "plans/cxyz1/cxyz102.plan.json")]
+    public async Task CopyContentAsync_ARefinedChapterHasNoPlan_NamesThePlanFile_AndTheRetryOnceItIsUploadedCopiesEverything(BoardType board, string plan)
+    {
+        var master = board == BoardType.Ssc ? await BoardMaster.SscAsync(azurite) : await BoardMaster.NcertAsync(azurite);
+        var bytes = await master.BytesAsync(plan);
+        await master.RemoveAsync(plan);
+        var (familyId, childId) = (Guid.NewGuid(), Guid.NewGuid());
+        var ncert = board == BoardType.Cbse ? master : null;
+        var ssc = board == BoardType.Ssc ? master : null;
+        var expected = board == BoardType.Ssc ? SscClassThree : NcertClassThree;
+
+        var failure = await Assert.ThrowsAsync<InvalidOperationException>(() => CopyAsync(ncert, ssc, familyId, childId, ClassThree, board));
+        Assert.Contains(plan, failure.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("version.json", await ContentNamesAsync(familyId, childId, ClassThree));
+
+        await master.Container.GetBlobClient(plan).UploadAsync(BinaryData.FromBytes(bytes), overwrite: true);
+        await CopyAsync(ncert, ssc, familyId, childId, ClassThree, board);
+
+        Assert.Equal(expected, await ContentNamesAsync(familyId, childId, ClassThree));
+        await AssertBytesMatchAsync(master, familyId, childId, ClassThree, expected);
+    }
+
+    [Fact]
+    public async Task CopyContentAsync_ThePlansVideoAndPoster_KeepTheirContentTypes()
+    {
+        var ssc = await BoardMaster.SscAsync(azurite);
+        var (familyId, childId) = (Guid.NewGuid(), Guid.NewGuid());
+
+        await CopyAsync(null, ssc, familyId, childId, ClassThree, BoardType.Ssc);
+
+        var concept = ContentPrefix(familyId, childId, ClassThree) + "plans/ssc3-maths/ssc3-maths-01/ssc3-maths-01-c1/";
+        Assert.Equal("video/mp4", (await family.GetBlobClient(concept + "video.mp4").GetPropertiesAsync()).Value.ContentType);
+        Assert.Equal("image/webp", (await family.GetBlobClient(concept + "poster.webp").GetPropertiesAsync()).Value.ContentType);
+        Assert.Equal("application/json", (await family.GetBlobClient(ContentPrefix(familyId, childId, ClassThree) + "plans/ssc3-maths/ssc3-maths-01.plan.json").GetPropertiesAsync()).Value.ContentType);
     }
 
     [Fact]
@@ -309,6 +372,7 @@ public sealed class WorkspaceStoreContentTests(AzuriteFixture azurite)
             {
                 await ssc.PutAsync("refined/ssc3-maths/ssc3-maths-03.json");
                 await ssc.PutAsync("summaries/ssc3-maths/ssc3-maths-03.json");
+                await ssc.PutPlanAsync("ssc3-maths/ssc3-maths-03");
             }
         );
         var store = StoreOver(null, new BlobServiceClient(azurite.ConnectionString, OptionsWith(upload)).GetBlobContainerClient(ssc.Container.Name));
@@ -322,7 +386,8 @@ public sealed class WorkspaceStoreContentTests(AzuriteFixture azurite)
         var names = await ContentNamesAsync(familyId, childId, ClassThree);
         Assert.Contains("refined/ssc3-maths/ssc3-maths-03.json", names);
         Assert.Contains("summaries/ssc3-maths/ssc3-maths-03.json", names);
-        Assert.Equal(SscClassThree.Length + 2, names.Length);
+        Assert.Contains("plans/ssc3-maths/ssc3-maths-03.plan.json", names);
+        Assert.Equal(SscClassThree.Length + 5, names.Length);
     }
 
     [Fact]
@@ -336,6 +401,9 @@ public sealed class WorkspaceStoreContentTests(AzuriteFixture azurite)
             {
                 await ncert.RemoveAsync("refined/cxyz1/cxyz102.json");
                 await ncert.RemoveAsync("summaries/cxyz1/cxyz102.json");
+                await ncert.RemoveAsync("plans/cxyz1/cxyz102.plan.json");
+                await ncert.RemoveAsync("plans/cxyz1/cxyz102/cxyz102-c1/video.mp4");
+                await ncert.RemoveAsync("plans/cxyz1/cxyz102/cxyz102-c1/poster.webp");
             }
         );
         var store = StoreOver(new BlobServiceClient(azurite.ConnectionString, OptionsWith(remove)).GetBlobContainerClient(ncert.Container.Name), null);
@@ -346,7 +414,7 @@ public sealed class WorkspaceStoreContentTests(AzuriteFixture azurite)
 
         await store.CopyContentAsync(familyId, childId, ClassThree, BoardType.Cbse, CancellationToken.None);
 
-        string[] expected = [.. NcertClassThree.Where(name => !name.EndsWith("cxyz102.json", StringComparison.Ordinal))];
+        string[] expected = [.. NcertClassThree.Where(name => !name.Contains("cxyz102", StringComparison.Ordinal))];
         Assert.Equal(expected, await ContentNamesAsync(familyId, childId, ClassThree));
     }
 
@@ -477,6 +545,12 @@ public sealed class WorkspaceStoreContentTests(AzuriteFixture azurite)
             "guidance/ssc3-evs12.json",
             "guidance/ssc4-maths.json",
             "manifest.json",
+            "plans/ssc3-evs12/ssc3-evs12-01.plan.json",
+            "plans/ssc3-evs12/ssc3-evs12-01/ssc3-evs12-01-c1/poster.webp",
+            "plans/ssc3-evs12/ssc3-evs12-01/ssc3-evs12-01-c1/video.mp4",
+            "plans/ssc4-maths/ssc4-maths-01.plan.json",
+            "plans/ssc4-maths/ssc4-maths-01/ssc4-maths-01-c1/poster.webp",
+            "plans/ssc4-maths/ssc4-maths-01/ssc4-maths-01-c1/video.mp4",
             "refined/ssc3-evs12/ssc3-evs12-01.json",
             "refined/ssc4-maths/ssc4-maths-01.json",
             "summaries/ssc3-evs12/ssc3-evs12-01.json",

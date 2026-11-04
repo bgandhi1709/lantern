@@ -12,6 +12,8 @@ contract; the file and folder names live in `ContentLayout`, and `ContentLayoutT
 | `catalog.json` | A JSON array with one object per Book | Yes |
 | `refined/{book_id}/{chapter_id}.json` | One refined Chapter: its Concepts and Q&A | Copied unchanged |
 | `summaries/{book_id}/{chapter_id}.json` | The Chapter summary; one for every refined file | Copied unchanged |
+| `plans/{book_id}/{chapter_id}.plan.json` | One Plan for every refined Chapter | Copied unchanged |
+| `plans/{book_id}/{chapter_id}/{concept_id}/video.mp4`, `poster.webp` | A Concept's video and poster | Copied unchanged |
 | `manifest/class-{N}.json` | The Class manifest for Class N | Copied as the slice's `manifest.json` |
 | `board.json` | The Board profile | SSC only (copied) |
 | `toc/{book_id}.json` | A Book's contents list | SSC only (copied) |
@@ -35,7 +37,7 @@ The other fields in the real catalogs (for example `board`, `subject`, `title`, 
 - A Book is built when `refined/{book_id}/` holds at least one file.
 - CBSE: a listed Book that is not built is skipped.
 - SSC: a listed Book that is not built is a broken master, and so is a missing `toc/`, `guidance/` or `board.json`.
-- Both Boards: a refined file with no summary of the same name is a broken master, and a Class with no built Book cannot
+- Both Boards: a refined file with no summary of the same name, or with no `plans/{book_id}/{chapter_id}.plan.json`, is a broken master (the error names the missing file), and a Class with no built Book cannot
   be copied.
 
 ## `manifest/class-{N}.json`

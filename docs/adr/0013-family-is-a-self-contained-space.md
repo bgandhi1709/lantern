@@ -21,10 +21,13 @@ family/{familyId}/{childId}/{class}/
     refined/<book>/<chapter>.json
     summaries/<book>/<chapter>.json
     guidance/<book>.json
+    plans/<book>/<chapter>.plan.json                       a Chapter's Plan (D130)
+    plans/<book>/<chapter>/<concept>/video.mp4             a Concept's video
+    plans/<book>/<chapter>/<concept>/poster.webp           and its poster
     version.json      the shared container's version the copy came from, written LAST
 ```
 
-Only JSON the runtime reads is copied. `text`, `chapters`, `drafts`, `bundles` and `pictures` are build intermediates; Lantern has no picture-based questions yet, so figures stay out. Adding `pictures/` later is one change to the copy list. The copy is byte-for-byte, so D50's cached prompt prefix still matches across Families.
+What the runtime reads is copied: the JSON, and each Chapter's Plan with the video and poster of its Concepts (D130). `text`, `chapters`, `drafts`, `bundles` and `pictures` are build intermediates; Lantern has no picture-based questions yet, so figures stay out. Adding `pictures/` later is one change to the copy list. The copy is byte-for-byte, so D50's cached prompt prefix still matches across Families.
 
 `content/version.json` is the readiness marker. Its absence means the slice is not ready. `class.json` keeps meaning only "the folder exists".
 
@@ -35,11 +38,11 @@ The two masters differ, checked against UAT's `ncert` and `ssc`, so each Board h
 | | NCERT (CBSE) | SSC |
 |---|---|---|
 | Books | catalog entries of the Class that have refined Chapters (Class 3: 3 of 97 entries; NCERT lists every Book in every medium and builds only some) | catalog entries of the Class (the catalog holds only built Books; one with no refined content fails the copy) |
-| Per Book, required | `refined/{book}/*`, and a `summaries` file for every refined Chapter | the same, plus `toc/{book}.json` and `guidance/{book}.json` |
+| Per Book, required | `refined/{book}/*`, a `summaries` file and a `plans/{book}/{chapter}.plan.json` for every refined Chapter, and everything else under `plans/{book}/` (the Concepts' videos and posters) | the same, plus `toc/{book}.json` and `guidance/{book}.json` |
 | Once, required | trimmed `catalog.json` | `board.json` and the trimmed `catalog.json` |
 | Never expected | `board.json`, `toc`, `guidance` (NCERT has none; a stray one is not copied) | none |
 
-For both: a missing required file, or a Class with no built Book, fails the copy and writes no `version.json`; the trimmed catalog keeps each entry as the master has it; the slice equals what the master holds for those Books, not the catalog's declared Chapter range (NCERT `jewe2` declares 9 Chapters and 7 are built). Class 3 on UAT: NCERT 78 blobs (about 403 KB), SSC 97 (about 646 KB).
+For both: a missing required file, or a Class with no built Book, fails the copy and writes no `version.json`; the trimmed catalog keeps each entry as the master has it; the slice equals what the master holds for those Books, not the catalog's declared Chapter range (NCERT `jewe2` declares 9 Chapters and 7 are built). Class 3 with the Plans (D130), measured on a copy of UAT's masters: NCERT 466 blobs (about 24.6 MB), SSC 604 (about 32.8 MB).
 
 ## How the slice is made
 
@@ -47,7 +50,7 @@ One action, one handler. `create-workspace` (ADR-0004) gains steps: create the f
 
 A Child's Class is fixed for now: the API already refuses to edit it, and moving a Child to a new Class is not built. If it is built, it re-enters through the same action with the new Class, so the old Class folder and its slice stay and History keeps pointing at what it was written against; that is a later decision, not made here.
 
-The copy reads each file whole and writes it as one Put Blob. A Class is at most about 1.2 MB in at most 150 files (measured on UAT's `ncert` and `ssc`), so a server-side copy would save nothing and add authorisation to get right; whole files also keep two copies of one file at once from colliding, which a streamed upload in blocks does not (found by a test). A retry recopies every file, with no per-file tracking.
+The copy reads each file whole and writes it as one Put Blob. A Class is at most about 44 MB in about 750 files (NCERT Class 4, measured on a copy of UAT's `ncert` and `ssc`; the largest single file is 306 KB, and most of the bytes are the Plans' videos), so a server-side copy would save nothing and add authorisation to get right; whole files also keep two copies of one file at once from colliding, which a streamed upload in blocks does not (found by a test). A retry recopies every file, with no per-file tracking.
 
 ### Concurrency
 
@@ -77,3 +80,7 @@ Considered and rejected: a whole-Board copy per Family (bytes no Child reads), o
 ## Amended by ADR-0014
 
 The copy list gains one required file for both Boards, `manifest/class-{N}.json`, copied as `content/manifest.json`. The Family manifest (`family/{familyId}/manifest.json`) is a derived index kept beside the slices; it does not replace `content/version.json` as the readiness marker, and it changes nothing else here.
+
+## Amended by D130
+
+The Content slice also holds every Chapter's Plan and the videos and posters of its Concepts, copied whole from `plans/{book}/` under the rules in the table above. A refined Chapter with no `plans/{book}/{chapter}.plan.json` is a broken master, like a missing summary: the copy fails, names the missing file and writes no `version.json`. The copy does not open a Plan, so a `video` that names a file the master lacks is not caught here. This replaces "only JSON is copied" and the 1.2 MB, 150 file figures; the rest of the decision, including whole-file Put Blob copies and the in-flight cap, stands. On a copy of UAT's masters a Class 5 slice (SSC, 738 files, 37.8 MB) took about 2 seconds and the largest (NCERT Class 4) about 4 seconds, well inside the queue's five-minute lock.

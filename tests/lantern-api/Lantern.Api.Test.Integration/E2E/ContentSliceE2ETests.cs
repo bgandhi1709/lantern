@@ -103,11 +103,16 @@ public sealed class ContentSliceE2ETests
     private static async Task<string> ManifestAsync(Guid familyId) =>
         (await new BlobServiceClient(AzuriteBlobs).GetBlobContainerClient("family").GetBlobClient($"{familyId:D}/manifest.json").DownloadContentAsync()).Value.Content.ToString();
 
-    // What a Child of this Class gets from the stack's NCERT container: its one built Book, nothing of the unbuilt Hindi Book.
     private static string[] NcertSlice(int classLevel) =>
     [
         "catalog.json",
         "manifest.json",
+        $"plans/nbk{classLevel}1/nbk{classLevel}101.plan.json",
+        $"plans/nbk{classLevel}1/nbk{classLevel}101/nbk{classLevel}101-c1/poster.webp",
+        $"plans/nbk{classLevel}1/nbk{classLevel}101/nbk{classLevel}101-c1/video.mp4",
+        $"plans/nbk{classLevel}1/nbk{classLevel}102.plan.json",
+        $"plans/nbk{classLevel}1/nbk{classLevel}102/nbk{classLevel}102-c1/poster.webp",
+        $"plans/nbk{classLevel}1/nbk{classLevel}102/nbk{classLevel}102-c1/video.mp4",
         $"refined/nbk{classLevel}1/nbk{classLevel}101.json",
         $"refined/nbk{classLevel}1/nbk{classLevel}102.json",
         $"summaries/nbk{classLevel}1/nbk{classLevel}101.json",
@@ -115,7 +120,6 @@ public sealed class ContentSliceE2ETests
         "version.json",
     ];
 
-    // The stack's SSC container: board.json, and for each of the Class's two Books a toc, guidance, refined and summaries.
     private static string[] SscSlice(int classLevel) =>
     [
         "board.json",
@@ -123,6 +127,12 @@ public sealed class ContentSliceE2ETests
         $"guidance/sbk{classLevel}-english.json",
         $"guidance/sbk{classLevel}-maths.json",
         "manifest.json",
+        $"plans/sbk{classLevel}-english/sbk{classLevel}-english-01.plan.json",
+        $"plans/sbk{classLevel}-english/sbk{classLevel}-english-01/sbk{classLevel}-english-01-c1/poster.webp",
+        $"plans/sbk{classLevel}-english/sbk{classLevel}-english-01/sbk{classLevel}-english-01-c1/video.mp4",
+        $"plans/sbk{classLevel}-maths/sbk{classLevel}-maths-01.plan.json",
+        $"plans/sbk{classLevel}-maths/sbk{classLevel}-maths-01/sbk{classLevel}-maths-01-c1/poster.webp",
+        $"plans/sbk{classLevel}-maths/sbk{classLevel}-maths-01/sbk{classLevel}-maths-01-c1/video.mp4",
         $"refined/sbk{classLevel}-english/sbk{classLevel}-english-01.json",
         $"refined/sbk{classLevel}-maths/sbk{classLevel}-maths-01.json",
         $"summaries/sbk{classLevel}-english/sbk{classLevel}-english-01.json",
