@@ -183,7 +183,7 @@ public sealed class ContentSliceTests(AzuriteFixture azurite) : IDisposable
         Assert.Equal(ApiBoardMasters.NcertSlice(7), await SliceAsync(family.FamilyId, family.Children[0].ChildId, 7));
         Assert.Empty(await PendingAsync(family.FamilyId, family.Children));
         var action = new CreateWorkspacePayload(family.FamilyId, family.Children[0].ChildId, 7).ActionId();
-        Assert.Equal("create-workspace", Assert.Single(await Actions.QueryAsync<TableEntity>(row => row.PartitionKey == nameof(ActionType.CreateWorkspace) && row.RowKey == action).ToListAsync()).GetString("DoneBy"));
+        Assert.Equal("create-workspace", StorageProbe.DoneBy(Assert.Single(await Actions.QueryAsync<TableEntity>(row => row.PartitionKey == nameof(ActionType.CreateWorkspace) && row.RowKey == action).ToListAsync())));
     }
 
     [Fact]

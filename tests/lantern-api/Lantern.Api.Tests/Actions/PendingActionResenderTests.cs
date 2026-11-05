@@ -23,7 +23,7 @@ public sealed class PendingActionResenderTests
     {
         var message = new ActionMessage("id", ActionType.RemoveWorkspace, "{}", traceParent);
         var ledger = new Mock<IActionLedger>();
-        ledger.Setup(l => l.UnsentSinceAsync(It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>())).ReturnsAsync([message]);
+        ledger.Setup(l => l.ResendableAsync(It.IsAny<DateTimeOffset>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>())).ReturnsAsync([message]);
         var started = new List<Activity>();
         using var listener = new ActivityListener
         {
@@ -35,7 +35,7 @@ public sealed class PendingActionResenderTests
         var resender = new PendingActionResender(
             ledger.Object,
             Mock.Of<IActionPublisher>(),
-            Options.Create(new ActionOptions { Exchange = "exchange", ResendAfter = TimeSpan.FromMinutes(5) }),
+            Options.Create(new ActionOptions { Exchange = "exchange", ResendAfter = TimeSpan.FromMinutes(5), ResendConfirmedAfter = TimeSpan.FromHours(1) }),
             TimeProvider.System,
             NullLogger<PendingActionResender>.Instance
         );
@@ -48,15 +48,15 @@ public sealed class PendingActionResenderTests
     }
 
     [Fact]
-    public async Task RunOnceAsync_RemovesRowsASubscriberFinishedOnceTheyAreOlderThanDoneExpiry_ThenResendsTheRest()
+    public async Task RunOnceAsync_RemovesRowsASubscriberFinishedOnceTheyAreOlderThanDoneExpiry_ThenAsksForTheRowsToResendWithBothThresholds()
     {
         var clock = new TestClock();
         var ledger = new Mock<IActionLedger>();
-        ledger.Setup(l => l.UnsentSinceAsync(It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>())).ReturnsAsync([]);
+        ledger.Setup(l => l.ResendableAsync(It.IsAny<DateTimeOffset>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>())).ReturnsAsync([]);
         var resender = new PendingActionResender(
             ledger.Object,
             Mock.Of<IActionPublisher>(),
-            Options.Create(new ActionOptions { Exchange = "exchange", ResendAfter = TimeSpan.FromMinutes(5), DoneExpiry = TimeSpan.FromHours(12) }),
+            Options.Create(new ActionOptions { Exchange = "exchange", ResendAfter = TimeSpan.FromMinutes(5), ResendConfirmedAfter = TimeSpan.FromHours(1), DoneExpiry = TimeSpan.FromHours(12) }),
             clock,
             NullLogger<PendingActionResender>.Instance
         );
@@ -64,5 +64,9 @@ public sealed class PendingActionResenderTests
         await resender.RunOnceAsync(CancellationToken.None);
 
         ledger.Verify(l => l.ExpireDoneAsync(clock.GetUtcNow() - TimeSpan.FromHours(12), It.IsAny<CancellationToken>()), Times.Once);
+        ledger.Verify(
+            l => l.ResendableAsync(clock.GetUtcNow() - TimeSpan.FromMinutes(5), clock.GetUtcNow() - TimeSpan.FromHours(1), It.IsAny<CancellationToken>()),
+            Times.Once
+        );
     }
 }

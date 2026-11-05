@@ -159,7 +159,7 @@ HTTP ─▶ Controller ─▶ (Interactor) ─▶ Service ─▶ Repository / St
   handed it (`EnsureValid(layout.ClassManifestSchema)`). Tests that pin the real names write them as literals on purpose.
 - Not for environment values (those are Options) and not for fixed sets of values (those are enums).
 
-**Ledger** (`IActionLedger`): the record of accepted events. A subscriber records its done marker on the row; a row with a marker expires after `Actions:DoneExpiry`, and a row without one is resent when the API starts (D132).
+**Ledger** (`IActionLedger`): the record of accepted events. A subscriber records its done marker on the row; a row with a marker expires after `Actions:DoneExpiry`. A row without one is resent when the API starts: after `Actions:ResendAfter` if the broker never confirmed it (`ConfirmedAt` is empty), after `Actions:ResendConfirmedAfter` if it did (D132, D133).
 
 **Action types** (`Actions/`)
 - `ActionType`: the enum of events, each with a kebab-case wire name (`create-workspace`). **(tested: pinned)**
@@ -225,7 +225,7 @@ constant, so every enum lives in `Lantern.Core.Constants`. Never a static class 
   no class, method or comment names a copy's file list that. Not a Manifest either: these were called `ContentManifest` and
   `BookManifest` until ADR-0014 gave that word to the derived documents in Core.
 
-**Ledger** (`ActionLedger`): the action ledger's table operations. `DoneBy` is a comma-separated list of subscriber names, changed with an ETag check and a retry on 412.
+**Ledger** (`ActionLedger`): the action ledger's table operations. `DoneBy` is a comma-separated list of subscriber names, changed with an ETag check and a retry on 412; `ConfirmedAt` is set with `LastSentAt` when the broker confirms a publish.
 
 **Progress repository** (`ProgressRepository`, no base class): the `progress` table's operations, for the rows that are not one per id: a Chapter's summary, Attempt and Check rows (ADR-0016). Like `ActionLedger` it is purpose-built, and it is the only holder of those three entities. Each change is one table transaction in the Family partition, retried when a race is lost.
 

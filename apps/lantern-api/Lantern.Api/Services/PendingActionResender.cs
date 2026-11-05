@@ -36,10 +36,11 @@ internal sealed class PendingActionResender(
 
     internal async Task RunOnceAsync(CancellationToken cancellationToken)
     {
-        await ledger.ExpireDoneAsync(clock.GetUtcNow() - options.Value.DoneExpiry, cancellationToken);
+        var now = clock.GetUtcNow();
+        await ledger.ExpireDoneAsync(now - options.Value.DoneExpiry, cancellationToken);
 
         await Parallel.ForEachAsync(
-            await ledger.UnsentSinceAsync(clock.GetUtcNow() - options.Value.ResendAfter, cancellationToken),
+            await ledger.ResendableAsync(now - options.Value.ResendAfter, now - options.Value.ResendConfirmedAfter, cancellationToken),
             new ParallelOptions { MaxDegreeOfParallelism = MaxParallelSends, CancellationToken = cancellationToken },
             async (message, token) =>
             {

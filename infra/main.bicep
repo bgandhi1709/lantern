@@ -65,6 +65,9 @@ param codeLimits {
 @description('How long an action may go unsent before the API resends it on start, as a .NET TimeSpan (hh:mm:ss).')
 param actionResendAfter string
 
+@description('How long an action the broker confirmed may stay unfinished before the API resends it on start, as a .NET TimeSpan (hh:mm:ss). Longer than actionResendAfter, so a restart does not republish a backlog that is still draining.')
+param actionResendConfirmedAfter string
+
 @description('How long a row a subscriber finished stays in the action ledger, as a .NET TimeSpan (hh:mm:ss). Keep it longer than the retry limit of any subscriber, or a late retry finds no row and does nothing.')
 param actionDoneExpiry string
 
@@ -312,6 +315,7 @@ resource app 'Microsoft.App/containerApps@2025-01-01' = {
             { name: 'Email__ConnectionString', secretRef: acsSecret.name }
             { name: 'Email__Sender', value: 'DoNotReply@${emailDomain.properties.mailFromSenderDomain}' }
             { name: 'Actions__ResendAfter', value: actionResendAfter }
+            { name: 'Actions__ResendConfirmedAfter', value: actionResendConfirmedAfter }
             { name: 'Actions__DoneExpiry', value: actionDoneExpiry }
             { name: 'APPLICATIONINSIGHTS_CONNECTION_STRING', secretRef: insightsSecret.name }
             { name: 'OTEL_SERVICE_NAME', value: 'lantern-api' }

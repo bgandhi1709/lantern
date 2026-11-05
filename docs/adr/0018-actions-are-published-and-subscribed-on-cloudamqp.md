@@ -70,6 +70,13 @@ finished is resent as before. The expiry must stay longer than any subscriber's 
 and silently does nothing, so #178's limit is 12 hours, not one day. The "ledger works as today, one subscriber per key"
 of the cutover no longer applies.
 
+**Amended 2026-11-05 (#177, D133): the ledger records when the broker confirmed a publish.** A row carries `ConfirmedAt`,
+set when the publisher confirm returns. The API's start-up job resends a row nobody finished when it was never confirmed
+and is older than `ResendAfter`, or when it was confirmed and was last sent more than `ResendConfirmedAfter` ago (an hour
+in UAT). Without the second wait, every start republished the whole backlog; with it, a row is republished at most once an
+hour, and an action parked for a bug is still retried by a later start. A request repeated after its row expired records
+a fresh row and every subscriber runs again, which is safe because every Function is safe to repeat.
+
 Considered and rejected: Service Bus Standard topics now (about ₹880 a month for no consumer beyond today's), keeping the
 dispatcher (boilerplate in the way of every new subscriber), importing the topology as one definitions file (refused by the
 vhost user), and declaring the topology from the apps at start (it puts infrastructure code in the API and the Functions

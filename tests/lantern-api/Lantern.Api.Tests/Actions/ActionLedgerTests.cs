@@ -37,24 +37,24 @@ public sealed class ActionLedgerTests(AzuriteFixture azurite)
 
         await Ledger.RecordAsync(Message("t") with { TraceParent = traceParent }, T0, CancellationToken.None);
 
-        var stale = Assert.Single(await Ledger.UnsentSinceAsync(T0, CancellationToken.None));
+        var stale = Assert.Single(await Resendable(T0, T0));
         Assert.Equal(traceParent, stale.TraceParent);
     }
 
     [Fact]
     public async Task IsPendingAsync_IsTrueForASubscriberFromRecordUntilItsOwnMarker_AndMarkingIsRepeatable()
     {
-        Assert.False(await IsPending("x", "plan"));
+        Assert.False(await IsPendingAsync("x", "plan"));
 
         await Ledger.RecordAsync(Message("x"), T0, CancellationToken.None);
-        Assert.True(await IsPending("x", "plan"));
-        Assert.True(await IsPending("x", "remove-workspace"));
+        Assert.True(await IsPendingAsync("x", "plan"));
+        Assert.True(await IsPendingAsync("x", "remove-workspace"));
 
         await Ledger.MarkDoneAsync(ActionType.RemoveWorkspace, "x", "remove-workspace", CancellationToken.None);
         await Ledger.MarkDoneAsync(ActionType.RemoveWorkspace, "x", "remove-workspace", CancellationToken.None);
 
-        Assert.False(await IsPending("x", "remove-workspace"));
-        Assert.True(await IsPending("x", "plan"));
+        Assert.False(await IsPendingAsync("x", "remove-workspace"));
+        Assert.True(await IsPendingAsync("x", "plan"));
     }
 
     [Fact]
@@ -70,7 +70,7 @@ public sealed class ActionLedgerTests(AzuriteFixture azurite)
 
         for (var i = 0; i < 6; i++)
         {
-            Assert.False(await IsPending("x", $"subscriber-{i}"));
+            Assert.False(await IsPendingAsync("x", $"subscriber-{i}"));
         }
     }
 
@@ -83,13 +83,13 @@ public sealed class ActionLedgerTests(AzuriteFixture azurite)
     }
 
     [Fact]
-    public async Task UnsentSinceAsync_NeverReturnsARowASubscriberFinished()
+    public async Task ResendableAsync_NeverReturnsARowASubscriberFinished()
     {
         await Ledger.RecordAsync(Message("done"), T0, CancellationToken.None);
         await Ledger.RecordAsync(Message("nobody"), T0, CancellationToken.None);
         await Ledger.MarkDoneAsync(ActionType.RemoveWorkspace, "done", "remove-workspace", CancellationToken.None);
 
-        var stale = await Ledger.UnsentSinceAsync(T0.AddMinutes(5), CancellationToken.None);
+        var stale = await Resendable(T0.AddMinutes(5), T0.AddMinutes(5));
 
         Assert.Equal([Message("nobody")], stale);
     }
@@ -110,21 +110,54 @@ public sealed class ActionLedgerTests(AzuriteFixture azurite)
         Assert.Equal(["old-nobody", "recent-done"], kept);
     }
 
-    private async Task<bool> IsPending(string id, string subscriber) =>
+    private Task<IReadOnlyList<ActionMessage>> Resendable(DateTimeOffset unconfirmedBefore, DateTimeOffset confirmedBefore) =>
+        Ledger.ResendableAsync(unconfirmedBefore, confirmedBefore, CancellationToken.None);
+
+    private async Task<bool> IsPendingAsync(string id, string subscriber) =>
         await Ledger.IsPendingAsync(ActionType.RemoveWorkspace, id, subscriber, CancellationToken.None);
 
     [Fact]
-    public async Task UnsentSinceAsync_ReturnsOnlyActionsNotSentSinceTheCutoff_AndMarkSentMovesThemOut()
+    public async Task ResendableAsync_ReturnsOnlyActionsNotSentSinceTheCutoff_AndMarkSentMovesThemOut()
     {
         await Ledger.RecordAsync(Message("old"), T0, CancellationToken.None);
         await Ledger.RecordAsync(Message("new"), T0.AddMinutes(10), CancellationToken.None);
 
-        var stale = await Ledger.UnsentSinceAsync(T0.AddMinutes(5), CancellationToken.None);
+        var stale = await Resendable(T0.AddMinutes(5), T0.AddMinutes(5));
         await Ledger.MarkSentAsync(ActionType.RemoveWorkspace, "old", T0.AddMinutes(11), CancellationToken.None);
-        var after = await Ledger.UnsentSinceAsync(T0.AddMinutes(5), CancellationToken.None);
+        var after = await Resendable(T0.AddMinutes(5), T0.AddMinutes(5));
 
         Assert.Equal([Message("old")], stale);
         Assert.Empty(after);
+    }
+
+    [Fact]
+    public async Task ResendableAsync_AnUnconfirmedRowWaitsTheShortThreshold_AConfirmedRowWaitsTheLongOne()
+    {
+        await Ledger.RecordAsync(Message("unconfirmed"), T0, CancellationToken.None);
+        await Ledger.RecordAsync(Message("confirmed"), T0, CancellationToken.None);
+        await Ledger.MarkSentAsync(ActionType.RemoveWorkspace, "confirmed", T0.AddMinutes(1), CancellationToken.None);
+
+        var tenMinutesIn = await Resendable(T0.AddMinutes(5), T0.AddMinutes(-50));
+        var twoHoursIn = await Resendable(T0.AddMinutes(115), T0.AddMinutes(60));
+
+        Assert.Equal([Message("unconfirmed")], tenMinutesIn);
+        Assert.Equal(["confirmed", "unconfirmed"], twoHoursIn.Select(message => message.Id).Order());
+    }
+
+    [Fact]
+    public async Task ARowWrittenBeforeDoneMarkersExisted_IsPendingResendableAndFinishable_ButNeverExpires()
+    {
+        await table.CreateIfNotExistsAsync();
+        await table.AddEntityAsync(new TableEntity(nameof(ActionType.RemoveWorkspace), "legacy") { ["Payload"] = "{}", ["LastSentAt"] = T0 });
+
+        Assert.True(await IsPendingAsync("legacy", "remove-workspace"));
+        Assert.Equal([Message("legacy")], await Resendable(T0.AddMinutes(5), T0.AddMinutes(5)));
+
+        await Ledger.MarkDoneAsync(ActionType.RemoveWorkspace, "legacy", "remove-workspace", CancellationToken.None);
+        await Ledger.ExpireDoneAsync(T0.AddDays(30), CancellationToken.None);
+
+        Assert.False(await IsPendingAsync("legacy", "remove-workspace"));
+        Assert.Single(await table.QueryAsync<TableEntity>().ToListAsync());
     }
 
     [Fact]

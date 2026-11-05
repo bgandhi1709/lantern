@@ -10,5 +10,7 @@ internal sealed class ActionEntity : TableEntityBase
 
     public DateTimeOffset LastSentAt { get; set; }
 
+    public DateTimeOffset? ConfirmedAt { get; set; }
+
     public string DoneBy { get; set; } = string.Empty;
 }

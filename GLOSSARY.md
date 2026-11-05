@@ -31,7 +31,7 @@ A person in a Family who attends school and whose learning the Parent supports. 
 _Avoid_: Kid, student, learner
 
 **Action**:
-Work Lantern does after a request has been answered, such as removing a Child's Workspace. The API records it, then publishes it once under its name (`remove-workspace`); the broker delivers it to every subscriber bound to that name, and each subscriber finishes its own part. Each subscriber records its own done marker on the action; an action nobody has finished stays recorded and Lantern sends it again when the API next starts, and one a subscriber finished is removed 12 hours after it was recorded.
+Work Lantern does after a request has been answered, such as removing a Child's Workspace. The API records it, then publishes it once under its name (`remove-workspace`); the broker delivers it to every subscriber bound to that name, and each subscriber finishes its own part. Each subscriber records its own done marker on the action; an action nobody has finished stays recorded and Lantern sends it again when the API next starts (at once if the broker never confirmed it, after an hour if it did), and one a subscriber finished is removed 12 hours after it was recorded.
 _Avoid_: Job, message (a message is only the copy on the wire)
 
 **Hard delete**:

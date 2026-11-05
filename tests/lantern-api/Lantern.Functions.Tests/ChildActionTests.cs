@@ -60,7 +60,7 @@ public sealed class ChildActionTests(AzuriteFixture azurite) : IDisposable
         Assert.Empty(await storage.BlobNamesAsync($"{family.FamilyId:D}/{gone.ChildId:D}/"));
         Assert.True(await storage.Blobs.GetBlobClient($"{family.FamilyId:D}/{kept.ChildId:D}/{kept.ClassLevel}/class.json").ExistsAsync());
         Assert.Empty(await storage.PendingRemoveWorkspaceLedgerAsync(family.FamilyId));
-        Assert.Equal("remove-workspace", Assert.Single(await storage.RemoveWorkspaceLedgerAsync(family.FamilyId)).GetString("DoneBy"));
+        Assert.Equal("remove-workspace", StorageProbe.DoneBy(Assert.Single(await storage.RemoveWorkspaceLedgerAsync(family.FamilyId))));
         Assert.Empty(await storage.Families.QueryAsync<TableEntity>(r => r.PartitionKey == storage.Keys.FamilyPartition(family.FamilyId) && r.RowKey == storage.Keys.ChildRowKey(gone.ChildId)).ToListAsync());
     }
 

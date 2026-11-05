@@ -1,8 +1,11 @@
+using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using Lantern.Core.Actions;
 using Lantern.Core.Constants;
 using Lantern.Core.Repository;
 using Lantern.Core.Service;
+using Lantern.Functions.Tests.Infrastructure;
 using Moq;
 
 namespace Lantern.Functions.Tests;
@@ -41,24 +44,30 @@ public sealed class ActionFunctionTests
     public async Task RunAsync_ABodyThatIsNotAnAction_Throws_SoTheBrokerParksIt(string body) =>
         await Assert.ThrowsAnyAsync<JsonException>(() => function.RunAsync(body, CancellationToken.None));
 
+    [Fact]
+    public void EverySubscriberFunction_HasItsOwnName()
+    {
+        var functions = typeof(RemoveWorkspaceFunction)
+            .Assembly.GetTypes()
+            .Where(type => !type.IsAbstract && Inherits(type, typeof(ActionFunction<>)))
+            .ToList();
+
+        var names = functions.Select(NameOf).ToList();
+
+        Assert.True(functions.Count >= 3);
+        Assert.Equal(names.Count, names.Distinct().Count());
+    }
+
+    private static bool Inherits(Type type, Type definition) =>
+        type.BaseType is { } parent && ((parent.IsGenericType && parent.GetGenericTypeDefinition() == definition) || Inherits(parent, definition));
+
+    private static string NameOf(Type function)
+    {
+        var subscriber = function.GetProperty("Subscriber", BindingFlags.Instance | BindingFlags.NonPublic)!;
+
+        return (string)subscriber.GetValue(RuntimeHelpers.GetUninitializedObject(function))!;
+    }
+
     private static string Body(string payload) =>
         new JsonService().Serialize(new ActionMessage("id", ActionType.RemoveWorkspace, payload));
-
-    private sealed class Payload
-    {
-        public string FamilyId { get; set; } = string.Empty;
-    }
-
-    private sealed class RecordingFunction(IActionLedger ledger) : ActionFunction<Payload>(ledger, new JsonService())
-    {
-        public int Handled { get; private set; }
-
-        public Task RunAsync(string body, CancellationToken cancellationToken) => ExecuteAsync(body, cancellationToken);
-
-        protected override Task HandleAsync(Payload payload, CancellationToken cancellationToken)
-        {
-            Handled++;
-            return Task.CompletedTask;
-        }
-    }
 }

@@ -9,16 +9,13 @@ public abstract class ActionFunction<TPayload>(IActionLedger ledger, IJsonServic
 {
     private const string ClassSuffix = "Function";
 
-    public string Subscriber
-    {
-        get
-        {
-            var name = GetType().Name;
-            name = name.EndsWith(ClassSuffix, StringComparison.Ordinal) ? name[..^ClassSuffix.Length] : name;
+    protected string Subscriber => ToKebabCase(WithoutSuffix(GetType().Name));
 
-            return string.Concat(name.Select((letter, index) => index > 0 && char.IsUpper(letter) ? $"-{char.ToLowerInvariant(letter)}" : char.ToLowerInvariant(letter).ToString()));
-        }
-    }
+    private static string WithoutSuffix(string className) =>
+        className.EndsWith(ClassSuffix, StringComparison.Ordinal) ? className[..^ClassSuffix.Length] : className;
+
+    private static string ToKebabCase(string name) =>
+        string.Concat(name.Select((letter, index) => index > 0 && char.IsUpper(letter) ? $"-{char.ToLowerInvariant(letter)}" : char.ToLowerInvariant(letter).ToString()));
 
     protected async Task ExecuteAsync(string body, CancellationToken cancellationToken)
     {
