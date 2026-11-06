@@ -14,4 +14,10 @@ public sealed class ActionQueueOptions
 
     [Required]
     public string RemoveFamilyQueue { get; set; } = string.Empty;
+
+    [Required]
+    public string ParkingQueue { get; set; } = string.Empty;
+
+    [Range(1, 1000)]
+    public int RetryLimit { get; set; }
 }

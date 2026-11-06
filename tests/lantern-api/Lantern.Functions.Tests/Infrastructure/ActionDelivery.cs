@@ -19,9 +19,9 @@ public static class ActionDelivery
         await (
             action.Type switch
             {
-                ActionType.RemoveWorkspace => provider.GetRequiredService<RemoveWorkspaceFunction>().RunAsync(body, cancellationToken),
-                ActionType.CreateWorkspace => provider.GetRequiredService<CreateWorkspaceFunction>().RunAsync(body, cancellationToken),
-                ActionType.RemoveFamily => provider.GetRequiredService<RemoveFamilyFunction>().RunAsync(body, cancellationToken),
+                ActionType.RemoveWorkspace => provider.GetRequiredService<RemoveWorkspaceFunction>().RunAsync(body, DeliveryContext.AfterCycles(0), cancellationToken),
+                ActionType.CreateWorkspace => provider.GetRequiredService<CreateWorkspaceFunction>().RunAsync(body, DeliveryContext.AfterCycles(0), cancellationToken),
+                ActionType.RemoveFamily => provider.GetRequiredService<RemoveFamilyFunction>().RunAsync(body, DeliveryContext.AfterCycles(0), cancellationToken),
                 _ => throw new ArgumentOutOfRangeException(nameof(action)),
             }
         );

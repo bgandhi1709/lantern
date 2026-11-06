@@ -27,6 +27,9 @@ param actions = {
   createWorkspaceQueue: 'create-workspace'
   removeWorkspaceQueue: 'remove-workspace'
   removeFamilyQueue: 'remove-family'
+  parkingQueue: 'parking'
+  retryDelaySeconds: 300
+  retryLimit: 143
 }
 
 param apiSize = {

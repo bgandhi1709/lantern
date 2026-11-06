@@ -33,9 +33,8 @@ runs it before the Bicep deployment; the exchange and queue names are also `bice
 test fails if a queue is missing for an action type.
 
 **Failure and retry.** The Functions extension retries a failed message itself, five times at once, not configurable, then
-rejects it to the dead-letter exchange, which parks it. A parked action keeps its ledger row, so the API's resend on start
-still finishes a delete (ADR-0003). The 5-minute delay queue, the limit counted from `x-death` and the alert on `parking`
-come in #178.
+rejects it to the dead-letter exchange, which, since #178, routes it to a 5-minute delay queue and back (see the amendment below). A parked action keeps its
+ledger row, so the API's resend on start still finishes a delete (ADR-0003).
 
 **The one secret.** The broker URL holds a password, so it is the Key Vault secret `amqp-url`, referenced by both
 Container Apps through a secret ref. This reverses ADR-0004's "no connection string exists in Azure" for this one
@@ -76,6 +75,12 @@ and is older than `ResendAfter`, or when it was confirmed and was last sent more
 in UAT). Without the second wait, every start republished the whole backlog; with it, a row is republished at most once an
 hour, and an action parked for a bug is still retried by a later start. A request repeated after its row expired records
 a fresh row and every subscriber runs again, which is safe because every Function is safe to repeat.
+
+**Amended 2026-11-06 (#178, D135): retry with a delay, then park.** Each work queue dead-letters to its own delay queue,
+which returns the message to the work queue after `retryDelaySeconds` (a `bicepparam` value). The Function counts the cycles from `x-death`
+and, past `Actions__RetryLimit` (checked before the body is decoded), publishes the message to `parking` and returns, so the ledger row stays for the
+hourly resend. The limit times the delay stays under `Actions__DoneExpiry`. The alarm on `parking` is a CloudAMQP
+queue alarm, not Bicep: Azure Monitor cannot see a CloudAMQP queue depth.
 
 Considered and rejected: Service Bus Standard topics now (about ₹880 a month for no consumer beyond today's), keeping the
 dispatcher (boilerplate in the way of every new subscriber), importing the topology as one definitions file (refused by the

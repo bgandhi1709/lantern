@@ -22,6 +22,7 @@
   <ItemGroup>
     <None Update="appsettings.Testing.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\..\infra\topology.json" Link="topology.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\..\infra\params\lantern.uat.bicepparam" Link="lantern.uat.bicepparam" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>
