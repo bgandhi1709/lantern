@@ -52,15 +52,33 @@ public sealed class ChildActionTests(AzuriteFixture azurite) : IDisposable
 
         await caller.Children.RemoveAsync(gone.ChildId, CancellationToken.None);
 
-        Assert.Single(await storage.RemoveWorkspaceLedgerAsync(family.FamilyId));
+        Assert.Single(await storage.PendingRemoveWorkspaceLedgerAsync(family.FamilyId));
         Assert.True(await storage.Blobs.GetBlobClient($"{family.FamilyId:D}/{gone.ChildId:D}/{gone.ClassLevel}/class.json").ExistsAsync());
 
         await host.DeliverAsync();
 
         Assert.Empty(await storage.BlobNamesAsync($"{family.FamilyId:D}/{gone.ChildId:D}/"));
         Assert.True(await storage.Blobs.GetBlobClient($"{family.FamilyId:D}/{kept.ChildId:D}/{kept.ClassLevel}/class.json").ExistsAsync());
-        Assert.Empty(await storage.RemoveWorkspaceLedgerAsync(family.FamilyId));
+        Assert.Empty(await storage.PendingRemoveWorkspaceLedgerAsync(family.FamilyId));
+        Assert.Equal("remove-workspace", StorageProbe.DoneBy(Assert.Single(await storage.RemoveWorkspaceLedgerAsync(family.FamilyId))));
         Assert.Empty(await storage.Families.QueryAsync<TableEntity>(r => r.PartitionKey == storage.Keys.FamilyPartition(family.FamilyId) && r.RowKey == storage.Keys.ChildRowKey(gone.ChildId)).ToListAsync());
+    }
+
+    [Fact]
+    public async Task Delete_TheSameMessageDeliveredAtOnce_EndsAsIfDeliveredOnce_AndLeavesTheSiblingAlone()
+    {
+        using var caller = host.Caller(NewUid());
+        var family = await RegisteredAsync(caller);
+        var (gone, kept) = (family.Children[0], family.Children[1]);
+        await PlainWorkspaceStore.Over(storage.Blobs, createContainer: false).CreateAsync(family.FamilyId, gone.ChildId, 6, CancellationToken.None);
+        await caller.Children.RemoveAsync(gone.ChildId, CancellationToken.None);
+
+        await Task.WhenAll(Enumerable.Range(0, 4).Select(_ => host.Services.DeliverAsync(Removals[0])));
+
+        Assert.Empty(await storage.BlobNamesAsync($"{family.FamilyId:D}/{gone.ChildId:D}/"));
+        Assert.True(await storage.Blobs.GetBlobClient($"{family.FamilyId:D}/{kept.ChildId:D}/{kept.ClassLevel}/class.json").ExistsAsync());
+        Assert.Empty(await storage.PendingRemoveWorkspaceLedgerAsync(family.FamilyId));
+        Assert.Single((await caller.Families.MeAsync(CancellationToken.None)).Children);
     }
 
     [Fact]
@@ -77,7 +95,7 @@ public sealed class ChildActionTests(AzuriteFixture azurite) : IDisposable
 
         Assert.Equal(LanternErrorCode.ChildNotFound, third.Code);
         Assert.Equal(2, Removals.Count);
-        Assert.Empty(await storage.RemoveWorkspaceLedgerAsync(family.FamilyId));
+        Assert.Empty(await storage.PendingRemoveWorkspaceLedgerAsync(family.FamilyId));
     }
 
     [Fact]
@@ -95,13 +113,13 @@ public sealed class ChildActionTests(AzuriteFixture azurite) : IDisposable
 
         await Assert.ThrowsAsync<RequestFailedException>(() => broken.Services.DeliverAsync(Removals[0]));
 
-        Assert.Single(await storage.RemoveWorkspaceLedgerAsync(family.FamilyId));
+        Assert.Single(await storage.PendingRemoveWorkspaceLedgerAsync(family.FamilyId));
         Assert.True(await storage.Families.GetEntityIfExistsAsync<TableEntity>(storage.Keys.FamilyPartition(family.FamilyId), storage.Keys.ChildRowKey(child.ChildId)) is { HasValue: true });
         Assert.NotEmpty(await storage.BlobNamesAsync($"{family.FamilyId:D}/{child.ChildId:D}/"));
 
         await host.DeliverAsync();
 
-        Assert.Empty(await storage.RemoveWorkspaceLedgerAsync(family.FamilyId));
+        Assert.Empty(await storage.PendingRemoveWorkspaceLedgerAsync(family.FamilyId));
         Assert.Empty(await storage.BlobNamesAsync($"{family.FamilyId:D}/{child.ChildId:D}/"));
     }
 
@@ -117,7 +135,7 @@ public sealed class ChildActionTests(AzuriteFixture azurite) : IDisposable
 
         await host.DeliverAsync();
 
-        Assert.Empty(await storage.RemoveWorkspaceLedgerAsync(family.FamilyId));
+        Assert.Empty(await storage.PendingRemoveWorkspaceLedgerAsync(family.FamilyId));
     }
 
     [Fact]
@@ -130,7 +148,7 @@ public sealed class ChildActionTests(AzuriteFixture azurite) : IDisposable
 
         await Task.WhenAll(host.Services.DeliverAsync(message), host.Services.DeliverAsync(message));
 
-        Assert.Empty(await storage.RemoveWorkspaceLedgerAsync(family.FamilyId));
+        Assert.Empty(await storage.PendingRemoveWorkspaceLedgerAsync(family.FamilyId));
         Assert.Empty(await storage.BlobNamesAsync($"{family.FamilyId:D}/{family.Children[0].ChildId:D}/"));
     }
 

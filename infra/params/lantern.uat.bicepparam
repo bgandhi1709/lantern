@@ -59,6 +59,8 @@ param codeLimits = {
 
 param emailDataLocation = 'India'
 param actionResendAfter = '00:05:00'
+param actionResendConfirmedAfter = '01:00:00'
+param actionDoneExpiry = '12:00:00'
 
 // Empty placeholder apps. The API release sets the real images and the API's port.
 param containerImage = readEnvironmentVariable('CONTAINER_IMAGE', 'mcr.microsoft.com/k8se/quickstart:latest')

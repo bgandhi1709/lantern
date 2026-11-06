@@ -45,13 +45,32 @@ public sealed class FamilyActionTests(AzuriteFixture azurite) : IDisposable
 
         Assert.Empty(await storage.ProfilesAsync(mine.FamilyId));
         Assert.Single(Erasures);
-        Assert.Single(await storage.LedgerAsync(ActionType.RemoveFamily, mine.FamilyId.ToString("N")));
+        Assert.Single(await storage.PendingLedgerAsync(ActionType.RemoveFamily, mine.FamilyId.ToString("N")));
 
         await host.DeliverAsync();
 
         Assert.Empty(await storage.FamilyRowsAsync(mine.FamilyId));
         Assert.Empty(await storage.BlobNamesAsync($"{mine.FamilyId:D}/"));
-        Assert.Empty(await storage.LedgerAsync(ActionType.RemoveFamily, mine.FamilyId.ToString("N")));
+        Assert.Empty(await storage.PendingLedgerAsync(ActionType.RemoveFamily, mine.FamilyId.ToString("N")));
+        Assert.Equal("remove-family", await storage.DoneByAsync(ActionType.RemoveFamily, mine.FamilyId.ToString("N")));
+        Assert.Equal(2, (await other.Families.MeAsync(CancellationToken.None)).Children.Count);
+        Assert.NotEmpty(await storage.BlobNamesAsync($"{theirs.FamilyId:D}/"));
+    }
+
+    [Fact]
+    public async Task Erase_TheSameMessageDeliveredAtOnce_EndsAsIfDeliveredOnce_AndLeavesAnotherFamilyAlone()
+    {
+        using var caller = host.Caller(NewUid());
+        using var other = host.Caller(NewUid());
+        var mine = await RegisteredAsync(caller);
+        var theirs = await RegisteredAsync(other);
+        await caller.EraseFamilyAsync();
+
+        await Task.WhenAll(Enumerable.Range(0, 4).Select(_ => host.Services.DeliverAsync(Erasures.Single())));
+
+        Assert.Empty(await storage.FamilyRowsAsync(mine.FamilyId));
+        Assert.Empty(await storage.BlobNamesAsync($"{mine.FamilyId:D}/"));
+        Assert.Empty(await storage.PendingLedgerAsync(ActionType.RemoveFamily, mine.FamilyId.ToString("N")));
         Assert.Equal(2, (await other.Families.MeAsync(CancellationToken.None)).Children.Count);
         Assert.NotEmpty(await storage.BlobNamesAsync($"{theirs.FamilyId:D}/"));
     }
@@ -86,12 +105,12 @@ public sealed class FamilyActionTests(AzuriteFixture azurite) : IDisposable
 
         await Assert.ThrowsAsync<RequestFailedException>(() => broken.Services.DeliverAsync(Erasures[0]));
 
-        Assert.Single(await storage.LedgerAsync(ActionType.RemoveFamily, family.FamilyId.ToString("N")));
+        Assert.Single(await storage.PendingLedgerAsync(ActionType.RemoveFamily, family.FamilyId.ToString("N")));
         Assert.NotEmpty(await storage.BlobNamesAsync($"{family.FamilyId:D}/"));
 
         await host.DeliverAsync();
 
-        Assert.Empty(await storage.LedgerAsync(ActionType.RemoveFamily, family.FamilyId.ToString("N")));
+        Assert.Empty(await storage.PendingLedgerAsync(ActionType.RemoveFamily, family.FamilyId.ToString("N")));
         Assert.Empty(await storage.BlobNamesAsync($"{family.FamilyId:D}/"));
         Assert.Empty(await storage.FamilyRowsAsync(family.FamilyId));
     }
@@ -105,7 +124,7 @@ public sealed class FamilyActionTests(AzuriteFixture azurite) : IDisposable
 
         await Task.WhenAll(host.Services.DeliverAsync(Erasures[0]), host.Services.DeliverAsync(Erasures[0]));
 
-        Assert.Empty(await storage.LedgerAsync(ActionType.RemoveFamily, family.FamilyId.ToString("N")));
+        Assert.Empty(await storage.PendingLedgerAsync(ActionType.RemoveFamily, family.FamilyId.ToString("N")));
         Assert.Empty(await storage.FamilyRowsAsync(family.FamilyId));
     }
 

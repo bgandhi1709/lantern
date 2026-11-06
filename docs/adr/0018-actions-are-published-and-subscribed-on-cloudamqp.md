@@ -62,6 +62,21 @@ the publishing service and the triggers.
 **Trace.** The Azure SDK no longer puts trace context on the message. The envelope still carries the trace parent; making
 one trace run from the request through the broker into the Function is #179, so until then the trace stops at the publish.
 
+**Amended 2026-11-04 (#177, D132): the ledger records a done marker per subscriber.** A row is no longer removed by the
+subscriber that finishes. Each subscriber appends its name (its Function class without `Function`, in kebab-case) to the
+row's `DoneBy` with an ETag check and skips an action whose row is gone or already lists it. A row with a marker is never
+resent and is deleted by the API's start-up one-shot once it is older than `Actions__DoneExpiry` (12 hours); a row nobody
+finished is resent as before. The expiry must stay longer than any subscriber's retry limit, or a late retry finds no row
+and silently does nothing, so #178's limit is 12 hours, not one day. The "ledger works as today, one subscriber per key"
+of the cutover no longer applies.
+
+**Amended 2026-11-05 (#177, D133): the ledger records when the broker confirmed a publish.** A row carries `ConfirmedAt`,
+set when the publisher confirm returns. The API's start-up job resends a row nobody finished when it was never confirmed
+and is older than `ResendAfter`, or when it was confirmed and was last sent more than `ResendConfirmedAfter` ago (an hour
+in UAT). Without the second wait, every start republished the whole backlog; with it, a row is republished at most once an
+hour, and an action parked for a bug is still retried by a later start. A request repeated after its row expired records
+a fresh row and every subscriber runs again, which is safe because every Function is safe to repeat.
+
 Considered and rejected: Service Bus Standard topics now (about ₹880 a month for no consumer beyond today's), keeping the
 dispatcher (boilerplate in the way of every new subscriber), importing the topology as one definitions file (refused by the
 vhost user), and declaring the topology from the apps at start (it puts infrastructure code in the API and the Functions

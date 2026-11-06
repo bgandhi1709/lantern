@@ -1,8 +1,11 @@
+using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using Lantern.Core.Actions;
 using Lantern.Core.Constants;
 using Lantern.Core.Repository;
 using Lantern.Core.Service;
+using Lantern.Functions.Tests.Infrastructure;
 using Moq;
 
 namespace Lantern.Functions.Tests;
@@ -15,14 +18,14 @@ public sealed class ActionFunctionTests
     public ActionFunctionTests() => function = new RecordingFunction(ledger.Object);
 
     [Fact]
-    public async Task RunAsync_APendingAction_RunsTheWork_ThenCompletesTheLedgerRow()
+    public async Task RunAsync_APendingAction_RunsTheWork_ThenRecordsItsDoneMarker()
     {
-        ledger.Setup(l => l.IsPendingAsync(ActionType.RemoveWorkspace, "id", It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        ledger.Setup(l => l.IsPendingAsync(ActionType.RemoveWorkspace, "id", "recording", It.IsAny<CancellationToken>())).ReturnsAsync(true);
 
         await function.RunAsync(Body("{\"familyId\":\"x\"}"), CancellationToken.None);
 
         Assert.Equal(1, function.Handled);
-        ledger.Verify(l => l.CompleteAsync(ActionType.RemoveWorkspace, "id", It.IsAny<CancellationToken>()), Times.Once);
+        ledger.Verify(l => l.MarkDoneAsync(ActionType.RemoveWorkspace, "id", "recording", It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -31,7 +34,7 @@ public sealed class ActionFunctionTests
         await function.RunAsync(Body("{}"), CancellationToken.None);
 
         Assert.Equal(0, function.Handled);
-        ledger.Verify(l => l.CompleteAsync(It.IsAny<ActionType>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        ledger.Verify(l => l.MarkDoneAsync(It.IsAny<ActionType>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Theory]
@@ -41,24 +44,30 @@ public sealed class ActionFunctionTests
     public async Task RunAsync_ABodyThatIsNotAnAction_Throws_SoTheBrokerParksIt(string body) =>
         await Assert.ThrowsAnyAsync<JsonException>(() => function.RunAsync(body, CancellationToken.None));
 
+    [Fact]
+    public void EverySubscriberFunction_HasItsOwnName()
+    {
+        var functions = typeof(RemoveWorkspaceFunction)
+            .Assembly.GetTypes()
+            .Where(type => !type.IsAbstract && Inherits(type, typeof(ActionFunction<>)))
+            .ToList();
+
+        var names = functions.Select(NameOf).ToList();
+
+        Assert.True(functions.Count >= 3);
+        Assert.Equal(names.Count, names.Distinct().Count());
+    }
+
+    private static bool Inherits(Type type, Type definition) =>
+        type.BaseType is { } parent && ((parent.IsGenericType && parent.GetGenericTypeDefinition() == definition) || Inherits(parent, definition));
+
+    private static string NameOf(Type function)
+    {
+        var subscriber = function.GetProperty("Subscriber", BindingFlags.Instance | BindingFlags.NonPublic)!;
+
+        return (string)subscriber.GetValue(RuntimeHelpers.GetUninitializedObject(function))!;
+    }
+
     private static string Body(string payload) =>
         new JsonService().Serialize(new ActionMessage("id", ActionType.RemoveWorkspace, payload));
-
-    private sealed class Payload
-    {
-        public string FamilyId { get; set; } = string.Empty;
-    }
-
-    private sealed class RecordingFunction(IActionLedger ledger) : ActionFunction<Payload>(ledger, new JsonService())
-    {
-        public int Handled { get; private set; }
-
-        public Task RunAsync(string body, CancellationToken cancellationToken) => ExecuteAsync(body, cancellationToken);
-
-        protected override Task HandleAsync(Payload payload, CancellationToken cancellationToken)
-        {
-            Handled++;
-            return Task.CompletedTask;
-        }
-    }
 }

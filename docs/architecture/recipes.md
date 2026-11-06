@@ -94,7 +94,8 @@ Work that runs after the request. The API publishes it once to the `lantern.acti
 7. **Tests.** A wire-name test, an API test that asserts the message sent (`factory.Sender.Sent`), a `Lantern.Functions.Tests` test that delivers it (`host.DeliverAsync()`), a
    redelivery or repeat test, and a failure-then-redelivery test.
 8. **A second subscriber to an existing action** is the same, without a new `ActionType`: its own Function and
-   queue bound to the same key. The publisher and the first subscriber do not change.
+   queue bound to the same key. The publisher and the first subscriber do not change. The Function's class name (without
+   `Function`, kebab-case) is its done marker on the ledger row, so it must differ from the first subscriber's.
 
 Never add a timer, a `BackgroundService`, a dispatcher or a separate handler class for an event. A Function and a queue exist for each subscriber, never for the publisher.
 
