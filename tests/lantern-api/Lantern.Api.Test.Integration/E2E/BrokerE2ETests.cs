@@ -11,6 +11,7 @@ namespace Lantern.Api.Test.Integration.E2E;
 public sealed class BrokerE2ETests(RegisteredFamilyFixture fixture) : IClassFixture<RegisteredFamilyFixture>
 {
     private const string Exchange = "lantern.actions";
+    private const int RetryLimit = 2;
     private const string AzuriteBlobs =
         "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;"
         + "AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;"
@@ -30,6 +31,24 @@ public sealed class BrokerE2ETests(RegisteredFamilyFixture fixture) : IClassFixt
 
         var parked = new List<string>();
         Assert.True(await WaitAsync(async () => HasSeen(parked, await TakeAsync(broker, "parking"), marker)), "The message was not parked.");
+    }
+
+    [Fact]
+    public async Task AnActionThatAlwaysFails_IsRetriedThroughItsDelayQueue_ThenParked()
+    {
+        using var broker = Broker();
+        var marker = $"poison-{Guid.NewGuid():N}";
+        var before = await PublishedAsync(broker, "create-workspace-delay");
+
+        var published = await broker.PostAsync(
+            $"exchanges/%2F/{Exchange}/publish",
+            Json(new { routing_key = "create-workspace", payload = marker, payload_encoding = "string", properties = new { } })
+        );
+        published.EnsureSuccessStatusCode();
+
+        var parked = new List<string>();
+        Assert.True(await WaitAsync(async () => HasSeen(parked, await TakeAsync(broker, "parking"), marker)), "The failing action was not parked.");
+        Assert.True(await PublishedAsync(broker, "create-workspace-delay") - before >= RetryLimit + 1, "The failing action was not retried through the delay queue.");
     }
 
     [Fact]
@@ -67,6 +86,13 @@ public sealed class BrokerE2ETests(RegisteredFamilyFixture fixture) : IClassFixt
         {
             await broker.DeleteAsync($"queues/%2F/{second}");
         }
+    }
+
+    private static async Task<int> PublishedAsync(HttpClient broker, string queue)
+    {
+        var queueInfo = await broker.GetFromJsonAsync<BrokerQueue>($"queues/%2F/{queue}");
+
+        return queueInfo?.Stats.Published ?? 0;
     }
 
     private static JsonContent Json(object body) => JsonContent.Create(body, new MediaTypeHeaderValue("application/json"));

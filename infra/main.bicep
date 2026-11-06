@@ -25,12 +25,15 @@ param keyVault {
   acsConnectionStringSecret: string
 }
 
-@description('The exchange the API publishes actions to and the queue of each subscriber. They are the names in infra/topology.json, which apply-topology.sh declares on the broker.')
+@description('The exchange the API publishes actions to, the queue of each subscriber and the parking queue: the names in infra/topology.json, which apply-topology.sh declares on the broker. retryDelaySeconds is how long a failed action waits in its delay queue (the release passes it to apply-topology.sh); retryLimit is how many such waits a Function allows before it parks the action. retryDelaySeconds times retryLimit must stay under actionDoneExpiry.')
 param actions {
   exchange: string
   createWorkspaceQueue: string
   removeWorkspaceQueue: string
   removeFamilyQueue: string
+  parkingQueue: string
+  retryDelaySeconds: int
+  retryLimit: int
 }
 
 @description('Size and scale of each Container App. cpu is a string because Bicep has no decimals.')
@@ -373,6 +376,8 @@ resource functionsApp 'Microsoft.App/containerApps@2025-01-01' = {
             { name: 'Actions__CreateWorkspaceQueue', value: actions.createWorkspaceQueue }
             { name: 'Actions__RemoveWorkspaceQueue', value: actions.removeWorkspaceQueue }
             { name: 'Actions__RemoveFamilyQueue', value: actions.removeFamilyQueue }
+            { name: 'Actions__ParkingQueue', value: actions.parkingQueue }
+            { name: 'Actions__RetryLimit', value: string(actions.retryLimit) }
             { name: 'APPLICATIONINSIGHTS_CONNECTION_STRING', secretRef: insightsSecret.name }
             { name: 'OTEL_SERVICE_NAME', value: 'lantern-functions' }
           ])

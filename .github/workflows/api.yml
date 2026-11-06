@@ -164,6 +164,8 @@ jobs:
           AMQP_URL=$(az keyvault secret show --vault-name kv-lantern-uat -n amqp-url --query value -o tsv)
           echo "::add-mask::${AMQP_URL}"
           export AMQP_URL
+          RETRY_DELAY_SECONDS=$(sed -n 's/^  retryDelaySeconds: //p' "$PARAMS")
+          export RETRY_DELAY_SECONDS
           infra/apply-topology.sh
       # The release is one Bicep deployment: it applies any infra change and sets the new images and the API's port in the
       # same revision, so infra, API and Functions app can never collide.

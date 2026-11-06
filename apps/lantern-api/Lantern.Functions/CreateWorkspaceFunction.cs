@@ -1,9 +1,11 @@
 using Lantern.Core.Actions;
+using Lantern.Core.Configuration;
 using Lantern.Core.Constants;
 using Lantern.Core.Repository;
 using Lantern.Core.Service;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Lantern.Functions;
 
@@ -12,17 +14,20 @@ namespace Lantern.Functions;
 internal sealed class CreateWorkspaceFunction(
     IActionLedger ledger,
     IJsonService json,
+    IOptions<ActionQueueOptions> options,
     IWorkspaceStore workspaces,
     IChildRepository children,
     IFamilyRepository families,
     ILogger<CreateWorkspaceFunction> logger
-) : ActionFunction<CreateWorkspacePayload>(ledger, json)
+) : ActionFunction<CreateWorkspacePayload>(ledger, json, options)
 {
     [Function("CreateWorkspace")]
-    public Task RunAsync(
+    [RabbitMQOutput(QueueName = "%Actions:ParkingQueue%", ConnectionStringSetting = "Broker:Url")]
+    public Task<string[]> RunAsync(
         [RabbitMQTrigger("%Actions:CreateWorkspaceQueue%", ConnectionStringSetting = "Broker:Url")] string myQueueItem,
+        FunctionContext context,
         CancellationToken cancellationToken
-    ) => ExecuteAsync(myQueueItem, cancellationToken);
+    ) => ExecuteAsync(myQueueItem, context, cancellationToken);
 
     protected override async Task HandleAsync(CreateWorkspacePayload payload, CancellationToken cancellationToken)
     {

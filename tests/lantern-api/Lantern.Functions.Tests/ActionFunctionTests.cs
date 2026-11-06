@@ -12,10 +12,12 @@ namespace Lantern.Functions.Tests;
 
 public sealed class ActionFunctionTests
 {
+    private const int RetryLimit = 3;
+
     private readonly Mock<IActionLedger> ledger = new();
     private readonly RecordingFunction function;
 
-    public ActionFunctionTests() => function = new RecordingFunction(ledger.Object);
+    public ActionFunctionTests() => function = new RecordingFunction(ledger.Object, RetryLimit);
 
     [Fact]
     public async Task RunAsync_APendingAction_RunsTheWork_ThenRecordsItsDoneMarker()
@@ -35,6 +37,43 @@ public sealed class ActionFunctionTests
 
         Assert.Equal(0, function.Handled);
         ledger.Verify(l => l.MarkDoneAsync(It.IsAny<ActionType>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task RunAsync_ADeliveryPastTheRetryLimit_ParksTheBody_WithoutRunningTheWork()
+    {
+        ledger.Setup(l => l.IsPendingAsync(ActionType.RemoveWorkspace, "id", "recording", It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        var body = Body("{\"familyId\":\"x\"}");
+
+        var parked = await function.RunAsync(body, RetryLimit + 1);
+
+        Assert.Equal([body], parked);
+        Assert.Equal(0, function.Handled);
+        ledger.Verify(l => l.MarkDoneAsync(It.IsAny<ActionType>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(RetryLimit)]
+    public async Task RunAsync_ADeliveryWithinTheRetryLimit_RunsTheWork_AndParksNothing(int cycles)
+    {
+        ledger.Setup(l => l.IsPendingAsync(ActionType.RemoveWorkspace, "id", "recording", It.IsAny<CancellationToken>())).ReturnsAsync(true);
+
+        var parked = await function.RunAsync(Body("{\"familyId\":\"x\"}"), cycles);
+
+        Assert.Empty(parked);
+        Assert.Equal(1, function.Handled);
+    }
+
+    [Theory]
+    [InlineData("not json")]
+    [InlineData("null")]
+    public async Task RunAsync_ABodyThatIsNotAnActionPastTheRetryLimit_IsParked_NotRetriedForever(string body)
+    {
+        var parked = await function.RunAsync(body, RetryLimit + 1);
+
+        Assert.Equal([body], parked);
+        Assert.Equal(0, function.Handled);
     }
 
     [Theory]

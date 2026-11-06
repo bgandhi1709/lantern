@@ -82,13 +82,13 @@ Work that runs after the request. The API publishes it once to the `lantern.acti
 3. **Record and send.** In the service: `actions.RecordAsync(type, id, payload)` **before** the service's own writes,
    then the writes, then `actions.SendAsync(message)`. The action id makes a repeat the same row. Reference:
    `ChildService.RemoveAsync`, `ChildService.AddOrGetAsync`.
-4. **Function.** `Lantern.Functions/{Verb}{Noun}Function.cs : ActionFunction<{Verb}{Noun}Payload>`: a `[Function]` method with a
-   `[RabbitMQTrigger("%Actions:{Verb}{Noun}Queue%", ConnectionStringSetting = "Broker:Url")] string myQueueItem` that returns
-   `ExecuteAsync(myQueueItem, cancellationToken)`, and the business logic in `HandleAsync(payload)`. Every step is safe to
+4. **Function.** `Lantern.Functions/{Verb}{Noun}Function.cs : ActionFunction<{Verb}{Noun}Payload>`: a `[Function]` method with `[RabbitMQOutput(QueueName = "%Actions:ParkingQueue%", ConnectionStringSetting = "Broker:Url")]`, a
+   `[RabbitMQTrigger("%Actions:{Verb}{Noun}Queue%", ConnectionStringSetting = "Broker:Url")] string myQueueItem`, a `FunctionContext context` and a return type of `Task<string[]>` that returns
+   `ExecuteAsync(myQueueItem, context, cancellationToken)`, and the business logic in `HandleAsync(payload)`. Every step is safe to
    repeat; check the state the API left (a status read) before acting, because the ledger row is written before the API's
    own rows. Register it in `FunctionsModule`. Reference: `CreateWorkspaceFunction`.
 5. **Log.** A `[LoggerMessage]` in `FunctionLog` with a new event id.
-6. **Subscribe.** Add the queue and its binding (key = wire name) to `infra/topology.json`; a property on `ActionQueueOptions` and the setting to `actions` in
+6. **Subscribe.** Add the queue, its `-delay` queue and their bindings (key = wire name) to `infra/topology.json`; a property on `ActionQueueOptions` and the setting to `actions` in
    `infra/params/lantern.uat.bicepparam` and `main.bicep` (the Functions app's env and its KEDA rule); the env var to the
    Functions container in `deploy/local/docker-compose.yml`; and the type to `ActionDelivery` in `Lantern.Functions.Tests`.
 7. **Tests.** A wire-name test, an API test that asserts the message sent (`factory.Sender.Sent`), a `Lantern.Functions.Tests` test that delivers it (`host.DeliverAsync()`), a

@@ -28,6 +28,8 @@ services:
     volumes:
       - ../../infra:/infra:ro
     command: ["sh", "-c", "apk add --no-cache bash curl jq > /dev/null && bash /infra/apply-topology.sh amqp://guest:guest@lavinmq:5672"]
+    environment:
+      RETRY_DELAY_SECONDS: 2
     restart: "no"
 
   # The Functions app, as it runs in Azure: it takes each action message and finishes it.
@@ -46,6 +48,8 @@ services:
       Actions__CreateWorkspaceQueue: create-workspace
       Actions__RemoveWorkspaceQueue: remove-workspace
       Actions__RemoveFamilyQueue: remove-family
+      Actions__ParkingQueue: parking
+      Actions__RetryLimit: 2
       Storage__ParentsTable: parents
       Storage__FamiliesTable: families
       Storage__ActionsTable: actions

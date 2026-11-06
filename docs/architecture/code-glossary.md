@@ -61,12 +61,12 @@ HTTP ─▶ Controller ─▶ (Interactor) ─▶ Service ─▶ Repository / St
 
 **Function** (`{Verb}{Noun}Function`) **(tested: one per `ActionType`, named after it)**
 - Meaning: one subscriber, and its business logic. It reads its own queue (`%Actions:{Verb}{Noun}Queue%`) through a
-  `[RabbitMQTrigger]` method that calls `ExecuteAsync(body)`, and finishes the action in `HandleAsync(payload)`, with steps
+  `[RabbitMQTrigger]` method that calls `ExecuteAsync(body, context)` and returns what it returns (a `[RabbitMQOutput]` to the parking queue), and finishes the action in `HandleAsync(payload)`, with steps
   that are safe to repeat. The broker, not code, decides which Function gets a message. There is no dispatcher and no
   separate handler class (D123).
 - Base: `ActionFunction<{Verb}{Noun}Payload>`; the base decodes the body, skips an action whose ledger row is gone or already lists
   this Function, and records the Function's done marker after `HandleAsync`. The marker is the class name without
-  `Function` in kebab-case (`RemoveWorkspaceFunction` is `remove-workspace`), so each subscriber of a key needs a distinct class name. A body that is not an action throws, so the broker parks it.
+  `Function` in kebab-case (`RemoveWorkspaceFunction` is `remove-workspace`), so each subscriber of a key needs a distinct class name. A delivery that has already been retried `Actions:RetryLimit` times (counted from `x-death`) is returned to be parked, and the action stays on the ledger for the API's resend. Any other body that is not an action throws, so the broker retries it, and parks it at the limit.
 - Calls repositories and stores (or services); never the ledger, never HTTP. The trigger attribute is the only broker
   type, and an architecture test confines it to `*Function` classes.
 - Registered in `FunctionsModule` with `TryAddScoped` so the in-process tests can resolve it.
