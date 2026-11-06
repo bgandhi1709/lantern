@@ -1,119 +1,25 @@
 {
   "exchanges": [
-    {
-      "name": "lantern.parking",
-      "type": "fanout",
-      "durable": true,
-      "arguments": {}
-    },
-    {
-      "name": "lantern.retry",
-      "type": "direct",
-      "durable": true,
-      "arguments": {}
-    },
-    {
-      "name": "lantern.actions",
-      "type": "direct",
-      "durable": true,
-      "arguments": {
-        "alternate-exchange": "lantern.parking"
-      }
-    }
+    { "name": "lantern.parking", "type": "fanout", "durable": true, "arguments": {} },
+    { "name": "lantern.retry", "type": "direct", "durable": true, "arguments": {} },
+    { "name": "lantern.actions", "type": "direct", "durable": true, "arguments": { "alternate-exchange": "lantern.parking" } }
   ],
   "queues": [
-    {
-      "name": "parking",
-      "durable": true,
-      "arguments": {}
-    },
-    {
-      "name": "create-workspace",
-      "durable": true,
-      "arguments": {
-        "x-dead-letter-exchange": "lantern.retry",
-        "x-dead-letter-routing-key": "create-workspace"
-      }
-    },
-    {
-      "name": "create-workspace-delay",
-      "durable": true,
-      "arguments": {
-        "x-message-ttl": "{{retryDelayMs}}",
-        "x-dead-letter-exchange": "",
-        "x-dead-letter-routing-key": "create-workspace"
-      }
-    },
-    {
-      "name": "remove-workspace",
-      "durable": true,
-      "arguments": {
-        "x-dead-letter-exchange": "lantern.retry",
-        "x-dead-letter-routing-key": "remove-workspace"
-      }
-    },
-    {
-      "name": "remove-workspace-delay",
-      "durable": true,
-      "arguments": {
-        "x-message-ttl": "{{retryDelayMs}}",
-        "x-dead-letter-exchange": "",
-        "x-dead-letter-routing-key": "remove-workspace"
-      }
-    },
-    {
-      "name": "remove-family",
-      "durable": true,
-      "arguments": {
-        "x-dead-letter-exchange": "lantern.retry",
-        "x-dead-letter-routing-key": "remove-family"
-      }
-    },
-    {
-      "name": "remove-family-delay",
-      "durable": true,
-      "arguments": {
-        "x-message-ttl": "{{retryDelayMs}}",
-        "x-dead-letter-exchange": "",
-        "x-dead-letter-routing-key": "remove-family"
-      }
-    }
+    { "name": "parking", "durable": true, "arguments": {} },
+    { "name": "create-workspace", "durable": true, "arguments": { "x-dead-letter-exchange": "lantern.retry", "x-dead-letter-routing-key": "create-workspace" } },
+    { "name": "create-workspace-delay", "durable": true, "arguments": { "x-message-ttl": "{{retryDelayMs}}", "x-dead-letter-exchange": "", "x-dead-letter-routing-key": "create-workspace" } },
+    { "name": "remove-workspace", "durable": true, "arguments": { "x-dead-letter-exchange": "lantern.retry", "x-dead-letter-routing-key": "remove-workspace" } },
+    { "name": "remove-workspace-delay", "durable": true, "arguments": { "x-message-ttl": "{{retryDelayMs}}", "x-dead-letter-exchange": "", "x-dead-letter-routing-key": "remove-workspace" } },
+    { "name": "remove-family", "durable": true, "arguments": { "x-dead-letter-exchange": "lantern.retry", "x-dead-letter-routing-key": "remove-family" } },
+    { "name": "remove-family-delay", "durable": true, "arguments": { "x-message-ttl": "{{retryDelayMs}}", "x-dead-letter-exchange": "", "x-dead-letter-routing-key": "remove-family" } }
   ],
   "bindings": [
-    {
-      "source": "lantern.parking",
-      "destination": "parking",
-      "routing_key": ""
-    },
-    {
-      "source": "lantern.actions",
-      "destination": "create-workspace",
-      "routing_key": "create-workspace"
-    },
-    {
-      "source": "lantern.actions",
-      "destination": "remove-workspace",
-      "routing_key": "remove-workspace"
-    },
-    {
-      "source": "lantern.actions",
-      "destination": "remove-family",
-      "routing_key": "remove-family"
-    },
-    {
-      "source": "lantern.retry",
-      "destination": "create-workspace-delay",
-      "routing_key": "create-workspace"
-    },
-    {
-      "source": "lantern.retry",
-      "destination": "remove-workspace-delay",
-      "routing_key": "remove-workspace"
-    },
-    {
-      "source": "lantern.retry",
-      "destination": "remove-family-delay",
-      "routing_key": "remove-family"
-    }
+    { "source": "lantern.parking", "destination": "parking", "routing_key": "" },
+    { "source": "lantern.actions", "destination": "create-workspace", "routing_key": "create-workspace" },
+    { "source": "lantern.actions", "destination": "remove-workspace", "routing_key": "remove-workspace" },
+    { "source": "lantern.actions", "destination": "remove-family", "routing_key": "remove-family" },
+    { "source": "lantern.retry", "destination": "create-workspace-delay", "routing_key": "create-workspace" },
+    { "source": "lantern.retry", "destination": "remove-workspace-delay", "routing_key": "remove-workspace" },
+    { "source": "lantern.retry", "destination": "remove-family-delay", "routing_key": "remove-family" }
   ]
 }

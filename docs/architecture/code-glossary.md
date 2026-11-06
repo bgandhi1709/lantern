@@ -72,6 +72,9 @@ HTTP ─▶ Controller ─▶ (Interactor) ─▶ Service ─▶ Repository / St
 - Registered in `FunctionsModule` with `TryAddScoped` so the in-process tests can resolve it.
 - Example: `RemoveWorkspaceFunction`, `CreateWorkspaceFunction`.
 
+**Delivery shape** (`DeliveryProperties`, `DeliveryHeaders`, `DeliveryDeath`, `Lantern.Functions`) **(not suffixed, like `ActionMessage`)**
+- Meaning: the broker headers a delivery carries, only as far as `ActionFunction` reads them: the `x-death` list and each entry's `count`, from which it counts the retry cycles. Internal; deserialized with `IJsonService` from the trigger's `BasicProperties` binding value.
+
 ## Service layer: `libs/Lantern.Base`
 
 **Service** (`I{Noun}Service` / `{Noun}Service`, `Services/`) **(tested)**

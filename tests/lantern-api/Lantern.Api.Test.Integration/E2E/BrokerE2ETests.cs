@@ -90,7 +90,7 @@ public sealed class BrokerE2ETests(RegisteredFamilyFixture fixture) : IClassFixt
 
     private static async Task<int> PublishedAsync(HttpClient broker, string queue)
     {
-        var queueInfo = await broker.GetFromJsonAsync<BrokerQueue>($"queues/%2F/{queue}");
+        var queueInfo = await broker.GetFromJsonAsync<BrokerQueueState>($"queues/%2F/{queue}");
 
         return queueInfo?.Stats.Published ?? 0;
     }

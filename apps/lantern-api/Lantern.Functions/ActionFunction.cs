@@ -1,5 +1,4 @@
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using Lantern.Core.Actions;
 using Lantern.Core.Configuration;
 using Lantern.Core.Repository;
@@ -59,20 +58,4 @@ public abstract class ActionFunction<TPayload>(IActionLedger ledger, IJsonServic
     }
 
     protected abstract Task HandleAsync(TPayload payload, CancellationToken cancellationToken);
-
-    private sealed class DeliveryProperties
-    {
-        public DeliveryHeaders Headers { get; set; }
-    }
-
-    private sealed class DeliveryHeaders
-    {
-        [JsonPropertyName("x-death")]
-        public List<DeliveryDeath> Deaths { get; set; }
-    }
-
-    private sealed class DeliveryDeath
-    {
-        public int Count { get; set; }
-    }
 }

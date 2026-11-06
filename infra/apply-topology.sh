@@ -32,7 +32,7 @@ recreate_if_changed() {
   existing=$(curl --silent --config <(printf 'user = "%s"\n' "$credentials") -w '\n%{http_code}' "$api/queues/$vh/$name") || return 0
   [[ ${existing##*$'\n'} == 200 ]] || return 0
   existing=${existing%$'\n'*}
-  [[ $(jq -cS '.arguments' <<< "$existing") == $(jq -cS . <<< "$wanted") ]] && return 0
+  [[ $(jq -cS ".arguments" <<< "$existing") == "$(jq -cS . <<< "$wanted")" ]] && return 0
   if [[ $(jq -r '.messages' <<< "$existing") != 0 ]]; then
     echo "Queue $name has different arguments and holds messages: drain it, then run this again." >&2
     exit 1
