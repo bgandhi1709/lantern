@@ -18,6 +18,16 @@ param containers {
   ssc: string
 }
 
+@description('Cosmos DB for Board content (spec #204). `content` is partitioned on `/classKey`. Only this template creates them, never the app; the first account in a subscription is free up to 1,000 RU/s and 25 GB.')
+param cosmos {
+  database: string
+  contentContainer: string
+  contentThroughput: int
+}
+
+@description('Object id of whoever runs the content loader. Gets the Cosmos DB data contributor role; empty grants no one.')
+param loaderPrincipalId string = ''
+
 @description('The Key Vault secrets. bootstrap.sh creates the key that hashes each uid (Lantern holds no Family key, D66) and the CloudAMQP broker URL (D119). This template writes the Communication Services connection string itself, so the key never leaves Azure (ADR-0019).')
 param keyVault {
   securityKeySecret: string
@@ -250,6 +260,77 @@ resource storage 'Microsoft.Storage/storageAccounts@2023-05-01' = {
         publicAccess: 'None'
       }
     }
+  }
+}
+
+resource cosmosAccount 'Microsoft.DocumentDB/databaseAccounts@2024-11-15' = {
+  name: 'cosmos-${name}'
+  location: location
+  kind: 'GlobalDocumentDB'
+  properties: {
+    databaseAccountOfferType: 'Standard'
+    enableFreeTier: true
+    disableLocalAuth: true
+    consistencyPolicy: {
+      defaultConsistencyLevel: 'Session'
+    }
+    locations: [
+      {
+        locationName: location
+        failoverPriority: 0
+        isZoneRedundant: false
+      }
+    ]
+  }
+
+  resource database 'sqlDatabases' = {
+    name: cosmos.database
+    properties: {
+      resource: {
+        id: cosmos.database
+      }
+    }
+
+    resource content 'containers' = {
+      name: cosmos.contentContainer
+      properties: {
+        resource: {
+          id: cosmos.contentContainer
+          partitionKey: {
+            paths: [
+              '/classKey'
+            ]
+            kind: 'Hash'
+          }
+        }
+        options: {
+          throughput: cosmos.contentThroughput
+        }
+      }
+    }
+  }
+}
+
+var cosmosReaderRole = '${cosmosAccount.id}/sqlRoleDefinitions/00000000-0000-0000-0000-000000000001'
+var cosmosContributorRole = '${cosmosAccount.id}/sqlRoleDefinitions/00000000-0000-0000-0000-000000000002'
+
+resource apiReadsContent 'Microsoft.DocumentDB/databaseAccounts/sqlRoleAssignments@2024-11-15' = {
+  parent: cosmosAccount
+  name: guid(cosmosAccount.id, identity.id, cosmosReaderRole)
+  properties: {
+    roleDefinitionId: cosmosReaderRole
+    principalId: identity.properties.principalId
+    scope: cosmosAccount.id
+  }
+}
+
+resource loaderWritesContent 'Microsoft.DocumentDB/databaseAccounts/sqlRoleAssignments@2024-11-15' = if (!empty(loaderPrincipalId)) {
+  parent: cosmosAccount
+  name: guid(cosmosAccount.id, loaderPrincipalId, cosmosContributorRole)
+  properties: {
+    roleDefinitionId: cosmosContributorRole
+    principalId: loaderPrincipalId
+    scope: cosmosAccount.id
   }
 }
 
