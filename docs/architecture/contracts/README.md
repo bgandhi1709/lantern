@@ -2,7 +2,7 @@
 
 The private `ncert` (CBSE) and `ssc` Blob containers hold each Board's Books, ready to read. They are made outside this
 repository: extracting the syllabus is part of the separate `lantern-utilities` repository (ADR-0017). Lantern takes them
-as given and reads them only when it copies a Class into a Child's Content slice (ADR-0013). This file is the whole
+as given and reads them when it copies a Class into a Child's Content slice (ADR-0013) and when the one-off content loader moves them into Cosmos DB (ADR-0020, D136). This file is the whole
 contract; the file and folder names live in `ContentLayout`, and `ContentLayoutTests` pins them.
 
 ## Layout of a Board container
@@ -51,3 +51,37 @@ a copy of it: change the format in both places. The file's `class` must equal N,
 Everything is read and checked before the first write. The files above are copied byte for byte, the slice's
 `catalog.json` keeps only the entries of the Class, and the slice records the version it was copied from. The master is read twice, and
 a master that changed in between fails the copy, so upload content while no Child is being added.
+
+## What the loader writes to Cosmos DB
+
+`scripts/content-loader/load_board.py` reads a Board's container and writes the `content` container of Cosmos DB (ADR-0020). It
+is a second, deliberate copy of the layout and the rules above, because it is a one-off: a Board added later is loaded straight
+into Cosmos DB. It names a file only through the paths in this contract, reads Books from the catalog and Chapters from the
+Class manifest and never walks a folder, so a file it does not know (a stray `.idea/`) is reported and ignored.
+
+Every document has `id` (`{kind}:{id}`), `kind` and `classKey` (the partition key: `cbse-3`, `ssc-5`; the Board document uses the
+Board key, `cbse` or `ssc`). A Board's key is `cbse` for `ncert` and `ssc` for `ssc`.
+
+| Kind | Id | Holds |
+|---|---|---|
+| board | `board:{board}` | `profile`: `board.json`. Required for SSC, optional for NCERT |
+| class | `class:{classKey}` | `manifest` (the Class manifest as it is), `counts` (books, chapters, plans), `release` |
+| book | `book:{book_id}` | `catalog`: the Book's catalog entry; `chapterIds`; for SSC `toc` and `guidance` |
+| chapter | `chapter:{chapter_id}` | `refined` and `summary`: the two files as they are |
+| plan | `plan:{chapter_id}` | `plan`: the Plan file as it is (`concepts`, `check_pool`) |
+
+Every document of a Class carries the same `release`, a hash of everything the Class holds, so a second run over unchanged
+content writes the same documents and a changed Class is told from the old one. A Class is written in this order: the
+documents of its Books, Chapters and Plans, then the class document, then the deletion of every document with another
+`release`. A run that fails before the class document leaves the previous one in place. A Class the Board no longer holds is
+deleted whole.
+
+A Class that breaks a rule is reported and not written, and the run ends with a failure; the other Classes are written.
+
+- the manifest's `class` is the Class it is named for, its `schema` is known, each Subject's `chapterCount` equals its Chapters, and
+  the Chapters it lists are exactly the Chapters built for the Class;
+- a Book id and a chapter id match `^[A-Za-z0-9._-]+$` before they are used in a path;
+- a refined Chapter with no summary or no Plan stops the Class, and the error names the missing file;
+- an NCERT Book that is listed and not built is skipped; an SSC Book that is listed and not built, or one missing its `toc/` or
+  `guidance/` file, stops the Class; a Class with no built Book stops;
+- the video and poster of a Plan stay in Blob.

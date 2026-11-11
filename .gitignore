@@ -27,3 +27,5 @@ deploy/local/certs/
 
 # One-time CloudAMQP setup helper, kept on the founder's machine
 /infra/cloudamqp-wizard.sh
+__pycache__/
+.pytest_cache/
