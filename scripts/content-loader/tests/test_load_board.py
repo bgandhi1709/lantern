@@ -231,6 +231,19 @@ def test_a_document_the_board_no_longer_holds_is_removed(ncert):
     assert "chapter:cma101" in ids_of(store, "cbse-3")
 
 
+def test_a_source_with_no_class_manifests_deletes_nothing(ncert, tmp_path):
+    store = loader.MemoryStore()
+    run(ncert, store)
+    held = dict(store.documents)
+    empty = tmp_path / "wrong-place"
+    write(empty, "catalog.json", [])
+
+    with pytest.raises(loader.SourceError, match="no manifest/class-N.json"):
+        run(empty, store)
+
+    assert store.documents == held
+
+
 def test_a_class_the_board_no_longer_holds_is_removed(ncert):
     store = loader.MemoryStore()
     run(ncert, store)

@@ -323,6 +323,7 @@ def remove_classes_no_longer_held(store, rules: BoardRules, held: set[str]) -> l
 def load_board(source, store, board: str, apply: bool, out=print) -> int:
     rules = RULES[board]
     inventory = Inventory(source)
+    require(inventory.manifests, "The source holds no manifest/class-N.json, so there is nothing to load and nothing to compare with")
     profile = board_document(source, rules)
     loads: list[ClassLoad] = []
     failures: list[str] = []
