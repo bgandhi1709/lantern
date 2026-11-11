@@ -10,6 +10,14 @@ services:
     volumes:
       - azurite-data:/data
 
+  cosmos:
+    image: mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:vnext-preview@sha256:db53613dae19d0a3d5ad50688d14aa6e957af082dafea56b52e1bd3a6b3f1406
+    environment:
+      PROTOCOL: https
+    ports:
+      - "127.0.0.1:8081:8081"
+      - "127.0.0.1:1234:1234"
+
   auth-emulator:
     build: ./auth-emulator
     ports:

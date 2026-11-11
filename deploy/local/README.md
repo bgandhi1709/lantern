@@ -1,6 +1,6 @@
 # Run the API locally over HTTPS
 
-Serves the API at `https://local.lantern.api` in Docker, with stand-ins beside it for everything that is not local: an Azurite table and blob emulator, the Firebase
+Serves the API at `https://local.lantern.api` in Docker, with stand-ins beside it for everything that is not local: an Azurite table and blob emulator, the Cosmos DB Linux emulator (`cosmos`), the Firebase
 Auth Emulator, and LavinMQ (the engine CloudAMQP hosts) with the real `Lantern.Functions` image beside the API.
 Works from WSL and from Windows.
 
