@@ -25,7 +25,7 @@ param cosmos {
   contentThroughput: int
 }
 
-@description('Object id of whoever runs the content loader. Gets the Cosmos DB data contributor role; empty grants no one.')
+@description('Object id of whoever loads the Board content. Gets the Cosmos DB data contributor role; empty grants no one.')
 param loaderPrincipalId string = ''
 
 @description('The Key Vault secrets. bootstrap.sh creates the key that hashes each uid (Lantern holds no Family key, D66) and the CloudAMQP broker URL (D119). This template writes the Communication Services connection string itself, so the key never leaves Azure (ADR-0019).')

@@ -2,7 +2,7 @@
 
 The private `ncert` (CBSE) and `ssc` Blob containers hold each Board's Books, ready to read. They are made outside this
 repository: extracting the syllabus is part of the separate `lantern-utilities` repository (ADR-0017). Lantern takes them
-as given and reads them when it copies a Class into a Child's Content slice (ADR-0013) and when the one-off content loader moves them into Cosmos DB (ADR-0020, D136). This file is the whole
+as given and reads them when it copies a Class into a Child's Content slice (ADR-0013) and when the one-off migration moves them into Cosmos DB (ADR-0020, D136). This file is the whole
 contract; the file and folder names live in `ContentLayout`, and `ContentLayoutTests` pins them.
 
 ## Layout of a Board container
@@ -52,10 +52,10 @@ Everything is read and checked before the first write. The files above are copie
 `catalog.json` keeps only the entries of the Class, and the slice records the version it was copied from. The master is read twice, and
 a master that changed in between fails the copy, so upload content while no Child is being added.
 
-## What the loader writes to Cosmos DB
+## What the migration writes to Cosmos DB
 
-`scripts/content-loader/load_board.py` reads a Board's container and writes the `content` container of Cosmos DB (ADR-0020). It
-is a second, deliberate copy of the layout and the rules above, because it is a one-off: a Board added later is loaded straight
+The one-off migration (D136), a script the founder runs from their own machine and that is not in this repository, reads a Board's container and writes the `content` container of Cosmos DB (ADR-0020). It
+applies the layout and the rules above a second time, because it is a one-off: a Board added later is loaded straight
 into Cosmos DB. It names a file only through the paths in this contract, reads Books from the catalog and Chapters from the
 Class manifest and never walks a folder, so a file it does not know (a stray `.idea/`) is reported and ignored.
 

@@ -18,7 +18,7 @@ Bicep creates every store and the app never does, so a missing store is a loud f
 no account key: callers sign in with Entra ID and a data role. Client types of every store stay inside the repository
 layer (ADR-0005).
 
-Content reaches Cosmos DB once, from the `ncert` and `ssc` containers, by a Python script (D136), and a Board added later
+Content reaches Cosmos DB once, from the `ncert` and `ssc` containers, by a one-off migration (D136), and a Board added later
 is loaded straight into Cosmos DB. The content build is not changed (ADR-0017).
 
 This ADR records the decision. Each story of the epic replaces or amends the ADRs it affects when it ships: ADR-0001, 0013,
