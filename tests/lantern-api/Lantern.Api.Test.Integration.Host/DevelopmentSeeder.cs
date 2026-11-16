@@ -8,6 +8,7 @@ using Lantern.Core.Security;
 using Lantern.Repository;
 using Lantern.Repository.Entities;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Options;
 
 namespace Lantern.Api.Test.Integration.Host;
@@ -25,6 +26,8 @@ internal sealed class DevelopmentSeeder(
     IOptions<StorageOptions> storage,
     IOptions<CatalogOptions> catalog,
     BlobServiceClient blobs,
+    CosmosClient cosmos,
+    IOptions<CosmosOptions> cosmosOptions,
     IConfiguration configuration,
     TimeProvider clock
 )
@@ -41,6 +44,8 @@ internal sealed class DevelopmentSeeder(
         {
             await LocalBoardMasters.SeedAsync(blobs, catalog.Value, cancellationToken);
         }
+
+        await LocalBoardContent.LoadAsync(blobs, catalog.Value, cosmos, cosmosOptions.Value, cancellationToken);
 
         var first = await families.FindParentAsync(ParentOneUid, cancellationToken) ?? await RegisterFirstAsync(cancellationToken);
 

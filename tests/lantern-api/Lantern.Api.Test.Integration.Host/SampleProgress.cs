@@ -17,8 +17,9 @@ internal sealed class SampleProgress(
     IOptions<StorageOptions> storage,
     ContentLayout layout,
     IJsonService json,
-    IWorkspaceStore workspaces,
     IProgressRepository progress,
+    IRepositoryBase<Family> families,
+    IContentRepository content,
     TimeProvider clock
 )
 {
@@ -44,7 +45,8 @@ internal sealed class SampleProgress(
 
     private async Task<bool> SeedChildAsync(Guid familyId, Guid childId, int classLevel, bool reset, CancellationToken cancellationToken)
     {
-        var manifest = await workspaces.ClassManifestAsync(familyId, childId, classLevel, cancellationToken);
+        var family = await families.SingleAsync(familyId, familyId, cancellationToken);
+        var manifest = await content.ClassAsync(family.Board, classLevel, cancellationToken);
         var subject = manifest?.Subjects.Find(candidate => candidate.Chapters.Count > 0);
         if (subject is null)
         {
