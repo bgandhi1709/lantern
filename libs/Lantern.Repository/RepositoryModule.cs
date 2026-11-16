@@ -76,7 +76,7 @@ public static class RepositoryModule
         services.TryAddScoped<IRepositoryBase<Core.Models.Family>>(serviceProvider => serviceProvider.GetRequiredService<IFamilyRepository>());
         services.TryAddSingleton<IActionLedger, ActionLedger>();
         services.TryAddScoped<IProgressRepository, ProgressRepository>();
-        services.TryAddSingleton<IContentRepository>(serviceProvider =>
+        services.TryAddScoped<IContentRepository>(serviceProvider =>
         {
             var options = serviceProvider.GetRequiredService<IOptions<CosmosOptions>>().Value;
 

@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json.Nodes;
+using Azure.Storage.Blobs.Models;
 using Lantern.Api.Models;
 using Lantern.Api.Tests.Infrastructure;
 using Lantern.Core.Constants;
@@ -38,7 +39,7 @@ public sealed class ChaptersTests(AzuriteFixture azurite, CosmosFixture cosmos) 
     private readonly LanternApiFactory factory = new(azurite.ConnectionString, cosmos.Settings);
 
     [Fact]
-    public async Task Get_ASubjectOfAReadyChild_ReturnsItsChaptersInBookOrderAsAPage()
+    public async Task Get_ASubjectOfAChildWhoseClassIsLoaded_ReturnsItsChaptersInBookOrderAsAPage_WithNoWorkspaceForThem()
     {
         using var client = Client(NewUid());
         var child = await ReadyChildAsync(client, BoardType.Cbse, 7);
@@ -59,6 +60,7 @@ public sealed class ChaptersTests(AzuriteFixture azurite, CosmosFixture cosmos) 
             """,
             await response.Content.ReadAsStringAsync()
         );
+        Assert.Empty(await WorkspaceBlobsAsync(child.FamilyId));
     }
 
     [Fact]
@@ -382,6 +384,14 @@ public sealed class ChaptersTests(AzuriteFixture azurite, CosmosFixture cosmos) 
         Assert.True(JsonNode.DeepEquals(JsonNode.Parse(expected), JsonNode.Parse(actual)), $"Expected {expected}{Environment.NewLine}Actual {actual}");
 
     private HttpClient Client(string uid) => factory.CreateClient().WithBearer(TestTokens.Create(uid));
+
+    private async Task<List<BlobItem>> WorkspaceBlobsAsync(Guid familyId)
+    {
+        var family = azurite.CreateBlobClient().GetBlobContainerClient(TestSettings.WorkspaceContainer);
+        await family.CreateIfNotExistsAsync();
+
+        return await family.GetBlobsAsync(BlobTraits.None, BlobStates.None, $"{familyId:D}/", CancellationToken.None).ToListAsync();
+    }
 
     private static string NewUid() => $"uid-{Guid.NewGuid():N}";
 

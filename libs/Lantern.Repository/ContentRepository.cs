@@ -1,5 +1,6 @@
 using System.Net;
 using Lantern.Core.Constants;
+using Lantern.Core.Exceptions;
 using Lantern.Core.Models;
 using Lantern.Core.Repository;
 using Lantern.Core.Service;
@@ -18,7 +19,7 @@ internal sealed class ContentRepository(Container content, IJsonService json, Co
 
         if (response.StatusCode == HttpStatusCode.NotFound)
         {
-            return null;
+            throw new LanternException(LanternErrorCode.ContentNotReady);
         }
 
         response.EnsureSuccessStatusCode();

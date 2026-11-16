@@ -35,8 +35,5 @@ public sealed class ClassManifest : Manifest
         return null;
     }
 
-    public IReadOnlyList<Subject> ToSubjects() =>
-        [.. Subjects.Select(subject => new Subject(subject.SubjectId, subject.Name, subject.Icon, subject.ChapterCount))];
-
     public IReadOnlyList<Chapter> ChaptersOf(string subjectId) => Subjects.Find(subject => subject.SubjectId == subjectId)?.Chapters;
 }

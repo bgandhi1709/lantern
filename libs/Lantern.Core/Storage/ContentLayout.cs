@@ -47,7 +47,7 @@ public sealed class ContentLayout
 
     public string ClassDocumentPrefix { get; } = "class:";
 
-    public char ClassKeySeparator { get; } = '-';
+    private char ClassKeySeparator { get; } = '-';
 
     public string ClassKey(BoardType board, int classLevel) =>
         string.Create(CultureInfo.InvariantCulture, $"{board.ToString().ToLowerInvariant()}{ClassKeySeparator}{classLevel}");

@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json.Nodes;
+using Azure.Storage.Blobs.Models;
 using Lantern.Api.Models;
 using Lantern.Api.Tests.Infrastructure;
 using Lantern.Core.Constants;
@@ -68,7 +69,7 @@ public sealed class AttemptsTests(AzuriteFixture azurite, CosmosFixture cosmos) 
     }
 
     [Fact]
-    public async Task Get_AChapterNeverStarted_IsAnEmptyHistory_WithANotStartedHeader()
+    public async Task Get_AChapterNeverStarted_IsAnEmptyHistory_WithANotStartedHeader_WithNoWorkspaceForTheChild()
     {
         using var client = Client(NewUid());
         var child = await ReadyChildAsync(client);
@@ -79,6 +80,7 @@ public sealed class AttemptsTests(AzuriteFixture azurite, CosmosFixture cosmos) 
         Assert.Null(page["nextCursor"]);
         Assert.Equal(("not-started", 0, 0, 3), ((string)page["chapter"]!["state"]!, (int)page["chapter"]!["attemptCount"]!, (int)page["chapter"]!["checkCount"]!, (int)page["chapter"]!["number"]!));
         Assert.Null(page["chapter"]!["conceptCount"]);
+        Assert.Empty(await WorkspaceBlobsAsync(child.FamilyId));
     }
 
     [Fact]
@@ -263,6 +265,14 @@ public sealed class AttemptsTests(AzuriteFixture azurite, CosmosFixture cosmos) 
         Assert.True(JsonNode.DeepEquals(JsonNode.Parse(expected), JsonNode.Parse(actual)), $"Expected {expected}{Environment.NewLine}Actual {actual}");
 
     private HttpClient Client(string uid) => factory.CreateClient().WithBearer(TestTokens.Create(uid));
+
+    private async Task<List<BlobItem>> WorkspaceBlobsAsync(Guid familyId)
+    {
+        var family = azurite.CreateBlobClient().GetBlobContainerClient(TestSettings.WorkspaceContainer);
+        await family.CreateIfNotExistsAsync();
+
+        return await family.GetBlobsAsync(BlobTraits.None, BlobStates.None, $"{familyId:D}/", CancellationToken.None).ToListAsync();
+    }
 
     private static string NewUid() => $"uid-{Guid.NewGuid():N}";
 

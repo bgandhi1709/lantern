@@ -1,5 +1,6 @@
 using Lantern.Api.Tests.Infrastructure;
 using Lantern.Core.Constants;
+using Lantern.Core.Exceptions;
 using Lantern.Core.Models;
 using Lantern.Repository;
 
@@ -32,11 +33,11 @@ public sealed class ContentRepositoryTests(CosmosFixture cosmos)
     }
 
     [Fact]
-    public async Task ClassAsync_AClassWithNoClassDocument_ReturnsNull()
+    public async Task ClassAsync_AClassWithNoClassDocument_IsContentNotReady()
     {
         await ContentSeed.RemoveClassAsync(cosmos.Content, BoardType.Cbse, 9);
 
-        Assert.Null(await Repository.ClassAsync(BoardType.Cbse, 9, CancellationToken.None));
+        await AssertNotReadyAsync(BoardType.Cbse, 9);
     }
 
     [Fact]
@@ -45,7 +46,7 @@ public sealed class ContentRepositoryTests(CosmosFixture cosmos)
         await ContentSeed.PutClassAsync(cosmos.Content, BoardType.Cbse, 4, (EnglishSubject, English));
         await ContentSeed.RemoveClassAsync(cosmos.Content, BoardType.Ssc, 4);
 
-        Assert.Null(await Repository.ClassAsync(BoardType.Ssc, 4, CancellationToken.None));
+        await AssertNotReadyAsync(BoardType.Ssc, 4);
     }
 
     [Fact]
@@ -72,4 +73,10 @@ public sealed class ContentRepositoryTests(CosmosFixture cosmos)
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => Repository.ClassAsync(BoardType.Ssc, 5, CancellationToken.None));
     }
+
+    private async Task AssertNotReadyAsync(BoardType board, int classLevel) =>
+        Assert.Equal(
+            LanternErrorCode.ContentNotReady,
+            (await Assert.ThrowsAsync<LanternException>(() => Repository.ClassAsync(board, classLevel, CancellationToken.None))).Code
+        );
 }

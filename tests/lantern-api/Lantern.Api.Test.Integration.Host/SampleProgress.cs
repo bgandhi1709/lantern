@@ -2,6 +2,8 @@ using Azure;
 using Azure.Data.Tables;
 using Azure.Storage.Blobs;
 using Lantern.Core.Configuration;
+using Lantern.Core.Constants;
+using Lantern.Core.Exceptions;
 using Lantern.Core.Models;
 using Lantern.Core.Repository;
 using Lantern.Core.Service;
@@ -46,8 +48,17 @@ internal sealed class SampleProgress(
     private async Task<bool> SeedChildAsync(Guid familyId, Guid childId, int classLevel, bool reset, CancellationToken cancellationToken)
     {
         var family = await families.SingleAsync(familyId, familyId, cancellationToken);
-        var manifest = await content.ClassAsync(family.Board, classLevel, cancellationToken);
-        var subject = manifest?.Subjects.Find(candidate => candidate.Chapters.Count > 0);
+        ClassManifest manifest;
+        try
+        {
+            manifest = await content.ClassAsync(family.Board, classLevel, cancellationToken);
+        }
+        catch (LanternException ex) when (ex.Code == LanternErrorCode.ContentNotReady)
+        {
+            return false;
+        }
+
+        var subject = manifest.Subjects.Find(candidate => candidate.Chapters.Count > 0);
         if (subject is null)
         {
             return false;

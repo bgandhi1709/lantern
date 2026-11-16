@@ -3,6 +3,7 @@ using Lantern.Core.Exceptions;
 using Lantern.Core.Models;
 using Lantern.Core.Repository;
 using Lantern.Core.Service;
+using MapsterMapper;
 
 namespace Lantern.Base.Services;
 
@@ -11,7 +12,8 @@ internal sealed class SubjectService(
     IServiceBase<Family> families,
     IContentRepository content,
     IProgressRepository progress,
-    IPageCalculator pages
+    IPageCalculator pages,
+    IMapper mapper
 ) : ISubjectService
 {
     private const int MaxSearchLength = 64;
@@ -20,7 +22,7 @@ internal sealed class SubjectService(
     {
         var child = await ActiveChildAsync(childId, cancellationToken);
 
-        return pages.Slice((await ClassAsync(child, cancellationToken)).ToSubjects(), limit, cursor);
+        return pages.Slice(mapper.Map<IReadOnlyList<Subject>>((await ClassAsync(child, cancellationToken)).Subjects), limit, cursor);
     }
 
     public async Task<SubjectChapters> ChaptersAsync(Guid childId, string subjectId, string query, int? limit, string cursor, CancellationToken cancellationToken)
@@ -64,10 +66,6 @@ internal sealed class SubjectService(
         return child.Status == ChildStatus.Deleting ? throw new LanternException(LanternErrorCode.ChildNotFound) : child;
     }
 
-    private async Task<ClassManifest> ClassAsync(Child child, CancellationToken cancellationToken)
-    {
-        var family = await families.SingleAsync(child.FamilyId, cancellationToken);
-
-        return await content.ClassAsync(family.Board, child.ClassLevel, cancellationToken) ?? throw new LanternException(LanternErrorCode.ContentNotReady);
-    }
+    private async Task<ClassManifest> ClassAsync(Child child, CancellationToken cancellationToken) =>
+        await content.ClassAsync((await families.SingleAsync(child.FamilyId, cancellationToken)).Board, child.ClassLevel, cancellationToken);
 }

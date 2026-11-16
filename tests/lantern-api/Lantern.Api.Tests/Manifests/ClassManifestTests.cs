@@ -44,13 +44,6 @@ public sealed class ClassManifestTests
     }
 
     [Fact]
-    public void ToSubjects_GivesEachSubjectWithoutItsChapters_InTheOrderStored() =>
-        Assert.Equal(
-            [new Subject("english", "English", "english", 2), new Subject("mathematics", "Mathematics", "maths", 1)],
-            TestServices.ClassManifest(ClassThree).ToSubjects()
-        );
-
-    [Fact]
     public void ChaptersOf_ASubject_ReturnsItsChaptersInTheOrderStored()
     {
         var chapters = TestServices.ClassManifest(ClassThree).ChaptersOf("english");
