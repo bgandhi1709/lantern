@@ -1,7 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json.Nodes;
-using Azure.Storage.Blobs;
 using Lantern.Api.Models;
 using Lantern.Api.Tests.Infrastructure;
 using Lantern.Core.Constants;
@@ -12,8 +11,11 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Lantern.Api.Tests.Controllers;
 
 [Collection(ApiCollection.Name)]
-public sealed class ChaptersTests(AzuriteFixture azurite) : IDisposable
+public sealed class ChaptersTests(AzuriteFixture azurite, CosmosFixture cosmos) : IDisposable
 {
+    private const int UnloadedClass = 9;
+    private const int UnknownSchemaClass = 6;
+
     private static readonly Chapter[] English =
     [
         new("gepr101", "gepr1", 1, "A Bottle of Dew", "A story that starts from a small, ordinary thing."),
@@ -33,9 +35,7 @@ public sealed class ChaptersTests(AzuriteFixture azurite) : IDisposable
         (new Subject("mathematics", "Mathematics", "maths", Mathematics.Length), Mathematics),
     ];
 
-    private readonly LanternApiFactory factory = new(azurite.ConnectionString);
-
-    private BlobContainerClient Family => azurite.CreateBlobClient().GetBlobContainerClient(TestSettings.WorkspaceContainer);
+    private readonly LanternApiFactory factory = new(azurite.ConnectionString, cosmos.Settings);
 
     [Fact]
     public async Task Get_ASubjectOfAReadyChild_ReturnsItsChaptersInBookOrderAsAPage()
@@ -97,41 +97,13 @@ public sealed class ChaptersTests(AzuriteFixture azurite) : IDisposable
     }
 
     [Fact]
-    public async Task Get_ANewChildWhoseContentIsNotPreparedYet_Is409ContentNotReady()
+    public async Task Get_AChildWhoseClassHasNoClassDocument_Is409ContentNotReady()
     {
+        await ContentSeed.RemoveClassAsync(cosmos.Content, BoardType.Cbse, UnloadedClass);
         using var client = Client(NewUid());
-        var family = await RegisterAsync(client, BoardType.Cbse, 7);
+        var family = await RegisterAsync(client, BoardType.Cbse, UnloadedClass);
 
         var response = await client.GetAsync(ChaptersOf((family.FamilyId, family.Children.Single().ChildId), "english"));
-
-        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
-        Assert.Equal("content-not-ready", await response.ProblemCodeAsync());
-    }
-
-    [Fact]
-    public async Task Get_AChildWhoseSliceManifestIsMissing_Is409ContentNotReady_EvenWithAFamilyManifestEntry()
-    {
-        using var client = Client(NewUid());
-        var family = await RegisterAsync(client, BoardType.Cbse, 7);
-        var child = family.Children.Single();
-        await FamilyManifestSeed.PutAsync(Family, family.FamilyId, (child.ChildId, 7, [.. ClassSeven.Select(entry => entry.Subject)]));
-
-        var response = await client.GetAsync(ChaptersOf((family.FamilyId, child.ChildId), "english"));
-
-        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
-        Assert.Equal("content-not-ready", await response.ProblemCodeAsync());
-    }
-
-    [Fact]
-    public async Task Get_ASubjectInTheFamilyManifestButNotInTheSliceManifest_Is409ContentNotReady()
-    {
-        using var client = Client(NewUid());
-        var family = await RegisterAsync(client, BoardType.Cbse, 7);
-        var child = family.Children.Single();
-        await FamilyManifestSeed.PutAsync(Family, family.FamilyId, (child.ChildId, 7, [.. ClassSeven.Select(entry => entry.Subject)]));
-        await FamilyManifestSeed.PutSliceAsync(Family, family.FamilyId, child.ChildId, 7, ClassSeven[0]);
-
-        var response = await client.GetAsync(ChaptersOf((family.FamilyId, child.ChildId), "mathematics"));
 
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
         Assert.Equal("content-not-ready", await response.ProblemCodeAsync());
@@ -156,7 +128,7 @@ public sealed class ChaptersTests(AzuriteFixture azurite) : IDisposable
     }
 
     [Fact]
-    public async Task Get_AChildBeingDeleted_IsNotFound_EvenThoughTheirManifestsAreStillThere()
+    public async Task Get_AChildBeingDeleted_IsNotFound_EvenThoughTheirClassIsLoaded()
     {
         using var client = Client(NewUid());
         var child = await ReadyChildAsync(client, BoardType.Cbse, 7);
@@ -204,13 +176,12 @@ public sealed class ChaptersTests(AzuriteFixture azurite) : IDisposable
     }
 
     [Fact]
-    public async Task Get_ASliceManifestSchemaThisVersionDoesNotKnow_IsAServerError_NeverAnEmptyOrWrongList()
+    public async Task Get_AClassDocumentSchemaThisVersionDoesNotKnow_IsAServerError_NeverAnEmptyOrWrongList()
     {
+        await ContentSeed.PutClassRawAsync(cosmos.Content, BoardType.Cbse, UnknownSchemaClass, ContentSeed.ManifestJson("class-manifest-v9", "cbse", UnknownSchemaClass, ClassSeven));
         using var client = Client(NewUid());
-        var family = await RegisterAsync(client, BoardType.Cbse, 7);
+        var family = await RegisterAsync(client, BoardType.Cbse, UnknownSchemaClass);
         var child = family.Children.Single();
-        await FamilyManifestSeed.PutAsync(Family, family.FamilyId, (child.ChildId, 7, [.. ClassSeven.Select(entry => entry.Subject)]));
-        await FamilyManifestSeed.PutSliceRawAsync(Family, family.FamilyId, child.ChildId, 7, FamilyManifestSeed.ClassManifestJson("class-manifest-v9", 7, ClassSeven));
 
         var response = await client.GetAsync(ChaptersOf((family.FamilyId, child.ChildId), "english"));
 
@@ -416,10 +387,9 @@ public sealed class ChaptersTests(AzuriteFixture azurite) : IDisposable
 
     private async Task<(Guid FamilyId, Guid ChildId)> ReadyChildAsync(HttpClient client, BoardType board, int classLevel)
     {
+        await ContentSeed.PutClassAsync(cosmos.Content, board, classLevel, ClassSeven);
         var family = await RegisterAsync(client, board, classLevel);
         var child = family.Children.Single();
-        await FamilyManifestSeed.PutAsync(Family, family.FamilyId, (child.ChildId, classLevel, [.. ClassSeven.Select(entry => entry.Subject)]));
-        await FamilyManifestSeed.PutSliceAsync(Family, family.FamilyId, child.ChildId, classLevel, ClassSeven);
 
         return (family.FamilyId, child.ChildId);
     }

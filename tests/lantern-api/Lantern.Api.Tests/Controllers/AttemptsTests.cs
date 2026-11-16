@@ -1,7 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json.Nodes;
-using Azure.Storage.Blobs;
 using Lantern.Api.Models;
 using Lantern.Api.Tests.Infrastructure;
 using Lantern.Core.Constants;
@@ -12,8 +11,11 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Lantern.Api.Tests.Controllers;
 
 [Collection(ApiCollection.Name)]
-public sealed class AttemptsTests(AzuriteFixture azurite) : IDisposable
+public sealed class AttemptsTests(AzuriteFixture azurite, CosmosFixture cosmos) : IDisposable
 {
+    private const int LoadedClass = 8;
+    private const int UnloadedClass = 9;
+
     private static readonly Chapter[] Mathematics =
     [
         new("gegp101", "gegp1", 1, "Large Numbers", "Reading and writing big numbers."),
@@ -21,13 +23,11 @@ public sealed class AttemptsTests(AzuriteFixture azurite) : IDisposable
         new("gegp201", "gegp2", 1, "Shapes", "Flat shapes and their sides."),
     ];
 
-    private static readonly (Subject Subject, Chapter[] Chapters)[] ClassSeven = [(new Subject("mathematics", "Mathematics", "maths", Mathematics.Length), Mathematics)];
+    private static readonly (Subject Subject, Chapter[] Chapters)[] ClassEight = [(new Subject("mathematics", "Mathematics", "maths", Mathematics.Length), Mathematics)];
 
     private static readonly DateTimeOffset Day = new(2026, 10, 1, 16, 5, 40, TimeSpan.Zero);
 
-    private readonly LanternApiFactory factory = new(azurite.ConnectionString);
-
-    private BlobContainerClient Family => azurite.CreateBlobClient().GetBlobContainerClient(TestSettings.WorkspaceContainer);
+    private readonly LanternApiFactory factory = new(azurite.ConnectionString, cosmos.Settings);
 
     [Fact]
     public async Task Get_AChapterWithTwoAttempts_ReturnsItsHeader_AndEveryAttemptAndCheckNewestFirst()
@@ -94,10 +94,11 @@ public sealed class AttemptsTests(AzuriteFixture azurite) : IDisposable
     }
 
     [Fact]
-    public async Task Get_ANewChildWhoseContentIsNotPreparedYet_Is409ContentNotReady()
+    public async Task Get_AChildWhoseClassHasNoClassDocument_Is409ContentNotReady()
     {
+        await ContentSeed.RemoveClassAsync(cosmos.Content, BoardType.Cbse, UnloadedClass);
         using var client = Client(NewUid());
-        var family = await RegisterAsync(client);
+        var family = await RegisterAsync(client, UnloadedClass);
 
         var response = await client.GetAsync(AttemptsOf((family.FamilyId, family.Children.Single().ChildId), "gegp101"));
 
@@ -112,7 +113,7 @@ public sealed class AttemptsTests(AzuriteFixture azurite) : IDisposable
         using var stranger = Client(NewUid());
         var child = await ReadyChildAsync(owner);
         await StartAsync(child, "gegp101", 3, Day);
-        await RegisterAsync(stranger);
+        await RegisterAsync(stranger, LoadedClass);
 
         var theirs = await stranger.GetAsync(AttemptsOf(child, "gegp101"));
         var unknown = await stranger.GetAsync(AttemptsOf((child.FamilyId, Guid.NewGuid()), "gegp101"));
@@ -190,7 +191,7 @@ public sealed class AttemptsTests(AzuriteFixture azurite) : IDisposable
     {
         using var noisy = Client(NewUid());
         using var quiet = Client(NewUid());
-        await RegisterAsync(quiet);
+        await RegisterAsync(quiet, LoadedClass);
 
         HttpStatusCode last = default;
         for (var n = 0; n < 40; n++)
@@ -210,7 +211,7 @@ public sealed class AttemptsTests(AzuriteFixture azurite) : IDisposable
     {
         using var scope = factory.Services.CreateScope();
         await scope.ServiceProvider.GetRequiredService<IProgressRepository>()
-            .StartAttemptAsync(new ChapterRef(child.FamilyId, child.ChildId, 7, chapterId), Guid.NewGuid(), concepts, "v1", at, CancellationToken.None);
+            .StartAttemptAsync(new ChapterRef(child.FamilyId, child.ChildId, LoadedClass, chapterId), Guid.NewGuid(), concepts, "v1", at, CancellationToken.None);
     }
 
     private async Task DoneAsync((Guid FamilyId, Guid ChildId) child, string chapterId, params string[] conceptIds)
@@ -219,7 +220,7 @@ public sealed class AttemptsTests(AzuriteFixture azurite) : IDisposable
         var progress = scope.ServiceProvider.GetRequiredService<IProgressRepository>();
         foreach (var conceptId in conceptIds)
         {
-            await progress.MarkConceptDoneAsync(new ChapterRef(child.FamilyId, child.ChildId, 7, chapterId), conceptId, Day, CancellationToken.None);
+            await progress.MarkConceptDoneAsync(new ChapterRef(child.FamilyId, child.ChildId, LoadedClass, chapterId), conceptId, Day, CancellationToken.None);
         }
     }
 
@@ -230,7 +231,7 @@ public sealed class AttemptsTests(AzuriteFixture azurite) : IDisposable
         using var scope = factory.Services.CreateScope();
         await scope.ServiceProvider.GetRequiredService<IProgressRepository>()
             .RecordCheckAsync(
-                new ChapterRef(child.FamilyId, child.ChildId, 7, chapterId),
+                new ChapterRef(child.FamilyId, child.ChildId, LoadedClass, chapterId),
                 checkId,
                 at,
                 [.. marks.Select(mark => new CheckedConcept { ConceptId = mark.Id, Title = mark.Title, Right = mark.Right })],
@@ -241,10 +242,9 @@ public sealed class AttemptsTests(AzuriteFixture azurite) : IDisposable
 
     private async Task<(Guid FamilyId, Guid ChildId)> ReadyChildAsync(HttpClient client)
     {
-        var family = await RegisterAsync(client);
+        await ContentSeed.PutClassAsync(cosmos.Content, BoardType.Cbse, LoadedClass, ClassEight);
+        var family = await RegisterAsync(client, LoadedClass);
         var child = family.Children.Single();
-        await FamilyManifestSeed.PutAsync(Family, family.FamilyId, (child.ChildId, 7, [.. ClassSeven.Select(entry => entry.Subject)]));
-        await FamilyManifestSeed.PutSliceAsync(Family, family.FamilyId, child.ChildId, 7, ClassSeven);
 
         return (family.FamilyId, child.ChildId);
     }
@@ -268,7 +268,7 @@ public sealed class AttemptsTests(AzuriteFixture azurite) : IDisposable
 
     private static string Locked(string plaintext) => $"v1.{Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(plaintext))}.{Guid.NewGuid():N}";
 
-    private static async Task<FamilyModel> RegisterAsync(HttpClient client)
+    private static async Task<FamilyModel> RegisterAsync(HttpClient client, int classLevel)
     {
         var body = new FamilyRegisterRequest
         {
@@ -281,7 +281,7 @@ public sealed class AttemptsTests(AzuriteFixture azurite) : IDisposable
             RecoveryWrappedKey = Locked("recovery-key"),
             RecoverySalt = Locked("recovery-salt"),
             Consent = new ConsentModel { Accepted = true, NoticeVersion = "2026-09" },
-            Children = [new ChildSaveModel { Name = Locked("Child"), ClassLevel = 7, BirthYear = Locked("2018"), School = Locked("Sunrise School") }],
+            Children = [new ChildSaveModel { Name = Locked("Child"), ClassLevel = classLevel, BirthYear = Locked("2018"), School = Locked("Sunrise School") }],
         };
 
         var response = await client.RegisterAsync(body);
