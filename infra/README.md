@@ -60,6 +60,16 @@ The release sets the real images and the API's port by deploying this template w
 images and port itself; `infra-check` reads the running ones (`keep-running-image.sh`) so its what-if never shows the
 placeholder coming back.
 
+### Cosmos DB for Board content
+
+`main.bicep` creates the Cosmos DB account `cosmos-lantern-uat` ([ADR-0020](../docs/adr/0020-three-layers-of-storage.md), spec #204), the database `lantern` and the container `content`, partitioned on `/classKey`, with 1,000 RU/s on the container (the `cosmos` param in the bicepparam). The names are written once there and the app never creates any of them. The account is on the free tier (the first 1,000 RU/s and 25 GB), and a subscription has one free-tier account, chosen when the account is created: if another account in the subscription already holds it, the deployment fails and the template is changed here. Key sign-in is off (`disableLocalAuth`), so every caller signs in with Entra ID and a Cosmos DB data role.
+
+- The API's managed identity gets the built-in Data Reader role. It lands before the first story that reads Cosmos DB (#194), so the role is confirmed before the release that needs it.
+- Whoever loads the content needs the built-in Data Contributor role. The release passes no `LOADER_PRINCIPAL_ID`, so grant it once by hand, or set `LOADER_PRINCIPAL_ID` to an object id for a manual deployment:
+  `az cosmosdb sql role assignment create -g rg-lantern-dev -a cosmos-lantern-uat --role-definition-id 00000000-0000-0000-0000-000000000002 --scope / --principal-id $(az ad signed-in-user show --query id -o tsv)`
+- The container stays empty until the one-off migration has loaded the `ncert` and `ssc` Boards into it (D136). Nothing reads it yet. The apps are not given the account's endpoint until #194 adds the setting.
+- The local stack runs the Linux emulator (`cosmos` in `deploy/local/docker-compose.yml`, port 8081).
+
 ### The One-time code email (`acs-connection-string`)
 
 The One-time code ([ADR-0019](../docs/adr/0019-one-time-code-emailed-through-azure.md), D125) is emailed through Azure Communication Services. `main.bicep` creates the Email Communication Service `email-lantern-uat`, Azure's managed domain on it, and the Communication Service `acs-lantern-uat` linked to that domain. It also writes the service's connection string to the Key Vault secret `acs-connection-string` (the name is `keyVault.acsConnectionStringSecret`), so nothing is pasted by hand. The API reads it as `Email__ConnectionString` and sends from `DoNotReply@<managed domain>` (`Email__Sender`). The data location is `emailDataLocation` in the bicepparam (`India`); if Azure refuses it for email, change that one value.

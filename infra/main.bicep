@@ -311,14 +311,14 @@ resource cosmosAccount 'Microsoft.DocumentDB/databaseAccounts@2024-11-15' = {
   }
 }
 
-var cosmosReaderRole = '${cosmosAccount.id}/sqlRoleDefinitions/00000000-0000-0000-0000-000000000001'
-var cosmosContributorRole = '${cosmosAccount.id}/sqlRoleDefinitions/00000000-0000-0000-0000-000000000002'
+var cosmosBuiltInDataReaderRoleId = '${cosmosAccount.id}/sqlRoleDefinitions/00000000-0000-0000-0000-000000000001'
+var cosmosBuiltInDataContributorRoleId = '${cosmosAccount.id}/sqlRoleDefinitions/00000000-0000-0000-0000-000000000002'
 
 resource apiReadsContent 'Microsoft.DocumentDB/databaseAccounts/sqlRoleAssignments@2024-11-15' = {
   parent: cosmosAccount
-  name: guid(cosmosAccount.id, identity.id, cosmosReaderRole)
+  name: guid(cosmosAccount.id, identity.id, cosmosBuiltInDataReaderRoleId)
   properties: {
-    roleDefinitionId: cosmosReaderRole
+    roleDefinitionId: cosmosBuiltInDataReaderRoleId
     principalId: identity.properties.principalId
     scope: cosmosAccount.id
   }
@@ -326,9 +326,9 @@ resource apiReadsContent 'Microsoft.DocumentDB/databaseAccounts/sqlRoleAssignmen
 
 resource loaderWritesContent 'Microsoft.DocumentDB/databaseAccounts/sqlRoleAssignments@2024-11-15' = if (!empty(loaderPrincipalId)) {
   parent: cosmosAccount
-  name: guid(cosmosAccount.id, loaderPrincipalId, cosmosContributorRole)
+  name: guid(cosmosAccount.id, loaderPrincipalId, cosmosBuiltInDataContributorRoleId)
   properties: {
-    roleDefinitionId: cosmosContributorRole
+    roleDefinitionId: cosmosBuiltInDataContributorRoleId
     principalId: loaderPrincipalId
     scope: cosmosAccount.id
   }
