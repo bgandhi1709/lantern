@@ -67,6 +67,7 @@ placeholder coming back.
 - The API's managed identity gets the built-in Data Reader role. It lands before the first story that reads Cosmos DB (#194), so the role is confirmed before the release that needs it.
 - Whoever loads the content needs the built-in Data Contributor role. The release passes no `LOADER_PRINCIPAL_ID`, so grant it once by hand, or set `LOADER_PRINCIPAL_ID` to an object id for a manual deployment:
   `az cosmosdb sql role assignment create -g rg-lantern-dev -a cosmos-lantern-uat --role-definition-id 00000000-0000-0000-0000-000000000002 --scope / --principal-id $(az ad signed-in-user show --query id -o tsv)`
+- The subscription must have the `Microsoft.DocumentDB` provider registered: `infra/bootstrap.sh` registers it with the others, and the release preflight fails with that fix while it is not. The deploying identity cannot register a provider.
 - The container stays empty until the one-off migration has loaded the `ncert` and `ssc` Boards into it (D136). Nothing reads it yet. The apps are not given the account's endpoint until #194 adds the setting.
 - The local stack runs the Linux emulator (`cosmos` in `deploy/local/docker-compose.yml`, port 8081).
 
