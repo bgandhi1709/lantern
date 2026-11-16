@@ -10,6 +10,7 @@ using Lantern.Repository.Entities;
 using Lantern.Repository.UnitOfWork;
 using Mapster;
 using MapsterMapper;
+using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -38,6 +39,19 @@ public static class RepositoryModule
                 ? new TableServiceClient(new Uri(options.TableEndpoint), new DefaultAzureCredential())
                 : new TableServiceClient(options.ConnectionString);
         });
+        services
+            .AddOptions<CosmosOptions>()
+            .Bind(configuration.GetSection(CosmosOptions.SectionName))
+            .ValidateDataAnnotations();
+
+        services.TryAddSingleton(serviceProvider =>
+        {
+            var options = serviceProvider.GetRequiredService<IOptions<CosmosOptions>>().Value;
+
+            return string.IsNullOrWhiteSpace(options.Key)
+                ? new CosmosClient(options.Endpoint, new DefaultAzureCredential())
+                : new CosmosClient(options.Endpoint, options.Key, new CosmosClientOptions { ConnectionMode = ConnectionMode.Gateway, LimitToEndpoint = true });
+        });
         services.TryAddSingleton(serviceProvider =>
         {
             var options = Storage(serviceProvider);
@@ -62,6 +76,16 @@ public static class RepositoryModule
         services.TryAddScoped<IRepositoryBase<Core.Models.Family>>(serviceProvider => serviceProvider.GetRequiredService<IFamilyRepository>());
         services.TryAddSingleton<IActionLedger, ActionLedger>();
         services.TryAddScoped<IProgressRepository, ProgressRepository>();
+        services.TryAddSingleton<IContentRepository>(serviceProvider =>
+        {
+            var options = serviceProvider.GetRequiredService<IOptions<CosmosOptions>>().Value;
+
+            return new ContentRepository(
+                serviceProvider.GetRequiredService<CosmosClient>().GetContainer(options.Database, options.ContentContainer),
+                serviceProvider.GetRequiredService<IJsonService>(),
+                serviceProvider.GetRequiredService<ContentLayout>()
+            );
+        });
         services.AddSingleton<IRegister, RepositoryProfile>();
         services.TryAddSingleton<IWorkspaceStore>(serviceProvider =>
         {

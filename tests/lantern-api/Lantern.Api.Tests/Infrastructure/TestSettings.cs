@@ -18,4 +18,8 @@ internal static class TestSettings
     public static string NcertContainer => Root["Catalog:NcertContainer"];
 
     public static string SscContainer => Root["Catalog:SscContainer"];
+
+    public static string CosmosDatabase => Root["Cosmos:Database"];
+
+    public static string CosmosContentContainer => Root["Cosmos:ContentContainer"];
 }

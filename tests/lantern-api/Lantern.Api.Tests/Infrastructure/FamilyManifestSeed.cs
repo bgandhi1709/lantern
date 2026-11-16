@@ -39,36 +39,7 @@ internal static class FamilyManifestSeed
     }
 
     public static string ClassManifestJson(string schema, int classLevel, params (Subject Subject, Chapter[] Chapters)[] subjects) =>
-        new JsonObject
-        {
-            ["schema"] = schema,
-            ["board"] = "cbse",
-            ["profileVersion"] = "cbse-v1",
-            ["class"] = classLevel,
-            ["subjects"] = new JsonArray(
-                [
-                    .. subjects.Select(entry => (JsonNode)new JsonObject
-                    {
-                        ["subjectId"] = entry.Subject.SubjectId,
-                        ["name"] = entry.Subject.Name,
-                        ["icon"] = entry.Subject.Icon,
-                        ["chapterCount"] = entry.Chapters.Length,
-                        ["chapters"] = new JsonArray(
-                            [
-                                .. entry.Chapters.Select(chapter => (JsonNode)new JsonObject
-                                {
-                                    ["chapterId"] = chapter.ChapterId,
-                                    ["bookId"] = chapter.BookId,
-                                    ["number"] = chapter.Number,
-                                    ["title"] = chapter.Title,
-                                    ["summary"] = chapter.Summary,
-                                }),
-                            ]
-                        ),
-                    }),
-                ]
-            ),
-        }.ToJsonString();
+        ContentSeed.ManifestJson(schema, "cbse", classLevel, subjects);
 
     public static string Json(string schema, params (Guid ChildId, int ClassLevel, Subject[] Subjects)[] children)
     {

@@ -1,3 +1,4 @@
+using Lantern.Core.Constants;
 using Lantern.Core.Storage;
 
 namespace Lantern.Api.Tests.Storage;
@@ -31,6 +32,16 @@ public sealed class ContentLayoutTests
         Assert.Equal("family-manifest-v1", layout.FamilyManifestSchema);
         Assert.Equal("book_id", layout.CatalogBookField);
         Assert.Equal("grade", layout.CatalogGradeField);
+    }
+
+    [Theory]
+    [InlineData(BoardType.Cbse, 3, "cbse-3", "class:cbse-3")]
+    [InlineData(BoardType.Ssc, 5, "ssc-5", "class:ssc-5")]
+    [InlineData(BoardType.Cbse, 10, "cbse-10", "class:cbse-10")]
+    public void ClassDocument_IsKeyedByBoardAndClass_AsTheLoaderWritesIt(BoardType board, int classLevel, string classKey, string id)
+    {
+        Assert.Equal(classKey, layout.ClassKey(board, classLevel));
+        Assert.Equal(id, layout.ClassDocumentId(classKey));
     }
 
     [Fact]

@@ -41,6 +41,7 @@ builder
 
 // Only the API reads the Boards' catalogs, so only it refuses to start without their container names.
 builder.Services.AddOptions<CatalogOptions>().ValidateOnStart();
+builder.Services.AddOptions<CosmosOptions>().ValidateOnStart();
 
 builder.Services.AddSingleton<IRegister, ApiProfile>();
 builder.Services.AddHttpContextAccessor();

@@ -2,6 +2,7 @@ using System.Reflection;
 using Azure.Communication.Email;
 using Azure.Data.Tables;
 using Azure.Storage.Blobs;
+using Microsoft.Azure.Cosmos;
 using RabbitMQ.Client;
 
 namespace Lantern.Api.Tests.Architecture;
@@ -49,6 +50,8 @@ public sealed class LayerTests
             { typeof(TableServiceClient), "UnitOfWork`1" },
             { typeof(BlobContainerClient), "WorkspaceStore" },
             { typeof(BlobServiceClient), "WorkspaceStore" },
+            { typeof(CosmosClient), "ContentRepository" },
+            { typeof(Container), "ContentRepository" },
             { typeof(IConnection), "RabbitMqPublishingService" },
             { typeof(IChannel), "RabbitMqPublishingService" },
             { typeof(EmailClient), "AcsEmailService" },
@@ -84,6 +87,16 @@ public sealed class LayerTests
             .ToList();
 
         Assert.Equal(["RabbitMqPublishingService"], mentioning);
+    }
+
+    [Fact]
+    public void NoLanternAssembly_ReferencesNewtonsoft_WhichOnlyTheCosmosSdkUsesInside()
+    {
+        var referencing = LanternAssemblies.All
+            .Where(assembly => assembly.GetReferencedAssemblies().Any(reference => reference.Name == "Newtonsoft.Json"))
+            .Select(assembly => assembly.GetName().Name);
+
+        Assert.Empty(referencing);
     }
 
     [Fact]
