@@ -126,3 +126,7 @@ D89's per-Board copy rules gain one required file for both Boards: `manifest/cla
 - **The API creates the manifest at register:** a second writer, and an entry before the slice is ready.
 - **One action for a whole registration:** one writer, but it reverses D88's "one action per Child", and one Child's failure would retry all of them.
 - **Service Bus sessions keyed by Family:** serialise the writers, but a session-enabled queue means a new queue and a change to ADR-0004.
+
+## Amended by D138
+
+The API reads a Child's Subjects from the Class manifest held in the class document of the Child's Board and Class in Cosmos DB, not from the Family manifest, and a Subject's Chapters and a Chapter's place from the same document, not from the slice's `content/manifest.json`. The Class manifest keeps the schema and the shape recorded here. The Family manifest is still written by the copy until #209 removes both; nothing reads it.

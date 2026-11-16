@@ -2,7 +2,7 @@
 
 The private `ncert` (CBSE) and `ssc` Blob containers hold each Board's Books, ready to read. They are made outside this
 repository: extracting the syllabus is part of the separate `lantern-utilities` repository (ADR-0017). Lantern takes them
-as given and reads them when it copies a Class into a Child's Content slice (ADR-0013) and when the one-off migration moves them into Cosmos DB (ADR-0020, D136). This file is the whole
+as given and reads them when it copies a Class into a Child's Content slice (ADR-0013) and when the one-off migration moves them into Cosmos DB (ADR-0020, D136). The API reads only the class document, by id and partition, for Subjects, Chapters and a Chapter's place (D138). This file is the whole
 contract; the file and folder names live in `ContentLayout`, and `ContentLayoutTests` pins them.
 
 ## Layout of a Board container
