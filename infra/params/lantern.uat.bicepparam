@@ -16,6 +16,14 @@ param containers = {
   ssc: 'ssc'
 }
 
+param cosmos = {
+  database: 'lantern'
+  contentContainer: 'content'
+  contentThroughput: 1000
+}
+
+param loaderPrincipalId = readEnvironmentVariable('LOADER_PRINCIPAL_ID', '')
+
 param keyVault = {
   securityKeySecret: 'security-key'
   amqpUrlSecret: 'amqp-url'
