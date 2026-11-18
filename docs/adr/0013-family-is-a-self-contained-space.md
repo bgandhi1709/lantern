@@ -84,3 +84,7 @@ The copy list gains one required file for both Boards, `manifest/class-{N}.json`
 ## Amended by D130
 
 The Content slice also holds every Chapter's Plan and the videos and posters of its Concepts, copied whole from `plans/{book}/` under the rules in the table above. A refined Chapter with no `plans/{book}/{chapter}.plan.json` is a broken master, like a missing summary: the copy fails, names the missing file and writes no `version.json`. The copy does not open a Plan, so a `video` that names a file the master lacks is not caught here. This replaces "only JSON is copied" and the 1.2 MB, 150 file figures; the rest of the decision, including whole-file Put Blob copies and the in-flight cap, stands. On a copy of UAT's masters a Class 5 slice (SSC, 738 files, 37.8 MB) took about 2 seconds and the largest (NCERT Class 4) about 4 seconds, well inside the queue's five-minute lock.
+
+## Amended by D138
+
+The API no longer reads a Child's Subjects, Chapters or Chapter header from the slice: it reads the shared class document in Cosmos DB (ADR-0020). The copy still runs and nothing reads what it writes, until #209 removes it.

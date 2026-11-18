@@ -69,7 +69,7 @@ placeholder coming back.
   `az cosmosdb sql role assignment create -g rg-lantern-dev -a cosmos-lantern-uat --role-definition-id 00000000-0000-0000-0000-000000000002 --scope / --principal-id $(az ad signed-in-user show --query id -o tsv)`
 - The subscription must have the `Microsoft.DocumentDB` provider registered: `infra/bootstrap.sh` registers it with the others, and the release preflight fails with that fix while it is not. The deploying identity cannot register a provider.
 - The container stays empty until the one-off migration has loaded the `ncert` and `ssc` Boards into it (D136). Nothing reads it yet. The apps are not given the account's endpoint until #194 adds the setting.
-- The local stack runs the Linux emulator (`cosmos` in `deploy/local/docker-compose.yml`, port 8081).
+- The local stack runs the Linux emulator (`cosmos` in `deploy/local/docker-compose.yml`, host port 8091, because Metro holds 8081).
 
 ### The One-time code email (`acs-connection-string`)
 

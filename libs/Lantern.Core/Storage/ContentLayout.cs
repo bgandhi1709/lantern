@@ -1,4 +1,5 @@
 using System.Globalization;
+using Lantern.Core.Constants;
 
 namespace Lantern.Core.Storage;
 
@@ -43,6 +44,15 @@ public sealed class ContentLayout
     public string CatalogBookField { get; } = "book_id";
 
     public string CatalogGradeField { get; } = "grade";
+
+    public string ClassDocumentPrefix { get; } = "class:";
+
+    private char ClassKeySeparator { get; } = '-';
+
+    public string ClassKey(BoardType board, int classLevel) =>
+        string.Create(CultureInfo.InvariantCulture, $"{board.ToString().ToLowerInvariant()}{ClassKeySeparator}{classLevel}");
+
+    public string ClassDocumentId(string classKey) => ClassDocumentPrefix + classKey;
 
     public string FamilyFolder(Guid familyId) => string.Create(CultureInfo.InvariantCulture, $"{familyId:D}{Separator}");
 

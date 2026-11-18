@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json.Nodes;
 using Azure.Storage.Blobs;
+using Azure.Storage.Blobs.Models;
 using Lantern.Api.Models;
 using Lantern.Api.Tests.Infrastructure;
 using Lantern.Core.Constants;
@@ -10,26 +11,36 @@ using Lantern.Core.Models;
 namespace Lantern.Api.Tests.Controllers;
 
 [Collection(ApiCollection.Name)]
-public sealed class SubjectsTests(AzuriteFixture azurite) : IDisposable
+public sealed class SubjectsTests(AzuriteFixture azurite, CosmosFixture cosmos) : IDisposable
 {
-    private static readonly Subject[] ClassThree =
+    private const int UnloadedClass = 9;
+    private const int UnknownSchemaClass = 6;
+
+    private static readonly (Subject Subject, Chapter[] Chapters)[] ClassThree =
     [
-        new("english", "English", "english", 12),
-        new("mathematics", "Mathematics", "maths", 14),
-        new("the-world-around-us", "The World Around Us", "evs", 12),
+        Loaded("english", "English", "english", "xen1", 12),
+        Loaded("mathematics", "Mathematics", "maths", "xma1", 14),
+        Loaded("the-world-around-us", "The World Around Us", "evs", "xev1", 12),
     ];
 
-    private readonly LanternApiFactory factory = new(azurite.ConnectionString);
+    private static readonly (Subject Subject, Chapter[] Chapters)[] SscClassThree =
+    [
+        Loaded("mathematics", "Mathematics", "maths", "ssc3-maths", 14),
+        Loaded("english", "English", "english", "ssc3-english", 4),
+        Loaded("environmental-studies", "Environmental Studies", "evs", "ssc3-evs1", 25),
+    ];
+
+    private readonly LanternApiFactory factory = new(azurite.ConnectionString, cosmos.Settings);
 
     private BlobContainerClient Family => azurite.CreateBlobClient().GetBlobContainerClient(TestSettings.WorkspaceContainer);
 
     [Fact]
-    public async Task Get_AChildWhoseContentIsReady_ReturnsTheirSubjectsAsAPage()
+    public async Task Get_AChildWhoseClassIsLoaded_ReturnsTheirSubjectsAsAPage_WithNoWorkspaceForThem()
     {
+        await LoadClassThreeAsync();
         using var client = Client(NewUid());
         var family = await RegisterAsync(client, BoardType.Cbse, 3);
         var child = family.Children.Single();
-        await FamilyManifestSeed.PutAsync(Family, family.FamilyId, (child.ChildId, 3, ClassThree));
 
         var response = await client.GetAsync(SubjectsOf(child.ChildId));
 
@@ -47,13 +58,32 @@ public sealed class SubjectsTests(AzuriteFixture azurite) : IDisposable
             """,
             await response.Content.ReadAsStringAsync()
         );
+        await Family.CreateIfNotExistsAsync();
+        Assert.Empty(await Family.GetBlobsAsync(BlobTraits.None, BlobStates.None, $"{family.FamilyId:D}/", CancellationToken.None).ToListAsync());
     }
 
     [Fact]
-    public async Task Get_ANewChildWhoseContentIsNotPreparedYet_Is409ContentNotReady()
+    public async Task Get_AnSscChild_ReturnsTheSubjectsOfTheirBoardsClass_InTheOrderTheClassHolds()
     {
+        await ContentSeed.PutClassAsync(cosmos.Content, BoardType.Ssc, 3, SscClassThree);
+        await LoadClassThreeAsync();
         using var client = Client(NewUid());
-        var child = (await RegisterAsync(client, BoardType.Cbse, 3)).Children.Single();
+        var child = (await RegisterAsync(client, BoardType.Ssc, 3)).Children.Single();
+
+        var page = (await client.GetFromJsonAsync<JsonNode>(SubjectsOf(child.ChildId)))!;
+
+        Assert.Equal(
+            [("mathematics", 14), ("english", 4), ("environmental-studies", 25)],
+            page["items"]!.AsArray().Select(item => ((string)item!["subjectId"]!, (int)item["chapterCount"]!))
+        );
+    }
+
+    [Fact]
+    public async Task Get_AChildWhoseClassHasNoClassDocument_Is409ContentNotReady()
+    {
+        await ContentSeed.RemoveClassAsync(cosmos.Content, BoardType.Cbse, UnloadedClass);
+        using var client = Client(NewUid());
+        var child = (await RegisterAsync(client, BoardType.Cbse, UnloadedClass)).Children.Single();
 
         var response = await client.GetAsync(SubjectsOf(child.ChildId));
 
@@ -62,12 +92,13 @@ public sealed class SubjectsTests(AzuriteFixture azurite) : IDisposable
     }
 
     [Fact]
-    public async Task Get_AChildWithNoEntryWhileASiblingIsReady_Is409_AndTheSiblingStillGetsTheirSubjects()
+    public async Task Get_AChildWhoseClassIsNotLoaded_Is409_AndASiblingInALoadedClassStillGetsTheirSubjects()
     {
+        await LoadClassThreeAsync();
+        await ContentSeed.RemoveClassAsync(cosmos.Content, BoardType.Cbse, UnloadedClass);
         using var client = Client(NewUid());
-        var family = await RegisterAsync(client, BoardType.Cbse, 3, 6);
+        var family = await RegisterAsync(client, BoardType.Cbse, 3, UnloadedClass);
         var (ready, waiting) = (family.Children[0], family.Children[1]);
-        await FamilyManifestSeed.PutAsync(Family, family.FamilyId, (ready.ChildId, 3, ClassThree));
 
         var notReady = await client.GetAsync(SubjectsOf(waiting.ChildId));
         var readyResponse = await client.GetAsync(SubjectsOf(ready.ChildId));
@@ -82,9 +113,9 @@ public sealed class SubjectsTests(AzuriteFixture azurite) : IDisposable
     {
         using var owner = Client(NewUid());
         using var stranger = Client(NewUid());
+        await LoadClassThreeAsync();
         var child = (await RegisterAsync(owner, BoardType.Cbse, 3)).Children.Single();
         await RegisterAsync(stranger, BoardType.Cbse, 3);
-        await FamilyManifestSeed.PutAsync(Family, (await owner.GetFromJsonAsync<FamilyModel>(ApiClientExtensions.Me))!.FamilyId, (child.ChildId, 3, ClassThree));
 
         var theirs = await stranger.GetAsync(SubjectsOf(child.ChildId));
         var unknown = await stranger.GetAsync(SubjectsOf(Guid.NewGuid()));
@@ -97,12 +128,11 @@ public sealed class SubjectsTests(AzuriteFixture azurite) : IDisposable
     }
 
     [Fact]
-    public async Task Get_AChildBeingDeleted_IsNotFound_EvenThoughTheirEntryIsStillInTheManifest()
+    public async Task Get_AChildBeingDeleted_IsNotFound_EvenThoughTheirClassIsLoaded()
     {
         using var client = Client(NewUid());
-        var family = await RegisterAsync(client, BoardType.Cbse, 3);
-        var child = family.Children.Single();
-        await FamilyManifestSeed.PutAsync(Family, family.FamilyId, (child.ChildId, 3, ClassThree));
+        await LoadClassThreeAsync();
+        var child = (await RegisterAsync(client, BoardType.Cbse, 3)).Children.Single();
         Assert.Equal(HttpStatusCode.Accepted, (await client.DeleteChildAsync(child.ChildId)).StatusCode);
 
         var response = await client.GetAsync(SubjectsOf(child.ChildId));
@@ -115,9 +145,8 @@ public sealed class SubjectsTests(AzuriteFixture azurite) : IDisposable
     public async Task Get_WithALimit_PagesTheList_AndTheCursorLeadsToTheRest()
     {
         using var client = Client(NewUid());
-        var family = await RegisterAsync(client, BoardType.Cbse, 3);
-        var child = family.Children.Single();
-        await FamilyManifestSeed.PutAsync(Family, family.FamilyId, (child.ChildId, 3, ClassThree));
+        await LoadClassThreeAsync();
+        var child = (await RegisterAsync(client, BoardType.Cbse, 3)).Children.Single();
 
         var first = (await client.GetFromJsonAsync<JsonNode>(SubjectsOf(child.ChildId, "?limit=2")))!;
         var cursor = first["nextCursor"]!.GetValue<string>();
@@ -133,9 +162,8 @@ public sealed class SubjectsTests(AzuriteFixture azurite) : IDisposable
     public async Task Get_ALimitThatCoversTheWholeList_HasNoNextCursor()
     {
         using var client = Client(NewUid());
-        var family = await RegisterAsync(client, BoardType.Cbse, 3);
-        var child = family.Children.Single();
-        await FamilyManifestSeed.PutAsync(Family, family.FamilyId, (child.ChildId, 3, ClassThree));
+        await LoadClassThreeAsync();
+        var child = (await RegisterAsync(client, BoardType.Cbse, 3)).Children.Single();
 
         var page = (await client.GetFromJsonAsync<JsonNode>(SubjectsOf(child.ChildId, "?limit=3")))!;
 
@@ -164,9 +192,8 @@ public sealed class SubjectsTests(AzuriteFixture azurite) : IDisposable
     public async Task Get_ALimitOrCursorThatIsNotValid_Is400InvalidPage(string query)
     {
         using var client = Client(NewUid());
-        var family = await RegisterAsync(client, BoardType.Cbse, 3);
-        var child = family.Children.Single();
-        await FamilyManifestSeed.PutAsync(Family, family.FamilyId, (child.ChildId, 3, ClassThree));
+        await LoadClassThreeAsync();
+        var child = (await RegisterAsync(client, BoardType.Cbse, 3)).Children.Single();
 
         var response = await client.GetAsync(SubjectsOf(child.ChildId, query));
 
@@ -187,9 +214,8 @@ public sealed class SubjectsTests(AzuriteFixture azurite) : IDisposable
     public async Task Get_AnEmptyCursor_IsTheFirstPage()
     {
         using var client = Client(NewUid());
-        var family = await RegisterAsync(client, BoardType.Cbse, 3);
-        var child = family.Children.Single();
-        await FamilyManifestSeed.PutAsync(Family, family.FamilyId, (child.ChildId, 3, ClassThree));
+        await LoadClassThreeAsync();
+        var child = (await RegisterAsync(client, BoardType.Cbse, 3)).Children.Single();
 
         var page = (await client.GetFromJsonAsync<JsonNode>(SubjectsOf(child.ChildId, "?cursor=")))!;
 
@@ -200,9 +226,8 @@ public sealed class SubjectsTests(AzuriteFixture azurite) : IDisposable
     public async Task Get_ASchemaThisVersionDoesNotKnow_IsAServerError_NeverAnEmptyOrWrongList()
     {
         using var client = Client(NewUid());
-        var family = await RegisterAsync(client, BoardType.Cbse, 3);
-        var child = family.Children.Single();
-        await FamilyManifestSeed.PutRawAsync(Family, family.FamilyId, FamilyManifestSeed.Json("family-manifest-v9", (child.ChildId, 3, ClassThree)));
+        await ContentSeed.PutClassRawAsync(cosmos.Content, BoardType.Cbse, UnknownSchemaClass, ContentSeed.ManifestJson("class-manifest-v9", "cbse", UnknownSchemaClass, ClassThree));
+        var child = (await RegisterAsync(client, BoardType.Cbse, UnknownSchemaClass)).Children.Single();
 
         var response = await client.GetAsync(SubjectsOf(child.ChildId));
 
@@ -242,6 +267,14 @@ public sealed class SubjectsTests(AzuriteFixture azurite) : IDisposable
     }
 
     public void Dispose() => factory.Dispose();
+
+    private static (Subject Subject, Chapter[] Chapters) Loaded(string subjectId, string name, string icon, string bookId, int chapterCount) =>
+        (
+            new Subject(subjectId, name, icon, chapterCount),
+            [.. Enumerable.Range(1, chapterCount).Select(number => new Chapter($"{bookId}-{number:D2}", bookId, number, $"Chapter {number}", $"Summary {number}."))]
+        );
+
+    private Task LoadClassThreeAsync() => ContentSeed.PutClassAsync(cosmos.Content, BoardType.Cbse, 3, ClassThree);
 
     private static async Task<string> ProblemTextAsync(HttpResponseMessage response)
     {

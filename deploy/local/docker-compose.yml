@@ -13,9 +13,9 @@ services:
   cosmos:
     image: mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:vnext-preview@sha256:db53613dae19d0a3d5ad50688d14aa6e957af082dafea56b52e1bd3a6b3f1406
     environment:
-      PROTOCOL: https
+      PROTOCOL: http
     ports:
-      - "127.0.0.1:8081:8081"
+      - "127.0.0.1:8091:8081"
 
   auth-emulator:
     build: ./auth-emulator
@@ -76,6 +76,8 @@ services:
         condition: service_started
       auth-emulator:
         condition: service_started
+      cosmos:
+        condition: service_started
       broker-topology:
         condition: service_completed_successfully
     ports:
@@ -87,6 +89,7 @@ services:
       Storage__ConnectionString: "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;TableEndpoint=http://azurite:10002/devstoreaccount1;BlobEndpoint=http://azurite:10000/devstoreaccount1;"
       Actions__Exchange: lantern.actions
       Local__SeedBoardMasters: "${LANTERN_SEED_BOARD_MASTERS:-true}"
+      Cosmos__Endpoint: "http://cosmos:8081/"
       Broker__Url: "amqp://guest:guest@lavinmq:5672"
     volumes:
       - ./certs:/certs:ro

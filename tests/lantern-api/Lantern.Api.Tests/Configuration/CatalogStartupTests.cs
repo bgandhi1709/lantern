@@ -12,7 +12,10 @@ public sealed class CatalogStartupTests(AzuriteFixture azurite) : IDisposable
     [Theory]
     [InlineData("Catalog:NcertContainer")]
     [InlineData("Catalog:SscContainer")]
-    public void Start_WithoutACatalogContainer_Stops(string setting)
+    [InlineData("Cosmos:Endpoint")]
+    [InlineData("Cosmos:Database")]
+    [InlineData("Cosmos:ContentContainer")]
+    public void Start_WithoutWhereTheBoardContentIs_Stops(string setting)
     {
         using var broken = factory.WithWebHostBuilder(builder =>
             builder.ConfigureAppConfiguration((_, config) => config.AddInMemoryCollection([new(setting, string.Empty)]))

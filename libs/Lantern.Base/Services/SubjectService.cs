@@ -3,10 +3,18 @@ using Lantern.Core.Exceptions;
 using Lantern.Core.Models;
 using Lantern.Core.Repository;
 using Lantern.Core.Service;
+using MapsterMapper;
 
 namespace Lantern.Base.Services;
 
-internal sealed class SubjectService(IServiceBase<Child> children, IWorkspaceStore workspaces, IProgressRepository progress, IPageCalculator pages) : ISubjectService
+internal sealed class SubjectService(
+    IServiceBase<Child> children,
+    IServiceBase<Family> families,
+    IContentRepository content,
+    IProgressRepository progress,
+    IPageCalculator pages,
+    IMapper mapper
+) : ISubjectService
 {
     private const int MaxSearchLength = 64;
 
@@ -14,7 +22,7 @@ internal sealed class SubjectService(IServiceBase<Child> children, IWorkspaceSto
     {
         var child = await ActiveChildAsync(childId, cancellationToken);
 
-        return pages.Slice(await ReadyAsync(child, cancellationToken), limit, cursor);
+        return pages.Slice(mapper.Map<IReadOnlyList<Subject>>((await ClassAsync(child, cancellationToken)).Subjects), limit, cursor);
     }
 
     public async Task<SubjectChapters> ChaptersAsync(Guid childId, string subjectId, string query, int? limit, string cursor, CancellationToken cancellationToken)
@@ -26,14 +34,7 @@ internal sealed class SubjectService(IServiceBase<Child> children, IWorkspaceSto
         }
 
         var child = await ActiveChildAsync(childId, cancellationToken);
-        if (!(await ReadyAsync(child, cancellationToken)).Any(subject => subject.SubjectId == subjectId))
-        {
-            throw new LanternException(LanternErrorCode.SubjectNotFound);
-        }
-
-        var chapters =
-            await workspaces.ChaptersAsync(child.FamilyId, child.ChildId, child.ClassLevel, subjectId, cancellationToken)
-            ?? throw new LanternException(LanternErrorCode.ContentNotReady);
+        var chapters = (await ClassAsync(child, cancellationToken)).ChaptersOf(subjectId) ?? throw new LanternException(LanternErrorCode.SubjectNotFound);
 
         var worked = (await progress.ChaptersAsync(child.FamilyId, child.ChildId, child.ClassLevel, cancellationToken)).ToDictionary(row => row.ChapterId);
         IReadOnlyList<ChapterEntry> entries =
@@ -50,12 +51,7 @@ internal sealed class SubjectService(IServiceBase<Child> children, IWorkspaceSto
     public async Task<ChapterAttempts> AttemptsAsync(Guid childId, string chapterId, int? limit, string cursor, CancellationToken cancellationToken)
     {
         var child = await ActiveChildAsync(childId, cancellationToken);
-        await ReadyAsync(child, cancellationToken);
-
-        var manifest =
-            await workspaces.ClassManifestAsync(child.FamilyId, child.ChildId, child.ClassLevel, cancellationToken)
-            ?? throw new LanternException(LanternErrorCode.ContentNotReady);
-        var place = manifest.PlaceOf(chapterId) ?? throw new LanternException(LanternErrorCode.ChapterNotFound);
+        var place = (await ClassAsync(child, cancellationToken)).PlaceOf(chapterId) ?? throw new LanternException(LanternErrorCode.ChapterNotFound);
         var reference = new ChapterRef(child.FamilyId, child.ChildId, child.ClassLevel, chapterId);
         var summary = await progress.ChapterAsync(reference, cancellationToken);
         var history = await progress.AttemptsAsync(reference, cancellationToken);
@@ -70,7 +66,6 @@ internal sealed class SubjectService(IServiceBase<Child> children, IWorkspaceSto
         return child.Status == ChildStatus.Deleting ? throw new LanternException(LanternErrorCode.ChildNotFound) : child;
     }
 
-    private async Task<IReadOnlyList<Subject>> ReadyAsync(Child child, CancellationToken cancellationToken) =>
-        await workspaces.SubjectsAsync(child.FamilyId, child.ChildId, cancellationToken)
-        ?? throw new LanternException(LanternErrorCode.ContentNotReady);
+    private async Task<ClassManifest> ClassAsync(Child child, CancellationToken cancellationToken) =>
+        await content.ClassAsync((await families.SingleAsync(child.FamilyId, cancellationToken)).Board, child.ClassLevel, cancellationToken);
 }

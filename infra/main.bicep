@@ -389,6 +389,9 @@ resource app 'Microsoft.App/containerApps@2025-01-01' = {
             { name: 'Storage__BlobEndpoint', value: storage.properties.primaryEndpoints.blob }
             { name: 'Catalog__NcertContainer', value: containers.ncert }
             { name: 'Catalog__SscContainer', value: containers.ssc }
+            { name: 'Cosmos__Endpoint', value: cosmosAccount.properties.documentEndpoint }
+            { name: 'Cosmos__Database', value: cosmos.database }
+            { name: 'Cosmos__ContentContainer', value: cosmos.contentContainer }
             { name: 'Broker__Url', secretRef: amqpUrlSecret.name }
             { name: 'Actions__Exchange', value: actions.exchange }
             { name: 'Security__Key', secretRef: 'security-key' }

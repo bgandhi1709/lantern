@@ -87,11 +87,12 @@ HTTP ─▶ Controller ─▶ (Interactor) ─▶ Service ─▶ Repository / St
 - Registered scoped in `BaseModule`.
 - Example: `ChildService`, `FamilyService`.
 - A service over no stored model has no repository and no `ServiceBase` either: `OneTimeCodeService` keeps nothing and knows no operation. It signs and checks a challenge and a proof with `ICryptoService` (a keyed HMAC per purpose); `SecurityController` serves it, and a service such as `ChildService` asks it for the proof of its own operation and target before it acts.
-- A read-only view over a Child's own storage has no repository and so no `ServiceBase`: `SubjectService` looks the Child up
-  through `IServiceBase<Child>` (which scopes it to the caller's Family) and reads through `IWorkspaceStore`. It also serves the
-  Chapters of a Subject (`ChaptersAsync`, read from the Child's own Class manifest once the Subject is in the Family manifest),
-  so a Child's Subjects and Chapters share one guard and one service. It also reads a Chapter's progress and history
-  (`IProgressRepository`, no other service owns it yet) for the Chapters list and the Chapter history.
+- A read-only view over shared content has no repository of its own and so no `ServiceBase`: `SubjectService` looks the Child up
+  through `IServiceBase<Child>` (which scopes it to the caller's Family), reads the Family's Board through `IServiceBase<Family>`
+  and reads the class document of that Board and Class through `IContentRepository` (D138). One document serves the Child's
+  Subjects, a Subject's Chapters and the place of a Chapter in its Subject, so the three share one guard and one service. It also
+  reads a Chapter's progress and history (`IProgressRepository`, no other service owns it yet) for the Chapters list and the
+  Chapter history.
 
 **Interactor** (`I{UseCase}Interactor` / `{UseCase}Interactor`, `Lantern.Base/Interactors/`)
 - Meaning: one use case that orchestrates several services, when putting it in one service would make that service
@@ -132,6 +133,8 @@ HTTP ─▶ Controller ─▶ (Interactor) ─▶ Service ─▶ Repository / St
 
 **Store contract** (`I{Noun}Store`, `Repository/`): the same for Blob storage (`IWorkspaceStore`).
 
+**Content repository contract** (`IContentRepository`, `Repository/`): the reads of a Board's shared content in Cosmos DB. `ClassAsync(board, classLevel)` returns the Class manifest of the class document, and throws `ContentNotReady` when the Class is not loaded.
+
 **Calculator** (`I{Noun}Calculator` / `{Noun}Calculator`, `Service/`)
 - Meaning: pure computation that more than one service shares, behind an interface. No storage, no
   state, no I/O. It is how shared logic stays out of static helpers (CODING_STANDARDS.md).
@@ -155,10 +158,11 @@ HTTP ─▶ Controller ─▶ (Interactor) ─▶ Service ─▶ Repository / St
 
 **Layout** (`ContentLayout`, `Lantern.Core/Storage/`) **(tested: pinned; the only code that names Workspace files and folders)**
 - Meaning: every file and folder name of the Workspace and the Board masters (`class.json`, `version.json`, `refined/`,
-  `summaries/`, `manifest/class-N.json` and the rest), every path built from them, and the two manifest schema ids. They are
+  `summaries/`, `manifest/class-N.json` and the rest), every path built from them, the two manifest schema ids, and the class
+  key and id of a class document in Cosmos DB (`cbse-3`, `class:cbse-3`). They are
   a contract with the content in the Board containers and with what is already stored, so they are not settings (D36) and they live in one class
   instead of as literals in the store.
-- An instance registered as a singleton in `CoreModule`, injected into `WorkspaceStore`; a model that needs a schema id is
+- An instance registered as a singleton in `CoreModule`, injected into `WorkspaceStore` and `ContentRepository`; a model that needs a schema id is
   handed it (`EnsureValid(layout.ClassManifestSchema)`). Tests that pin the real names write them as literals on purpose.
 - Not for environment values (those are Options) and not for fixed sets of values (those are enums).
 
@@ -209,6 +213,15 @@ constant, so every enum lives in `Lantern.Core.Constants`. Never a static class 
   only operations whose storage rules differ.
 - Registered scoped in `RepositoryModule`, plus a forward from `IRepositoryBase<{Noun}>`.
 - Example: `ChildRepository` (the limit of six under the Family row's ETag), `FamilyRepository` (a multi-table commit).
+
+**Content repository** (`ContentRepository`, no base class) **(tested: the only Cosmos DB client holder)**
+- Meaning: reads the `content` container by id and partition, never by query, with the stream API, and deserializes through
+  `IJsonService`. It refuses a document with no manifest, an unknown schema or counts that do not match. Registered scoped in
+  `RepositoryModule` over the singleton `CosmosClient`, which signs in with the managed identity, or with the emulator key when `Cosmos:Key` is set.
+
+**Document** (`{Kind}Document`, `Documents/`, internal)
+- Meaning: the stored shape of a Cosmos DB document, the counterpart of an Entity. It holds only the fields the repository
+  reads (`ClassDocument.Manifest`). Example: `ClassDocument`.
 
 **Entity** (`{Noun}Entity`, `Entities/`) **(tested: internal)**
 - Meaning: the stored row shape. Derives `TableEntityBase`; personal text is a `{Field}Locked` string the phone locked. Internal, never returned.

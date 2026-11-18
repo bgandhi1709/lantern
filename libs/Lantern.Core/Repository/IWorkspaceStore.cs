@@ -1,5 +1,4 @@
 using Lantern.Core.Constants;
-using Lantern.Core.Models;
 
 namespace Lantern.Core.Repository;
 
@@ -17,14 +16,6 @@ public interface IWorkspaceStore
     /// The Board's master has no Book for the Class, or lacks a file its rules require. Nothing is marked ready.
     /// </exception>
     Task CopyContentAsync(Guid familyId, Guid childId, int classLevel, BoardType board, CancellationToken cancellationToken);
-
-    Task<IReadOnlyList<Subject>> SubjectsAsync(Guid familyId, Guid childId, CancellationToken cancellationToken);
-
-    /// <summary>The Subject's Chapters in book order, read from the Child's <c>content/manifest.json</c>; null when the file or the Subject is not there.</summary>
-    Task<IReadOnlyList<Chapter>> ChaptersAsync(Guid familyId, Guid childId, int classLevel, string subjectId, CancellationToken cancellationToken);
-
-    /// <summary>The Child's <c>content/manifest.json</c>; null when the file is not there.</summary>
-    Task<ClassManifest> ClassManifestAsync(Guid familyId, Guid childId, int classLevel, CancellationToken cancellationToken);
 
     Task AddToManifestAsync(Guid familyId, Guid childId, int classLevel, BoardType board, CancellationToken cancellationToken);
 
